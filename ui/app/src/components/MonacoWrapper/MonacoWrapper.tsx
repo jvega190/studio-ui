@@ -20,27 +20,31 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { removeTags } from '../CompareVersionsDialog';
 import { withMonaco } from '../../utils/system';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import { FormattedMessage } from 'react-intl';
 
 interface MonacoWrapperProps {
   contentA: string;
   contentB?: string;
   isHTML?: boolean;
   isDiff?: boolean;
-  sxs?: PartialSxRecord<'root' | 'editor'>;
+  sxs?: PartialSxRecord<'root'>;
+  cleanText?: boolean;
+  revealLineContent?: string;
 }
 
 export function MonacoWrapper(props: MonacoWrapperProps) {
-  const { contentA, contentB, isHTML = false, sxs, isDiff = false } = props;
+  const { contentA, contentB, isHTML = false, sxs, isDiff = false, cleanText, revealLineContent } = props;
   const diffRef = useRef(null);
   diffRef.current = isDiff;
   const ref = useRef();
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
-  const [cleanText, setCleanText] = useState(false);
   const originalContent = useMemo(() => (cleanText ? removeTags(contentA ?? '') : contentA), [cleanText, contentA]);
   const modifiedContent = useMemo(() => (cleanText ? removeTags(contentB ?? '') : contentB), [cleanText, contentB]);
   const [diffEditor, setDiffEditor] = useState(null);
+
+  // We want to retrieve the longer content amount on lines, so we can decide on a height for the editor
+  const contentLines = (contentA.length > contentB.length ? contentA : contentB).split('\n').length;
+  // This height can be override using sxs props
+  const editorHeight = contentLines < 10 ? 150 : 500;
 
   useEffect(() => {
     if (ref.current) {
@@ -48,19 +52,15 @@ export function MonacoWrapper(props: MonacoWrapperProps) {
         if (diffRef.current) {
           setDiffEditor(
             monaco.editor.createDiffEditor(ref.current, {
-              scrollbar: {
-                alwaysConsumeMouseWheel: false
-              },
-              readOnly: true
+              readOnly: true,
+              contextmenu: false
             })
           );
         } else {
           setDiffEditor(
             monaco.editor.create(ref.current, {
-              scrollbar: {
-                alwaysConsumeMouseWheel: false
-              },
-              readOnly: true
+              readOnly: true,
+              contextmenu: false
             })
           );
         }
@@ -88,28 +88,17 @@ export function MonacoWrapper(props: MonacoWrapperProps) {
   }, [diffEditor, originalContent, modifiedContent, prefersDarkMode, isHTML]);
 
   return (
-    <Box sx={sxs?.root}>
-      {isHTML && (
-        <Button variant="outlined" onClick={() => setCleanText(!cleanText)}>
-          {cleanText ? (
-            <FormattedMessage defaultMessage="Show HTML" />
-          ) : (
-            <FormattedMessage defaultMessage="Show text" />
-          )}
-        </Button>
-      )}
-      <Box
-        ref={ref}
-        sx={{
-          width: '100%',
-          height: '150px',
-          '&.unChanged': {
-            height: 'auto'
-          },
-          ...sxs?.editor
-        }}
-      />
-    </Box>
+    <Box
+      ref={ref}
+      sx={{
+        width: '100%',
+        height: editorHeight,
+        '&.unChanged': {
+          height: 'auto'
+        },
+        ...sxs?.root
+      }}
+    />
   );
 }
 

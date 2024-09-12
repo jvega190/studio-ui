@@ -17,7 +17,7 @@
 import ContentInstance from '../../models/ContentInstance';
 import { LookupTable } from '../../models/LookupTable';
 import ContentType, { ContentTypeField } from '../../models/ContentType';
-import React, { useState } from 'react';
+import React, { RefObject, useEffect, useState } from 'react';
 import { FormattedMessage } from 'react-intl';
 import ListItemText from '@mui/material/ListItemText';
 import { AsDayMonthDateTime } from '../VersionList';
@@ -42,6 +42,7 @@ import { MonacoWrapper } from '../MonacoWrapper';
 import ContentInstanceComponents from './ContentInstanceComponents';
 import RepeatGroupItems from './RepeatGroupItems';
 import { areObjectsEqual } from '../../utils/object';
+import Button from '@mui/material/Button';
 
 export interface CompareVersionsItem extends ItemHistoryEntry {
   xml: string;
@@ -54,10 +55,12 @@ interface CompareVersionsProps {
   contentTypeId: string;
   contentTypes: LookupTable<ContentType>;
   compareXml: boolean;
+  selectedFieldId: string;
+  fieldRefs: LookupTable<RefObject<HTMLDivElement>>;
 }
 
 export function CompareVersions(props: CompareVersionsProps) {
-  const { a, b, contentTypes, contentTypeId, compareXml } = props;
+  const { a, b, contentTypes, contentTypeId, compareXml, selectedFieldId, fieldRefs } = props;
   const values = Object.values(contentTypes[contentTypeId].fields) as ContentTypeField[];
 
   return (
@@ -142,11 +145,22 @@ export function CompareVersions(props: CompareVersionsProps) {
             contentB={b.xml}
             isHTML={false}
             isDiff
-            sxs={{ editor: { height: '400px' } }}
+            revealLineContent={selectedFieldId}
+            sxs={{ root: { height: '70vh' } }}
           />
         ) : (
           <Paper>
-            {contentTypes && values.map((field) => <CompareFieldPanel a={a} b={b} field={field} key={field.id} />)}
+            {contentTypes &&
+              values.map((field) => (
+                <CompareFieldPanel
+                  a={a}
+                  b={b}
+                  field={field}
+                  key={field.id}
+                  fieldRef={fieldRefs[field.id]}
+                  selected={selectedFieldId === field.id}
+                />
+              ))}
           </Paper>
         )}
       </Box>
@@ -200,10 +214,12 @@ interface CompareFieldPanelProps {
     content: ContentInstance;
   };
   field: ContentTypeField;
+  selected: boolean;
+  fieldRef: RefObject<HTMLDivElement>;
 }
 
 export function CompareFieldPanel(props: CompareFieldPanelProps) {
-  const { a, b, field } = props;
+  const { a, b, field, selected, fieldRef } = props;
   const [unChanged, setUnChanged] = useState(true);
   const fieldType = field.type;
   const locale = useLocale();
@@ -216,6 +232,14 @@ export function CompareFieldPanel(props: CompareFieldPanelProps) {
   const bFieldXml = bFieldDoc ? serialize(bFieldDoc) : '';
   const contentA = getContentInstanceValueFromProp(a.content, field.id);
   const contentB = getContentInstanceValueFromProp(b.content, field.id);
+  const [expanded, setExpanded] = useState(false);
+  const [cleanText, setCleanText] = useState(false);
+
+  useEffect(() => {
+    if (selected) {
+      setExpanded(true);
+    }
+  }, [selected, setExpanded]);
 
   useMount(() => {
     switch (fieldType) {
@@ -238,14 +262,20 @@ export function CompareFieldPanel(props: CompareFieldPanelProps) {
 
   return !unChanged ? (
     <Accordion
+      ref={fieldRef}
+      expanded={expanded}
+      onChange={() => setExpanded(!expanded)}
       key={field.id}
       sx={{
         margin: 0,
         border: 0,
         boxShadow: 'none',
+        ...(selected && {
+          border: (theme) => `2px solid ${theme.palette.primary.dark} !important`
+        }),
         '&.Mui-expanded': {
           margin: 0,
-          borderBottom: '1px solid rgba(0,0,0,0.12)'
+          borderBottom: (theme) => `1px solid ${theme.palette.divider}`
         }
       }}
       slotProps={{
@@ -262,7 +292,7 @@ export function CompareFieldPanel(props: CompareFieldPanelProps) {
           </Box>
           ({field.id})
         </Typography>
-        {(fieldType === 'node-selector' || fieldType === 'repeat') && (
+        {expanded && (fieldType === 'node-selector' || fieldType === 'repeat') && (
           <Tooltip
             title={
               compareXml ? (
@@ -282,10 +312,32 @@ export function CompareFieldPanel(props: CompareFieldPanelProps) {
             </IconButton>
           </Tooltip>
         )}
+        {expanded && fieldType === 'html' && (
+          <Button
+            variant="outlined"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCleanText(!cleanText);
+            }}
+            sx={{ mr: 1 }}
+          >
+            {cleanText ? (
+              <FormattedMessage defaultMessage="Show HTML" />
+            ) : (
+              <FormattedMessage defaultMessage="Show text" />
+            )}
+          </Button>
+        )}
       </AccordionSummary>
       <AccordionDetails>
         {fieldType === 'text' || fieldType === 'textarea' || fieldType === 'html' ? (
-          <MonacoWrapper contentA={contentA} contentB={contentB} isDiff isHTML={fieldType === 'html'} />
+          <MonacoWrapper
+            contentA={contentA}
+            contentB={contentB}
+            isDiff
+            isHTML={fieldType === 'html'}
+            cleanText={cleanText}
+          />
         ) : fieldType === 'node-selector' ? (
           compareXml ? (
             <MonacoWrapper contentA={aFieldXml} contentB={bFieldXml} isDiff isHTML={false} />
