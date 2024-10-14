@@ -2548,7 +2548,7 @@ var nodeOpen = false,
           moduleConfig,
           openUploadDialogCb
         );
-        CStudioAuthoring.Module.requireModule('jquery-cropper', '/static-assets/libs/cropper/dist/cropper.js');
+        CStudioAuthoring.Module.requireModule('jquery-cropper', '/static-assets/libs/cropperjs/cropper.js');
       },
 
       cropperImage: function (site, Message, imageData, imageWidth, imageHeight, aspectRatio, repoImage, callback) {
@@ -2605,7 +2605,7 @@ var nodeOpen = false,
         );
         CStudioAuthoring.Module.requireModule('pako', '/static-assets/libs/pako.js');
         CStudioAuthoring.Module.requireModule('upng', '/static-assets/libs/upng.js');
-        CStudioAuthoring.Module.requireModule('jquery-cropper', '/static-assets/libs/cropper/dist/cropper.js');
+        CStudioAuthoring.Module.requireModule('jquery-cropper', '/static-assets/libs/cropperjs/cropper.js');
       },
 
       uploadWebDAVAsset: function (site, path, profileId, uploadCb, fileTypes) {

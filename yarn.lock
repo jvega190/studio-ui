@@ -1601,14 +1601,17 @@ __metadata:
     "@popperjs/core": "npm:^2.11.8"
     "@types/bootstrap": "npm:^5.2.10"
     "@types/jquery": "npm:^3.5.30"
+    "@types/jquery-cropper": "npm:^1"
     "@types/rimraf": "npm:^4.0.5"
     ace-builds: "npm:^1.33.2"
     bootstrap: "npm:^5.3.3"
     build-if-changed: "npm:^1.5.5"
+    cropperjs: "npm:^1.6.2"
     css-loader: "npm:^7.1.1"
     file-loader: "npm:^6.2.0"
     grunt: "npm:^1.6.1"
     jquery: "npm:^3.7.1"
+    jquery-cropper: "npm:^1.0.1"
     jquery-ui: "npm:^1.13.3"
     jquery-ui-css: "npm:^1.11.5"
     js-yaml: "npm:^4.1.0"
@@ -4306,6 +4309,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/jquery-cropper@npm:^1":
+  version: 1.0.4
+  resolution: "@types/jquery-cropper@npm:1.0.4"
+  dependencies:
+    "@types/jquery": "npm:*"
+  checksum: 10/88563ab39892017d0dc2d29ecdfd2b06ab12c970b544627e2f92c4269a7dc13692ebd5e4aa1c13d8a199985954edd9a5417be11f218df6e74ba5c39eed6bf5ca
+  languageName: node
+  linkType: hard
+
+"@types/jquery@npm:*":
+  version: 3.5.31
+  resolution: "@types/jquery@npm:3.5.31"
+  dependencies:
+    "@types/sizzle": "npm:*"
+  checksum: 10/c14b3db4d2c34eb44b30ae119f1983d9d94231a02d44357b08f3ef406852c777edd928eb35875e879515a96eb8eb2188ed5572a0de35f322019bf6de858ce610
+  languageName: node
+  linkType: hard
+
 "@types/jquery@npm:^3.5.30":
   version: 3.5.30
   resolution: "@types/jquery@npm:3.5.30"
@@ -6408,6 +6429,13 @@ __metadata:
   version: 1.5.7
   resolution: "cropperjs@npm:1.5.7"
   checksum: 10/8270930d1edb0db4f88f1d873f3fbaedbf750cc7a4d4017884494c337ec6464c84784f1b338d76eadc7eaefef9d7493dd93dbacf32659349fec7a8a0f6a2ea14
+  languageName: node
+  linkType: hard
+
+"cropperjs@npm:^1.6.2":
+  version: 1.6.2
+  resolution: "cropperjs@npm:1.6.2"
+  checksum: 10/4b97ac27b7fd65316a531372dd96ce1073b4620c1b012fbad5acb0fdc28952112466bc333a98c510fe2bc9dcdeee58f5c8619522c045c6166300621673e3d759
   languageName: node
   linkType: hard
 
@@ -8855,6 +8883,16 @@ __metadata:
     merge-stream: "npm:^2.0.0"
     supports-color: "npm:^8.0.0"
   checksum: 10/06c6e2a84591d9ede704d5022fc13791e8876e83397c89d481b0063332abbb64c0f01ef4ca7de520b35c7a1058556078d6bdc3631376f4e9ffb42316c1a8488e
+  languageName: node
+  linkType: hard
+
+"jquery-cropper@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "jquery-cropper@npm:1.0.1"
+  peerDependencies:
+    cropperjs: ">=1.0.0"
+    jquery: ">=1.9.1"
+  checksum: 10/d72e3b056ed8013bc9dff3dd34779633bfe6265fe62a2852ecaf96acb9bf98261039c9235b3600ff2bcac04b5403091989b49e58a018c60bc1639692376475f0
   languageName: node
   linkType: hard
 

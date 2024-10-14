@@ -242,21 +242,25 @@ CStudioAuthoring.Dialogs.CropDialog = CStudioAuthoring.Dialogs.CropDialog || {
         heightCropBox = getPercentage(parseInt(minHeightCropBox), parseInt(maxHeightCropBox));
       }
     }
+    minWidthCropBox = minWidthCropBox ? parseInt(minWidthCropBox) : Math.max();
+    maxWidthCropBox = maxWidthCropBox ? parseInt(maxWidthCropBox) : Math.min();
+    minHeightCropBox = minHeightCropBox ? parseInt(minHeightCropBox) : Math.max();
+    maxHeightCropBox = maxHeightCropBox ? parseInt(maxHeightCropBox) : Math.min();
 
-    $image.cropper({
+    const image = document.querySelector('.cropContainer > img');
+    const cropper = new Cropper(image, {
       aspectRatio: this.aspectRatio,
-      minCropBoxWidth: this,
       dragCrop: false,
       cropBoxResizable: boxResizable,
       preview: '.img-preview',
       crop: function (e) {
         // Output the result data for cropping image.
-        $dataX.val(Math.round(e.x));
-        $dataY.val(Math.round(e.y));
-        $dataHeight.val(Math.round(e.height));
-        $dataWidth.val(Math.round(e.width));
-        if (flag == 'exact') {
-          if (!($dataHeight.val() == heightCropBox) && !($dataWidth.val() == widthCropBox)) {
+        $dataX.val(Math.round(e.detail.x));
+        $dataY.val(Math.round(e.detail.y));
+        $dataHeight.val(Math.round(e.detail.height));
+        $dataWidth.val(Math.round(e.detail.width));
+        if (flag === 'exact') {
+          if (!($dataHeight.val() === heightCropBox) && !($dataWidth.val() === widthCropBox)) {
             $('#zoomMessage').removeClass('hidden');
             $dataWidth.addClass('error');
             $dataHeight.addClass('error');
@@ -266,39 +270,26 @@ CStudioAuthoring.Dialogs.CropDialog = CStudioAuthoring.Dialogs.CropDialog || {
             $dataHeight.removeClass('error');
           }
         } else {
-          const width = e.width;
-          const height = e.height;
+          const width = Math.round(e.detail.width);
+          const height = Math.round(e.detail.height);
 
           // When there are min/max restrictions, crop values need to be validated and if not valid,
           // set the proper values.
-          // If cropped width is lower than minWidth
-          if (Boolean(minWidthCropBox) && width < parseInt(minWidthCropBox)) {
-            $image.cropper('setData', {
-              width: parseInt(minWidthCropBox)
-            });
-          }
-          // If cropped width is higher than minWidth
-          if (Boolean(maxWidthCropBox) && width > parseInt(maxWidthCropBox)) {
-            $image.cropper('setData', {
-              width: parseInt(maxWidthCropBox)
-            });
-          }
-          // If cropped height is lower than minWidth
-          if (Boolean(minHeightCropBox) && height < parseInt(minHeightCropBox)) {
-            $image.cropper('setData', {
-              height: parseInt(minHeightCropBox)
-            });
-          }
-          // If cropped width is higher than minWidth
-          if (Boolean(maxHeightCropBox) && height > parseInt(maxHeightCropBox)) {
-            $image.cropper('setData', {
-              height: parseInt(maxHeightCropBox)
+          if (
+            width < minWidthCropBox ||
+            height < minHeightCropBox ||
+            width > maxWidthCropBox ||
+            height > maxHeightCropBox
+          ) {
+            cropper.setData({
+              width: Math.max(minWidthCropBox, Math.min(maxWidthCropBox, width)),
+              height: Math.max(minHeightCropBox, Math.min(maxHeightCropBox, height))
             });
           }
         }
       },
-      built: function () {
-        $image.cropper('setData', {
+      ready: function () {
+        cropper.setData({
           width: parseInt(widthCropBox),
           height: parseInt(heightCropBox)
         });
@@ -309,17 +300,17 @@ CStudioAuthoring.Dialogs.CropDialog = CStudioAuthoring.Dialogs.CropDialog || {
         $dataWidth.removeClass('error');
       },
       zoom: function (e) {
-        const isZoomIn = e.ratio > 0;
-        const croppedCanvas = $image.cropper('getCroppedCanvas');
+        const isZoomIn = e.detail.ratio > 0;
+        const croppedCanvas = cropper.getCroppedCanvas();
         const width = parseInt(croppedCanvas.getAttribute('width'));
         const height = parseInt(croppedCanvas.getAttribute('height'));
         // If you're zooming in (increasing the image size) you may end up having an image (canvas) with smaller
         // dimensions than the ones set up for minWidth and minHeight
         if (isZoomIn) {
-          if (Boolean(minWidthCropBox) && width < parseInt(minWidthCropBox)) {
+          if (Boolean(minWidthCropBox) && width < minWidthCropBox) {
             e.preventDefault();
           }
-          if (Boolean(minHeightCropBox) && height < parseInt(minHeightCropBox)) {
+          if (Boolean(minHeightCropBox) && height < minHeightCropBox) {
             e.preventDefault();
           }
         }
@@ -327,16 +318,16 @@ CStudioAuthoring.Dialogs.CropDialog = CStudioAuthoring.Dialogs.CropDialog || {
     });
 
     $('#zoomIn').on('click', function () {
-      $image.cropper('zoom', 0.1);
+      cropper.zoom(0.1);
     });
 
     $('#zoomOut').on('click', function () {
-      $image.cropper('zoom', -0.1);
+      cropper.zoom(-0.1);
     });
 
     $('#refresh').on('click', function () {
-      $image.cropper('reset');
-      $image.cropper('setData', { width: parseInt(widthCropBox), height: parseInt(heightCropBox) });
+      cropper.reset();
+      cropper.setData({ width: parseInt(widthCropBox), height: parseInt(heightCropBox) });
     });
 
     function inputValidation(min, max, input, auxInput) {
@@ -364,7 +355,7 @@ CStudioAuthoring.Dialogs.CropDialog = CStudioAuthoring.Dialogs.CropDialog || {
       const newFullName = newFileName ? `${newFileName}.${fileExtension}` : null;
       const path = imageData.relativeUrl.replace(fileName, '').replace(/\/$/, ''); // Path without the file name
       const site = CStudioAuthoringContext.site;
-      const canvas = $image.cropper('getCroppedCanvas');
+      const canvas = cropper.getCroppedCanvas();
       if (!imageData.meta) {
         // imageData.meta doesn't come at all when coming from the existing images data source
         // SVG mime-type is 'image/svg+xml'
@@ -545,7 +536,7 @@ CStudioAuthoring.Dialogs.CropDialog = CStudioAuthoring.Dialogs.CropDialog || {
     }
 
     function cropImage() {
-      var imageInformation = $image.cropper('getData', true),
+      var imageInformation = cropper.getData(true),
         path = imageData.relativeUrl,
         site = CStudioAuthoringContext.site,
         self = this;
