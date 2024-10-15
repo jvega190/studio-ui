@@ -39,7 +39,6 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     minify: false,
-    sourcemap: 'inline',
     outDir: '../../static-assets/app',
     emptyOutDir: true,
     rollupOptions: {
