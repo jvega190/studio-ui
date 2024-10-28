@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import React from 'react';
 import DiffViewLayout from './DiffViewLayout';
 import TimeView from '../../ViewVersionDialog/FieldTypesViews/TimeView';
 import { DiffViewComponentBaseProps } from '../utils';

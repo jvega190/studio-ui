@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import React from 'react';
 import { ViewComponentBaseProps } from '../utils';
 import { EditorProps } from '@monaco-editor/react';
 import { fromString } from '../../../utils/xml';
