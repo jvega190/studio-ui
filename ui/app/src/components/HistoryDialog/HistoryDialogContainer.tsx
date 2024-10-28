@@ -60,6 +60,7 @@ import { LoadingState } from '../LoadingState';
 import Box from '@mui/material/Box';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
+import { isComparableAsset } from '../../utils/content';
 
 export function HistoryDialogContainer(props: HistoryDialogContainerProps) {
   const { versionsBranch } = props;
@@ -75,14 +76,15 @@ export function HistoryDialogContainer(props: HistoryDialogContainerProps) {
   const site = useActiveSiteId();
   const timeoutRef = useRef(null);
   const isItemPreviewable = isPreviewable(item);
+  // Item may be null for config items in config management.
+  const isDiffSupported = ['page', 'component', 'taxonomy'].includes(item?.systemType) || isComparableAsset(item);
   const [compareMode, setCompareMode] = useState<boolean>(false);
   const [selectedCompareVersions, setSelectedCompareVersions] = useState<string[]>([]);
-
   const [menu, setMenu] = useSpreadState<Menu>(menuInitialState);
 
   const handleOpenMenu = useCallback(
     (anchorEl, version, isCurrent = false, initialCommit) => {
-      const hasOptions = ['page', 'component', 'taxonomy'].includes(item.systemType);
+      const hasOptions = ['page', 'component', 'taxonomy', 'asset'].includes(item.systemType);
       const contextMenuOptions: { [prop in keyof typeof menuOptions]: ContextMenuOption } = {};
       Object.entries(menuOptions).forEach(([key, value]) => {
         contextMenuOptions[key] = {
@@ -140,10 +142,9 @@ export function HistoryDialogContainer(props: HistoryDialogContainerProps) {
     });
   };
   const handleViewItem = (version: ItemHistoryEntry) => {
-    const supportsDiff = ['page', 'component', 'taxonomy'].includes(item.systemType);
     const versionPath = Boolean(version.path) && path !== version.path ? version.path : path;
 
-    if (supportsDiff) {
+    if (isDiffSupported && item?.systemType !== 'asset') {
       dispatch(
         batchActions([
           fetchContentTypes(),
@@ -321,18 +322,21 @@ export function HistoryDialogContainer(props: HistoryDialogContainerProps) {
             onItemClicked={(item) => {
               setOpenSelector(false);
               dispatch(versionsChangeItem({ item }));
+              setSelectedCompareVersions([]);
+              setCompareMode(false);
             }}
           />
-          <FormControlLabel
-            value="start"
-            control={<Switch color="primary" checked={compareMode} />}
-            label={<FormattedMessage defaultMessage="Compare" />}
-            labelPlacement="start"
-            disabled={versionsBranch.versions?.length <= 1}
-            onChange={(e) => {
-              setCompareMode((e.currentTarget as HTMLInputElement).checked);
-            }}
-          />
+          {isDiffSupported && count > 1 && (
+            <FormControlLabel
+              control={<Switch color="primary" checked={compareMode} />}
+              label={<FormattedMessage defaultMessage="Compare" />}
+              labelPlacement="start"
+              disabled={versionsBranch.versions?.length <= 1}
+              onChange={(e) => {
+                setCompareMode((e.currentTarget as HTMLInputElement).checked);
+              }}
+            />
+          )}
         </Box>
         <ErrorBoundary>
           {versionsBranch.isFetching ? (

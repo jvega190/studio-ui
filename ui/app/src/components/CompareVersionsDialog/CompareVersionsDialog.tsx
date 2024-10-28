@@ -133,7 +133,7 @@ export function CompareVersionsDialog(props: CompareVersionsDialogProps) {
       dialogHeaderProps={{
         leftActions,
         rightActions: [
-          ...(!selectionContent
+          ...(state.enableDialogActions && !selectionContent
             ? getDialogHeaderActions({
                 xmlMode: compareXml,
                 contentActionLabel: formatMessage(translations.compareContent),

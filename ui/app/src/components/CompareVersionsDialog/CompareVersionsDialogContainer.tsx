@@ -44,10 +44,11 @@ import { getStudioContentInternalFields } from '../../utils/contentType';
 import { FieldAccordionPanel } from './FieldAccordionPanel';
 import FieldVersionToolbar from './FieldVersionToolbar';
 import { initialFieldViewState, useVersionsDialogContext, VersionsDialogContextProps } from './VersionsDialogContext';
-import { ContentTypeField } from '../../models';
+import { ContentInstance, ContentTypeField } from '../../models';
 import { getCompareVersionDialogViewModes, setCompareVersionDialogViewModes } from '../../utils/state';
 import useActiveUser from '../../hooks/useActiveUser';
 import TextDiffView from './FieldsTypesDiffViews/TextDiffView';
+import CompareAssetPanel from './CompareAssetPanel';
 
 export function CompareVersionsDialogContainer(props: CompareVersionsDialogContainerProps) {
   const {
@@ -59,12 +60,13 @@ export function CompareVersionsDialogContainer(props: CompareVersionsDialogConta
     contentTypesBranch,
     compareXml
   } = props;
-  const [{ fieldsViewState, viewSlideOutState, compareSlideOutState }] = useVersionsDialogContext();
+  const [{ fieldsViewState, viewSlideOutState, compareSlideOutState }, contextApiRef] = useVersionsDialogContext();
   const disableKeyboardNavigation = viewSlideOutState.open || compareSlideOutState.open;
   const fieldsViewStateRef = useRef<VersionsDialogContextProps['fieldsViewState']>();
   fieldsViewStateRef.current = fieldsViewState;
   const compareVersionsBranch = versionsBranch?.compareVersionsBranch;
   const item = versionsBranch?.item;
+  const isAsset = item?.systemType === 'asset';
   const baseUrl = useSelection<string>((state) => state.env.authoringBase);
   const { formatMessage } = useIntl();
   const { username } = useActiveUser();
@@ -96,6 +98,8 @@ export function CompareVersionsDialogContainer(props: CompareVersionsDialogConta
         selectionContent.a.xml === preFetchedContent.a.xml &&
         selectionContent.b.xml === preFetchedContent.b.xml
       );
+    } else if (isAsset) {
+      return compareVersionsBranch?.compareVersions && selectionContent.a.content && selectionContent.b.content;
     } else {
       return (
         compareVersionsBranch?.compareVersions &&
@@ -117,15 +121,15 @@ export function CompareVersionsDialogContainer(props: CompareVersionsDialogConta
   selectedFieldRef.current = selectedField;
   const contentType = contentTypesBranch?.byId[item.contentTypeId];
   const contentTypeFields = useMemo(() => {
-    return isCompareDataReady
+    return !isAsset && isCompareDataReady
       ? [
           ...Object.values(fields ?? contentType.fields),
-          ...((selectionContent.a.content ?? selectionContent.b.content).craftercms
+          ...(((selectionContent.a.content ?? selectionContent.b.content) as ContentInstance).craftercms
             ? getStudioContentInternalFields(formatMessage)
             : [])
         ]
       : [];
-  }, [contentType, fields, isCompareDataReady, formatMessage, selectionContent]);
+  }, [contentType, fields, isCompareDataReady, formatMessage, selectionContent, isAsset]);
   const fieldIdsWithChanges = useMemo(
     () =>
       contentTypeFields
@@ -145,6 +149,10 @@ export function CompareVersionsDialogContainer(props: CompareVersionsDialogConta
   const fieldsRefs = useRef({});
 
   useEffect(() => {
+    contextApiRef.current.setState({ enableDialogActions: !isAsset });
+  }, [isAsset, contextApiRef]);
+
+  useEffect(() => {
     if (preFetchedContent) {
       setSelectionContent(preFetchedContent);
     }
@@ -159,19 +167,26 @@ export function CompareVersionsDialogContainer(props: CompareVersionsDialogConta
         fetchContentByCommitId(siteId, selectedA.path, selectedA.versionNumber),
         fetchContentByCommitId(siteId, selectedB.path, selectedB.versionNumber)
       ]).subscribe(([contentA, contentB]) => {
-        setSelectionContent({
-          a: {
-            content: parseContentXML(fromString(contentA as string), selectedA.path, contentTypesBranch.byId, {}),
-            xml: contentA as string
-          },
-          b: {
-            content: parseContentXML(fromString(contentB as string), selectedB.path, contentTypesBranch.byId, {}),
-            xml: contentB as string
-          }
-        });
+        if (isAsset) {
+          setSelectionContent({
+            a: { content: contentA as string },
+            b: { content: contentB as string }
+          });
+        } else {
+          setSelectionContent({
+            a: {
+              content: parseContentXML(fromString(contentA as string), selectedA.path, contentTypesBranch.byId, {}),
+              xml: contentA as string
+            },
+            b: {
+              content: parseContentXML(fromString(contentB as string), selectedB.path, contentTypesBranch.byId, {}),
+              xml: contentB as string
+            }
+          });
+        }
       });
     }
-  }, [preFetchedContent, selectedA, selectedB, siteId, setSelectionContent, contentTypesBranch]);
+  }, [preFetchedContent, selectedA, selectedB, siteId, setSelectionContent, contentTypesBranch, isAsset]);
 
   useEffect(() => {
     if (contentTypeFields?.length && !fieldIdsWithChanges.includes(selectedFieldRef.current?.id)) {
@@ -314,9 +329,18 @@ export function CompareVersionsDialogContainer(props: CompareVersionsDialogConta
                 </Button>
               </Box>
             </ResizeableDrawer>
-            <Box sx={{ marginLeft: isFilteredFieldsEmpty ? 0 : '280px', height: '100%', overflowY: 'auto' }}>
+            <Box
+              sx={{
+                marginLeft: isFilteredFieldsEmpty ? 0 : '280px',
+                height: '100%',
+                width: isAsset ? '100%' : null,
+                overflowY: 'auto'
+              }}
+            >
               <ErrorBoundary>
-                {accordionView ? (
+                {isAsset ? (
+                  <CompareAssetPanel a={selectionContent.a.content} b={selectionContent.b.content} item={item} />
+                ) : accordionView ? (
                   contentTypeFields
                     .filter((field) => (showOnlyChanges ? fieldIdsWithChanges.includes(field.id) : true))
                     .map((field) => (

@@ -28,18 +28,20 @@ export interface ImageViewProps extends ViewComponentBaseProps {
 }
 
 export function ImageView(props: ImageViewProps) {
-  const { xml, field, sxs } = props;
+  const { xml, field, content: contentProp, sxs } = props;
   const contentTypes = useContentTypes();
-  const content = xml
-    ? parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {})
-    : '';
+  const content =
+    contentProp ??
+    (xml ? parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {}) : '');
 
   return (
     <>
       <Box component="img" src={content} alt="" sx={{ maxWidth: '100%', ...sxs?.image }} />
-      <Typography variant="subtitle2" sx={{ ...sxs?.label }}>
-        {content}
-      </Typography>
+      {xml && (
+        <Typography variant="subtitle2" sx={{ ...sxs?.label }}>
+          {content}
+        </Typography>
+      )}
     </>
   );
 }

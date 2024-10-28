@@ -34,6 +34,7 @@ export interface VersionsDialogContextProps {
   viewSlideOutState: ViewVersionDialogProps & { showXml: boolean };
   fieldsViewState: LookupTable<FieldViewState>;
   contentType: ContentType;
+  enableDialogActions: boolean;
 }
 
 export const initialFieldViewState = {
@@ -53,7 +54,8 @@ export const dialogInitialState: VersionsDialogContextProps = {
   compareSlideOutState: { open: false, isFetching: false, error: null, compareXml: false },
   viewSlideOutState: { open: false, isFetching: false, error: null, showXml: false },
   fieldsViewState: {},
-  contentType: null
+  contentType: null,
+  enableDialogActions: false
 };
 
 export interface VersionsDialogContextApi {

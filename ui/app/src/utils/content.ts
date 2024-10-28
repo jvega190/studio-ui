@@ -23,7 +23,7 @@ import ContentInstance, { ContentInstanceBase } from '../models/ContentInstance'
 import { deserialize, fromString, getInnerHtml, getInnerHtmlNumber, serialize, wrapElementInAuxDocument } from './xml';
 import { fileNameFromPath, replaceAccentedVowels, unescapeHTML } from './string';
 import { getRootPath, isRootPath, withIndex, withoutIndex } from './path';
-import { isFolder, isNavigable, isPreviewable } from '../components/PathNavigator/utils';
+import { isFolder, isNavigable, isPdfDocument, isPreviewable, isVideo } from '../components/PathNavigator/utils';
 import {
   CONTENT_CHANGE_TYPE_MASK,
   CONTENT_COPY_MASK,
@@ -1289,4 +1289,11 @@ export const mockContentInstance = {
     contentTypeId: null,
     disabled: false
   }
+};
+
+export const isComparableAsset = (item) => {
+  return (
+    item?.systemType === 'asset' &&
+    (isEditableAsset(item.path) || isImage(item.path) || isVideo(item) || isPdfDocument(item.mimeType))
+  );
 };

@@ -46,8 +46,8 @@ export interface CompareVersionsDialogBaseProps {
 }
 
 export interface SelectionContentVersion {
-  xml: string;
-  content: ContentInstance;
+  xml?: string;
+  content: ContentInstance | string;
 }
 
 export interface CompareVersionsDialogProps extends CompareVersionsDialogBaseProps, EnhancedDialogProps {
@@ -88,9 +88,11 @@ export interface CompareVersionsDialogContainerProps
 }
 
 export interface DiffViewComponentBaseProps {
-  aXml: string;
-  bXml: string;
-  field: ContentTypeField;
+  aXml?: string;
+  bXml?: string;
+  field?: ContentTypeField;
+  aContent?: string;
+  bContent?: string;
 }
 
 export type ContentInstanceComponentsDiffResult = {

@@ -27,6 +27,7 @@ import { initialFieldViewState, useVersionsDialogContext } from './VersionsDialo
 import DefaultDiffView from './FieldsTypesDiffViews/DefaultDiffView';
 import TextDiffView from './FieldsTypesDiffViews/TextDiffView';
 import { DiffEditorProps } from '@monaco-editor/react';
+import ContentInstance from '../../models/ContentInstance';
 
 export interface CompareFieldPanelProps {
   a: SelectionContentVersion;
@@ -57,7 +58,7 @@ export function CompareFieldPanel(props: CompareFieldPanelProps) {
   const versionAFieldXml = versionAFieldDoc ? serialize(versionAFieldDoc) : '';
   const versionBFieldXml = versionBFieldDoc ? serialize(versionBFieldDoc) : '';
   const unchanged = versionAFieldXml === versionBFieldXml;
-  const contentA = getContentInstanceValueFromProp(a.content, field.id);
+  const contentA = getContentInstanceValueFromProp(a.content as ContentInstance, field.id);
   const longerXmlContent = versionAFieldXml.length > versionBFieldXml.length ? versionAFieldXml : versionBFieldXml;
   const monacoEditorHeight = dynamicHeight ? (countLines(longerXmlContent) < 15 ? '200px' : '600px') : '100%';
   const DiffComponent = typesDiffMap[fieldType] ?? DefaultDiffView;

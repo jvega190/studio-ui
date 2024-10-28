@@ -56,8 +56,9 @@ export interface ViewVersionDialogContainerProps
 }
 
 export interface ViewComponentBaseProps {
-  xml: string;
-  field: ContentTypeField;
+  xml?: string;
+  field?: ContentTypeField;
+  content?: string;
 }
 
 export const textViewLanguageMap = {
