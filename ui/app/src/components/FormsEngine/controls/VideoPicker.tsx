@@ -51,7 +51,7 @@ export function VideoPicker(props: VideoPickerProps) {
   const { field, value, contentType } = props;
   const { guestBase } = useEnv();
   // For testing, by using 3000 as the guestBase both the fetch in `useImageInfo` and the download functionality will work
-  // const guestBase = 'http://localhost:3000'; // TODO: DO NOT COMMIT
+  // const guestBase = 'http://localhost:3000';
   const hasValue = Boolean(value);
 
   const contentTypes = useContentTypes();
