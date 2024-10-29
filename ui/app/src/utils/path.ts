@@ -294,7 +294,7 @@ export function getControllerPath(type: SystemType): string {
 const availableMacrosRegex = /{(objectId|objectGroupId|objectGroupId2|year|month|yyyy|mm|dd|parentPath(\[[0-9]+])?)}/;
 export function processPathMacros(dependencies: {
   path: string;
-  objectId: string;
+  objectId?: string;
   objectGroupId?: string;
   useUUID?: boolean;
   fullParentPath?: string;
