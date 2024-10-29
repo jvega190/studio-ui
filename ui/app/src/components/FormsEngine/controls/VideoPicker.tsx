@@ -26,7 +26,6 @@ import IconButton from '@mui/material/IconButton';
 import { DeleteOutlined, DownloadOutlined, EditOutlined } from '@mui/icons-material';
 import { AllowedPathsData } from '../common/ContentPicker';
 import useContentTypes from '../../../hooks/useContentTypes';
-import { processPathMacros } from '../../../utils/path';
 import MenuItem, { menuItemClasses } from '@mui/material/MenuItem';
 import ListItemIcon, { listItemIconClasses } from '@mui/material/ListItemIcon';
 import TravelExploreOutlined from '@mui/icons-material/TravelExploreOutlined';
@@ -34,6 +33,7 @@ import ListItemText from '@mui/material/ListItemText';
 import { FormattedMessage } from 'react-intl';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import { svgIconClasses } from '@mui/material';
+import useEnv from '../../../hooks/useEnv';
 
 export interface VideoPickerProps extends ControlProps {
   value: string;
