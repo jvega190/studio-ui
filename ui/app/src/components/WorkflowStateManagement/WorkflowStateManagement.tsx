@@ -275,11 +275,22 @@ export function WorkflowStateManagement(props: WorkflowStateManagementProps) {
     );
   };
 
+  const onError = (error: ApiResponse) => {
+    dispatch(
+      showErrorDialog({
+        error
+      })
+    );
+  };
+
   const onSetItemStateDialogConfirm = (update: StatesToUpdate) => {
     if (selectedItem) {
-      setItemStates(siteId, [selectedItem.path], update).subscribe(() => {
-        fetchStates();
-        showStatesUpdatedNotification();
+      setItemStates(siteId, [selectedItem.path], update).subscribe({
+        next: () => {
+          fetchStates();
+          showStatesUpdatedNotification();
+        },
+        error: ({ response }) => onError(response.response)
       });
     } else if (isSelectedItemsOnAllPages) {
       let stateBitmap = getStateBitmap(filtersLookup as ItemStateMap);
@@ -288,13 +299,7 @@ export function WorkflowStateManagement(props: WorkflowStateManagementProps) {
           fetchStates();
           showStatesUpdatedNotification();
         },
-        error: ({ response }) => {
-          dispatch(
-            showErrorDialog({
-              error: response.response
-            })
-          );
-        }
+        error: ({ response }) => onError(response.response)
       });
     } else {
       setItemStates(
@@ -303,9 +308,12 @@ export function WorkflowStateManagement(props: WorkflowStateManagementProps) {
           .filter(Boolean)
           .map((item) => item.path),
         update
-      ).subscribe(() => {
-        fetchStates();
-        showStatesUpdatedNotification();
+      ).subscribe({
+        next: () => {
+          fetchStates();
+          showStatesUpdatedNotification();
+        },
+        error: ({ response }) => onError(response.response)
       });
     }
 
