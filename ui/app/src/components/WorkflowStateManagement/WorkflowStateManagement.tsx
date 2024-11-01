@@ -57,6 +57,7 @@ import useMount from '../../hooks/useMount';
 import { fetchPublishingTargets } from '../../services/publishing';
 import { ApiResponseErrorState } from '../ApiResponseErrorState';
 import { EmptyState } from '../EmptyState';
+import { showErrorDialog } from '../../state/reducers/dialogs/error';
 
 const workflowStateManagementMessages = defineMessages({
   statesUpdatedMessage: {
@@ -282,9 +283,18 @@ export function WorkflowStateManagement(props: WorkflowStateManagementProps) {
       });
     } else if (isSelectedItemsOnAllPages) {
       let stateBitmap = getStateBitmap(filtersLookup as ItemStateMap);
-      setItemStatesByQuery(siteId, stateBitmap ? stateBitmap : null, update, debouncePathRegex).subscribe(() => {
-        fetchStates();
-        showStatesUpdatedNotification();
+      setItemStatesByQuery(siteId, stateBitmap ? stateBitmap : null, update, debouncePathRegex).subscribe({
+        next: () => {
+          fetchStates();
+          showStatesUpdatedNotification();
+        },
+        error: ({ response }) => {
+          dispatch(
+            showErrorDialog({
+              error: response.response
+            })
+          );
+        }
       });
     } else {
       setItemStates(
