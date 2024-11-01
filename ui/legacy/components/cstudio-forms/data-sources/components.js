@@ -173,6 +173,9 @@
     _openBrowse: function (contentType, control) {
       const path = this._processPathsForMacros(this.baseBrowsePath);
       const multiSelect = this.selectItemsCount === -1 || this.selectItemsCount > 1;
+      // Exclude the paths that are already in the control
+      const excludedPaths = control.form.model[control.fieldDef.id].map((item) => item.key);
+
       CStudioAuthoring.Operations.openBrowseFilesDialog({
         path,
         contentTypes: [contentType],
@@ -182,6 +185,7 @@
           sortBy: 'internalName',
           sortOrder: 'asc'
         },
+        excludedPaths,
         onSuccess: (result) => {
           (Array.isArray(result) ? result : [result]).forEach(({ name, path }) => {
             const value = name && name !== '' ? name : path;

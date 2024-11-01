@@ -49,7 +49,8 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
     contentTypes,
     numOfLoaderItems,
     allowUpload = true,
-    initialParameters: initialParametersProp
+    initialParameters: initialParametersProp,
+    excludedPaths = []
   } = props;
   const [items, setItems] = useState<SearchItem[]>();
   const site = useActiveSiteId();
@@ -78,22 +79,22 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
   const { username } = useActiveUser();
   const [viewMode, setViewMode] = useState<MediaCardViewModes>(getStoredBrowseDialogViewMode(username));
 
-  const fetchItems = useCallback(
-    () =>
-      // Since lookahead regex is not supported by opensearch, we are excluding the current path from the search using a
-      // negative filter in a query. This scenario only happens with pages, hence the `withIndex` function wrapping the
-      // current path.
-      search(site, {
-        ...searchParameters,
-        path: `${currentPath}/[^/]+(/index\\.xml)?`,
-        query: `-localId:"${withIndex(currentPath)}"`
-      }).subscribe((response) => {
-        setTotal(response.total);
-        setItems(response.items);
-        setSortKeys(response.facets.map((facet) => facet.name));
-      }),
-    [searchParameters, currentPath, site]
-  );
+  const fetchItems = useCallback(() => {
+    const excludes = excludedPaths?.map((path) => `-localId:"${path}"`);
+    excludes.push(`-localId:"${withIndex(currentPath)}"`);
+    // Since lookahead regex is not supported by opensearch, we are excluding the current path from the search using a
+    // negative filter in a query. This scenario only happens with pages, hence the `withIndex` function wrapping the
+    // current path.
+    search(site, {
+      ...searchParameters,
+      path: `${currentPath}/[^/]+(/index\\.xml)?`,
+      query: excludes.join(' ')
+    }).subscribe((response) => {
+      setTotal(response.total);
+      setItems(response.items);
+      setSortKeys(response.facets.map((facet) => facet.name));
+    });
+  }, [searchParameters, currentPath, site, excludedPaths]);
 
   useEffect(() => {
     let subscription;
