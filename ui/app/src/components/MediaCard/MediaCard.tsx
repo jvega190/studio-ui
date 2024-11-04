@@ -27,6 +27,7 @@ import cardTitleStyles, { cardSubtitleStyles } from '../../styles/card';
 import palette from '../../styles/palette';
 import SystemIcon from '../SystemIcon';
 import Box from '@mui/material/Box';
+import { PartialSxRecord } from '../../models';
 
 const useStyles = makeStyles()(() => ({
   card: {
@@ -83,6 +84,7 @@ interface MediaCardProps {
   action?: CardHeaderProps['action'];
   avatar?: CardHeaderProps['avatar'];
   classes?: Partial<Record<'root' | 'checkbox' | 'media' | 'mediaIcon' | 'cardActionArea' | 'cardHeader', string>>;
+  sxs?: PartialSxRecord<'root' | 'checkbox' | 'media' | 'mediaIcon' | 'cardActionArea' | 'cardHeader'>;
   onClick?(e): void;
   onPreview?(e): any;
   onSelect?(path: string, selected: boolean): any;
@@ -106,7 +108,8 @@ function MediaCard(props: MediaCardProps) {
     avatar,
     onDragStart,
     onDragEnd,
-    viewMode = 'card'
+    viewMode = 'card',
+    sxs
   } = props;
   // endregion
   let { name, path, type } = item;
@@ -130,6 +133,7 @@ function MediaCard(props: MediaCardProps) {
   const cardActionAreaOrFragmentProps: CardActionAreaProps = onPreview
     ? {
         className: props.classes?.cardActionArea,
+        sx: sxs?.cardActionArea,
         disableRipple: Boolean(onDragStart || onDragEnd),
         onClick(e) {
           e.preventDefault();
@@ -146,20 +150,24 @@ function MediaCard(props: MediaCardProps) {
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onClick={onClick}
-      sx={
-        viewMode === 'row' && {
-          display: 'flex',
-          width: '100%',
-          [`& .${cardHeaderClasses.root}`]: { flexGrow: 1 },
-          [`& .${cardMediaClasses.root}`]: { paddingTop: '0 !important', height: '80px !important', width: '80px' }
-        }
-      }
+      sx={{
+        ...(viewMode === 'row'
+          ? {
+              display: 'flex',
+              width: '100%',
+              [`& .${cardHeaderClasses.root}`]: { flexGrow: 1 },
+              [`& .${cardMediaClasses.root}`]: { paddingTop: '0 !important', height: '80px !important', width: '80px' }
+            }
+          : {}),
+        ...sxs?.root
+      }}
     >
       <CardHeader
         classes={{ action: classes.cardHeader, root: props.classes?.cardHeader }}
+        sx={sxs?.cardHeader}
         avatar={
           onSelect ? (
-            <FormGroup className={props.classes?.checkbox}>
+            <FormGroup className={props.classes?.checkbox} sx={sxs?.checkbox}>
               <Checkbox
                 checked={selected.includes(path)}
                 onClick={(e: any) => onSelect(path, e.target.checked)}
@@ -199,7 +207,10 @@ function MediaCard(props: MediaCardProps) {
           ) : (
             <Box
               className={cx(classes.mediaIcon, props.classes?.mediaIcon)}
-              sx={viewMode === 'row' && { paddingTop: '0 !important', height: '80px', width: '80px' }}
+              sx={{
+                ...(viewMode === 'row' ? { paddingTop: '0 !important', height: '80px', width: '80px' } : {}),
+                ...sxs?.mediaIcon
+              }}
             >
               {type === 'Video' ? (
                 <video className={classes.videoThumbnail}>
