@@ -16,7 +16,7 @@
 
 import React, { ElementType, lazy, Suspense, useEffect, useMemo } from 'react';
 import StandardAction from '../../models/StandardAction';
-import { Dispatch } from 'redux';
+import { Dispatch, Dispatch as ReduxDispatch } from 'redux';
 import { useDispatch } from 'react-redux';
 import { isPlainObject } from '../../utils/object';
 import { SnackbarKey, useSnackbar } from 'notistack';
@@ -38,7 +38,6 @@ import IconButton from '@mui/material/IconButton';
 import CloseRounded from '@mui/icons-material/CloseRounded';
 import useAuth from '../../hooks/useAuth';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
-import FormsEngineDialog, { FormsEngineDialogProps } from '../FormsEngine/FormsEngineDialog';
 import { components } from '../../utils/constants';
 import { EnhancedDialogProps } from '../EnhancedDialog';
 import { DialogStackItem } from '../../models/GlobalState';
@@ -116,28 +115,59 @@ function createCallback(action: StandardAction, dispatch: Dispatch): (output?: u
 }
 // @formatter:on
 
+// FE2 TODO: Find a better place for this
+export const displayWithPendingChangesConfirm = (dispatch: ReduxDispatch, onClose: () => void) => {
+  const id = nanoid();
+  dispatch(
+    pushDialog({
+      id,
+      component: 'craftercms.components.ConfirmDialog',
+      props: {
+        title: <FormattedMessage defaultMessage="Close without saving changes?" />,
+        onOk() {
+          dispatch(popDialog({ id }));
+          onClose();
+        },
+        onCancel() {
+          dispatch(popDialog({ id }));
+        }
+      } as ConfirmDialogProps
+    })
+  );
+};
+
 function DialogStackItemContainer(props: DialogStackItem<EnhancedDialogProps>) {
-  const { id, component } = props;
+  const { id, component, allowMinimize = false, allowFullScreen = false } = props;
   const dispatch = useDispatch();
   const Dialog = useMemo(
     () => (components.get(component as string) ?? component) as ElementType<EnhancedDialogProps>,
     [component]
   );
   const onClose: EnhancedDialogProps['onClose'] = () => {
-    dispatch(updateDialogState({ id, state: { open: false } }));
+    dispatch(updateDialogState({ id, props: { open: false } }));
   };
-  const onMaximize: EnhancedDialogProps['onMaximize'] = () => {
-    dispatch(updateDialogState({ id, state: { isMinimized: false } }));
-  };
-  const onMinimize: EnhancedDialogProps['onMinimize'] = () => {
-    dispatch(updateDialogState({ id, state: { isMinimized: true } }));
-  };
-  const onFullScreen: EnhancedDialogProps['onFullScreen'] = () => {
-    dispatch(updateDialogState({ id, state: { isFullScreen: true } }));
-  };
-  const onCancelFullScreen: EnhancedDialogProps['onCancelFullScreen'] = () => {
-    dispatch(updateDialogState({ id, state: { isFullScreen: false } }));
-  };
+  const onMaximize: EnhancedDialogProps['onMaximize'] = allowMinimize
+    ? () => {
+        dispatch(updateDialogState({ id, props: { isMinimized: false } }));
+      }
+    : undefined;
+  const onMinimize: EnhancedDialogProps['onMinimize'] = allowMinimize
+    ? () => {
+        dispatch(updateDialogState({ id, props: { isMinimized: true } }));
+      }
+    : undefined;
+  const onFullScreen: EnhancedDialogProps['onFullScreen'] = allowFullScreen
+    ? () => {
+        dispatch(updateDialogState({ id, props: { isFullScreen: true } }));
+      }
+    : undefined;
+  const onCancelFullScreen: EnhancedDialogProps['onCancelFullScreen'] = allowFullScreen
+    ? () => {
+        dispatch(updateDialogState({ id, props: { isFullScreen: false } }));
+      }
+    : undefined;
+  // TODO: Review type discrepancy
+  // @ts-expect-error: Discrepancy in types (EnhancedDialogProps['onTransitionExited'] !== props.props.onTransitionEnd).
   const onTransitionExited: EnhancedDialogProps['onTransitionExited'] = (e) => {
     props.props.onTransitionEnd?.(e);
     if (!props.props.open && !props.props.keepMounted) {
@@ -145,26 +175,16 @@ function DialogStackItemContainer(props: DialogStackItem<EnhancedDialogProps>) {
     }
   };
   const onWithPendingChangesCloseRequest: EnhancedDialogProps['onWithPendingChangesCloseRequest'] = (e, reason) => {
-    const id = nanoid();
+    displayWithPendingChangesConfirm(dispatch, () => onClose(e, reason));
+  };
+  const updateSubmittingOrHasPendingChanges = (changes: { isSubmitting?: boolean; hasPendingChanges?: boolean }) => {
     dispatch(
-      pushDialog({
+      updateDialogState({
         id,
-        component: 'craftercms.components.ConfirmDialog',
         props: {
-          title: (
-            <FormattedMessage
-              id="codeEditor.pendingChangesConfirmation"
-              defaultMessage="Close without saving changes?"
-            />
-          ),
-          onOk: () => {
-            dispatch(popDialog({ id }));
-            onClose(e, reason);
-          },
-          onCancel: () => {
-            dispatch(popDialog({ id }));
-          }
-        } as ConfirmDialogProps
+          isSubmitting: changes.isSubmitting ?? props.props.isSubmitting,
+          hasPendingChanges: changes.hasPendingChanges ?? props.props.hasPendingChanges
+        } as Partial<EnhancedDialogProps>
       })
     );
   };
@@ -177,6 +197,7 @@ function DialogStackItemContainer(props: DialogStackItem<EnhancedDialogProps>) {
       onFullScreen={onFullScreen}
       onCancelFullScreen={onCancelFullScreen}
       onTransitionExited={onTransitionExited}
+      updateSubmittingOrHasPendingChanges={updateSubmittingOrHasPendingChanges}
       onWithPendingChangesCloseRequest={onWithPendingChangesCloseRequest}
     />
   );
@@ -193,28 +214,6 @@ function GlobalDialogManager() {
   const { active: authActive } = useAuth();
   const activeSiteId = useActiveSiteId();
   const { formatMessage } = useIntl();
-
-  useEffect(() => {
-    // @ts-expect-error
-    window.temp = {
-      push<T = FormsEngineDialogProps>(component = FormsEngineDialog, state: T) {
-        const id = nanoid();
-        dispatch(
-          pushDialog({
-            id,
-            component: component as any,
-            props: {
-              hasPendingChanges: true,
-              ...state
-            }
-          } as DialogStackItem<T>)
-        );
-      },
-      pop(id) {
-        dispatch(popDialog({ id }));
-      }
-    };
-  }, [dispatch]);
 
   useEffect(() => {
     const hostToHost$ = getHostToHostBus();
@@ -244,7 +243,7 @@ function GlobalDialogManager() {
         )
       )
       .subscribe((site) => {
-        if (!Boolean(document.querySelector('[data-dialog-id="create-site-dialog"]'))) {
+        if (!document.querySelector('[data-dialog-id="create-site-dialog"]')) {
           const siteId = site.id;
           enqueueSnackbar(
             <FormattedMessage defaultMessage={`Project "{siteId}" has been created.`} values={{ siteId }} />,
@@ -274,8 +273,8 @@ function GlobalDialogManager() {
   useEffect(() => {
     const isIframe = window.location !== window.parent.location;
     if (!isIframe && authActive && !socketConnected && activeSiteId !== null) {
-      let timeout: NodeJS.Timeout, key: SnackbarKey;
-      timeout = setTimeout(() => {
+      let key: SnackbarKey;
+      const timeout = setTimeout(() => {
         fetch(`${authoringBase}/help/socket-connection-error`)
           .then((r) => {
             if (r.ok) {

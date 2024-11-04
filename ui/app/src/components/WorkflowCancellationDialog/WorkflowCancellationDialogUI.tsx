@@ -46,7 +46,11 @@ export function WorkflowCancellationDialogUI(props: WorkflowCancellationDialogUI
       <DialogFooter>
         {onCloseButtonClick && (
           <SecondaryButton onClick={onCloseButtonClick}>
-            <FormattedMessage id="workflowCancellation.cancel" defaultMessage="Cancel" />
+            {onContinue ? (
+              <FormattedMessage id="workflowCancellation.cancel" defaultMessage="Cancel" />
+            ) : (
+              <FormattedMessage defaultMessage="Close" />
+            )}
           </SecondaryButton>
         )}
         {onContinue && (

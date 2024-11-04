@@ -1053,9 +1053,11 @@ const initializeCStudioForms = () => {
 
           const getInitialConfiguration = () => {
             Promise.all([
+              // Load form-definition.xml
               new Promise((resolve) => {
                 CStudioForms.Util.loadFormDefinition(formId, { success: resolve });
               }),
+              // Load config.xml
               new Promise((resolve) => {
                 CStudioForms.Util.LoadFormConfig(formId, {
                   success: (ctrlCls, formConfig) =>
@@ -1065,6 +1067,7 @@ const initializeCStudioForms = () => {
                     })
                 });
               }),
+              // Load the model's SandboxItem
               new Promise((resolve) => {
                 path.includes('.xml')
                   ? CrafterCMSNext.services.content
@@ -1072,9 +1075,11 @@ const initializeCStudioForms = () => {
                       .subscribe((item) => resolve({ item }))
                   : resolve(null);
               }),
+              // Load the (legacy) content type
               new Promise((resolve) => {
                 CStudioAuthoring.Service.lookupContentType(CStudioAuthoringContext.site, formId, { success: resolve });
               }),
+              // Load the content xml
               new Promise((resolve) => {
                 if (isEdit) {
                   if (isInclude) {

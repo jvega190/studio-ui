@@ -451,5 +451,5 @@ export function pickShowContentFormAction(
 ) {
   return useLegacy
     ? showEditDialog(oldProps)
-    : pushDialog({ component: 'FormsEngine', props: { formProps: newProps } });
+    : pushDialog({ component: 'craftercms.components.FormsEngineDialog', props: { formProps: newProps } });
 }

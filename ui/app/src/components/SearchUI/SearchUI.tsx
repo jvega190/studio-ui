@@ -516,17 +516,21 @@ export function SearchUI(props: SearchUIProps) {
       )}
       {mode === 'select' && (
         <section className={classes.actionsMenu}>
-          <Button variant="outlined" onClick={onClose}>
-            {formatMessage(translations.cancel)}
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            disabled={selected.length === 0}
-            onClick={() => onAcceptSelection?.(selected)}
-          >
-            {formatMessage(translations.acceptSelection)}
-          </Button>
+          {onClose && (
+            <Button variant="outlined" onClick={onClose}>
+              {formatMessage(translations.cancel)}
+            </Button>
+          )}
+          {onAcceptSelection && (
+            <Button
+              variant="contained"
+              color="primary"
+              disabled={selected.length === 0}
+              onClick={() => onAcceptSelection(selected)}
+            >
+              {formatMessage(translations.acceptSelection)}
+            </Button>
+          )}
         </section>
       )}
     </section>

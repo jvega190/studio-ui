@@ -51,7 +51,6 @@ import { DashletAvatar, DashletEmptyMessage, PersonAvatar, PersonFullName } from
 import { getSystemLink } from '../../utils/system';
 import { useDispatch } from 'react-redux';
 import { changeCurrentUrl } from '../../state/actions/preview';
-import { useWidgetDialogContext } from '../WidgetDialog';
 import PackageDetailsDialog from '../PackageDetailsDialog/PackageDetailsDialog';
 import InfiniteScroll from 'react-infinite-scroller';
 import Box from '@mui/material/Box';
@@ -68,6 +67,7 @@ import TextField from '@mui/material/TextField';
 import InputAdornment from '@mui/material/InputAdornment';
 import ReplyRounded from '@mui/icons-material/ReplyRounded';
 import ClearRounded from '@mui/icons-material/ClearRounded';
+import useEnhancedDialogContext from '../EnhancedDialog/useEnhancedDialogContext';
 
 export interface ActivityDashletProps extends Partial<DashletCardProps> {}
 
@@ -146,7 +146,7 @@ export function ActivityDashlet(props: ActivityDashletProps) {
   const { authoringBase } = useEnv();
   const { formatMessage } = useIntl();
   const dispatch = useDispatch();
-  const widgetDialogContext = useWidgetDialogContext();
+  const widgetDialogContext = useEnhancedDialogContext();
   // region const { ... } = state
   const [
     {

@@ -1,7 +1,8 @@
-## 4.3.0
+## 5.0.0
 
 * Moved getPersonFullName to utils/object
 * FE2 TODO: image=>image-picker, text=>input, etc services/contentType typeMap removed
+* Removed WidgetDialogContextType, WidgetDialogContext, useWidgetDialogContext. Use `useEnhancedDialogContext` instead.
 
 ## 4.2.0
 

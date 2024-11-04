@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FormEngineField } from '../common/FormEngineField';
 import { ControlProps } from '../types';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
@@ -38,15 +38,9 @@ export function Dropdown(props: DropdownProps) {
   const handleChange = (event: SelectChangeEvent) => setValue(event.target.value);
   const optionGroups = useKVPLoader(
     useActiveSiteId(),
-    field.properties.datasource.value.split(','),
+    useMemo(() => field.properties.datasource.value.split(','), [field.properties.datasource?.value]),
     effectRefs.current.contentTypes[contentType.id].dataSources
   );
-  const renderGroup = (group) =>
-    group.items.map((option, index) => (
-      <MenuItem key={`${group.id}_${index}`} value={option.key}>
-        {option.value}
-      </MenuItem>
-    ));
   if (!optionGroups) {
     return (
       <FormEngineField field={field} max={maxLength} length={value.length}>
@@ -54,6 +48,13 @@ export function Dropdown(props: DropdownProps) {
       </FormEngineField>
     );
   }
+  // TODO: Add argument typing
+  const renderGroup = (group) =>
+    group.items.map((option, index) => (
+      <MenuItem key={`${group.id}_${index}`} value={option.key}>
+        {option.value}
+      </MenuItem>
+    ));
   return (
     <FormEngineField field={field} max={maxLength} length={value.length}>
       <Select value={value} label="" onChange={handleChange} disabled={readonly}>

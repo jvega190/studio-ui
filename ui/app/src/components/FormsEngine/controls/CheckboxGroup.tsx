@@ -77,7 +77,6 @@ const VirtualRow = (
 export function CheckboxGroup(props: CheckboxGroupProps) {
   const theme = useTheme();
   const { contentType, field, value, setValue } = props;
-  // console.log('CheckboxGroup rendering');
   const [searchFieldValue, setSearchFieldValue] = useState('');
   const [keyword, setKeyword] = useState('');
   const onKeyword$ = useDebouncedInput(() => {
@@ -127,7 +126,7 @@ export function CheckboxGroup(props: CheckboxGroupProps) {
       {showFilter && (
         <SearchBar
           sx={{ mb: 1 }}
-          showActionButton
+          showActionButton={searchFieldValue !== ''}
           keyword={searchFieldValue}
           onChange={(value) => {
             setSearchFieldValue(value);

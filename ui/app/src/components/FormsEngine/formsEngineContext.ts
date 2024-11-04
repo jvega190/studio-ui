@@ -33,7 +33,7 @@ export interface FormsEngineContextProps {
   fieldHelpExpandedState: LookupTable<boolean>;
   fieldValidityState: LookupTable<{ isValid: boolean; messages: string[] }>;
   formsEngineExtensions: PluginDescriptor;
-  formsStack: FormsEngineProps[];
+  formsStackProps: FormsEngineProps[];
   formsStackState: FormsEngineContextProps[];
   item: SandboxItem;
   locked: boolean;
@@ -42,6 +42,12 @@ export interface FormsEngineContextProps {
   previousScrollTopPosition: number;
   requirementsFetched: boolean;
   sectionExpandedState: LookupTable<boolean>;
+  isSubmitting: boolean;
+  hasPendingChanges: boolean;
+  affectedItemsInWorkflow: SandboxItem[];
+  // TODO: probably not needed anymore as child state is kept up to date
+  currentStackedFormHasPendingChanges: boolean;
+  currentStackedFormIsSubmitting: boolean;
 }
 
 export interface FormsEngineContextApi {
@@ -56,14 +62,15 @@ export interface FormsEngineContextApi {
   handleViewFieldHelpText(event: SyntheticEvent, field: ContentTypeField): void;
   pushForm(formProps: FormsEngineProps, openerFormState?: FormsEngineContextProps): void;
   popForm(): void;
+  updateStackedFormState(stackIndex: number, state: FormsEngineContextProps): void;
 }
 
-export type FormEngineContextType = [FormsEngineContextProps, MutableRefObject<FormsEngineContextApi>];
+export type FormsEngineContextType = [FormsEngineContextProps, MutableRefObject<FormsEngineContextApi>];
 
-export const FormEngineContext = createContext<FormEngineContextType>(null);
+export const FormsEngineContext = createContext<FormsEngineContextType>(null);
 
-export function useFormEngineContext() {
-  const context = useContext(FormEngineContext);
+export function useFormsEngineContext() {
+  const context = useContext(FormsEngineContext);
   if (!context) {
     throw new Error('useFormEngineContext must be used within a FormEngineContextProvider');
   }

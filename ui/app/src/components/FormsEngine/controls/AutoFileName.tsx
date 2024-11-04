@@ -15,27 +15,27 @@
  */
 
 import OutlinedInput from '@mui/material/OutlinedInput';
-import React, { useId, useMemo } from 'react';
+import React, { useEffect, useId } from 'react';
 import { FormEngineField } from '../common/FormEngineField';
 import { ControlProps } from '../types';
-import { adjectives, animals, colors, uniqueNamesGenerator } from 'unique-names-generator';
+import { useFormsEngineContext } from '../formsEngineContext';
 
 export interface AutoFileNameProps extends ControlProps {
   value: string;
 }
 
 export function AutoFileName(props: AutoFileNameProps) {
-  const { field, value } = props;
+  const { field, value, setValue } = props;
+  const [{ values }] = useFormsEngineContext();
   const htmlId = useId();
-  const name = useMemo(
-    () =>
-      value.replace(/\.xml$/, '') ||
-      uniqueNamesGenerator({ dictionaries: [adjectives, colors, animals], separator: '-' }),
-    [value]
-  );
+  useEffect(() => {
+    if (!value) {
+      setValue(`${values.objectId as string}.xml`);
+    }
+  }, [setValue, value, values.objectId]);
   return (
-    <FormEngineField htmlFor={htmlId} field={field} length={name.length}>
-      <OutlinedInput readOnly fullWidth id={htmlId} value={name} />
+    <FormEngineField htmlFor={htmlId} field={field}>
+      <OutlinedInput readOnly fullWidth id={htmlId} value={value.replace(/\.xml$/, '')} />
     </FormEngineField>
   );
 }

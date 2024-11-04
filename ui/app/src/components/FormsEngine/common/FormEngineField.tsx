@@ -15,7 +15,7 @@
  */
 
 import { ContentTypeField } from '../../../models';
-import { useFormEngineContext } from '../formEngineContext';
+import { useFormsEngineContext } from '../formsEngineContext';
 import FormControl, { FormControlProps } from '@mui/material/FormControl';
 import Box from '@mui/material/Box';
 import { FieldRequiredStateIndicator } from './FieldRequiredStateIndicator';
@@ -65,7 +65,7 @@ export interface FormEngineFieldProps
 
 export function FormEngineField(props: FormEngineFieldProps) {
   const { children, field, max, min, length, actions, htmlFor } = props;
-  const [{ fieldHelpExpandedState, fieldValidityState }, { current }] = useFormEngineContext();
+  const [{ fieldHelpExpandedState, fieldValidityState }, { current }] = useFormsEngineContext();
   const fieldId = field.id;
   const hasHelpText = Boolean(field.helpText);
   const hasDescription = Boolean(field.description);

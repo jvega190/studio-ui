@@ -123,6 +123,8 @@ export interface Clipboard {
 export interface DialogStackItem<P = unknown> {
   id: string;
   component: string | ElementType<P>;
+  allowMinimize?: boolean;
+  allowFullScreen?: boolean;
   props: P;
 }
 

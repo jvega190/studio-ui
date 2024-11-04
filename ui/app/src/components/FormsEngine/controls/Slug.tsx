@@ -16,7 +16,7 @@
 
 import OutlinedInput, { OutlinedInputProps } from '@mui/material/OutlinedInput';
 import React, { useId } from 'react';
-import { useFormEngineContext } from '../formEngineContext';
+import { useFormsEngineContext } from '../formsEngineContext';
 import { applyContentNameRules } from '../../../utils/content';
 import { FormEngineField } from '../common/FormEngineField';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -26,13 +26,16 @@ export interface SlugProps extends ControlProps {
   value: string;
 }
 
+// TODO: Check behaviour for embedded components. Seems to be hidden on current engine.
+
 export function Slug(props: SlugProps) {
   const { field, readonly } = props;
   const htmlId = useId();
   const fieldId = field.id === 'fileName' || field.id === 'file-name' ? 'folder-name' : field.id;
-  const [context, api] = useFormEngineContext();
+  const [context, api] = useFormsEngineContext();
   const { pathInProject, values } = context;
-  const value = values[fieldId] as string;
+  // In some cases the values[fieldId] is null
+  const value = (values[fieldId] as string) ?? '';
   const handleChange: OutlinedInputProps['onChange'] = (e) =>
     api.current.updateValue(fieldId, applyContentNameRules(e.currentTarget.value));
   return (

@@ -166,11 +166,16 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
                           <MenuItem value={'internalName'}>
                             <FormattedMessage id="words.name" defaultMessage="Name" />
                           </MenuItem>
-                          {sortKeys.map((name, i) => (
-                            <MenuItem value={name} key={i}>
-                              {formatMessage(filtersMessages[camelize(name)])}
-                            </MenuItem>
-                          ))}
+                          {sortKeys.map((name, i) => {
+                            const camelizedName = camelize(name);
+                            return (
+                              <MenuItem value={name} key={i}>
+                                {camelizedName in filtersMessages
+                                  ? formatMessage(filtersMessages[camelizedName])
+                                  : name}
+                              </MenuItem>
+                            );
+                          })}
                         </Select>
                       </FormControl>
                     </MenuItem>

@@ -39,10 +39,12 @@ export function WorkflowCancellationDialogContainer(props: WorkflowCancellationD
   const { items, onClose, onContinue } = props;
   const { classes } = useStyles();
 
-  const onContinueClick = (e) => {
-    onClose(e, null);
-    onContinue();
-  };
+  const onContinueClick = onContinue
+    ? (e) => {
+        onClose(e, null);
+        onContinue();
+      }
+    : undefined;
 
   return items ? (
     items.length > 0 ? (

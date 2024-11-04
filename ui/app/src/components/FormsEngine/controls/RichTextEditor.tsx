@@ -90,12 +90,10 @@ function getTinyMceInitOptions(
     paste_as_text: true,
     paste_data_images: true,
     paste_preprocess(plugin, args) {
-      console.log(plugin, args);
-      // window.tinymce.activeEditor.plugins.craftercms_paste_extension?.paste_preprocess(plugin, args);
+      window.tinymce.activeEditor.plugins.craftercms_paste_extension?.paste_preprocess(plugin, args);
     },
     paste_postprocess(plugin, args) {
-      console.log(plugin, args);
-      // window.tinymce.activeEditor.plugins.craftercms_paste_extension?.paste_postprocess(plugin, args);
+      window.tinymce.activeEditor.plugins.craftercms_paste_extension?.paste_postprocess(plugin, args);
     },
     // toolbar: true,
     // forced_root_block: true,
@@ -382,6 +380,7 @@ function getTinyMceInitOptions(
       )
     }),
     ...controlProps,
+    toolbar_sticky: false, // TODO: remove. this should/will come from config.
     openEditForm() {
       console.log('openEditForm');
     }
