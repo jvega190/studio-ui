@@ -64,6 +64,7 @@ export interface SearchUIProps {
   searchParameters: ElasticParams;
   error: ApiResponse;
   isFetching: boolean;
+  preSelectedPaths?: string[];
   onActionClicked(option: AllItemActions, event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void;
   handleSelectAll(checked: any): void;
   onSelectedPathChanges(path: string): void;
@@ -307,7 +308,8 @@ export function SearchUI(props: SearchUIProps) {
     onActionClicked,
     handleClearSelected,
     onClose,
-    onAcceptSelection
+    onAcceptSelection,
+    preSelectedPaths = []
   } = props;
   // endregion
 
@@ -453,39 +455,51 @@ export function SearchUI(props: SearchUIProps) {
               ) : (
                 <>
                   {searchResults.items.length > 0 ? (
-                    searchResults.items.map((item: MediaItem, i) => (
-                      <Grid key={i} item xs={12} {...(currentView === 'grid' ? { sm: 6, md: 4, lg: 4, xl: 3 } : {})}>
-                        <MediaCard
-                          classes={
-                            currentView === 'list'
-                              ? {
-                                  root: classes.mediaCardListRoot,
-                                  checkbox: classes.mediaCardListCheckbox,
-                                  media: classes.mediaCardListMedia,
-                                  mediaIcon: classes.mediaCardListMediaIcon,
-                                  cardActionArea: classes.cardActionArea,
-                                  cardHeader: classes.cardHeader
-                                }
-                              : {}
-                          }
-                          item={item}
-                          onPreview={mode === 'default' ? () => onPreview(item) : UNDEFINED}
-                          onClick={
-                            mode === 'select' ? () => handleSelect(item.path, !selected.includes(item.path)) : UNDEFINED
-                          }
-                          onSelect={handleSelect}
-                          selected={selected}
-                          previewAppBaseUri={guestBase}
-                          action={
-                            mode === 'default' ? (
-                              <IconButton onClick={(e) => onHeaderButtonClick(e, item)} size="small">
-                                <MoreVertRounded />
-                              </IconButton>
-                            ) : null
-                          }
-                        />
-                      </Grid>
-                    ))
+                    searchResults.items.map((item: MediaItem, i) => {
+                      const isPreSelected = preSelectedPaths.includes(item.path);
+                      return (
+                        <Grid key={i} item xs={12} {...(currentView === 'grid' ? { sm: 6, md: 4, lg: 4, xl: 3 } : {})}>
+                          <MediaCard
+                            classes={
+                              currentView === 'list'
+                                ? {
+                                    root: classes.mediaCardListRoot,
+                                    checkbox: classes.mediaCardListCheckbox,
+                                    media: classes.mediaCardListMedia,
+                                    mediaIcon: classes.mediaCardListMediaIcon,
+                                    cardActionArea: classes.cardActionArea,
+                                    cardHeader: classes.cardHeader
+                                  }
+                                : {}
+                            }
+                            sxs={{
+                              root: {
+                                cursor: isPreSelected ? 'not-allowed' : 'pointer',
+                                boxShadow: (theme) =>
+                                  isPreSelected ? `0px 0px 4px 4px ${theme.palette.divider}` : undefined
+                              }
+                            }}
+                            item={item}
+                            onPreview={mode === 'default' ? () => onPreview(item) : UNDEFINED}
+                            onClick={
+                              !isPreSelected && mode === 'select'
+                                ? () => handleSelect(item.path, !selected.includes(item.path))
+                                : UNDEFINED
+                            }
+                            onSelect={!isPreSelected && handleSelect}
+                            selected={selected}
+                            previewAppBaseUri={guestBase}
+                            action={
+                              mode === 'default' ? (
+                                <IconButton onClick={(e) => onHeaderButtonClick(e, item)} size="small">
+                                  <MoreVertRounded />
+                                </IconButton>
+                              ) : null
+                            }
+                          />
+                        </Grid>
+                      );
+                    })
                   ) : (
                     <EmptyState
                       title={formatMessage(translations.noResults)}

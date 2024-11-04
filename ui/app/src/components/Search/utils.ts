@@ -78,6 +78,7 @@ export interface SearchProps {
   mode?: 'default' | 'select';
   embedded?: boolean;
   initialParameters?: SearchParameters;
+  preSelectedPaths?: string[];
   onClose?(): void;
   onSelect?(path: string, selected: boolean): any;
   onAcceptSelection?(items: string[]): any;

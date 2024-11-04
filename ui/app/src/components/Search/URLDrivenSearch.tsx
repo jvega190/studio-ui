@@ -244,6 +244,7 @@ export function URLDrivenSearch(props: URLDrivenSearchProps) {
       searchParameters={searchParameters}
       selected={selected}
       selectionOptions={selectionOptions}
+      preSelectedPaths={JSON.parse(queryParams.preSelectedPaths as string)}
     />
   );
 }

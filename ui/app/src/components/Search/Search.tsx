@@ -35,7 +35,8 @@ export function Search(props: SearchProps) {
     embedded = false,
     onAcceptSelection,
     onClose,
-    initialParameters: initialParametersProp
+    initialParameters: initialParametersProp,
+    preSelectedPaths = []
   } = props;
 
   // region State
@@ -209,6 +210,7 @@ export function Search(props: SearchProps) {
       searchParameters={searchParameters}
       selected={selected}
       selectionOptions={selectionOptions}
+      preSelectedPaths={preSelectedPaths}
     />
   );
 }

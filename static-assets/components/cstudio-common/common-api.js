@@ -1177,6 +1177,10 @@ var nodeOpen = false,
           searchUrl += '&path=' + encodeURIComponent(searchContext.path);
         }
 
+        if (!CStudioAuthoring.Utils.isEmpty(searchContext.preSelectedPaths)) {
+          searchUrl += `&preSelectedPaths=${encodeURIComponent(JSON.stringify(searchContext.preSelectedPaths))}`;
+        }
+
         var childSearch = null;
 
         if (

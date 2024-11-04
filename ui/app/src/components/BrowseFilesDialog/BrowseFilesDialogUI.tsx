@@ -82,7 +82,8 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
     onUpload,
     allowUpload = true,
     viewMode = 'card',
-    onToggleViewMode
+    onToggleViewMode,
+    preSelectedPaths = []
   } = props;
   // endregion
   const { classes, cx: clsx } = useStyles();
@@ -257,22 +258,32 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
               sx={viewMode === 'row' && { display: 'flex !important', flexFlow: 'wrap' }}
             >
               {items
-                ? items.map((item: SearchItem) => (
-                    <MediaCard
-                      viewMode={viewMode}
-                      classes={{
-                        root: clsx(classes.mediaCardRoot, item.path === selectedCard?.path && classes.selectedCard)
-                      }}
-                      key={item.path}
-                      item={item}
-                      selected={multiSelect ? selectedArray : null}
-                      onSelect={multiSelect ? onCheckboxChecked : null}
-                      onPreview={onPreviewImage ? () => onPreviewImage(item) : null}
-                      previewAppBaseUri={guestBase}
-                      onClick={() => onCardSelected(item)}
-                      showPath={true}
-                    />
-                  ))
+                ? items.map((item: SearchItem) => {
+                    const isPreSelected = preSelectedPaths.includes(item.path);
+                    return (
+                      <MediaCard
+                        viewMode={viewMode}
+                        classes={{
+                          root: item.path === selectedCard?.path && classes.selectedCard
+                        }}
+                        sxs={{
+                          root: {
+                            cursor: isPreSelected ? 'not-allowed' : 'pointer',
+                            boxShadow: (theme) =>
+                              isPreSelected ? `0px 0px 4px 4px ${theme.palette.divider}` : undefined
+                          }
+                        }}
+                        key={item.path}
+                        item={item}
+                        selected={multiSelect ? [...selectedArray] : null}
+                        onSelect={multiSelect && !isPreSelected ? onCheckboxChecked : null}
+                        onPreview={onPreviewImage ? () => onPreviewImage(item) : null}
+                        previewAppBaseUri={guestBase}
+                        onClick={() => !isPreSelected && onCardSelected(item)}
+                        showPath={true}
+                      />
+                    );
+                  })
                 : new Array(numOfLoaderItems).fill(null).map((x, i) => <MediaSkeletonCard key={i} />)}
             </Box>
             {items && items.length === 0 && (

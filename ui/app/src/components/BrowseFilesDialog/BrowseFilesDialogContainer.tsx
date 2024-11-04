@@ -50,7 +50,7 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
     numOfLoaderItems,
     allowUpload = true,
     initialParameters: initialParametersProp,
-    excludedPaths = []
+    preSelectedPaths = []
   } = props;
   const [items, setItems] = useState<SearchItem[]>();
   const site = useActiveSiteId();
@@ -80,21 +80,19 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
   const [viewMode, setViewMode] = useState<MediaCardViewModes>(getStoredBrowseDialogViewMode(username));
 
   const fetchItems = useCallback(() => {
-    const excludes = excludedPaths?.map((path) => `-localId:"${path}"`);
-    excludes.push(`-localId:"${withIndex(currentPath)}"`);
     // Since lookahead regex is not supported by opensearch, we are excluding the current path from the search using a
     // negative filter in a query. This scenario only happens with pages, hence the `withIndex` function wrapping the
     // current path.
     search(site, {
       ...searchParameters,
       path: `${currentPath}/[^/]+(/index\\.xml)?`,
-      query: excludes.join(' ')
+      query: `-localId:"${withIndex(currentPath)}"`
     }).subscribe((response) => {
       setTotal(response.total);
       setItems(response.items);
       setSortKeys(response.facets.map((facet) => facet.name));
     });
-  }, [searchParameters, currentPath, site, excludedPaths]);
+  }, [searchParameters, currentPath, site]);
 
   useEffect(() => {
     let subscription;
@@ -227,6 +225,7 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
       onRefresh={onRefresh}
       onUpload={onUpload}
       allowUpload={allowUpload}
+      preSelectedPaths={preSelectedPaths}
     />
   ) : (
     <EmptyState
