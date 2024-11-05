@@ -264,10 +264,12 @@ CStudioAuthoring.Dialogs.CropDialog = CStudioAuthoring.Dialogs.CropDialog || {
             $('#zoomMessage').removeClass('hidden');
             $dataWidth.addClass('error');
             $dataHeight.addClass('error');
+            $('#cropButton').prop('disabled', true);
           } else {
             $('#zoomMessage').addClass('hidden');
             $dataWidth.removeClass('error');
             $dataHeight.removeClass('error');
+            $('#cropButton').prop('disabled', false);
           }
         } else {
           const width = Math.round(e.detail.width);

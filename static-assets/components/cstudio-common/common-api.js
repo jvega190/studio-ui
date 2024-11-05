@@ -2539,7 +2539,7 @@ var nodeOpen = false,
           isUploadOverwrite: isUploadOverwrite
         };
 
-        CSA.Utils.addCss('/static-assets/libs/cropper/dist/cropper.css');
+        CSA.Utils.addCss('/static-assets/libs/cropperjs/cropper.css');
         CSA.Utils.addCss('/static-assets/themes/cstudioTheme/css/icons.css');
 
         CStudioAuthoring.Module.requireModule(
@@ -2594,7 +2594,7 @@ var nodeOpen = false,
           callback: callback
         };
 
-        CSA.Utils.addCss('/static-assets/libs/cropper/dist/cropper.css');
+        CSA.Utils.addCss('/static-assets/libs/cropperjs/cropper.css');
         CSA.Utils.addCss('/static-assets/themes/cstudioTheme/css/icons.css');
 
         CStudioAuthoring.Module.requireModule(

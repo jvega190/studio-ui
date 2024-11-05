@@ -784,7 +784,7 @@ YAHOO.extend(CStudioForms.Controls.ImagePicker, CStudioForms.CStudioFormField, {
   }
 });
 
-CStudioAuthoring.Utils.addCss('/static-assets/libs/cropper/dist/cropper.css');
+CStudioAuthoring.Utils.addCss('/static-assets/libs/cropperjs/cropper.css');
 CStudioAuthoring.Utils.addCss('/static-assets/themes/cstudioTheme/css/icons.css');
 
 CStudioAuthoring.Module.moduleLoaded('cstudio-forms-controls-image-picker', CStudioForms.Controls.ImagePicker);
