@@ -38,6 +38,8 @@ CStudioForms.Datasources.VideoBrowseRepo =
 YAHOO.extend(CStudioForms.Datasources.VideoBrowseRepo, CStudioForms.CStudioFormDatasource, {
   insertVideoAction: function (callback) {
     var _self = this;
+    const control = callback.videoPicker;
+    const currentValue = control?.form.model[control.fieldDef.id] ?? '';
 
     if (this.useSearch) {
       const searchContext = {
@@ -48,7 +50,8 @@ YAHOO.extend(CStudioForms.Datasources.VideoBrowseRepo, CStudioForms.CStudioFormD
         },
         sortBy: 'internalName',
         sortOrder: 'asc',
-        mode: 'select' // open search not in default but in select mode
+        mode: 'select', // open search not in default but in select mode
+        preSelectedPaths: [currentValue]
       };
 
       if (this.repoPath) {
@@ -79,6 +82,7 @@ YAHOO.extend(CStudioForms.Datasources.VideoBrowseRepo, CStudioForms.CStudioFormD
       CStudioAuthoring.Operations.openBrowseFilesDialog({
         path: _self.processPathsForMacros(_self.repoPath),
         multiSelect,
+        preSelectedPaths: [currentValue],
         onSuccess: (result) => {
           const items = Array.isArray(result) ? result : [result];
           items.forEach(({ path }) => {

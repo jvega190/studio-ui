@@ -46,9 +46,16 @@ YAHOO.extend(CStudioForms.Datasources.FileBrowseRepo, CStudioForms.CStudioFormDa
       }
     }
 
-    const openBrowse = () =>
+    const openBrowse = () => {
+      // Paths already in the control, by sending them to the Browse Dialog, it'll mark them as selected, and disable
+      // the actions for those paths.
+      const preSelectedPaths = craftercms.utils.array
+        .asArray(control?.form.model[control.fieldDef.id])
+        .map((item) => item.key);
+
       CStudioAuthoring.Operations.openBrowseFilesDialog({
         path: _self.processPathsForMacros(_self.repoPath),
+        preSelectedPaths,
         onSuccess: (item) => {
           const fileName = item.name;
           const fileExtension = fileName.split('.').pop();
@@ -59,6 +66,7 @@ YAHOO.extend(CStudioForms.Datasources.FileBrowseRepo, CStudioForms.CStudioFormDa
           }
         }
       });
+    };
 
     if (onlyAppend) {
       const create = $(
