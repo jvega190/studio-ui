@@ -302,7 +302,9 @@ CStudioAuthoring.Dialogs.CropDialog = CStudioAuthoring.Dialogs.CropDialog || {
         $dataWidth.removeClass('error');
       },
       zoom: function (e) {
-        const isZoomIn = e.detail.ratio > 0;
+        const oldRatio = e.detail.oldRatio;
+        const ratio = e.detail.ratio;
+        const isZoomIn = ratio > oldRatio;
         const croppedCanvas = cropper.getCroppedCanvas();
         const width = parseInt(croppedCanvas.getAttribute('width'));
         const height = parseInt(croppedCanvas.getAttribute('height'));
