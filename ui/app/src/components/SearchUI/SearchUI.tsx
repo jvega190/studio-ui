@@ -66,7 +66,7 @@ export interface SearchUIProps {
   isFetching: boolean;
   preSelectedPaths?: string[];
   onActionClicked(option: AllItemActions, event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void;
-  handleSelectAll(checked: any): void;
+  handleSelectAll(checked: boolean, preSelectedPaths?: string[]): void;
   onSelectedPathChanges(path: string): void;
   onCheckedFiltersChanges(checkedFilters: LookupTable<CheckedFilter>): any;
   clearFilter(facet: string): void;
@@ -380,7 +380,7 @@ export function SearchUI(props: SearchUIProps) {
                 <Checkbox
                   color="primary"
                   checked={areAllSelected}
-                  onClick={(e: any) => handleSelectAll(e.target.checked)}
+                  onClick={(e: any) => handleSelectAll(e.target.checked, preSelectedPaths)}
                 />
               }
               label={<Typography color="textPrimary">{formatMessage(translations.selectAll)}</Typography>}

@@ -324,11 +324,11 @@ export const useSearchState = ({ searchParameters, onSelect }: useSearchStatePro
     onSelect?.(path, isSelected);
   };
 
-  const handleSelectAll = (checked: boolean) => {
+  const handleSelectAll = (checked: boolean, preSelectedPaths: string[] = []) => {
     if (checked) {
       let selectedItems: any[] = [];
       searchResults.items.forEach((item: any) => {
-        if (selected.indexOf(item.path) === -1) {
+        if (selected.indexOf(item.path) === -1 && !preSelectedPaths.includes(item.path)) {
           selectedItems.push(item.path);
           onSelect?.(item.path, true);
         }
