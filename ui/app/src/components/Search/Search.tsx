@@ -79,6 +79,7 @@ export function Search(props: SearchProps) {
     handleChangeView
   } = useSearchState({
     searchParameters,
+    preSelectedPaths,
     onSelect
   });
 

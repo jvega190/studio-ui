@@ -156,6 +156,7 @@ export const deserializeSearchFilters = (filters) => {
 
 interface useSearchStateProps {
   searchParameters: ElasticParams;
+  preSelectedPaths?: string[];
   onSelect?(path: string, selected: boolean): any;
 }
 
@@ -183,7 +184,11 @@ interface useSearchStateReturn {
   handleChangeView(): void;
 }
 
-export const useSearchState = ({ searchParameters, onSelect }: useSearchStateProps): useSearchStateReturn => {
+export const useSearchState = ({
+  searchParameters,
+  preSelectedPaths = [],
+  onSelect
+}: useSearchStateProps): useSearchStateReturn => {
   const { formatMessage } = useIntl();
   const dispatch = useDispatch();
   const clipboard = useSelection((state) => state.content.clipboard);
@@ -227,8 +232,10 @@ export const useSearchState = ({ searchParameters, onSelect }: useSearchStatePro
 
   const areAllSelected = useMemo(() => {
     if (!searchResults || searchResults.items.length === 0) return false;
-    return !searchResults.items.some((item: any) => !selected.includes(item.path));
-  }, [searchResults, selected]);
+    return !searchResults.items
+      .filter((item) => !preSelectedPaths.includes(item.path))
+      .some((item: any) => !selected.includes(item.path));
+  }, [searchResults, selected, preSelectedPaths]);
 
   const onActionClicked = (option: AllItemActions, event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     if (selected.length > 1) {
@@ -324,7 +331,7 @@ export const useSearchState = ({ searchParameters, onSelect }: useSearchStatePro
     onSelect?.(path, isSelected);
   };
 
-  const handleSelectAll = (checked: boolean, preSelectedPaths: string[] = []) => {
+  const handleSelectAll = (checked: boolean) => {
     if (checked) {
       let selectedItems: any[] = [];
       searchResults.items.forEach((item: any) => {
