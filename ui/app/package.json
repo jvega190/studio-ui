@@ -108,6 +108,7 @@
     "tss-react": "^4.9.10",
     "typescript": "^5.4.5",
     "uppy": "^3.27.3",
+    "uuid": "^10.0.0",
     "video.js": "^8.14.0",
     "zxcvbn": "^4.4.2"
   },
@@ -117,6 +118,7 @@
     "@types/diff": "^5",
     "@types/js-cookie": "^3.0.6",
     "@types/react-infinite-scroller": "^1.2.5",
+    "@types/uuid": "^10",
     "@types/zxcvbn": "^4.4.4",
     "@typescript-eslint/eslint-plugin": "^7.10.0",
     "@typescript-eslint/parser": "^7.10.0",
