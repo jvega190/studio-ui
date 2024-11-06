@@ -15,10 +15,9 @@
  */
 
 import React from 'react';
-import { TreeView } from '@mui/x-tree-view/TreeView';
 import { makeStyles } from 'tss-react/mui';
 import Accordion from '@mui/material/Accordion';
-import Header from '../PathNavigator/PathNavigatorHeader';
+import { PathNavigatorHeader } from '../PathNavigator/PathNavigatorHeader';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import { StateStylingProps } from '../../models/UiConfig';
 import PathNavigatorTreeItem, { PathNavigatorTreeItemProps } from './PathNavigatorTreeItem';
@@ -28,11 +27,19 @@ import { SystemIconDescriptor } from '../SystemIcon';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import { FormattedMessage } from 'react-intl';
 import { ErrorState } from '../ErrorState';
+import { SimpleTreeView } from '@mui/x-tree-view';
 
 export interface PathNavigatorTreeUIProps
   extends Pick<
     PathNavigatorTreeItemProps,
-    'showNavigableAsLinks' | 'showPublishingTarget' | 'showWorkflowState' | 'showItemMenu'
+    | 'showNavigableAsLinks'
+    | 'showPublishingTarget'
+    | 'showWorkflowState'
+    | 'showItemMenu'
+    | 'keywordByPath'
+    | 'totalByPath'
+    | 'childrenByParentPath'
+    | 'errorByPath'
   > {
   title: string;
   icon?: SystemIconDescriptor;
@@ -40,9 +47,6 @@ export interface PathNavigatorTreeUIProps
   rootPath: string;
   isRootPathMissing: boolean;
   itemsByPath: LookupTable<DetailedItem>;
-  keywordByPath: LookupTable<string>;
-  totalByPath: LookupTable<number>;
-  childrenByParentPath: LookupTable<string[]>;
   onIconClick(path: string): void;
   onLabelClick(event: React.MouseEvent<Element, MouseEvent>, path: string): void;
   onChangeCollapsed(collapsed: boolean): void;
@@ -92,6 +96,7 @@ export function PathNavigatorTreeUI(props: PathNavigatorTreeUIProps) {
     itemsByPath,
     keywordByPath,
     childrenByParentPath,
+    errorByPath,
     totalByPath,
     onIconClick,
     onLabelClick,
@@ -128,7 +133,7 @@ export function PathNavigatorTreeUI(props: PathNavigatorTreeUIProps) {
         ...(container ? (isCollapsed ? container.collapsedStyle : container.expandedStyle) : void 0)
       }}
     >
-      <Header
+      <PathNavigatorHeader
         icon={icon}
         title={title}
         locale={null}
@@ -151,7 +156,7 @@ export function PathNavigatorTreeUI(props: PathNavigatorTreeUIProps) {
         />
       ) : (
         <AccordionDetails className={cx(classes.accordionDetails, props.classes?.body)}>
-          <TreeView className={classes.root} expanded={expandedNodes} disableSelection>
+          <SimpleTreeView className={classes.root} expandedItems={expandedNodes} disableSelection>
             <PathNavigatorTreeItem
               path={rootPath}
               active={active}
@@ -159,6 +164,7 @@ export function PathNavigatorTreeUI(props: PathNavigatorTreeUIProps) {
               keywordByPath={keywordByPath}
               totalByPath={totalByPath}
               childrenByParentPath={childrenByParentPath}
+              errorByPath={errorByPath}
               onIconClick={onIconClick}
               onLabelClick={onLabelClick}
               onFilterChange={onFilterChange}
@@ -169,7 +175,7 @@ export function PathNavigatorTreeUI(props: PathNavigatorTreeUIProps) {
               showWorkflowState={showWorkflowState}
               showItemMenu={showItemMenu}
             />
-          </TreeView>
+          </SimpleTreeView>
         </AccordionDetails>
       )}
     </Accordion>

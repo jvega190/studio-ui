@@ -25,27 +25,26 @@ import {
   pathNavigatorTreeExpandPath,
   pathNavigatorTreeFetchPathChildren,
   pathNavigatorTreeFetchPathChildrenComplete,
+  pathNavigatorTreeFetchPathChildrenFailed,
   pathNavigatorTreeFetchPathPage,
   pathNavigatorTreeFetchPathPageComplete,
   pathNavigatorTreeInit,
   pathNavigatorTreeRestore,
   pathNavigatorTreeRestoreComplete,
-  PathNavigatorTreeRestoreCompletePayload,
   pathNavigatorTreeRootMissing,
   pathNavigatorTreeSetKeyword,
   pathNavigatorTreeToggleCollapsed,
-  pathNavigatorTreeUpdate,
-  PathNavTreeBulkFetchPathChildrenCompletePayload,
-  PathNavTreeBulkFetchPathChildrenPayload
+  pathNavigatorTreeUpdate
 } from '../actions/pathNavigatorTree';
 import { changeSiteComplete } from '../actions/sites';
 import { fetchSiteUiConfig } from '../actions/configuration';
 import { reversePluckProps } from '../../utils/object';
-import { SocketEventBase, StandardAction } from '../../models';
-import { fetchSandboxItemComplete, FetchSandboxItemCompletePayload } from '../actions/content';
+import { fetchSandboxItemComplete } from '../actions/content';
 import { getIndividualPaths, getParentPath, withIndex, withoutIndex } from '../../utils/path';
-import { deleteContentEvent, moveContentEvent, MoveContentEventPayload } from '../actions/system';
+import { deleteContentEvent, deleteContentEvents, moveContentEvent } from '../actions/system';
 import { createPresenceTable } from '../../utils/array';
+import { CaseReducer } from '@reduxjs/toolkit/src/createReducer';
+import GlobalState from '../../models/GlobalState';
 
 export function contentAndDeleteEventForEachApplicableTree(
   state: LookupTable<PathNavigatorTreeStateProps>,
@@ -86,14 +85,15 @@ export function deleteItemFromState(tree: PathNavigatorTreeStateProps, targetPat
   let childrenByParentPath = tree.childrenByParentPath;
 
   // Remove deleted item from the parent path's children
-  childrenByParentPath[parentPath] = childrenByParentPath[parentPath].filter((childPath) => targetPath !== childPath);
+  if (childrenByParentPath[parentPath]) {
+    childrenByParentPath[parentPath] = childrenByParentPath[parentPath]?.filter(
+      (childPath) => targetPath !== childPath
+    );
+  }
 
   // Discount deleted item from parent path child count
-  totalByPath[parentPath] = totalByPath[parentPath] - 1;
-
-  // TODO: Remove.
-  if (totalByPath[parentPath] < 0) {
-    debugger;
+  if (totalByPath[parentPath]) {
+    totalByPath[parentPath] = totalByPath[parentPath] - 1;
   }
 
   // Remove item
@@ -124,9 +124,9 @@ const updatePath = (state, payload) => {
     chunk.childrenByParentPath[parentPath].push(item.path);
     chunk.totalByPath[item.path] = item.childrenCount;
   });
-  // If the expanded node has no children and is not filtered, it's a
+  // If the expanded node has no children, no level descriptor and is not filtered, it's a
   // leaf node and there's no point keeping it in `expanded`
-  if (children.length === 0 && !options?.keyword) {
+  if (children.length === 0 && !children.levelDescriptor && !options?.keyword) {
     chunk.expanded = chunk.expanded.filter((path) => path !== parentPath);
   }
 };
@@ -140,6 +140,7 @@ const restoreTree = (state, payload) => {
   const childrenByParentPath = chunk.childrenByParentPath;
   const totalByPath = chunk.totalByPath;
   const offsetByPath = chunk.offsetByPath;
+  // Set totalByPath of items for the tree to know which items have children (in case they are not expanded).
   items.forEach((item) => {
     totalByPath[item.path] = item.childrenCount;
   });
@@ -153,7 +154,9 @@ const restoreTree = (state, payload) => {
       }
       childrenOfPath.forEach((child) => {
         childrenByParentPath[parentPath].push(child.path);
-        totalByPath[child.path] = child.childrenCount;
+        // If we have the total in the children object, use it (since that object has the total considering filters),
+        // otherwise use the childrenCount.
+        totalByPath[child.path] = children[child.path]?.total ?? child.childrenCount;
       });
     }
     // Should we account here for the level descriptor (LD)? if there's a LD, add 1 to the total?
@@ -167,7 +170,20 @@ const restoreTree = (state, payload) => {
   });
 };
 
-const reducer = createReducer<LookupTable<PathNavigatorTreeStateProps>>({}, (builder) => {
+const deleteContentEventHandler: CaseReducer<
+  GlobalState['pathNavigatorTree'],
+  ReturnType<typeof deleteContentEvent>
+> = (state: LookupTable<PathNavigatorTreeStateProps>, { payload: { targetPath } }) => {
+  contentAndDeleteEventForEachApplicableTree(state, targetPath, (tree, targetPath, parentPathOfTargetPath) => {
+    if (targetPath === tree.rootPath) {
+      tree.isRootPathMissing = true;
+    } else if (parentPathOfTargetPath in tree.totalByPath) {
+      deleteItemFromState(tree, targetPath);
+    }
+  });
+};
+
+const reducer = createReducer<GlobalState['pathNavigatorTree']>({}, (builder) => {
   builder
     // region pathNavigatorTreeInit
     .addCase(pathNavigatorTreeInit, (state, action) => {
@@ -192,6 +208,7 @@ const reducer = createReducer<LookupTable<PathNavigatorTreeStateProps>>({}, (bui
         limit,
         expanded,
         childrenByParentPath: {},
+        errorByPath: {},
         offsetByPath: {},
         keywordByPath,
         totalByPath: {},
@@ -216,29 +233,27 @@ const reducer = createReducer<LookupTable<PathNavigatorTreeStateProps>>({}, (bui
     })
     .addCase(pathNavigatorTreeFetchPathChildren, (state, action) => {
       const { expand = true } = action.payload;
+      delete state[action.payload.id].errorByPath[action.payload.path];
       expand && expandPath(state, action);
     })
     .addCase(pathNavigatorTreeFetchPathChildrenComplete, (state, { payload }) => {
       updatePath(state, payload);
     })
-    .addCase(
-      pathNavigatorTreeBulkFetchPathChildren,
-      (state, action: StandardAction<PathNavTreeBulkFetchPathChildrenPayload>) => {
-        const { requests } = action.payload;
-        requests.forEach((request) => {
-          const { expand = true } = request;
-          expand && expandPath(state, { payload: request });
-        });
-      }
-    )
-    .addCase(
-      pathNavigatorTreeBulkFetchPathChildrenComplete,
-      (state, { payload: { paths } }: StandardAction<PathNavTreeBulkFetchPathChildrenCompletePayload>) => {
-        paths.forEach((path) => {
-          updatePath(state, path);
-        });
-      }
-    )
+    .addCase(pathNavigatorTreeFetchPathChildrenFailed, (state, action) => {
+      state[action.payload.id].errorByPath[action.payload.path] = action.payload.error;
+    })
+    .addCase(pathNavigatorTreeBulkFetchPathChildren, (state, action) => {
+      const { requests } = action.payload;
+      requests.forEach((request) => {
+        const { expand = true } = request;
+        expand && expandPath(state, { payload: request });
+      });
+    })
+    .addCase(pathNavigatorTreeBulkFetchPathChildrenComplete, (state, { payload: { paths } }) => {
+      paths.forEach((path) => {
+        updatePath(state, path);
+      });
+    })
     .addCase(pathNavigatorTreeFetchPathPage, (state, { payload: { id, path } }) => {
       state[id].offsetByPath[path] = state[id].offsetByPath[path]
         ? state[id].offsetByPath[path] + state[id].limit
@@ -269,12 +284,9 @@ const reducer = createReducer<LookupTable<PathNavigatorTreeStateProps>>({}, (bui
     })
     // region pathNavigatorTreeRestoreComplete
     // Assumption: this reducer is a reset. Not suitable for partial updates.
-    .addCase(
-      pathNavigatorTreeRestoreComplete,
-      (state, { payload }: { payload: PathNavigatorTreeRestoreCompletePayload }) => {
-        restoreTree(state, payload);
-      }
-    )
+    .addCase(pathNavigatorTreeRestoreComplete, (state, { payload }) => {
+      restoreTree(state, payload);
+    })
     // endregion
     // region pathNavigatorTreeBulkRestoreComplete
     .addCase(pathNavigatorTreeBulkRestoreComplete, (state, { payload: { trees } }) => {
@@ -286,39 +298,29 @@ const reducer = createReducer<LookupTable<PathNavigatorTreeStateProps>>({}, (bui
     .addCase(changeSiteComplete, () => ({}))
     .addCase(fetchSiteUiConfig, () => ({}))
     // region fetchSandboxItemComplete
-    .addCase(
-      fetchSandboxItemComplete,
-      (state, { payload: { item } }: StandardAction<FetchSandboxItemCompletePayload>) => {
-        const path = item.path;
-        Object.values(state).forEach((tree) => {
-          if (path in tree.totalByPath) {
-            tree.totalByPath[path] = item.childrenCount;
-          }
-        });
-      }
-    )
+    .addCase(fetchSandboxItemComplete, (state, { payload: { item } }) => {
+      const path = item.path;
+      Object.values(state).forEach((tree) => {
+        if (path in tree.totalByPath) {
+          tree.totalByPath[path] = item.childrenCount;
+        }
+      });
+    })
     // endregion
     .addCase(pathNavigatorTreeRootMissing, (state, { payload: { id } }) => {
       state[id].isRootPathMissing = true;
     })
     // region deleteContentEvent
-    .addCase(
-      deleteContentEvent,
-      (
-        state: LookupTable<PathNavigatorTreeStateProps>,
-        { payload: { targetPath } }: StandardAction<SocketEventBase>
-      ) => {
-        contentAndDeleteEventForEachApplicableTree(state, targetPath, (tree, targetPath, parentPathOfTargetPath) => {
-          if (targetPath === tree.rootPath) {
-            tree.isRootPathMissing = true;
-          } else if (parentPathOfTargetPath in tree.totalByPath) {
-            deleteItemFromState(tree, targetPath);
-          }
-        });
-      }
-    )
+    .addCase(deleteContentEvent, deleteContentEventHandler)
+    .addCase(deleteContentEvents, (state, action) => {
+      const auxAction = deleteContentEvent({ ...action.payload, targetPath: '' });
+      action.payload.targetPaths.forEach((targetPath) => {
+        auxAction.payload.targetPath = targetPath;
+        deleteContentEventHandler(state, auxAction);
+      });
+    })
     // endregion
-    .addCase(moveContentEvent, (state, { payload: { sourcePath } }: StandardAction<MoveContentEventPayload>) => {
+    .addCase(moveContentEvent, (state, { payload: { sourcePath } }) => {
       Object.values(state).forEach((tree) => {
         if (tree.rootPath === sourcePath) {
           tree.isRootPathMissing = true;

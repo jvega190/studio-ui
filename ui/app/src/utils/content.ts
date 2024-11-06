@@ -21,7 +21,7 @@ import { ContentType, ContentTypeField } from '../models/ContentType';
 import LookupTable from '../models/LookupTable';
 import ContentInstance, { ContentInstanceBase } from '../models/ContentInstance';
 import { deserialize, getInnerHtml, getInnerHtmlNumber, wrapElementInAuxDocument } from './xml';
-import { fileNameFromPath, unescapeHTML } from './string';
+import { fileNameFromPath, replaceAccentedVowels, unescapeHTML } from './string';
 import { getRootPath, isRootPath, withIndex, withoutIndex } from './path';
 import { isFolder, isNavigable, isPreviewable } from '../components/PathNavigator/utils';
 import {
@@ -92,7 +92,11 @@ export function isEditableAsset(path: string) {
     path.endsWith('.htm') ||
     path.endsWith('.sass') ||
     path.endsWith('.scss') ||
-    path.endsWith('.less')
+    path.endsWith('.less') ||
+    path.endsWith('.csv') ||
+    path.endsWith('.json') ||
+    path.endsWith('.yaml') ||
+    path.endsWith('.yml')
   );
 }
 
@@ -149,6 +153,7 @@ export function isBlobUrl(url: string): boolean {
 }
 
 /**
+ * TODO: Remove?
  * Returns the boolean intersection of editMode, lock status and the item's edit permission
  */
 export function getComputedEditMode({
@@ -956,6 +961,14 @@ export const createItemActionMap: (availableActions: number) => ItemActionsMap =
   rejectPublish: hasPublishRejectAction(value)
 });
 
+/**
+ * Given an item lookup table, tries to find the path with and without the "/index.xml" portion of the path.
+ * This reconciles path differences when working with pages between folder and index (i.e. /site/website vs /site/website/index.xml),
+ * which refer to the same item in most contexts.
+ * path {string} The path to look for
+ * lookupTable {Record<string, T>} The map-like object containing all items in which to look the path up
+ * @returns {T} The item if found, undefined otherwise
+ **/
 export function lookupItemByPath<T = DetailedItem>(path: string, lookupTable: LookupTable<T>): T {
   return lookupTable[withIndex(path)] ?? lookupTable[withoutIndex(path)];
 }
@@ -1056,14 +1069,16 @@ export function getComputedPublishingTarget(item: DetailedItem): PublishingTarge
 }
 
 export function applyFolderNameRules(name: string, options?: { allowBraces: boolean }): string {
-  let cleanedUpName = slugify(name, {
-    // Setting `strict: true` would disallow `_`, which we don't want.
-    strict: false,
-    // Because of the moment where the library trims, `trim: true` caused undesired replacement of `-`
-    // at the beginning or end of the slug.
-    trim: false
-  });
-  return cleanedUpName.replace(options?.allowBraces ? /[^a-zA-Z0-9-_{}]/g : /[^a-zA-Z0-9-_]/g, '');
+  return (
+    // Replace accented vowels with their non-accented counterpart
+    replaceAccentedVowels(name)
+      // replace spaces with dashes
+      .replace(/\s+/g, '-')
+      // replace multiple consecutive dashes with a single dash
+      .replace(/-+/g, '-')
+      // remove any character that is not a letter, number, dash or underscore, and allow braces if specified
+      .replace(options?.allowBraces ? /[^a-zA-Z0-9-_{}]/g : /[^a-zA-Z0-9-_]/g, '')
+  );
 }
 
 export function applyAssetNameRules(name: string, options?: { allowBraces: boolean }): string {
@@ -1075,7 +1090,14 @@ export function applyAssetNameRules(name: string, options?: { allowBraces: boole
  * letter, number, dash or underscore.
  */
 export function applyContentNameRules(name: string): string {
-  return name.replace(/[^a-z0-9-_]/g, '');
+  return slugify(name, {
+    lower: true,
+    // Setting `strict: true` would disallow `_`, which we don't want.
+    strict: false,
+    // Because of the moment where the library trims, `trim: true` caused undesired replacement of `-`
+    // at the beginning or end of the slug.
+    trim: false
+  }).replace(/[^a-z0-9-_]/g, '');
 }
 
 export const openItemEditor = (

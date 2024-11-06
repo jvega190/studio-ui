@@ -28,9 +28,11 @@ import { unlockItem } from '@craftercms/studio-ui/state/actions/content';
 import { NEVER, Observable, of } from 'rxjs';
 import { SandboxItem } from '@craftercms/studio-ui/models';
 import { GuestState } from './models/GuestStore';
-import { ElementRecord } from '../models/InContextEditing';
+import { ElementRecord, ICERecord } from '../models/InContextEditing';
 import { getCachedModel, getCachedModels, modelHierarchyMap } from '../contentController';
 import { getParentModelId } from '../utils/ice';
+import { getReferentialEntries } from '../iceRegistry';
+import { extractCollectionItem } from '@craftercms/studio-ui/utils/model';
 
 export function dragOk(status): boolean {
   return [
@@ -99,12 +101,68 @@ export function beforeWrite$<T extends any = 'continue', S extends any = never>(
  * it uses to compute the result, so they can be used by consumer if needed.
  */
 export const checkIfLockedOrModified = (state: GuestState, record: ElementRecord) => {
-  const { modelId } = record;
-  const model = getCachedModel(modelId);
+  let { modelId, fieldId } = record;
+  // If the present record refers to a node selector item, we need to switch the model to that item of the collection.
+  // Otherwise, is just the model from the present record.
+  let model = getCachedModel(modelId);
+  if (fieldId.length > 0) {
+    const entries = getReferentialEntries(record.iceIds[0]);
+    if (entries.recordType === 'node-selector-item') {
+      // There can be a scenario where the node-selector item is a file. When it is, there is no model associated to
+      // that item, so we fall back to the current model.
+      model = getCachedModel(extractCollectionItem(model, fieldId[0], record.index)) ?? model;
+      modelId = model.craftercms.id;
+    }
+  }
   const parentModelId = model.craftercms.path ? null : getParentModelId(modelId, getCachedModels(), modelHierarchyMap);
   const parentModel = parentModelId ? getCachedModel(parentModelId) : null;
   const path = model.craftercms.path ?? parentModel.craftercms.path;
   const isLocked = Boolean(state.lockedPaths[path]);
   const isExternallyModified = Boolean(state.externallyModifiedPaths[path]);
   return { isLocked, isExternallyModified, model, parentModelId, parentModel, path };
+};
+
+/**
+ * From a dragContext of a component being moved, returns an object with the following properties:
+ * movedToSameZone: boolean
+ * movedToSamePosition: boolean
+ * draggedElementIndex: number
+ * targetIndex: number
+ */
+export const getMoveComponentInfo = (dragContext: GuestState['dragContext']) => {
+  let { dragged: draggedRecord, targetIndex, dropZone, dropZones } = dragContext;
+  let newTargetIndex = targetIndex;
+  let draggedElementIndex = (draggedRecord as ICERecord)?.index;
+  const originDropZone = dropZones.find((dropZone) => dropZone.origin);
+  const currentDZ = dropZone.element;
+  const movedToSameZone = currentDZ === originDropZone?.element;
+  let movedToSamePosition = false;
+
+  if (typeof draggedElementIndex === 'string') {
+    // If the index is a string, it's a nested index with dot notation.
+    // At this point, we only care for the last index piece, which is
+    // the index of this item in the collection that's being manipulated.
+    draggedElementIndex = parseInt(draggedElementIndex.substring(draggedElementIndex.lastIndexOf('.') + 1));
+  }
+
+  // If same dropzone
+  if (movedToSameZone) {
+    // If moving the item down the array of items, need to account
+    // for all the originally subsequent items shifting up.
+    if (draggedElementIndex < targetIndex) {
+      // Hence the final target index in reality is
+      // the drop marker's index minus 1
+      newTargetIndex = targetIndex - 1;
+    }
+    movedToSamePosition = draggedElementIndex === targetIndex;
+  }
+
+  // Not same dropzone => different position
+
+  return {
+    movedToSameZone,
+    movedToSamePosition,
+    draggedElementIndex,
+    targetIndex: newTargetIndex
+  };
 };

@@ -27,11 +27,11 @@ import {
   tap,
   withLatestFrom
 } from 'rxjs/operators';
-import { not } from '../../utils/util';
+import { isEditActionAvailable, not } from '../../utils/util';
 import { post } from '../../utils/communicator';
 import * as iceRegistry from '../../iceRegistry';
 import { getById, getReferentialEntries, isTypeAcceptedAsByField } from '../../iceRegistry';
-import { beforeWrite$, checkIfLockedOrModified, dragOk, unwrapEvent } from '../util';
+import { beforeWrite$, checkIfLockedOrModified, dragOk, unwrapEvent, getMoveComponentInfo } from '../util';
 import * as contentController from '../../contentController';
 import {
   createContentInstance,
@@ -39,6 +39,7 @@ import {
   getCachedModels,
   getCachedModelsByPath,
   getCachedSandboxItem,
+  getCachedSandboxItems,
   getModelIdFromInheritedField,
   isInheritedField,
   modelHierarchyMap
@@ -100,6 +101,7 @@ import { uploadDataUrl } from '@craftercms/studio-ui/services/content';
 import { getRequestForgeryToken } from '@craftercms/studio-ui/utils/auth';
 import { ensureSingleSlash } from '@craftercms/studio-ui/utils/string';
 import { getInheritanceParentIdsForField } from '@craftercms/studio-ui/utils/content';
+import { SearchItem } from '@craftercms/studio-ui/models';
 
 const createReader$ = (file: File) =>
   new Observable((subscriber: Subscriber<ProgressEvent<FileReader>>) => {
@@ -124,9 +126,9 @@ const epic = combineEpics<GuestStandardAction, GuestStandardAction, GuestState>(
     action$.pipe(
       ofType('mouseover', 'mouseleave'),
       withLatestFrom(state$),
-      filter((args) => args[1].status === EditingStatus.LISTENING),
-      tap(([action, state]: [action: GuestStandardAction, state: GuestState]) =>
-        action.payload.event.stopPropagation()
+      tap(
+        ([action, state]: [action: GuestStandardAction, state: GuestState]) =>
+          state.status === EditingStatus.LISTENING && action.payload.event.stopPropagation()
       ),
       ignoreElements()
     ),
@@ -237,200 +239,208 @@ const epic = combineEpics<GuestStandardAction, GuestStandardAction, GuestState>(
             ? models[getModelIdFromInheritedField(modelId, record.fieldId)].craftercms.path
             : path;
 
-          // TODO: In the case of "move", only locking the source dropzone currently.
-          // The item unlock happens with write content API
-          return beforeWrite$({
-            path: pathToLock,
-            site: state.activeSite,
-            username: state.username,
-            localItem: cachedSandboxItem
-          }).pipe(
-            switchMap(() => {
-              switch (status) {
-                case EditingStatus.PLACING_DETACHED_ASSET: {
-                  const { dropZone } = dragContext;
-                  if (dropZone && dragContext.inZone) {
-                    const record = iceRegistry.getById(dropZone.iceId);
-                    contentController.updateField(
-                      record.modelId,
-                      record.fieldId,
-                      record.index,
-                      dragContext.dragged.path
-                    );
+          // If moving to the same position, there is no need of locking and other requests.
+          if (status === EditingStatus.SORTING_COMPONENT && getMoveComponentInfo(dragContext).movedToSamePosition) {
+            post(instanceDragEnded());
+            return of(computedDragEnd());
+          } else {
+            // TODO: In the case of "move", only locking the source dropzone currently.
+            // The item unlock happens with write content API
+            return beforeWrite$({
+              path: pathToLock,
+              site: state.activeSite,
+              username: state.username,
+              localItem: cachedSandboxItem
+            }).pipe(
+              switchMap(() => {
+                switch (status) {
+                  case EditingStatus.PLACING_DETACHED_ASSET: {
+                    const { dropZone } = dragContext;
+                    if (dropZone && dragContext.inZone) {
+                      const record = iceRegistry.getById(dropZone.iceId);
+                      contentController.updateField(
+                        record.modelId,
+                        record.fieldId,
+                        record.index,
+                        (dragContext.dragged as SearchItem).path
+                      );
+                    }
+                    break;
                   }
-                  break;
-                }
-                case EditingStatus.SORTING_COMPONENT: {
-                  if (notNullOrUndefined(dragContext.targetIndex)) {
-                    post(instanceDragEnded());
-                    moveComponent(dragContext);
-                    return of(computedDragEnd());
+                  case EditingStatus.SORTING_COMPONENT: {
+                    if (notNullOrUndefined(dragContext.targetIndex)) {
+                      post(instanceDragEnded());
+                      moveComponent(dragContext);
+                      return of(computedDragEnd());
+                    }
+                    break;
                   }
-                  break;
-                }
-                case EditingStatus.PLACING_NEW_COMPONENT: {
-                  if (notNullOrUndefined(dragContext.targetIndex)) {
-                    // `contentType` on the dragContext is the content type of the thing getting created
-                    const { targetIndex, contentType, dropZone } = dragContext;
-                    const record = iceRegistry.getById(dropZone.iceId);
-                    const entries = getReferentialEntries(record);
-                    // This assumes the validation of the type being accepted by the field has been performed prior
-                    // to this running. Hence, create as embedded if accepted, otherwise create as shared.
-                    const createAsEmbedded = isTypeAcceptedAsByField(entries.field, contentType.id, 'embedded');
-                    let newComponentPath = null;
-                    if (!createAsEmbedded) {
-                      newComponentPath =
-                        entries.contentType.dataSources?.find(
-                          (ds) => ds.type === 'components' && ds.contentTypes.split(',').includes(contentType.id)
-                        )?.baseRepoPath ?? null;
-                      newComponentPath = processPathMacros({
-                        path: newComponentPath,
-                        objectId: record.modelId,
-                        useUUID: false,
-                        fullParentPath: path
+                  case EditingStatus.PLACING_NEW_COMPONENT: {
+                    if (notNullOrUndefined(dragContext.targetIndex)) {
+                      // `contentType` on the dragContext is the content type of the thing getting created
+                      const { targetIndex, contentType, dropZone } = dragContext;
+                      const record = iceRegistry.getById(dropZone.iceId);
+                      const entries = getReferentialEntries(record);
+                      // This assumes the validation of the type being accepted by the field has been performed prior
+                      // to this running. Hence, create as embedded if accepted, otherwise create as shared.
+                      const createAsEmbedded = isTypeAcceptedAsByField(entries.field, contentType.id, 'embedded');
+                      let newComponentPath = null;
+                      if (!createAsEmbedded) {
+                        newComponentPath =
+                          entries.contentType.dataSources?.find(
+                            (ds) => ds.type === 'components' && ds.contentTypes.split(',').includes(contentType.id)
+                          )?.baseRepoPath ?? null;
+                        newComponentPath = newComponentPath
+                          ? processPathMacros({
+                              path: newComponentPath,
+                              objectId: record.modelId,
+                              useUUID: false,
+                              fullParentPath: path
+                            })
+                          : newComponentPath;
+                      }
+                      const instance = createContentInstance(contentType, newComponentPath);
+                      setTimeout(() => {
+                        contentController.insertComponent(
+                          record.modelId,
+                          record.fieldId,
+                          record.fieldId.includes('.') ? `${record.index}.${targetIndex}` : targetIndex,
+                          instance,
+                          !createAsEmbedded,
+                          true
+                        );
                       });
                     }
-                    const instance = createContentInstance(contentType, newComponentPath);
-                    setTimeout(() => {
-                      contentController.insertComponent(
-                        record.modelId,
-                        record.fieldId,
-                        record.fieldId.includes('.') ? `${record.index}.${targetIndex}` : targetIndex,
-                        instance,
-                        !createAsEmbedded,
-                        true
-                      );
-                    });
+                    break;
                   }
-                  break;
-                }
-                case EditingStatus.PLACING_DETACHED_COMPONENT: {
-                  if (notNullOrUndefined(dragContext.targetIndex)) {
-                    const { targetIndex, instance, dropZone } = dragContext;
-                    const record = iceRegistry.getById(dropZone.iceId);
-                    setTimeout(() => {
-                      contentController.insertComponent(
-                        record.modelId,
-                        record.fieldId,
-                        record.fieldId.includes('.') ? `${record.index}.${targetIndex}` : targetIndex,
-                        instance,
-                        // Only shared components ever come through this path
-                        true
-                      );
-                    });
+                  case EditingStatus.PLACING_DETACHED_COMPONENT: {
+                    if (notNullOrUndefined(dragContext.targetIndex)) {
+                      const { targetIndex, instance, dropZone } = dragContext;
+                      const record = iceRegistry.getById(dropZone.iceId);
+                      setTimeout(() => {
+                        contentController.insertComponent(
+                          record.modelId,
+                          record.fieldId,
+                          record.fieldId.includes('.') ? `${record.index}.${targetIndex}` : targetIndex,
+                          instance,
+                          // Only shared components ever come through this path
+                          true
+                        );
+                      });
+                    }
+                    break;
                   }
-                  break;
-                }
-                case EditingStatus.UPLOAD_ASSET_FROM_DESKTOP: {
-                  if (dragContext.inZone) {
-                    const { field } = iceRegistry.getReferentialEntries(record.iceIds[0]);
-                    const {
-                      validations: { allowImageUpload }
-                    } = field;
+                  case EditingStatus.UPLOAD_ASSET_FROM_DESKTOP: {
+                    if (dragContext.inZone) {
+                      const { field } = iceRegistry.getReferentialEntries(record.iceIds[0]);
+                      const {
+                        validations: { allowImageUpload }
+                      } = field;
 
-                    const path = allowImageUpload?.value
-                      ? processPathMacros({
-                          path: allowImageUpload.value,
-                          objectId: record.modelId
-                        })
-                      : // TODO: Support path coming from content type definition
-                        `/static-assets/images/${record.modelId}`;
+                      const path = allowImageUpload?.value
+                        ? processPathMacros({
+                            path: allowImageUpload.value,
+                            objectId: record.modelId
+                          })
+                        : // TODO: Support path coming from content type definition
+                          `/static-assets/images/${record.modelId}`;
 
-                    return merge(
-                      of(desktopAssetUploadStarted({ record })),
-                      of(desktopAssetDragEnded()),
-                      validateActionPolicy(state.activeSite, {
-                        type: 'CREATE',
-                        target: ensureSingleSlash(`${path}/${file.name}`),
-                        contentMetadata: {
-                          fileSize: file.size
-                        }
-                      }).pipe(
-                        switchMap(({ allowed, modifiedValue, message }) => {
-                          const aImg = record.element;
-                          const originalSrc = aImg.src;
-                          if (allowed) {
-                            const readerObs = createReader$(file);
-                            const fileName = modifiedValue
-                              ? modifiedValue.replace(path, '').replace(/^\//, '')
-                              : file.name;
-                            return readerObs.pipe(
-                              switchMap((event) => {
-                                aImg.src = event.target.result;
-
-                                post(snackGuestMessage({ id: 'assetUploadStarted' }));
-                                return uploadDataUrl(
-                                  state.activeSite,
-                                  {
-                                    name: fileName,
-                                    type: file.type,
-                                    dataUrl: event.target.result
-                                  },
-                                  path,
-                                  getRequestForgeryToken()
-                                ).pipe(
-                                  switchMap((action) => {
-                                    if (action.type === 'progress') {
-                                      const { progress } = action.payload;
-                                      const percentage = Math.floor(
-                                        parseInt(((progress.bytesUploaded / progress.bytesTotal) * 100).toFixed(2))
-                                      );
-                                      return of(
-                                        desktopAssetUploadProgress({
-                                          record,
-                                          percentage
-                                        })
-                                      );
-                                    } else {
-                                      if (modifiedValue) {
-                                        post(snackGuestMessage({ id: message }));
-                                      }
-                                      return of(
-                                        desktopAssetUploadComplete({
-                                          record,
-                                          path: `${path}${path.endsWith('/') ? '' : '/'}${fileName}`
-                                        })
-                                      );
-                                    }
-                                  }),
-                                  catchError(() => {
-                                    aImg.src = originalSrc;
-                                    post(
-                                      snackGuestMessage({
-                                        id: 'uploadError',
-                                        level: 'required'
-                                      })
-                                    );
-                                    return of(desktopAssetUploadFailed({ record }));
-                                  })
-                                );
-                              })
-                            );
-                          } else {
-                            aImg.src = originalSrc;
-                            post(
-                              snackGuestMessage({
-                                id: 'noPolicyComply',
-                                level: 'required',
-                                values: {
-                                  fileName: file.name,
-                                  detail: message
-                                }
-                              })
-                            );
-                            return of(desktopAssetUploadFailed({ record }));
+                      return merge(
+                        of(desktopAssetUploadStarted({ record })),
+                        of(desktopAssetDragEnded()),
+                        validateActionPolicy(state.activeSite, {
+                          type: 'CREATE',
+                          target: ensureSingleSlash(`${path}/${file.name}`),
+                          contentMetadata: {
+                            fileSize: file.size
                           }
-                        })
-                      )
-                    );
-                  } else {
-                    return of(desktopAssetDragEnded());
+                        }).pipe(
+                          switchMap(({ allowed, modifiedValue, message }) => {
+                            const aImg = record.element;
+                            const originalSrc = aImg.src;
+                            if (allowed) {
+                              const readerObs = createReader$(file);
+                              const fileName = modifiedValue
+                                ? modifiedValue.replace(path, '').replace(/^\//, '')
+                                : file.name;
+                              return readerObs.pipe(
+                                switchMap((event) => {
+                                  aImg.src = event.target.result;
+
+                                  post(snackGuestMessage({ id: 'assetUploadStarted' }));
+                                  return uploadDataUrl(
+                                    state.activeSite,
+                                    {
+                                      name: fileName,
+                                      type: file.type,
+                                      dataUrl: event.target.result
+                                    },
+                                    path,
+                                    getRequestForgeryToken()
+                                  ).pipe(
+                                    switchMap((action) => {
+                                      if (action.type === 'progress') {
+                                        const { progress } = action.payload;
+                                        const percentage = Math.floor(
+                                          parseInt(((progress.bytesUploaded / progress.bytesTotal) * 100).toFixed(2))
+                                        );
+                                        return of(
+                                          desktopAssetUploadProgress({
+                                            record,
+                                            percentage
+                                          })
+                                        );
+                                      } else {
+                                        if (modifiedValue) {
+                                          post(snackGuestMessage({ id: message }));
+                                        }
+                                        return of(
+                                          desktopAssetUploadComplete({
+                                            record,
+                                            path: `${path}${path.endsWith('/') ? '' : '/'}${fileName}`
+                                          })
+                                        );
+                                      }
+                                    }),
+                                    catchError(() => {
+                                      aImg.src = originalSrc;
+                                      post(
+                                        snackGuestMessage({
+                                          id: 'uploadError',
+                                          level: 'required'
+                                        })
+                                      );
+                                      return of(desktopAssetUploadFailed({ record }));
+                                    })
+                                  );
+                                })
+                              );
+                            } else {
+                              aImg.src = originalSrc;
+                              post(
+                                snackGuestMessage({
+                                  id: 'noPolicyComply',
+                                  level: 'required',
+                                  values: {
+                                    fileName: file.name,
+                                    detail: message
+                                  }
+                                })
+                              );
+                              return of(desktopAssetUploadFailed({ record }));
+                            }
+                          })
+                        )
+                      );
+                    } else {
+                      return of(desktopAssetDragEnded());
+                    }
                   }
                 }
-              }
-              return NEVER;
-            })
-          );
+                return NEVER;
+              })
+            );
+          }
         } else {
           return NEVER;
         }
@@ -506,113 +516,131 @@ const epic = combineEpics<GuestStandardAction, GuestStandardAction, GuestState>(
           (state.highlightMode === HighlightMode.MOVE_TARGETS && state.status === EditingStatus.LISTENING) ||
           (state.highlightMode === HighlightMode.MOVE_TARGETS && state.status === EditingStatus.FIELD_SELECTED)
       ),
-      switchMap(([action, state]: [action: GuestStandardAction, state: GuestState]) => {
-        const { record, event } = action.payload;
-        const { isLocked, isExternallyModified } = checkIfLockedOrModified(state, record);
-        if (isLocked || isExternallyModified) {
-          return NEVER;
-        } else if (state.highlightMode === HighlightMode.ALL && state.status === EditingStatus.LISTENING) {
-          let selected = {
-            modelId: null,
-            fieldId: [],
-            index: null,
-            coordinates: { x: event.clientX, y: event.clientY }
-          };
-          if (getById(record.iceIds[0]).recordType === 'node-selector-item') {
-            // When selecting the item on a node-selector the desired edit will be the item itself.
-            // The following will send the component model id instead of the item model id
-            selected.modelId = extractCollectionItem(getCachedModel(record.modelId), record.fieldId[0], record.index);
-          } else {
-            selected.modelId = record.modelId;
-            selected.index = record.index;
-            selected.fieldId = record.fieldId;
-          }
-          const { field } = iceRegistry.getReferentialEntries(record.iceIds[0]);
-          const validations = field?.validations;
-          const type = field?.type;
-          switch (type) {
-            case 'html':
-            case 'text':
-            case 'textarea': {
-              if (!window.tinymce) {
-                alert(
-                  'Looks like tinymce is not added on the page. ' +
-                    'Please add tinymce on to the page to enable editing.'
-                );
-              } else if (not(validations?.readOnly?.value)) {
-                const setupId = field.properties?.rteConfiguration?.value ?? 'generic';
-                const setup = state.rteConfig[setupId] ?? Object.values(state.rteConfig)[0] ?? {};
-                // Only pass rte setup to html type, text/textarea (plaintext) controls won't show full rich-text-editing.
-
-                const models = getCachedModels();
-                const modelId = action.payload.record.modelId;
-                const parentModelId = getParentModelId(modelId, models, modelHierarchyMap);
-                const path = models[parentModelId ?? modelId].craftercms.path;
-                const cachedSandboxItem = getCachedSandboxItem(path);
-
-                const pathToLock = isInheritedField(modelId, field.id)
-                  ? models[getModelIdFromInheritedField(modelId, field.id)].craftercms.path
-                  : path;
-
-                return beforeWrite$({
-                  path: pathToLock,
-                  site: state.activeSite,
-                  username: state.username,
-                  localItem: cachedSandboxItem
-                }).pipe(switchMap(() => initTinyMCE(pathToLock, record, validations, type === 'html' ? setup : {})));
-              }
-              break;
+      switchMap(
+        ([action, state]: [
+          action: GuestStandardAction<{ record: ElementRecord; event: PointerEvent }>,
+          state: GuestState
+        ]) => {
+          const { record, event } = action.payload;
+          const { isLocked, isExternallyModified } = checkIfLockedOrModified(state, record);
+          const isEditable = isEditActionAvailable({
+            record,
+            models: getCachedModels(),
+            sandboxItemsByPath: getCachedSandboxItems(),
+            parentModelId: getParentModelId(record.modelId, getCachedModels(), modelHierarchyMap)
+          });
+          if (
+            isExternallyModified ||
+            // Selecting a page/component still has some value even if it's locked
+            // to access certain available actions or the item menu. For fields, no
+            // action can be performed so won't allow selection.
+            (isLocked && getById(record.iceIds[0]).recordType === 'field') ||
+            !isEditable
+          ) {
+            return NEVER;
+          } else if (state.highlightMode === HighlightMode.ALL && state.status === EditingStatus.LISTENING) {
+            let selected = {
+              modelId: null,
+              fieldId: [],
+              index: null,
+              coordinates: { x: event.clientX, y: event.clientY }
+            };
+            if (getById(record.iceIds[0]).recordType === 'node-selector-item') {
+              // When selecting the item on a node-selector the desired edit will be the item itself.
+              // The following will send the component model id instead of the item model id
+              selected.modelId = extractCollectionItem(getCachedModel(record.modelId), record.fieldId[0], record.index);
+            } else {
+              selected.modelId = record.modelId;
+              selected.index = record.index;
+              selected.fieldId = record.fieldId;
             }
-            default: {
-              const sources: Observable<StandardAction>[] = [
+            const { field } = iceRegistry.getReferentialEntries(record.iceIds[0]);
+            const validations = field?.validations;
+            const type = field?.type;
+            switch (type) {
+              case 'html':
+              case 'text':
+              case 'textarea': {
+                if (!window.tinymce) {
+                  alert(
+                    'Looks like tinymce is not added on the page. ' +
+                      'Please add tinymce on to the page to enable editing.'
+                  );
+                } else if (not(validations?.readOnly?.value)) {
+                  const setupId = field.properties?.rteConfiguration?.value ?? 'generic';
+                  const setup = state.rteConfig[setupId] ?? Object.values(state.rteConfig)[0] ?? {};
+                  // Only pass rte setup to html type, text/textarea (plaintext) controls won't show full rich-text-editing.
+
+                  const models = getCachedModels();
+                  const modelId = action.payload.record.modelId;
+                  const parentModelId = getParentModelId(modelId, models, modelHierarchyMap);
+                  const path = models[parentModelId ?? modelId].craftercms.path;
+                  const cachedSandboxItem = getCachedSandboxItem(path);
+
+                  const pathToLock = isInheritedField(modelId, field.id)
+                    ? models[getModelIdFromInheritedField(modelId, field.id)].craftercms.path
+                    : path;
+
+                  return beforeWrite$({
+                    path: pathToLock,
+                    site: state.activeSite,
+                    username: state.username,
+                    localItem: cachedSandboxItem
+                  }).pipe(switchMap(() => initTinyMCE(pathToLock, record, validations, type === 'html' ? setup : {})));
+                }
+                break;
+              }
+              default: {
+                const sources: Observable<StandardAction>[] = [
+                  escape$.pipe(
+                    takeUntil(clearAndListen$),
+                    tap(() => post(clearSelectedZones.type)),
+                    map(() => startListening()),
+                    take(1)
+                  ),
+                  of(setEditingStatus({ status: EditingStatus.FIELD_SELECTED }))
+                ];
+                // Rapid clicking (double-clicking) outside an RTE will cause the normal
+                // FIELD_SELECTED status but without a previous mouseover setting the highlight.
+                if (Object.values(state.highlighted).length === 0) {
+                  sources.unshift(of({ type: 'mouseover', payload: { record, event } }));
+                }
+                return merge(...sources);
+              }
+            }
+          } else if (state.highlightMode === HighlightMode.MOVE_TARGETS && state.status === EditingStatus.LISTENING) {
+            const movableRecordId = iceRegistry.getMovableParentRecord(record.iceIds[0]);
+            if (notNullOrUndefined(movableRecordId)) {
+              // Inform host of the field selection
+              // post();
+              // By this point element is already highlighted. We just need to freeze
+              // and change mode to reveal the move/sort options.
+              return merge(
                 escape$.pipe(
                   takeUntil(clearAndListen$),
+                  // TODO: stop & map to startListening when any pivoting action occurs
+                  // takeUntil(action$.pipe(ofType(componentInstanceDragStarted.type))),
                   tap(() => post(clearSelectedZones.type)),
                   map(() => startListening()),
                   take(1)
                 ),
                 of(setEditingStatus({ status: EditingStatus.FIELD_SELECTED }))
-              ];
-              // Rapid clicking (double-clicking) outside an RTE will cause the normal
-              // FIELD_SELECTED status but without a previous mouseover setting the highlight.
-              if (Object.values(state.highlighted).length === 0) {
-                sources.unshift(of({ type: 'mouseover', payload: { record, event } }));
-              }
-              return merge(...sources);
+              );
+            }
+          } else if (
+            state.status === EditingStatus.FIELD_SELECTED &&
+            state.highlightMode === HighlightMode.MOVE_TARGETS
+          ) {
+            const movableRecordId = iceRegistry.getMovableParentRecord(record.iceIds[0]);
+            if (state.highlighted[movableRecordId] === void 0) {
+              post(clearSelectedZones.type);
+              return of(startListening());
             }
           }
-        } else if (state.highlightMode === HighlightMode.MOVE_TARGETS && state.status === EditingStatus.LISTENING) {
-          const movableRecordId = iceRegistry.getMovableParentRecord(record.iceIds[0]);
-          if (notNullOrUndefined(movableRecordId)) {
-            // Inform host of the field selection
-            // post();
-            // By this point element is already highlighted. We just need to freeze
-            // and change mode to reveal the move/sort options.
-            return merge(
-              escape$.pipe(
-                takeUntil(clearAndListen$),
-                // TODO: stop & map to startListening when any pivoting action occurs
-                // takeUntil(action$.pipe(ofType(componentInstanceDragStarted.type))),
-                tap(() => post(clearSelectedZones.type)),
-                map(() => startListening()),
-                take(1)
-              ),
-              of(setEditingStatus({ status: EditingStatus.FIELD_SELECTED }))
-            );
-          }
-        } else if (
-          state.status === EditingStatus.FIELD_SELECTED &&
-          state.highlightMode === HighlightMode.MOVE_TARGETS
-        ) {
-          const movableRecordId = iceRegistry.getMovableParentRecord(record.iceIds[0]);
-          if (state.highlighted[movableRecordId] === void 0) {
-            post(clearSelectedZones.type);
-            return of(startListening());
-          }
+          // Note: Returning NEVER will unsubscribe from any previous stream returned on a prior click.
+          return NEVER;
         }
-        // Note: Returning NEVER will unsubscribe from any previous stream returned on a prior click.
-        return NEVER;
-      })
+      )
     ),
   // endregion
   // region computedDragEnd
@@ -639,18 +667,18 @@ const epic = combineEpics<GuestStandardAction, GuestStandardAction, GuestState>(
   },
   // endregion
   // region contentTypeDropTargetsRequest
-  (action$: Observable<GuestStandardAction<{ contentTypeId: string }>>) => {
+  (action$: Observable<GuestStandardAction<{ contentTypeId: string }>>, state$) => {
     return action$.pipe(
       ofType(contentTypeDropTargetsRequest.type),
-      tap((action) => {
+      withLatestFrom(state$),
+      tap(([action, state]) => {
         const { contentTypeId } = action.payload;
-        const dropTargets = iceRegistry.getContentTypeDropTargets(contentTypeId).map((item) => {
-          let { elementRecordId } = ElementRegistry.compileDropZone(item.id);
-          let highlight = ElementRegistry.getHoverData(elementRecordId);
+        const dropTargets = Object.values(state.highlighted).map(({ id, label }) => {
+          const item = iceRegistry.getById(ElementRegistry.get(id).iceIds[0]);
           return {
             modelId: item.modelId,
             fieldId: item.fieldId,
-            label: highlight.label,
+            label,
             id: item.id,
             contentTypeId
           };
@@ -820,7 +848,7 @@ const epic = combineEpics<GuestStandardAction, GuestStandardAction, GuestState>(
       ofType(assetDragStarted.type),
       withLatestFrom(state$),
       switchMap(([, state]) => {
-        if (nullOrUndefined(state.dragContext.dragged.path)) {
+        if (nullOrUndefined((state.dragContext.dragged as SearchItem).path)) {
           console.error('No path found for this drag asset.');
         } else {
           return initializeDragSubjects(state$);
@@ -903,34 +931,13 @@ const epic = combineEpics<GuestStandardAction, GuestStandardAction, GuestState>(
 );
 
 const moveComponent = (dragContext) => {
-  let { dragged, dropZone, dropZones, targetIndex } = dragContext,
-    record = dragged,
-    draggedElementIndex = record.index,
-    originDropZone = dropZones.find((dropZone) => dropZone.origin),
-    currentDZ = dropZone.element;
-
-  if (typeof draggedElementIndex === 'string') {
-    // If the index is a string, it's a nested index with dot notation.
-    // At this point, we only care for the last index piece, which is
-    // the index of this item in the collection that's being manipulated.
-    draggedElementIndex = parseInt(draggedElementIndex.substr(draggedElementIndex.lastIndexOf('.') + 1), 10);
-  }
-
+  let { dragged, dropZone, dropZones } = dragContext;
+  let originDropZone = dropZones.find((dropZone) => dropZone.origin);
   const containerRecord = iceRegistry.getById(originDropZone.iceId);
-
-  // Determine whether the component is to be sorted or moved.
-  if (currentDZ === originDropZone.element) {
-    // Same drop zone: Sort identified
-
-    // If moving the item down the array of items, need to account
-    // for all the originally subsequent items shifting up.
-    if (draggedElementIndex < targetIndex) {
-      // Hence the final target index in reality is
-      // the drop marker's index minus 1
-      --targetIndex;
-    }
-
-    if (draggedElementIndex !== targetIndex) {
+  // Determine whether the component is being sorted or moved.
+  const { movedToSameZone, movedToSamePosition, draggedElementIndex, targetIndex } = getMoveComponentInfo(dragContext);
+  if (movedToSameZone) {
+    if (!movedToSamePosition) {
       setTimeout(() => {
         contentController.sortItem(
           containerRecord.modelId,
@@ -953,7 +960,6 @@ const moveComponent = (dragContext) => {
     // Different drop zone: Move identified
 
     const rec = iceRegistry.getById(dropZone.iceId);
-
     // Chrome didn't trigger the dragend event
     // without the set timeout.
     setTimeout(() => {

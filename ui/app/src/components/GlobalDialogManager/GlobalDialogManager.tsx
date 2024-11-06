@@ -69,6 +69,7 @@ const PathSelectionDialog = lazy(() => import('../PathSelectionDialog'));
 const UnlockPublisherDialog = lazy(() => import('../UnlockPublisherDialog'));
 const WidgetDialog = lazy(() => import('../WidgetDialog'));
 const CodeEditorDialog = lazy(() => import('../CodeEditorDialog'));
+const BrokenReferencesDialog = lazy(() => import('../BrokenReferencesDialog'));
 // endregion
 
 // @formatter:off
@@ -369,6 +370,10 @@ function GlobalDialogManager() {
       {/* region Compare Versions */}
       <CompareVersionsDialog
         {...state.compareVersions}
+        leftActions={state.compareVersions.leftActions?.map((action) => ({
+          ...action,
+          onClick: createCallback(action.onClick, dispatch)
+        }))}
         rightActions={state.compareVersions.rightActions?.map((action) => ({
           ...action,
           onClick: createCallback(action.onClick, dispatch)
@@ -392,6 +397,15 @@ function GlobalDialogManager() {
         onClose={createCallback(state.workflowCancellation.onClose, dispatch)}
         onClosed={createCallback(state.workflowCancellation.onClosed, dispatch)}
         onContinue={createCallback(state.workflowCancellation.onContinue, dispatch)}
+      />
+      {/* endregion */}
+
+      {/* region Broken References */}
+      <BrokenReferencesDialog
+        {...state.brokenReferences}
+        onClose={createCallback(state.brokenReferences.onClose, dispatch)}
+        onClosed={createCallback(state.brokenReferences.onClosed, dispatch)}
+        onContinue={createCallback(state.brokenReferences.onContinue, dispatch)}
       />
       {/* endregion */}
 
@@ -458,6 +472,8 @@ function GlobalDialogManager() {
         {...state.upload}
         onClose={createCallback(state.upload.onClose, dispatch)}
         onClosed={createCallback(state.upload.onClosed, dispatch)}
+        onFileAdded={createCallback(state.upload.onFileAdded, dispatch)}
+        onUploadSuccess={createCallback(state.upload.onUploadSuccess, dispatch)}
       />
       {/* endregion */}
 
@@ -511,7 +527,11 @@ function GlobalDialogManager() {
       {/* endregion */}
 
       {/* region Item Mega Menu */}
-      <ItemMegaMenu {...state.itemMegaMenu} onClose={createCallback(state.itemMegaMenu.onClose, dispatch)} />
+      <ItemMegaMenu
+        {...state.itemMegaMenu}
+        onClose={createCallback(state.itemMegaMenu.onClose, dispatch)}
+        onClosed={createCallback(state.itemMegaMenu.onClosed, dispatch)}
+      />
       {/* endregion */}
 
       {/* region Launcher */}

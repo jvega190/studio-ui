@@ -14,9 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
+import { BehaviorSubject, merge, Observable, of, Subject } from 'rxjs';
 import { filter, map, switchMap, take, tap } from 'rxjs/operators';
 import * as Model from '@craftercms/studio-ui/utils/model';
+import { extractCollectionPiece } from '@craftercms/studio-ui/utils/model';
 import Cookies from 'js-cookie';
 import { fromTopic, post } from './utils/communicator';
 import { v4 as uuid } from 'uuid';
@@ -29,6 +30,7 @@ import {
   deleteItemOperation,
   duplicateItemOperation,
   fetchGuestModel,
+  fetchGuestModelComplete,
   insertComponentOperation,
   insertItemOperation,
   moveItemOperation,
@@ -44,7 +46,8 @@ import { parseDescriptor, preParseSearchResults } from '@craftercms/content';
 import { crafterConf } from '@craftercms/classes';
 import { getDefaultValue } from '@craftercms/studio-ui/utils/contentType';
 import { ModelHierarchyDescriptor, ModelHierarchyMap, modelsToLookup } from '@craftercms/studio-ui/utils/content';
-import { SandboxItem } from '@craftercms/studio-ui/models';
+import { SandboxItem, StandardAction } from '@craftercms/studio-ui/models';
+import { fetchSandboxItemComplete } from '@craftercms/studio-ui/state/actions/content';
 
 // if (process.env.NODE_ENV === 'development') {
 // TODO: Notice
@@ -204,7 +207,7 @@ export function fetchByPath(
   return of('nothing').pipe(
     tap(() => post(fetchGuestModel({ path }))),
     switchMap(() =>
-      fromTopic('FETCH_GUEST_MODEL_COMPLETE').pipe(
+      fromTopic(fetchGuestModelComplete.type).pipe(
         map((e) => e?.payload),
         filter((payload) => payload.path === path),
         take(1)
@@ -378,10 +381,19 @@ export function duplicateItem(modelId: string, fieldId: string, index: number | 
 export function insertItem(modelId: string, fieldId: string, index: number | string, contentType: ContentType): void {
   const instance: InstanceRecord = {};
   const models = getCachedModels();
-  Object.entries(contentType.fields[fieldId].fields).forEach(([id, field]) => {
+  const fieldPathArray = fieldId.split('.');
+  const repeatFields = fieldPathArray.reduce((acc, field) => acc[field].fields, contentType.fields);
+  // For each of the entries of the field of type `content-type`, set the default value for the new instance.
+  Object.entries(repeatFields).forEach(([id, field]) => {
     if (!systemProps.includes(field.id)) {
       instance[id] = getDefaultValue(field);
     }
+  });
+  const currentItems = extractCollectionPiece(models[modelId], fieldId, index);
+  const model = setCollection(models[modelId], fieldId, index, [...currentItems, instance]);
+  models$.next({
+    ...models,
+    [modelId]: model
   });
 
   const action = insertItemOperation({
@@ -613,7 +625,7 @@ export function moveItem(
 
   const targetModel = models[targetModelId];
   const targetCollection = symmetricTarget
-    ? Model.extractCollection(targetModel, targetFieldId, targetIndex) ?? []
+    ? (Model.extractCollection(targetModel, targetFieldId, targetIndex) ?? [])
     : Model.extractCollectionItem(targetModel, targetFieldId, targetIndex);
   // Insert item in target collection @ the desired position
   const targetResult = targetCollection.slice(0);
@@ -746,11 +758,9 @@ export function deleteItem(modelId: string, fieldId: string, index: number | str
 }
 
 // Host sends over all content types upon Guest check in.
-fromTopic(contentTypesResponse.type)
-  .pipe(map((action) => action?.payload))
-  .subscribe(({ contentTypes }) => {
-    contentTypes$.next(Array.isArray(contentTypes) ? createLookupTable(contentTypes) : contentTypes);
-  });
+fromTopic(contentTypesResponse.type).subscribe(({ payload: { contentTypes } }) => {
+  contentTypes$.next(Array.isArray(contentTypes) ? createLookupTable(contentTypes) : contentTypes);
+});
 
 export interface FetchGuestModelCompletePayload {
   path: string;
@@ -762,45 +772,41 @@ export interface FetchGuestModelCompletePayload {
   permissions: string[];
 }
 
-fromTopic('FETCH_GUEST_MODEL_COMPLETE')
-  .pipe(map((action) => action?.payload))
-  .subscribe(
-    ({ modelLookup, hierarchyMap, modelIdByPath, sandboxItems, permissions }: FetchGuestModelCompletePayload) => {
-      Object.keys(modelIdByPath).forEach((path) => {
-        requestedPaths[path] = true;
-      });
-      const mhm = modelHierarchyMap;
-      // TODO: Must understand the differences when a model comes multiple times in the `hierarchyMap` coming from Host
-      //  parentId has been seen populated as part of a bigger request but null when model loaded in isolation
-      Object.keys(hierarchyMap).forEach((id) => {
-        if (mhm[id]) {
-          mhm[id].modelId = hierarchyMap[id].modelId;
-          mhm[id].parentId = mhm[id].parentId ?? hierarchyMap[id].parentId;
-          mhm[id].parentContainerFieldPath =
-            mhm[id].parentContainerFieldPath ?? hierarchyMap[id].parentContainerFieldPath;
-          mhm[id].parentContainerFieldIndex =
-            mhm[id].parentContainerFieldIndex ?? hierarchyMap[id].parentContainerFieldIndex;
-          mhm[id].children = mhm[id].children ?? hierarchyMap[id].children;
-        } else {
-          mhm[id] = hierarchyMap[id];
-        }
-      });
-      const nextModels: Record<string, ContentInstance> = { ...models$.value };
-      // Partial models (non-flattened references) can create instability.
-      // Take only those that seem complete and let the system fetch those that aren't.
-      Object.entries(modelLookup).forEach(([id, instance]) => {
-        if ((instance.craftercms.id || instance.craftercms.path) && instance.craftercms.contentTypeId) {
-          nextModels[id] = instance;
-        }
-      });
-      models$.next(nextModels);
-      paths$.next({ ...paths$.value, ...modelIdByPath });
-      items$.next({ ...items$.value, ...createLookupTable(sandboxItems, 'path') });
-      permissions$.next(permissions);
+fromTopic(fetchGuestModelComplete.type).subscribe((action: StandardAction<FetchGuestModelCompletePayload>) => {
+  const { modelLookup, hierarchyMap, modelIdByPath, sandboxItems, permissions } = action.payload;
+  Object.keys(modelIdByPath).forEach((path) => {
+    requestedPaths[path] = true;
+  });
+  const mhm = modelHierarchyMap;
+  // TODO: Must understand the differences when a model comes multiple times in the `hierarchyMap` coming from Host
+  //  parentId has been seen populated as part of a bigger request but null when model loaded in isolation
+  Object.keys(hierarchyMap).forEach((id) => {
+    if (mhm[id]) {
+      mhm[id].modelId = hierarchyMap[id].modelId;
+      mhm[id].parentId = mhm[id].parentId ?? hierarchyMap[id].parentId;
+      mhm[id].parentContainerFieldPath = mhm[id].parentContainerFieldPath ?? hierarchyMap[id].parentContainerFieldPath;
+      mhm[id].parentContainerFieldIndex =
+        mhm[id].parentContainerFieldIndex ?? hierarchyMap[id].parentContainerFieldIndex;
+      mhm[id].children = mhm[id].children ?? hierarchyMap[id].children;
+    } else {
+      mhm[id] = hierarchyMap[id];
     }
-  );
+  });
+  const nextModels: Record<string, ContentInstance> = { ...models$.value };
+  // Partial models (non-flattened references) can create instability.
+  // Take only those that seem complete and let the system fetch those that aren't.
+  Object.entries(modelLookup).forEach(([id, instance]) => {
+    if ((instance.craftercms.id || instance.craftercms.path) && instance.craftercms.contentTypeId) {
+      nextModels[id] = instance;
+    }
+  });
+  models$.next(nextModels);
+  paths$.next({ ...paths$.value, ...modelIdByPath });
+  items$.next({ ...items$.value, ...createLookupTable(sandboxItems, 'path') });
+  permissions$.next(permissions);
+});
 
-fromTopic(updateFieldValueOperationComplete.type)
+merge(fromTopic(updateFieldValueOperationComplete.type), fromTopic(fetchSandboxItemComplete.type))
   .pipe(map((action) => action?.payload))
   .subscribe(({ item }) => {
     items$.next({

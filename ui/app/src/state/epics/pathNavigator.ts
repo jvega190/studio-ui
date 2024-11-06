@@ -28,6 +28,9 @@ import { getIndividualPaths, getParentPath, getRootPath, withIndex, withoutIndex
 import { forkJoin, NEVER, Observable } from 'rxjs';
 import {
   pathNavigatorBackgroundRefresh,
+  pathNavigatorBulkFetchPathComplete,
+  pathNavigatorBulkFetchPathFailed,
+  pathNavigatorBulkRefresh,
   pathNavigatorChangeLimit,
   pathNavigatorChangePage,
   pathNavigatorConditionallySetPath,
@@ -44,22 +47,23 @@ import {
   pathNavigatorSetCurrentPath,
   pathNavigatorSetKeyword,
   PathNavInitPayload,
-  pathNavRootPathMissing,
-  pathNavigatorBulkRefresh,
-  pathNavigatorBulkFetchPathComplete,
-  pathNavigatorBulkFetchPathFailed
+  pathNavRootPathMissing
 } from '../actions/pathNavigator';
 import { setStoredPathNavigator } from '../../utils/state';
 import { CrafterCMSEpic } from '../store';
 import { showErrorDialog } from '../reducers/dialogs/error';
 import { AjaxError } from 'rxjs/ajax';
 import StandardAction from '../../models/StandardAction';
-import SocketEvent from '../../models/SocketEvent';
+import {
+  DeleteContentEventPayload,
+  DeleteContentEventsPayload,
+  MoveContentEventPayload
+} from '../../models/SocketEvent';
 import {
   contentEvent,
   deleteContentEvent,
+  deleteContentEvents,
   moveContentEvent,
-  MoveContentEventPayload,
   pluginInstalled,
   publishEvent,
   workflowEvent
@@ -274,7 +278,8 @@ export default [
             keyword,
             limit: state.pathNavigator[id].limit,
             sortStrategy: state.pathNavigator[id].sortStrategy,
-            order: state.pathNavigator[id].order
+            order: state.pathNavigator[id].order,
+            excludes: state.pathNavigator[id].excludes
           }).pipe(
             map((children) =>
               pathNavigatorFetchPathComplete({
@@ -305,6 +310,7 @@ export default [
             limit: state.pathNavigator[id].limit,
             sortStrategy: state.pathNavigator[id].sortStrategy,
             order: state.pathNavigator[id].order,
+            excludes: state.pathNavigator[id].excludes,
             ...(Boolean(state.pathNavigator[id].keyword) && { keyword: state.pathNavigator[id].keyword }),
             offset
           }).pipe(
@@ -437,20 +443,24 @@ export default [
       })
     ),
   // endregion
-  // region deleteContentEvent
-  (action$: Observable<StandardAction<SocketEvent>>, state$) =>
+  // region deleteContentEvent, deleteContentEvents
+  (action$: Observable<StandardAction<DeleteContentEventPayload | DeleteContentEventsPayload>>, state$) =>
     action$.pipe(
-      ofType(deleteContentEvent.type),
+      ofType(deleteContentEvent.type, deleteContentEvents.type),
       withLatestFrom(state$),
       mergeMap(([action, state]) => {
+        const targetPaths =
+          deleteContentEvents.type === action.type
+            ? (action.payload as DeleteContentEventsPayload).targetPaths
+            : [(action.payload as DeleteContentEventPayload).targetPath];
         const actions = [];
-        const {
-          payload: { targetPath }
-        } = action;
-        Object.values(state.pathNavigator).forEach((navigator) => {
-          if (!navigator.isRootPathMissing && navigator.currentPath.startsWith(targetPath)) {
-            actions.push(pathNavigatorSetCurrentPath({ id: navigator.id, path: navigator.rootPath }));
-          }
+        const navigators = Object.values(state.pathNavigator);
+        targetPaths.forEach((targetPath) => {
+          navigators.forEach((navigator) => {
+            if (!navigator.isRootPathMissing && navigator.currentPath.startsWith(targetPath)) {
+              actions.push(pathNavigatorSetCurrentPath({ id: navigator.id, path: navigator.rootPath }));
+            }
+          });
         });
         return actions;
       })

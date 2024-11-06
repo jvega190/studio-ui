@@ -126,6 +126,7 @@ export function ScheduledDashlet(props: ScheduledDashletProps) {
   const selectionOptions = useSelectionOptions(selectedItems, formatMessage, selectedCount);
   const filterState = useDashletFilterState('scheduledDashlet');
   const refs = useUpdateRefs({
+    items,
     currentPage,
     filterState,
     loadPagesUntil: null as (pageNumber: number, itemTypes?: Array<SystemType>, backgroundRefresh?: boolean) => void
@@ -227,7 +228,10 @@ export function ScheduledDashlet(props: ScheduledDashletProps) {
   }, [loadPage]);
 
   useEffect(() => {
-    refs.current.loadPagesUntil(refs.current.currentPage, filterState.selectedTypes);
+    // To avoid re-fetching when it first loads
+    if (refs.current.items) {
+      refs.current.loadPagesUntil(refs.current.currentPage, filterState.selectedTypes);
+    }
   }, [filterState?.selectedTypes, refs]);
 
   // region Item Updates Propagation
@@ -356,10 +360,7 @@ export function ScheduledDashlet(props: ScheduledDashletProps) {
       )}
       {total === 0 && (
         <DashletEmptyMessage>
-          <FormattedMessage
-            id="pendingApprovalDashlet.noPendingItems"
-            defaultMessage="There are no items pending approval"
-          />
+          <FormattedMessage defaultMessage="There are no items scheduled for publish" />
         </DashletEmptyMessage>
       )}
     </DashletCard>

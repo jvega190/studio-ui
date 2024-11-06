@@ -31,7 +31,7 @@ export interface ContentTypeFieldValidation<T = any> {
 
 export type ValidationKeys =
   | 'allowedContentTypeTags'
-  | 'allowedContentTypes' // TODO: assess removing this validation in favour of keeping allowedEmbeddedContentTypes & allowedSharedContentTypes only
+  | 'allowedContentTypes'
   | 'allowedEmbeddedContentTypes'
   | 'allowedSharedContentTypes'
   | 'allowedSharedExistingContentTypes'
@@ -57,9 +57,7 @@ export type ValidationKeys =
   | 'allowAudioUpload'
   | 'allowAudioFromRepo';
 
-export type ContentTypeFieldValidations = {
-  [key in ValidationKeys]: ContentTypeFieldValidation;
-};
+export type ContentTypeFieldValidations = Record<ValidationKeys, ContentTypeFieldValidation>;
 
 export interface ValidationResult {
   id: string;

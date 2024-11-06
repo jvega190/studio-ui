@@ -310,6 +310,9 @@ export const contentTypesMessages = defineMessages({
   },
   audioManager: {
     defaultMessage: 'Audio Manager'
+  },
+  invalidMacros: {
+    defaultMessage: 'The following invalid macros were removed: {macros}'
   }
 });
 
@@ -423,17 +426,6 @@ export const simpleTaxonomyDSMessages = defineMessages({
   }
 });
 
-export const browseCMISMessages = defineMessages({
-  cmis: {
-    id: 'browseCMIS.cmis',
-    defaultMessage: 'CMIS'
-  },
-  cloningCMIS: {
-    id: 'browseCMIS.cloningCMIS',
-    defaultMessage: 'Cloning CMIS Asset'
-  }
-});
-
 export const browseSearchMessages = defineMessages({
   lookUpParentError: {
     id: 'browseSearchMessages.lookUpChildError',
@@ -507,6 +499,10 @@ export const formEngineMessages = defineMessages({
   },
   keepItemInNodeSelector: {
     defaultMessage: 'Ignore'
+  },
+  maxItemsReached: {
+    defaultMessage:
+      'A max of {maxSize} {maxSize, plural, one {item is} other {items are}} allowed. Please remove items to fit the limit before trying to add more.'
   }
 });
 

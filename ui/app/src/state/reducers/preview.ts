@@ -17,10 +17,12 @@
 import { createReducer } from '@reduxjs/toolkit';
 import GlobalState, { HighlightMode, PagedEntityState } from '../../models/GlobalState';
 import {
+  allowedContentTypesUpdate,
   clearDropTargets,
   clearSelectForEdit,
   closeToolsPanel,
   contentTypeDropTargetsResponse,
+  errorPageCheckIn,
   fetchAssetsPanelItems,
   fetchAssetsPanelItemsComplete,
   fetchAssetsPanelItemsFailed,
@@ -31,7 +33,8 @@ import {
   fetchComponentsByContentTypeComplete,
   fetchComponentsByContentTypeFailed,
   fetchContentModelComplete,
-  fetchGuestModelComplete,
+  fetchContentTypesComplete,
+  fetchGuestModelsComplete,
   fetchPrimaryGuestModelComplete,
   guestCheckIn,
   guestCheckOut,
@@ -135,7 +138,7 @@ const componentsInitialState = createEntityState({
     offset: 0,
     limit: 10
   },
-  contentTypeFilter: 'all',
+  contentTypeFilter: 'compatible',
   inPageInstances: {}
 }) as PagedEntityState<ContentInstance>;
 
@@ -144,7 +147,7 @@ const initialState: GlobalState['preview'] = {
   highlightMode: 'all',
   hostSize: { width: null, height: null },
   toolsPanelPageStack: [],
-  showToolsPanel: process.env.REACT_APP_SHOW_TOOLS_PANEL ? process.env.REACT_APP_SHOW_TOOLS_PANEL === 'true' : true,
+  showToolsPanel: import.meta.env.VITE_SHOW_TOOLS_PANEL ? import.meta.env.VITE_SHOW_TOOLS_PANEL === 'true' : true,
   toolsPanelWidth: 240,
   icePanelWidth: 240,
   icePanelStack: [],
@@ -166,7 +169,8 @@ const initialState: GlobalState['preview'] = {
   richTextEditor: null,
   editModePadding: false,
   windowSize: window.innerWidth,
-  xbDetectionTimeoutMs: 5000
+  xbDetectionTimeoutMs: 5000,
+  error: null
 };
 
 const minDrawerWidth = 240;
@@ -313,7 +317,9 @@ const reducer = createReducer<GlobalState['preview']>(initialState, (builder) =>
       const href = location.href;
       const origin = location.origin;
       const url = href.replace(location.origin, '');
+      state.error = null;
       state.guest = {
+        allowedContentTypes: null,
         url,
         origin,
         modelId: null,
@@ -323,7 +329,8 @@ const reducer = createReducer<GlobalState['preview']>(initialState, (builder) =>
         modelIdByPath: null,
         selected: null,
         itemBeingDragged: null,
-        mainModelModifier: null
+        mainModelModifier: null,
+        contentTypesUpdated: false
       };
     })
     .addCase(guestCheckOut, (state) => {
@@ -341,8 +348,13 @@ const reducer = createReducer<GlobalState['preview']>(initialState, (builder) =>
       // }
       return nextState;
     })
+    .addCase(errorPageCheckIn, (state, { payload }) => {
+      state.error = {
+        ...payload
+      };
+    })
     .addCase(fetchPrimaryGuestModelComplete, fetchGuestModelsCompleteHandler)
-    .addCase(fetchGuestModelComplete, fetchGuestModelsCompleteHandler)
+    .addCase(fetchGuestModelsComplete, fetchGuestModelsCompleteHandler)
     .addCase(guestModelUpdated, (state, { payload: { model } }) => ({
       ...state,
       guest: {
@@ -623,18 +635,7 @@ const reducer = createReducer<GlobalState['preview']>(initialState, (builder) =>
       };
     })
     .addCase(initToolsPanelConfig, (state, { payload }) => {
-      let toolsPanelConfig = {
-        widgets: [
-          {
-            id: 'craftercms.component.EmptyState',
-            uiKey: -1,
-            configuration: {
-              title: messages.noUiConfigMessageTitle,
-              subtitle: messages.noUiConfigMessageSubtitle
-            }
-          }
-        ]
-      };
+      let toolsPanelConfig = { widgets: [] };
       const arrays = ['widgets', 'permittedRoles', 'excludes'];
       const lookupTables = ['fields'];
       const configDOM = fromString(payload.configXml);
@@ -705,7 +706,7 @@ const reducer = createReducer<GlobalState['preview']>(initialState, (builder) =>
       let icePanelConfig = {
         widgets: [
           {
-            id: 'craftercms.component.EmptyState',
+            id: 'craftercms.components.EmptyState',
             uiKey: -1,
             configuration: {
               title: messages.noUiConfigMessageTitle,
@@ -799,6 +800,14 @@ const reducer = createReducer<GlobalState['preview']>(initialState, (builder) =>
     })
     .addCase(mainModelModifiedExternally, (state, { payload }) => {
       if (state.guest) state.guest.mainModelModifier = payload.user;
+    })
+    .addCase(allowedContentTypesUpdate, (state, { payload }) => {
+      if (!state.guest) return state;
+      state.guest.allowedContentTypes = payload;
+    })
+    .addCase(fetchContentTypesComplete, (state) => {
+      if (!state.guest) return state;
+      state.guest.contentTypesUpdated = true;
     });
 });
 

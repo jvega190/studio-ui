@@ -73,6 +73,7 @@ export interface SearchItem {
   lastModified: string;
   size: number;
   snippets: any;
+  additionalFields?: Record<string, unknown>;
 }
 
 export interface SearchFacet {
@@ -91,6 +92,8 @@ export interface SearchResult {
 
 export interface ComponentsContentTypeParams extends PaginationOptions {
   keywords?: string;
+  sortBy?: string;
+  sortOrder?: string;
 }
 
 export interface ContentInstancePage {

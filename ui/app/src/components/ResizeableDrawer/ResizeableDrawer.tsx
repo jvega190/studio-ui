@@ -40,10 +40,13 @@ interface ResizeableDrawerProps extends DrawerProps {
   open: boolean;
   width: number;
   maxWidth?: number;
+  minWidth?: number;
   belowToolbar?: boolean;
   classes?: DrawerProps['classes'] & Partial<Record<ResizeableDrawerClassKey, string>>;
   styles?: ResizeableDrawerStyles;
   onWidthChange?(width: number): void;
+  onResizeStart?(): void;
+  onResizeStop?(): void;
 }
 
 const useStyles = makeStyles<ResizeableDrawerStyles, ResizeableDrawerClassKey>()(
@@ -95,7 +98,7 @@ const useStyles = makeStyles<ResizeableDrawerStyles, ResizeableDrawerClassKey>()
       ...drawerPaperRight
     },
     resizeHandle: {
-      width: '1px',
+      width: '2px',
       cursor: 'ew-resize',
       padding: '4px 0 0',
       position: 'absolute',
@@ -150,7 +153,10 @@ export function ResizeableDrawer(props: ResizeableDrawerProps) {
     children,
     width,
     maxWidth = 500,
+    minWidth = 240,
     onWidthChange,
+    onResizeStart,
+    onResizeStop,
     className,
     classes: propsClasses = {},
     PaperProps,
@@ -175,21 +181,24 @@ export function ResizeableDrawer(props: ResizeableDrawerProps) {
     (e) => {
       if (onWidthChange) {
         e.preventDefault();
-        const newWidth =
+        let newWidth =
           (anchor === 'left'
             ? e.clientX - drawerRef.current.getBoundingClientRect().left
             : window.innerWidth - (e.clientX - drawerRef.current.getBoundingClientRect().left)) + 5;
-        onWidthChange(newWidth <= maxWidth ? newWidth : maxWidth);
+        newWidth = newWidth < minWidth ? minWidth : newWidth > maxWidth ? maxWidth : newWidth;
+        onWidthChange(newWidth);
       }
     },
-    [anchor, onWidthChange, maxWidth]
+    [anchor, onWidthChange, maxWidth, minWidth]
   );
 
   const handleMouseDown = onWidthChange
     ? () => {
         setResizeActive(true);
+        onResizeStart?.();
         const handleMouseUp = () => {
           setResizeActive(false);
+          onResizeStop?.();
           document.removeEventListener('mouseup', handleMouseUp, true);
           document.removeEventListener('mousemove', handleMouseMove, true);
         };

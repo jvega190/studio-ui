@@ -267,17 +267,25 @@ YAHOO.extend(CStudioForms.Datasources.SharedContent, CStudioForms.CStudioFormDat
 
   edit: function (key, control, index, callback) {
     var _self = this;
-    const readonly = control.readonly;
-    const action = readonly ? CStudioAuthoring.Operations.viewContent : CStudioAuthoring.Operations.editContent;
-
-    CStudioAuthoring.Service.lookupContentItem(CStudioAuthoringContext.site, key, {
-      success: function (contentTO) {
+    craftercms.getStore().dispatch({ type: 'BLOCK_UI' });
+    craftercms.services.content.fetchSandboxItem(CStudioAuthoringContext.site, key).subscribe({
+      next(sandboxItem) {
+        const readonly = !sandboxItem.availableActionsMap.edit;
+        const action =
+          readonly || !sandboxItem.availableActionsMap.edit
+            ? CStudioAuthoring.Operations.viewContent
+            : CStudioAuthoring.Operations.editContent;
+        // CStudioAuthoring.Operations.editContent shows the UI blocker too, so no point
+        // hiding it yet in the case of an edit.
+        if (action === CStudioAuthoring.Operations.viewContent) {
+          craftercms.getStore().dispatch({ type: 'UNBLOCK_UI' });
+        }
         action(
-          contentTO.item.contentType,
+          sandboxItem.contentTypeId,
           CStudioAuthoringContext.siteId,
-          contentTO.item.mimeType,
-          contentTO.item.nodeRef,
-          contentTO.item.uri,
+          sandboxItem.mimeType,
+          null,
+          sandboxItem.path,
           false,
           {
             success: function (contentTO, editorId, name, value, draft, action) {
@@ -305,7 +313,7 @@ YAHOO.extend(CStudioForms.Datasources.SharedContent, CStudioForms.CStudioFormDat
           }
         );
       },
-      failure: function () {}
+      error() {}
     });
   },
 

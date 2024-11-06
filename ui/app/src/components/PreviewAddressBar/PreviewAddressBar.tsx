@@ -106,6 +106,7 @@ export function PreviewAddressBar(props: AddressBarProps) {
   const { classes } = useAddressBarStyles();
   const { site = '', item } = props;
   const noSiteSet = isBlank(site);
+  const { error } = usePreviewState();
   const { currentUrlPath = '' } = usePreviewNavigation();
   const [internalUrl, setInternalUrl] = useState(currentUrlPath);
   const [openSelector, setOpenSelector] = useState(false);
@@ -121,6 +122,7 @@ export function PreviewAddressBar(props: AddressBarProps) {
       return null;
     }
   }, [item]);
+  const disableItemMenuButton = !item || Boolean(error);
 
   const onOptions = (e) => {
     const anchorRect = e.currentTarget.getBoundingClientRect();
@@ -225,11 +227,10 @@ export function PreviewAddressBar(props: AddressBarProps) {
           padding: '2px 2px 2px 10px',
           display: 'flex',
           alignItems: 'center',
-          backgroundColor: theme.palette.background.default,
-          borderColor: theme.palette.mode === 'light' ? theme.palette.divider : theme.palette.grey[700],
+          backgroundColor: theme.palette.mode === 'light' ? theme.palette.background.paper : theme.palette.grey['800'],
+          borderColor: theme.palette.divider,
           ...(focus && {
-            border: `2px solid ${theme.palette.primary.main}`,
-            backgroundColor: theme.palette.background.paper
+            border: `2px solid ${theme.palette.primary.main}`
           })
         })}
       >
@@ -249,10 +250,16 @@ export function PreviewAddressBar(props: AddressBarProps) {
             onBlur={() => setFocus(false)}
           />
         )}
-        <Tooltip title={Boolean(item) ? <FormattedMessage defaultMessage="Options (a)" /> : ''}>
-          <IconButton onClick={onOptions} disabled={!item} size="medium" id="previewAddressBarActionsMenuButton">
+        <Tooltip title={disableItemMenuButton ? '' : <FormattedMessage defaultMessage="Options (a)" />}>
+          <IconButton
+            onClick={onOptions}
+            disabled={disableItemMenuButton}
+            sx={error ? { visibility: 'hidden' } : undefined}
+            size="medium"
+            id="previewAddressBarActionsMenuButton"
+          >
             <MoreRounded sx={alertLevel === 2 ? { visibility: 'hidden' } : undefined} />
-            {!item && (
+            {!item && !error && (
               <Box
                 sx={{
                   top: 0,

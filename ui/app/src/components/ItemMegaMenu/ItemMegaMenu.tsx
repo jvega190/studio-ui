@@ -29,6 +29,7 @@ import { useSelection } from '../../hooks/useSelection';
 import { useActiveSiteId } from '../../hooks/useActiveSiteId';
 import { useEnv } from '../../hooks/useEnv';
 import { useItemsByPath } from '../../hooks/useItemsByPath';
+import { lookupItemByPath } from '../../utils/content';
 
 export interface ItemMegaMenuBaseProps {
   path: string;
@@ -43,11 +44,13 @@ export type ItemMegaMenuProps = PropsWithChildren<
   ItemMegaMenuBaseProps & {
     anchorEl?: PopoverProps['anchorEl'];
     onClose?(): void;
+    onClosed?(): void;
   }
 >;
 
 export interface ItemMegaMenuStateProps extends ItemMegaMenuBaseProps {
   onClose?: StandardAction;
+  onClosed?: StandardAction;
 }
 
 export function ItemMegaMenu(props: ItemMegaMenuProps) {
@@ -55,6 +58,7 @@ export function ItemMegaMenu(props: ItemMegaMenuProps) {
     open,
     path,
     onClose,
+    onClosed,
     anchorEl,
     anchorOrigin,
     anchorReference = 'anchorEl',
@@ -64,7 +68,7 @@ export function ItemMegaMenu(props: ItemMegaMenuProps) {
   const site = useActiveSiteId();
   const items = useItemsByPath();
   const clipboard = useSelection((state) => state.content.clipboard);
-  const item = items[path];
+  const item = lookupItemByPath(path, items);
   const contentTypes = useSelection((state) => state.contentTypes);
   const itemContentType = contentTypes?.byId?.[item?.contentTypeId]?.name;
   const { authoringBase } = useEnv();
@@ -86,7 +90,6 @@ export function ItemMegaMenu(props: ItemMegaMenuProps) {
   const options = generateSingleItemOptions(item, formatMessage, { hasClipboard });
   const editorialOptions = options[0];
   const nonEditorialOptions = options.slice(1);
-
   return (
     <ItemMegaMenuUI
       open={open}
@@ -103,6 +106,7 @@ export function ItemMegaMenu(props: ItemMegaMenuProps) {
       anchorPosition={anchorPosition}
       locale={locale}
       onClose={onClose}
+      onClosed={onClosed}
       onMenuItemClicked={onMenuItemClicked}
     />
   );
