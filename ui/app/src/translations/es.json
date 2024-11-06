@@ -847,6 +847,7 @@
   "PgwNgt": "Publicación",
   "phNH1z": "Última edición",
   "PHPhuH": "Obtención de elementos dependientes",
+  "PIPPcG": "El artículo es parte de un paquete de publicación. Editarlo cancelará todo el paquete.",
   "ple8XM": "Se requiere el proyecto fuente",
   "plugin.by": "Por",
   "plugin.crafterCMS": "CrafterCMS",
@@ -1012,6 +1013,7 @@
   "Q8Qw5B": "Descripción",
   "Qbejj7": "Resolver conflictos",
   "QFEZtO": "Aprobado por {name} para <render_target>{publishingTarget}</render_target> en {date}",
+  "qIdViu": "Advertencia de Cancelación de Publicación",
   "qnwnPU": "Almacenes de blobs de solo lectura",
   "QoUxBT": "Pública",
   "QpGBxv": "Audio del repositorio",
@@ -1604,8 +1606,6 @@
   "words.yes": "Si",
   "workflowCancellation.cancel": "Cancelar",
   "workflowCancellation.continue": "Continuar",
-  "workflowCancellation.subtitle": "Editar cancelará todos los elementos que están en el lote de implementación programado. Revise la lista de archivos a continuación y elija \"Continuar\" para cancelar el flujo de trabajo y editar o \"Cancelar\" para permanecer en su panel de control.",
-  "workflowCancellation.title": "Advertencia: cancelación del flujo de trabajo",
   "workflowCancellationDialog.noAffectedFiles": "No hay archivos afectados",
   "workflowStateManagementMessages.statesUpdatedMessage": "Estado para {count} {count, plural, one {ítem} other {ítems}} actualizado con éxito",
   "workflowStates.locked": "Bloqueado",
@@ -1624,6 +1624,7 @@
   "yNmV/R": "Artículos",
   "yRy625": "Estado de navegación de la barra lateral izquierda",
   "YZl6cv": "Diverso",
+  "Z6hPZP": "Artículos en este paquete",
   "ZIX1sG": "Haga clic en Crear Token arriba para crear uno.",
   "zQvVDJ": "Todos"
 }
