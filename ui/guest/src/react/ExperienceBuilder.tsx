@@ -18,7 +18,14 @@ import React, { PropsWithChildren, useEffect, useMemo, useRef, useState } from '
 import { fromEvent, interval, merge } from 'rxjs';
 import { filter, map, take, takeUntil, tap, withLatestFrom } from 'rxjs/operators';
 import * as iceRegistry from '../iceRegistry';
-import { contentTypes$, FetchGuestModelCompletePayload, flushRequestedPaths, operations$ } from '../contentController';
+import {
+  contentTypes$,
+  flushRequestedPaths,
+  getCachedModels,
+  getCachedSandboxItems,
+  modelHierarchyMap,
+  operations$
+} from '../contentController';
 import * as elementRegistry from '../elementRegistry';
 import { GuestContextProvider, GuestReduxContext, useDispatch, useSelector } from './GuestContext';
 import CrafterCMSPortal from './CrafterCMSPortal';
@@ -41,6 +48,7 @@ import {
   moveModeClass
 } from '../constants';
 import {
+  allowedContentTypesUpdate,
   assetDragEnded,
   assetDragStarted,
   clearContentTreeFieldSelected,
@@ -53,6 +61,7 @@ import {
   contentTreeFieldSelected,
   contentTreeSwitchFieldInstance,
   contentTypeDropTargetsRequest,
+  fetchGuestModelComplete,
   guestCheckIn,
   guestCheckOut,
   highlightModeChanged,
@@ -68,15 +77,15 @@ import {
 } from '@craftercms/studio-ui/state/actions/preview';
 import { createGuestStore } from '../store/store';
 import { Provider } from 'react-redux';
-import { clearAndListen$ } from '../store/subjects';
+import { clearAndListen$, guestCheckIn$ } from '../store/subjects';
 import { GuestState } from '../store/models/GuestStore';
 import { nnou, nullOrUndefined } from '@craftercms/studio-ui/utils/object';
 import { scrollToDropTargets } from '../utils/dom';
 import { checkIfLockedOrModified, dragOk } from '../store/util';
-import { createLocationArgument } from '../utils/util';
+import { createLocationArgument, isEditActionAvailable } from '../utils/util';
 import FieldInstanceSwitcher from './FieldInstanceSwitcher';
 import LookupTable from '@craftercms/studio-ui/models/LookupTable';
-import { Snackbar, SnackbarProps, ThemeOptions, ThemeProvider } from '@mui/material';
+import { Snackbar, SnackbarProps, Theme, ThemeOptions, ThemeProvider } from '@mui/material';
 import { deepmerge } from '@mui/utils';
 import ZoneMenu from './ZoneMenu';
 import {
@@ -91,7 +100,6 @@ import {
   dropzoneEnter,
   dropzoneLeave,
   setDropPosition,
-  setLockedItems,
   startListening
 } from '../store/actions';
 import DragGhostElement from './DragGhostElement';
@@ -108,12 +116,14 @@ import { setJwt } from '@craftercms/studio-ui/utils/auth';
 import { SHARED_WORKER_NAME } from '@craftercms/studio-ui/utils/constants';
 import useUnmount from '@craftercms/studio-ui/hooks/useUnmount';
 import { DeepPartial } from '@craftercms/studio-ui/models/DeepPartial';
-import { emitSystemEvent } from '@craftercms/studio-ui/state/actions/system';
+import { emitSystemEvent, emitSystemEvents } from '@craftercms/studio-ui/state/actions/system';
 import StandardAction from '@craftercms/studio-ui/models/StandardAction';
+import { getById, getReferentialEntries, subscribeToAllowedContentTypes } from '../iceRegistry';
+import { getParentModelId } from '../utils/ice';
+import { SxProps } from '@mui/system';
 
 // TODO: add themeOptions and global styles customising
 interface BaseXBProps {
-  documentDomain?: string;
   themeOptions?: ThemeOptions;
   sxOverrides?: DeepPartial<GuestStylesSx>;
   globalStyleOverrides?: GuestGlobalStylesProps['styles'];
@@ -139,8 +149,6 @@ type GenericXBProps<T> = PropsWithChildren<BaseXBProps & T>;
 
 export type ExperienceBuilderProps = GenericXBProps<{ model: ContentInstance } | { path: string }>;
 
-const initialDocumentDomain = typeof document === 'undefined' ? void 0 : document.domain;
-
 function bypassKeyStroke(e, refs) {
   const isKeyDown = e.type === 'keydown';
   refs.current.keysPressed['z'] = isKeyDown;
@@ -156,7 +164,6 @@ function ExperienceBuilderInternal(props: InternalGuestProps) {
     themeOptions,
     sxOverrides,
     children,
-    documentDomain,
     scrollElement = 'html, body',
     isHeadlessMode = false,
     globalStyleOverrides
@@ -210,6 +217,7 @@ function ExperienceBuilderInternal(props: InternalGuestProps) {
     }),
     [dispatch, hasHost, draggable, editMode, highlightMode]
   );
+  const models = getCachedModels();
 
   useUnmount(() => {
     clearAndListen$.next();
@@ -219,7 +227,7 @@ function ExperienceBuilderInternal(props: InternalGuestProps) {
   // Connect to shared worker & socket
   useEffect(() => {
     if (hasHost && authoringBase) {
-      const worker = new SharedWorker(`${authoringBase}/static-assets/next/shared-worker.js`, {
+      const worker = new SharedWorker(`${authoringBase}/static-assets/app/shared-worker.js`, {
         name: SHARED_WORKER_NAME,
         credentials: 'same-origin'
       });
@@ -237,6 +245,10 @@ function ExperienceBuilderInternal(props: InternalGuestProps) {
             }
             case emitSystemEvent.type: {
               dispatch(payload);
+              break;
+            }
+            case emitSystemEvents.type: {
+              payload.events.forEach((action) => dispatch(action));
               break;
             }
           }
@@ -257,7 +269,7 @@ function ExperienceBuilderInternal(props: InternalGuestProps) {
 
   // This requires maintenance as key shortcuts evolve/change.
   useHotkeys(
-    'a,r,m,e,p,shift+/,shift,/,shift+e',
+    'a,r,e,m,p,shift+slash,shift+e',
     (e) => {
       post(hotKey({ key: e.key, type: 'keyup', shiftKey: e.shiftKey, ctrlKey: e.ctrlKey, metaKey: e.metaKey }));
     },
@@ -314,19 +326,6 @@ function ExperienceBuilderInternal(props: InternalGuestProps) {
     }
   }, [editMode, editModePadding]);
 
-  // Sets document domain
-  useEffect(() => {
-    if (documentDomain) {
-      try {
-        document.domain = documentDomain;
-      } catch (e) {
-        console.error(e);
-      }
-    } else if (document.domain !== initialDocumentDomain) {
-      document.domain = initialDocumentDomain;
-    }
-  }, [documentDomain]);
-
   // Add/remove edit on class
   useEffect(() => {
     const html = document.documentElement;
@@ -358,9 +357,6 @@ function ExperienceBuilderInternal(props: InternalGuestProps) {
           }
           dispatch(action);
           break;
-        case assetDragStarted.type:
-          dispatch(assetDragStarted({ asset: payload }));
-          break;
         case assetDragEnded.type:
           dragOk(status) && dispatch(action);
           break;
@@ -388,10 +384,6 @@ function ExperienceBuilderInternal(props: InternalGuestProps) {
           post(guestCheckOut({ path }));
           return (window.location.href = payload.url);
         }
-        case contentTypeDropTargetsRequest.type: {
-          dispatch(contentTypeDropTargetsRequest({ contentTypeId: payload }));
-          break;
-        }
         case scrollToDropTarget.type:
           scrollToDropTargets([payload], scrollElement, (id: number) => elementRegistry.fromICEId(id).element);
           break;
@@ -414,12 +406,15 @@ function ExperienceBuilderInternal(props: InternalGuestProps) {
           dispatch({ type });
           break;
         // region actions whitelisted
+        case contentTypeDropTargetsRequest.type:
+        case fetchGuestModelComplete.type:
         case componentInstanceDragStarted.type:
         case clearHighlightedDropTargets.type:
         case desktopAssetUploadProgress.type:
         case desktopAssetUploadComplete.type:
         case updateRteConfig.type:
         case setEditModePadding.type:
+        case assetDragStarted.type:
           dispatch(action);
           break;
         // endregion
@@ -456,21 +451,29 @@ function ExperienceBuilderInternal(props: InternalGuestProps) {
 
   // Load dependencies (tinymce, ace)
   useEffect(() => {
-    if (hasHost && !window.tinymce) {
-      const script = document.createElement('script');
-      script.src = '/studio/static-assets/libs/tinymce/tinymce.min.js';
-      // script.onload = () => ...;
-      document.head.appendChild(script);
-    }
-    if (hasHost && !window.ace) {
-      const script = document.createElement('script');
-      script.src = '/studio/static-assets/libs/ace/ace.js';
-      document.head.appendChild(script);
+    if (hasHost) {
+      if (!window.tinymce) {
+        const script = document.createElement('script');
+        script.src = '/studio/static-assets/libs/tinymce/tinymce.min.js';
+        // script.onload = () => ...;
+        document.head.appendChild(script);
+      }
+      if (!window.ace) {
+        const script = document.createElement('script');
+        script.src = '/studio/static-assets/libs/ace/ace.js';
+        document.head.appendChild(script);
 
-      const styleSheet = document.createElement('link');
-      styleSheet.rel = 'stylesheet';
-      styleSheet.href = '/studio/static-assets/styles/tinymce-ace.css';
-      document.head.appendChild(styleSheet);
+        const styleSheet = document.createElement('link');
+        styleSheet.rel = 'stylesheet';
+        styleSheet.href = '/studio/static-assets/styles/tinymce-ace.css';
+        document.head.appendChild(styleSheet);
+      }
+      const allowedTypesSubscription = subscribeToAllowedContentTypes((allowed) =>
+        post(allowedContentTypesUpdate(allowed))
+      );
+      return () => {
+        allowedTypesSubscription.unsubscribe();
+      };
     }
   }, [hasHost]);
 
@@ -495,13 +498,8 @@ function ExperienceBuilderInternal(props: InternalGuestProps) {
 
     refs.current.hasChanges = false;
 
-    fromTopic('FETCH_GUEST_MODEL_COMPLETE')
+    fromTopic(fetchGuestModelComplete.type)
       .pipe(
-        // Collect locked items to update locked lookup table on state...
-        tap(({ payload }: StandardAction<FetchGuestModelCompletePayload>) => {
-          const locked = payload.sandboxItems.filter((item) => item.stateMap.locked);
-          locked.length && dispatch(setLockedItems(locked));
-        }),
         filter(({ payload }) => payload.path === path),
         map((action) => action?.payload?.model),
         withLatestFrom(contentTypes$),
@@ -513,7 +511,8 @@ function ExperienceBuilderInternal(props: InternalGuestProps) {
         dispatch(contentReady());
       });
 
-    post(guestCheckIn({ location, path, site, documentDomain, version: process.env.VERSION }));
+    post(guestCheckIn({ location, path, site, version: process.env.VERSION }));
+    guestCheckIn$.next(true);
 
     return () => {
       post(guestCheckOut({ path }));
@@ -522,8 +521,9 @@ function ExperienceBuilderInternal(props: InternalGuestProps) {
       refs.current.contentReady = false;
       flushRequestedPaths();
       operationsSubscription.unsubscribe();
+      guestCheckIn$.next(false);
     };
-  }, [dispatch, documentDomain, path]);
+  }, [dispatch, path]);
 
   // Listen for desktop asset drag & drop
   const shouldNotBypass = hasHost && editMode;
@@ -636,15 +636,42 @@ function ExperienceBuilderInternal(props: InternalGuestProps) {
               const hasValidations = Boolean(validations.length);
               const hasFailedRequired = validations.some(({ level }) => level === 'required');
               const elementRecord = elementRegistry.get(highlight.id);
+              const elementPath = models[elementRecord.modelId]?.craftercms.path ?? path;
               const { isLocked, isExternallyModified } = checkIfLockedOrModified(state, elementRecord);
+              const lockInfo = isLocked ? state.lockedPaths[elementPath]?.user : null;
+              const iceRecord = getById(elementRecord.iceIds[0]);
+              const field = iceRecord.recordType === 'field' ? getReferentialEntries(iceRecord).field : undefined;
+              const isEditable = isEditActionAvailable({
+                record: elementRecord,
+                models: getCachedModels(),
+                sandboxItemsByPath: getCachedSandboxItems(),
+                parentModelId: getParentModelId(elementRecord.modelId, getCachedModels(), modelHierarchyMap)
+              });
+              let zoneMarkerModeStyles: Record<string, SxProps<Theme>>;
+              if (isLocked) {
+                zoneMarkerModeStyles = sxStylesConfig.zoneMarker.warnHighlight;
+              } else if (!isEditable) {
+                zoneMarkerModeStyles = sxStylesConfig.zoneMarker.disabledHighlight;
+              } else if (hasFailedRequired || isExternallyModified) {
+                zoneMarkerModeStyles = sxStylesConfig.zoneMarker.errorHighlight;
+              } else if (hasValidations) {
+                zoneMarkerModeStyles = sxStylesConfig.zoneMarker.warnHighlight;
+              } else {
+                zoneMarkerModeStyles = isMoveMode
+                  ? sxStylesConfig.zoneMarker.moveModeHighlight
+                  : sxStylesConfig.zoneMarker.selectModeHighlight;
+              }
+              const zoneMarkerSx = deepmerge(sxStylesConfig.zoneMarker.base, zoneMarkerModeStyles, { clone: true });
               return (
                 <ZoneMarker
                   key={highlight.id}
                   label={highlight.label}
                   rect={highlight.rect}
                   inherited={highlight.inherited}
-                  lockInfo={state.lockedPaths[path]?.user}
+                  lockInfo={lockInfo}
                   isStale={isExternallyModified}
+                  isEditable={isEditable}
+                  field={field}
                   onPopperClick={
                     isMoveMode && isFieldSelectedMode
                       ? (e) => {
@@ -665,21 +692,7 @@ function ExperienceBuilderInternal(props: InternalGuestProps) {
                       void 0
                     )
                   }
-                  sx={deepmerge(
-                    deepmerge(
-                      sxStylesConfig.zoneMarker.base,
-                      isMoveMode
-                        ? sxStylesConfig.zoneMarker.moveModeHighlight
-                        : sxStylesConfig.zoneMarker.selectModeHighlight,
-                      { clone: true }
-                    ),
-                    hasValidations || isLocked || isExternallyModified
-                      ? hasFailedRequired || isExternallyModified
-                        ? sxStylesConfig.zoneMarker.errorHighlight
-                        : sxStylesConfig.zoneMarker.warnHighlight
-                      : null,
-                    { clone: true }
-                  )}
+                  sx={zoneMarkerSx}
                 />
               );
             })}

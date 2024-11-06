@@ -310,6 +310,9 @@ export const contentTypesMessages = defineMessages({
   },
   audioManager: {
     defaultMessage: 'Audio Manager'
+  },
+  invalidMacros: {
+    defaultMessage: 'The following invalid macros were removed: {macros}'
   }
 });
 
@@ -423,17 +426,6 @@ export const simpleTaxonomyDSMessages = defineMessages({
   }
 });
 
-export const browseCMISMessages = defineMessages({
-  cmis: {
-    id: 'browseCMIS.cmis',
-    defaultMessage: 'CMIS'
-  },
-  cloningCMIS: {
-    id: 'browseCMIS.cloningCMIS',
-    defaultMessage: 'Cloning CMIS Asset'
-  }
-});
-
 export const browseSearchMessages = defineMessages({
   lookUpParentError: {
     id: 'browseSearchMessages.lookUpChildError',
@@ -507,6 +499,10 @@ export const formEngineMessages = defineMessages({
   },
   keepItemInNodeSelector: {
     defaultMessage: 'Ignore'
+  },
+  maxItemsReached: {
+    defaultMessage:
+      'A max of {maxSize} {maxSize, plural, one {item is} other {items are}} allowed. Please remove items to fit the limit before trying to add more.'
   }
 });
 
@@ -715,24 +711,20 @@ export const componentsMessages = defineMessages({
     defaultMessage: 'Create new shared'
   },
   allowShared: {
-    id: 'componentsMessages.allowShared',
-    defaultMessage: 'Allow Shared'
+    defaultMessage: 'Allow New Shared'
   },
   allowEmbedded: {
     id: 'componentsMessages.allowEmbedded',
     defaultMessage: 'Allow Embedded'
   },
   enableBrowse: {
-    id: 'componentsMessages.enableBrowse',
-    defaultMessage: 'Enable Browse'
+    defaultMessage: 'Enable Browsing Shared'
   },
   enableSearch: {
-    id: 'componentsMessages.enableSearch',
-    defaultMessage: 'Enable Search'
+    defaultMessage: 'Allow Searching Shared'
   },
   baseRepositoryPath: {
-    id: 'componentsMessages.baseRepositoryPath',
-    defaultMessage: 'Base Repository Path'
+    defaultMessage: 'Path for New Items'
   },
   baseBrowsePath: {
     id: 'componentsMessages.baseBrowsePath',

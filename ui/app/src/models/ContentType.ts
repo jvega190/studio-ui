@@ -24,16 +24,17 @@ export interface ContentTypeSection {
 }
 
 export interface ContentTypeFieldValidation<T = any> {
-  id: string;
+  id: ValidationKeys;
   value: T;
   level: 'required' | 'suggestion';
 }
 
 export type ValidationKeys =
   | 'allowedContentTypeTags'
-  | 'allowedContentTypes' // TODO: assess removing this validation in favour of keeping allowedEmbeddedContentTypes & allowedSharedContentTypes only
+  | 'allowedContentTypes'
   | 'allowedEmbeddedContentTypes'
   | 'allowedSharedContentTypes'
+  | 'allowedSharedExistingContentTypes'
   | 'minCount'
   | 'maxCount'
   | 'maxLength'
@@ -56,9 +57,7 @@ export type ValidationKeys =
   | 'allowAudioUpload'
   | 'allowAudioFromRepo';
 
-export type ContentTypeFieldValidations = {
-  [key in ValidationKeys]: ContentTypeFieldValidation;
-};
+export type ContentTypeFieldValidations = Record<ValidationKeys, ContentTypeFieldValidation>;
 
 export interface ValidationResult {
   id: string;

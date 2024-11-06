@@ -58,6 +58,11 @@ div.yui-calcontainer.cstudio-form-field-calendar {
   cursor: move;
 }
 
+button.node-selector-item-icon {
+  border: none;
+  background: none;
+}
+
 .cstudio-form-control-node-selector-item.disabled {
   cursor: default;
 }
@@ -184,6 +189,23 @@ div.yui-calcontainer.cstudio-form-field-calendar {
   background: none repeat scroll 0 0 #f0f0f0;
   color: black;
   cursor: pointer;
+}
+
+.cstudio-form-control-node-selector-add-container-item-block-label {
+  padding: 5px 10px;
+  font-weight: 600;
+  display: inline-block;
+  color: #666;
+}
+
+.cstudio-form-control-node-selector-add-container-item-block-divider {
+  display: none;
+}
+
+.cstudio-form-control-node-selector-add-container-item-block-divider:not(:last-child) {
+  display: list-item;
+  border-top: 1px solid #eee;
+  margin: 10px 0;
 }
 
 .cstudio-form-control-button {
@@ -492,6 +514,10 @@ div.yui-calcontainer.cstudio-form-field-calendar {
   max-height: 300px;
   overflow-y: auto;
   border-bottom: 1px solid #ddd;
+}
+
+#help-dialog .dialog-body * {
+  color: #000;
 }
 
 #help-dialog .dialog-button-bar {
@@ -1360,6 +1386,10 @@ input[disabled] {
 
 body.yui-skin-cstudioTheme.masked {
   overflow: hidden;
+}
+
+.masked .tox .tox-editor-header {
+  z-index: inherit;
 }
 
 /* Long File Name in Image Picker */

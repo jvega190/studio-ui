@@ -19,9 +19,9 @@ import { getStateMapFromLegacyItem } from './state';
 import { nnou, nou, reversePluckProps } from './object';
 import { ContentType, ContentTypeField } from '../models/ContentType';
 import LookupTable from '../models/LookupTable';
-import ContentInstance from '../models/ContentInstance';
+import ContentInstance, { ContentInstanceBase } from '../models/ContentInstance';
 import { deserialize, getInnerHtml, getInnerHtmlNumber, wrapElementInAuxDocument } from './xml';
-import { ensureSingleSlash, fileNameFromPath, unescapeHTML } from './string';
+import { ensureSingleSlash, fileNameFromPath, replaceAccentedVowels, unescapeHTML } from './string';
 import { getRootPath, isRootPath, withIndex, withoutIndex } from './path';
 import { isFolder, isNavigable, isPreviewable } from '../components/PathNavigator/utils';
 import {
@@ -92,7 +92,11 @@ export function isEditableAsset(path: string) {
     path.endsWith('.htm') ||
     path.endsWith('.sass') ||
     path.endsWith('.scss') ||
-    path.endsWith('.less')
+    path.endsWith('.less') ||
+    path.endsWith('.csv') ||
+    path.endsWith('.json') ||
+    path.endsWith('.yaml') ||
+    path.endsWith('.yml')
   );
 }
 
@@ -149,6 +153,7 @@ export function isBlobUrl(url: string): boolean {
 }
 
 /**
+ * TODO: Remove?
  * Returns the boolean intersection of editMode, lock status and the item's edit permission
  */
 export function getComputedEditMode({
@@ -360,11 +365,19 @@ const systemPropsList = [
   'lastModifiedDate_dt'
 ];
 
+/**
+ * doc {XMLDocument}
+ * path {string}
+ * contentTypesLookup {LookupTable<ContentType>}
+ * instanceLookup {LookupTable<ContentInstance>}
+ * unflattenedPaths {LookupTable<ContentInstance>} A lookup table directly completed/mutated by this function indexed by path of those objects that are incomplete/unflattened
+ */
 export function parseContentXML(
   doc: XMLDocument,
   path: string = null,
   contentTypesLookup: LookupTable<ContentType>,
-  instanceLookup: LookupTable<ContentInstance>
+  instanceLookup: LookupTable<ContentInstance>,
+  unflattenedPaths?: LookupTable<ContentInstance>
 ): ContentInstance {
   let id = nnou(doc) ? getInnerHtml(doc.querySelector(':scope > objectId')) : null;
   if (id === null && !/^[a-f\d]{4}(?:[a-f\d]{4}-){4}[a-f\d]{12}$/i.test((id = fileNameFromPath(path)))) {
@@ -372,19 +385,22 @@ export function parseContentXML(
     id = null;
   }
   const contentTypeId = nnou(doc) ? getInnerHtml(doc.querySelector(':scope > content-type')) : null;
-  const current = {
+  const current: ContentInstanceBase = {
     craftercms: {
       id,
       path,
       label: null,
-      locale: null,
       dateCreated: null,
       dateModified: null,
-      contentTypeId: contentTypeId,
+      contentTypeId,
       disabled: false,
       sourceMap: {}
     }
   };
+  // We're assuming that contentTypeId is null when the content is not flattened
+  if (contentTypeId === null && unflattenedPaths) {
+    unflattenedPaths[path] = current;
+  }
   if (nnou(doc)) {
     current.craftercms.label = getInnerHtml(
       doc.querySelector(':scope > internal-name') ?? doc.querySelector(':scope > file-name'),
@@ -393,7 +409,7 @@ export function parseContentXML(
     current.craftercms.dateCreated = getInnerHtml(doc.querySelector(':scope > createdDate_dt'));
     current.craftercms.dateModified = getInnerHtml(doc.querySelector(':scope > lastModifiedDate_dt'));
   }
-  instanceLookup[id ?? path] = current;
+  id && (instanceLookup[id] = current);
   if (nnou(doc)) {
     Array.from(doc.documentElement.children).forEach((element: Element) => {
       const tagName = element.tagName;
@@ -426,18 +442,32 @@ export function parseContentXML(
             );
           }
         }
-        current[tagName] = parseElementByContentType(element, field, contentTypesLookup, instanceLookup);
+        current[tagName] = parseElementByContentType(
+          element,
+          field,
+          contentTypesLookup,
+          instanceLookup,
+          unflattenedPaths
+        );
       }
     });
   }
   return current;
 }
 
+/**
+ * element {Element}
+ * field {ContentTypeField}
+ * contentTypesLookup {LookupTable<ContentType>}
+ * instanceLookup {LookupTable<ContentInstance>}
+ * unflattenedPaths {LookupTable<ContentInstance>} A lookup table directly completed/mutated by this function indexed by path of those objects that are incomplete/unflattened
+ */
 function parseElementByContentType(
   element: Element,
   field: ContentTypeField,
   contentTypesLookup: LookupTable<ContentType>,
-  instanceLookup: LookupTable<ContentInstance>
+  instanceLookup: LookupTable<ContentInstance>,
+  unflattenedPaths?: LookupTable<ContentInstance>
 ) {
   if (!field) {
     return getInnerHtml(element) ?? '';
@@ -459,7 +489,8 @@ function parseElementByContentType(
             fieldTag,
             field.fields[fieldTagName],
             contentTypesLookup,
-            instanceLookup
+            instanceLookup,
+            unflattenedPaths
           );
         });
         array.push(repeatItem);
@@ -500,7 +531,8 @@ function parseElementByContentType(
                 component ? wrapElementInAuxDocument(component) : null,
                 path,
                 contentTypesLookup,
-                instanceLookup
+                instanceLookup,
+                unflattenedPaths
               );
               array.push(instance);
             }
@@ -523,25 +555,34 @@ function parseElementByContentType(
     case 'textarea':
       return getInnerHtml(element, { applyLegacyUnescaping: true });
     case 'image':
-    case 'dropdown':
     case 'date-time':
     case 'time':
       return getInnerHtml(element);
+    case 'dropdown':
+      if (field.id.endsWith('_i') || field.id.endsWith('_f')) {
+        return getInnerHtmlNumber(element, parseFloat);
+      } else {
+        return getInnerHtml(element);
+      }
     case 'boolean':
     case 'page-nav-order':
       return getInnerHtml(element) === 'true';
     case 'numeric-input':
       return getInnerHtmlNumber(element, parseFloat);
-    case 'transcoded-video-picker':
-    case 'taxonomy-selector':
-      return getInnerHtml(element);
     default:
-      console.log(
-        `%c[parseElementByContentType] Missing type "${type}" on switch statement for field "${field.id}".`,
-        'color: blue',
-        element
-      );
-      return getInnerHtml(element);
+      !['transcoded-video', 'transcoded-video-picker', 'taxonomy-selector'].includes(type) &&
+        console.log(
+          `%c[parseElementByContentType] Missing type "${type}" on switch statement for field "${field.id}".`,
+          'color: blue',
+          element
+        );
+      try {
+        const extract: any = deserialize(element)?.[element.tagName] ?? '';
+        return extract.item ? (Array.isArray(extract.item) ? extract.item : [extract.item]) : extract;
+      } catch (e) {
+        console.error('[parseElementByContentType] Error deserializing element', element, e);
+        return getInnerHtml(element);
+      }
   }
 }
 
@@ -754,7 +795,7 @@ export function createChildModelLookup(
   return lookup;
 }
 
-export function normalizeModelsLookup(models: LookupTable<ContentInstance>) {
+export function normalizeModelsLookup(models: LookupTable<ContentInstance>): LookupTable<ContentInstance> {
   const lookup = {};
   Object.entries(models).forEach(([id, model]) => {
     lookup[id] = normalizeModel(model);
@@ -920,6 +961,14 @@ export const createItemActionMap: (availableActions: number) => ItemActionsMap =
   rejectPublish: hasPublishRejectAction(value)
 });
 
+/**
+ * Given an item lookup table, tries to find the path with and without the "/index.xml" portion of the path.
+ * This reconciles path differences when working with pages between folder and index (i.e. /site/website vs /site/website/index.xml),
+ * which refer to the same item in most contexts.
+ * path {string} The path to look for
+ * lookupTable {Record<string, T>} The map-like object containing all items in which to look the path up
+ * @returns {T} The item if found, undefined otherwise
+ **/
 export function lookupItemByPath<T = DetailedItem>(path: string, lookupTable: LookupTable<T>): T {
   return lookupTable[withIndex(path)] ?? lookupTable[withoutIndex(path)];
 }
@@ -1020,14 +1069,16 @@ export function getComputedPublishingTarget(item: DetailedItem): PublishingTarge
 }
 
 export function applyFolderNameRules(name: string, options?: { allowBraces: boolean }): string {
-  let cleanedUpName = slugify(name, {
-    // Setting `strict: true` would disallow `_`, which we don't want.
-    strict: false,
-    // Because of the moment where the library trims, `trim: true` caused undesired replacement of `-`
-    // at the beginning or end of the slug.
-    trim: false
-  });
-  return cleanedUpName.replace(options?.allowBraces ? /[^a-zA-Z0-9-_{}]/g : /[^a-zA-Z0-9-_]/g, '');
+  return (
+    // Replace accented vowels with their non-accented counterpart
+    replaceAccentedVowels(name)
+      // replace spaces with dashes
+      .replace(/\s+/g, '-')
+      // replace multiple consecutive dashes with a single dash
+      .replace(/-+/g, '-')
+      // remove any character that is not a letter, number, dash or underscore, and allow braces if specified
+      .replace(options?.allowBraces ? /[^a-zA-Z0-9-_{}]/g : /[^a-zA-Z0-9-_]/g, '')
+  );
 }
 
 // Separate the path into sections, apply the folder rules to each section and join them back together.
@@ -1061,7 +1112,14 @@ export function applyAssetPathRules(path: string, options?: { allowBraces: boole
  * letter, number, dash or underscore.
  */
 export function applyContentNameRules(name: string): string {
-  return name.replace(/[^a-z0-9-_]/g, '');
+  return slugify(name, {
+    lower: true,
+    // Setting `strict: true` would disallow `_`, which we don't want.
+    strict: false,
+    // Because of the moment where the library trims, `trim: true` caused undesired replacement of `-`
+    // at the beginning or end of the slug.
+    trim: false
+  }).replace(/[^a-z0-9-_]/g, '');
 }
 
 export const openItemEditor = (
@@ -1120,4 +1178,53 @@ export function getInheritanceParentIdsForField(
     ids.parentModelId = findParentModelId(modelId, hierarchyMap, modelLookup);
   }
   return ids;
+}
+
+export interface GeneratePlaceholderImageDataUrlArgs {
+  width: number;
+  height: number;
+  fillStyle: string;
+  textFillStyle: string;
+  text: string;
+  textPositionX: number;
+  textPositionY: number;
+  font: string;
+  textAlign: CanvasTextAlign;
+  textBaseline: CanvasTextBaseline;
+}
+
+export function generatePlaceholderImageDataUrl(attributes?: Partial<GeneratePlaceholderImageDataUrlArgs>): string {
+  let attrs: GeneratePlaceholderImageDataUrlArgs = Object.assign(
+    {
+      width: 300,
+      height: 150,
+      fillStyle: '#f0f0f0',
+      text: 'Sample Image',
+      textPositionX: 150,
+      textPositionY: 88.24,
+      textFillStyle: 'black',
+      font: '30px Arial',
+      textAlign: 'center',
+      textBaseline: 'middle'
+    },
+    attributes
+  );
+
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  canvas.width = attrs.width;
+  canvas.height = attrs.height;
+
+  // Set background color
+  context.fillStyle = attrs.fillStyle;
+  context.fillRect(0, 0, attrs.width, attrs.height);
+
+  // Render text
+  context.font = attrs.font;
+  context.fillStyle = attrs.textFillStyle;
+  context.textAlign = attrs.textAlign;
+  context.textBaseline = attrs.textBaseline;
+  context.fillText(attrs.text, attrs.textPositionX, attrs.textPositionY);
+
+  return canvas.toDataURL();
 }

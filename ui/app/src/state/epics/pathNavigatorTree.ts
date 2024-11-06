@@ -19,6 +19,12 @@ import { filter, ignoreElements, map, mergeMap, switchMap, tap, throttleTime, wi
 import { CrafterCMSEpic } from '../store';
 import {
   pathNavigatorTreeBackgroundRefresh,
+  pathNavigatorTreeBulkFetchPathChildren,
+  pathNavigatorTreeBulkFetchPathChildrenComplete,
+  pathNavigatorTreeBulkFetchPathChildrenFailed,
+  pathNavigatorTreeBulkRefresh,
+  pathNavigatorTreeBulkRestoreComplete,
+  pathNavigatorTreeBulkRestoreFailed,
   pathNavigatorTreeCollapsePath,
   pathNavigatorTreeExpandPath,
   pathNavigatorTreeFetchPathChildren,
@@ -36,14 +42,8 @@ import {
   pathNavigatorTreeSetKeyword,
   pathNavigatorTreeToggleCollapsed,
   pathNavigatorTreeUpdate,
-  pathNavigatorTreeBulkRefresh,
-  pathNavigatorTreeBulkFetchPathChildren,
-  pathNavigatorTreeBulkFetchPathChildrenComplete,
-  pathNavigatorTreeBulkFetchPathChildrenFailed,
-  pathNavigatorTreeBulkRestoreComplete,
-  pathNavigatorTreeBulkRestoreFailed,
-  PathNavTreeFetchPathChildrenPayload,
-  PathNavTreeBulkFetchPathChildrenPayload
+  PathNavTreeBulkFetchPathChildrenPayload,
+  PathNavTreeFetchPathChildrenPayload
 } from '../actions/pathNavigatorTree';
 import {
   checkPathExistence,
@@ -67,14 +67,14 @@ import { batchActions } from '../actions/misc';
 import {
   contentEvent,
   deleteContentEvent,
+  deleteContentEvents,
   moveContentEvent,
-  MoveContentEventPayload,
   pluginInstalled,
   publishEvent,
   workflowEvent
 } from '../actions/system';
 import StandardAction from '../../models/StandardAction';
-import { GetChildrenOptions, MarketplacePlugin, SocketEventBase } from '../../models';
+import { GetChildrenOptions, MarketplacePlugin, MoveContentEventPayload, SocketEventBase } from '../../models';
 import { contentAndDeleteEventForEachApplicableTree } from '../reducers/pathNavigatorTree';
 import { PathNavigatorTreeStateProps } from '../../components';
 import { pluckProps } from '../../utils/object';
@@ -181,6 +181,7 @@ export default [
       })
     ),
   // endregion
+
   // region pathNavigatorTreeBulkBackgroundRefresh
   (action$, state$) =>
     action$.pipe(
@@ -288,7 +289,7 @@ export default [
               options: finalOptions
             })
           ),
-          catchAjaxError((error) => pathNavigatorTreeFetchPathChildrenFailed({ error, id }))
+          catchAjaxError((error) => pathNavigatorTreeFetchPathChildrenFailed({ error, id, path }))
         );
       })
     ),
@@ -341,7 +342,7 @@ export default [
         const options = createGetChildrenOptions(chunk, { keyword });
         return fetchChildrenByPath(state.sites.active, path, options).pipe(
           map((children) => pathNavigatorTreeFetchPathChildrenComplete({ id, parentPath: path, children, options })),
-          catchAjaxError((error) => pathNavigatorTreeFetchPathChildrenFailed({ error, id }))
+          catchAjaxError((error) => pathNavigatorTreeFetchPathChildrenFailed({ error, id, path }))
         );
       })
     ),
@@ -458,10 +459,10 @@ export default [
       })
     ),
   // endregion
-  // region deleteContentEvent
+  // region deleteContentEvent, deleteContentEvents
   (action$, state$) =>
     action$.pipe(
-      ofType(deleteContentEvent.type),
+      ofType(deleteContentEvent.type, deleteContentEvents.type),
       withLatestFrom(state$),
       tap(([, state]) => {
         Object.values(state.pathNavigatorTree).forEach((tree) => {

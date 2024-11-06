@@ -1313,75 +1313,7 @@ var nodeOpen = false,
       },
 
       /**
-       * open a browse page for CMIS repo
-       */
-      openCMISBrowse: function (repoId, path, studioPath, allowedOperations, mode, newWindow, callback) {
-        var searchId = null;
-
-        var openInSameWindow = newWindow ? false : true;
-
-        var browseUrl =
-          CStudioAuthoringContext.authoringAppBaseUri + '/browseCMIS?site=' + CStudioAuthoringContext.site;
-
-        if (repoId) {
-          browseUrl += '&repoId=' + repoId;
-        }
-        if (path) {
-          browseUrl += '&path=' + path;
-        }
-
-        if (studioPath) {
-          browseUrl += '&studioPath=' + studioPath;
-        }
-
-        if (allowedOperations) {
-          browseUrl += '&allowedOperations=' + allowedOperations;
-        }
-
-        if (!CStudioAuthoring.Utils.isEmpty(mode)) {
-          browseUrl += '&mode=' + mode;
-        }
-
-        var childSearch = null;
-
-        if (
-          !searchId ||
-          searchId == null ||
-          searchId == 'undefined' ||
-          !CStudioAuthoring.ChildSearchManager.searches[searchId]
-        ) {
-          childSearch = CStudioAuthoring.ChildSearchManager.createChildSearchConfig();
-          childSearch.openInSameWindow = openInSameWindow;
-          searchId = CStudioAuthoring.Utils.generateUUID();
-
-          childSearch.searchId = searchId;
-          childSearch.searchUrl = browseUrl + '&searchId=' + searchId;
-          childSearch.saveCallback = callback;
-
-          CStudioAuthoring.ChildSearchManager.openChildSearch(childSearch);
-        } else {
-          if (window.opener) {
-            if (window.opener.CStudioAuthoring) {
-              var openerChildSearchMgr = window.opener.CStudioAuthoring.ChildSearchManager;
-
-              if (openerChildSearchMgr) {
-                childSearch = openerChildSearchMgr.searches[searchId];
-                childSearch.searchUrl = browseUrl;
-
-                openerChildSearchMgr.openChildSearch(childSearch);
-              }
-            }
-          } else {
-            childSearch = CStudioAuthoring.ChildSearchManager.searches[searchId];
-            childSearch.searchUrl = browseUrl;
-
-            CStudioAuthoring.ChildSearchManager.openChildSearch(childSearch);
-          }
-        }
-      },
-
-      /**
-       * open a browse page for CMIS repo
+       * open a browse page for WebDAV repo
        */
       openWebDAVBrowse: function (path, profileId, mode, newWindow, callback, filter = 'none') {
         var searchId = null;
@@ -2295,60 +2227,48 @@ var nodeOpen = false,
             });
           }
         }
-
-        const eventIdSuccess = 'workflowCancellationDialogContinue';
-        const eventIdCancel = 'workflowCancellationDialogCancel';
-        CrafterCMSNext.system.store.dispatch({
-          type: 'SHOW_WORKFLOW_CANCELLATION_DIALOG',
-          payload: {
-            open: true,
-            items: null,
-            onContinue: {
-              type: 'BATCH_ACTIONS',
-              payload: [
-                {
-                  type: 'DISPATCH_DOM_EVENT',
-                  payload: { id: eventIdSuccess }
-                },
-                { type: 'CLOSE_WORKFLOW_CANCELLATION_DIALOG' }
-              ]
-            },
-            onClosed: {
-              type: 'BATCH_ACTIONS',
-              payload: [
-                {
-                  type: 'DISPATCH_DOM_EVENT',
-                  payload: { id: eventIdCancel }
-                },
-                { type: 'WORKFLOW_CANCELLATION_DIALOG_CLOSED' }
-              ]
-            }
-          }
-        });
-
-        let unsubscribe, cancelUnsubscribe;
-
-        unsubscribe = CrafterCMSNext.createLegacyCallbackListener(eventIdSuccess, () => {
-          doEdit();
-          cancelUnsubscribe();
-        });
-
-        cancelUnsubscribe = CrafterCMSNext.createLegacyCallbackListener(eventIdCancel, () => {
-          unsubscribe();
-        });
-
+        craftercms.getStore().dispatch({ type: 'BLOCK_UI' });
         CrafterCMSNext.services.content.fetchWorkflowAffectedItems(params.site, params.path).subscribe({
           next: (items) => {
+            craftercms.getStore().dispatch({ type: 'UNBLOCK_UI' });
             if (items && items.length) {
               const eventIdSuccess = 'workflowCancellationDialogContinue';
+              const eventIdCancel = 'workflowCancellationDialogCancel';
+              let unsubscribe, cancelUnsubscribe;
+              unsubscribe = CrafterCMSNext.createLegacyCallbackListener(eventIdSuccess, () => {
+                doEdit();
+                cancelUnsubscribe();
+              });
+              cancelUnsubscribe = CrafterCMSNext.createLegacyCallbackListener(eventIdCancel, () => {
+                unsubscribe();
+              });
               CrafterCMSNext.system.store.dispatch({
                 type: 'SHOW_WORKFLOW_CANCELLATION_DIALOG',
-                payload: { items }
+                payload: {
+                  items,
+                  onContinue: {
+                    type: 'BATCH_ACTIONS',
+                    payload: [
+                      {
+                        type: 'DISPATCH_DOM_EVENT',
+                        payload: { id: eventIdSuccess }
+                      },
+                      { type: 'CLOSE_WORKFLOW_CANCELLATION_DIALOG' }
+                    ]
+                  },
+                  onClosed: {
+                    type: 'BATCH_ACTIONS',
+                    payload: [
+                      {
+                        type: 'DISPATCH_DOM_EVENT',
+                        payload: { id: eventIdCancel }
+                      },
+                      { type: 'WORKFLOW_CANCELLATION_DIALOG_CLOSED' }
+                    ]
+                  }
+                }
               });
             } else {
-              CrafterCMSNext.system.store.dispatch({
-                type: 'CLOSE_WORKFLOW_CANCELLATION_DIALOG'
-              });
               doEdit();
             }
           },
@@ -2549,11 +2469,23 @@ var nodeOpen = false,
                   type: 'CLOSE_SINGLE_FILE_UPLOAD_DIALOG'
                 }
               ]
+            },
+            onClose: {
+              type: 'BATCH_ACTIONS',
+              payload: [
+                {
+                  type: 'DISPATCH_DOM_EVENT',
+                  payload: { id: eventId, type: 'close' }
+                },
+                {
+                  type: 'CLOSE_SINGLE_FILE_UPLOAD_DIALOG'
+                }
+              ]
             }
           }
         });
 
-        CrafterCMSNext.createLegacyCallbackListener(eventId, (result) => {
+        craftercms.utils.dom.createCustomDocumentEventListener(eventId, (result) => {
           if (result.type === 'uploadComplete') {
             let uploaded = result.successful[0];
             if (!uploaded.fileExtension) {
@@ -2659,6 +2591,8 @@ var nodeOpen = false,
           moduleConfig,
           openCropperDialogCb
         );
+        CStudioAuthoring.Module.requireModule('pako', '/static-assets/libs/pako.js');
+        CStudioAuthoring.Module.requireModule('upng', '/static-assets/libs/upng.js');
         CStudioAuthoring.Module.requireModule('jquery-cropper', '/static-assets/libs/cropper/dist/cropper.js');
       },
 
@@ -4309,8 +4243,13 @@ var nodeOpen = false,
         if (!this.arrayContains(script, this.addedJs)) {
           this.addedJs.push(script);
 
-          if (script.indexOf('http') == -1) {
+          if (!script.includes('http')) {
             script = CStudioAuthoringContext.baseUri + script;
+            // The `buildFileUrl` util returns a full api url (without the origin).
+            // Passing it to `addJavascript` method, for example from requireModule(), the url ends up with `/studio` twice.
+            // Prefer not to detect simply `/studio/studio`, and avoiding hard coding api urls, I'm using buildFileUrl() result to detect this issue.
+            const pluginFileApiUrlBase = craftercms.services.plugin.buildFileUrl('', '', '', '', '').split('?')[0];
+            script = script.replace(`/studio${pluginFileApiUrlBase}`, pluginFileApiUrlBase);
           }
 
           var headID = document.getElementsByTagName('head')[0];
@@ -6219,12 +6158,24 @@ var nodeOpen = false,
         $(document).on('click', `.notifyjs-${styleName}-${id} .yes`, onOk);
       },
 
-      showConfirmDialog: function (title, body, callback, okButtonText, cancelButtonText) {
-        const onOk = 'confirmDialogOnOk';
-        const onCancel = 'confirmDialogOnCancel';
-        let unsubscribe, cancelUnsubscribe;
+      showConfirmDialog: function (/*
+        title, body, callback, okButtonText, cancelButtonText
+        { title, body, onOk, onCancel, okButtonText, cancelButtonText }
+      */) {
+        const { title, body, onOk, onCancel, okButtonText, cancelButtonText } =
+          typeof arguments[0] === 'object'
+            ? arguments[0]
+            : {
+                title: arguments[0],
+                body: arguments[1],
+                onOk: arguments[2],
+                okButtonText: arguments[3],
+                cancelButtonText: arguments[4]
+              };
 
-        if (callback) {
+        const confirmDialogEvent = 'commonAPIConfirmDialogEvent';
+
+        if (onOk) {
           CrafterCMSNext.system.store.dispatch({
             type: 'SHOW_CONFIRM_DIALOG',
             payload: {
@@ -6238,7 +6189,7 @@ var nodeOpen = false,
                 payload: [
                   {
                     type: 'DISPATCH_DOM_EVENT',
-                    payload: { id: onOk }
+                    payload: { id: confirmDialogEvent, type: 'ok' }
                   },
                   {
                     type: 'CLOSE_CONFIRM_DIALOG'
@@ -6253,7 +6204,7 @@ var nodeOpen = false,
                 payload: [
                   {
                     type: 'DISPATCH_DOM_EVENT',
-                    payload: { id: onCancel }
+                    payload: { id: confirmDialogEvent, type: 'cancel' }
                   },
                   { type: 'CONFIRM_DIALOG_CLOSED' }
                 ]
@@ -6261,12 +6212,12 @@ var nodeOpen = false,
             }
           });
 
-          unsubscribe = CrafterCMSNext.createLegacyCallbackListener(onOk, () => {
-            callback();
-            cancelUnsubscribe();
-          });
-          cancelUnsubscribe = CrafterCMSNext.createLegacyCallbackListener(onCancel, () => {
-            unsubscribe();
+          craftercms.utils.dom.createCustomDocumentEventListener(confirmDialogEvent, ({ type }) => {
+            if (type === 'ok') {
+              onOk?.();
+            } else {
+              onCancel?.();
+            }
           });
         } else {
           CrafterCMSNext.system.store.dispatch({
@@ -7825,6 +7776,12 @@ function getTopLegacyWindow(nextWindow) {
 
 if (!window.location.pathname.includes('/studio/search') && !window.location.pathname.includes('/studio/legacy/form')) {
   document.addEventListener('DOMContentLoaded', function () {
-    CrafterCMSNext.renderBackgroundUI({ mountLegacyConcierge: true });
+    if (typeof CrafterCMSNext === 'undefined') {
+      document.addEventListener('CrafterCMS.CodebaseBridgeReady', function () {
+        CrafterCMSNext.renderBackgroundUI({ mountLegacyConcierge: true });
+      });
+    } else {
+      CrafterCMSNext.renderBackgroundUI({ mountLegacyConcierge: true });
+    }
   });
 }

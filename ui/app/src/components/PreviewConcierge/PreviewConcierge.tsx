@@ -14,8 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, { PropsWithChildren, useEffect, useRef, useState } from 'react';
+import React, { MutableRefObject, PropsWithChildren, useEffect, useRef, useState } from 'react';
 import {
+  allowedContentTypesUpdate,
   changeCurrentUrl,
   clearSelectedZones,
   clearSelectForEdit,
@@ -27,9 +28,11 @@ import {
   duplicateItemOperation,
   duplicateItemOperationComplete,
   duplicateItemOperationFailed,
+  errorPageCheckIn,
   fetchContentTypes,
   fetchGuestModel,
   fetchGuestModelComplete,
+  fetchGuestModelsComplete,
   fetchPrimaryGuestModelComplete,
   guestCheckIn,
   guestCheckOut,
@@ -116,10 +119,8 @@ import {
 import EditFormPanel from '../EditFormPanel/EditFormPanel';
 import {
   createModelHierarchyDescriptorMap,
-  getComputedEditMode,
   getInheritanceParentIdsForField,
   getNumOfMenuOptionsForItem,
-  hasEditAction,
   isItemLockedForMe,
   normalizeModel,
   normalizeModelsLookup,
@@ -127,19 +128,18 @@ import {
 } from '../../utils/content';
 import moment from 'moment-timezone';
 import ContentInstance from '../../models/ContentInstance';
-import LookupTable from '../../models/LookupTable';
 import IconButton from '@mui/material/IconButton';
 import { useSelection } from '../../hooks/useSelection';
 import { usePreviewState } from '../../hooks/usePreviewState';
 import { useContentTypes } from '../../hooks/useContentTypes';
 import { useActiveUser } from '../../hooks/useActiveUser';
-import { useMount } from '../../hooks/useMount';
 import { usePreviewNavigation } from '../../hooks/usePreviewNavigation';
 import { useActiveSite } from '../../hooks/useActiveSite';
 import { getPathFromPreviewURL, processPathMacros, withIndex } from '../../utils/path';
 import {
   closeItemMegaMenu,
   closeSingleFileUploadDialog,
+  itemMegaMenuClosed,
   rtePickerActionResult,
   showEditDialog,
   showItemMegaMenu,
@@ -186,11 +186,21 @@ import { getOffsetLeft, getOffsetTop } from '@mui/material/Popover';
 import { isSameDay } from '../../utils/datetime';
 import compatibilityList from './compatibilityList';
 import ContentType from '../../models/ContentType';
+import { Dispatch } from 'redux';
+import { ActionCreatorWithOptionalPayload } from '@reduxjs/toolkit';
+import { ItemMegaMenuStateProps } from '../ItemMegaMenu';
+import StandardAction from '../../models/StandardAction';
 
-const originalDocDomain = document.domain;
-
-// region const issueDescriptorRequest = () => {...}
-const issueDescriptorRequest = (props) => {
+const issueDescriptorRequest = (props: {
+  site: string;
+  path: string;
+  contentTypes: Record<string, ContentType>;
+  requestedSourceMapPaths: MutableRefObject<Record<string, boolean>>;
+  flatten?: boolean;
+  dispatch: Dispatch;
+  completeActionCreator: ActionCreatorWithOptionalPayload<any>;
+  permissions: string[];
+}) => {
   const {
     site,
     path,
@@ -198,7 +208,7 @@ const issueDescriptorRequest = (props) => {
     requestedSourceMapPaths,
     flatten = true,
     dispatch,
-    completeAction,
+    completeActionCreator,
     permissions
   } = props;
   const hostToGuest$ = getHostToGuestBus();
@@ -209,11 +219,11 @@ const issueDescriptorRequest = (props) => {
       // If another check in comes while loading, this request should be cancelled.
       // This may happen if navigating rapidly from one page to another (guest-side).
       takeUntil(guestToHost$.pipe(filter(({ type }) => [guestCheckIn.type, guestCheckOut.type].includes(type)))),
-      switchMap((obj: { model: ContentInstance; modelLookup: LookupTable<ContentInstance> }) => {
+      switchMap((modelResponse) => {
         let requests: Array<Observable<ContentInstance>> = [];
         let sandboxItemPaths = []; // Used to collect the paths to fetch the sandbox items corresponding to the Content Instances.
         let sandboxItemPathLookup = {};
-        Object.values(obj.modelLookup).forEach((model) => {
+        Object.values(modelResponse.modelLookup).forEach((model) => {
           if (model.craftercms.path) {
             sandboxItemPaths.push(model.craftercms.path);
             sandboxItemPathLookup[model.craftercms.path] = true;
@@ -229,29 +239,37 @@ const issueDescriptorRequest = (props) => {
             });
           }
         });
+        Object.keys(modelResponse.unflattenedPaths).forEach((path) => {
+          sandboxItemPaths.push(path);
+          requests.push(fetchContentInstance(site, path, contentTypes));
+        });
         return forkJoin({
           sandboxItems: fetchItemsByPath(site, sandboxItemPaths),
-          models: requests.length
+          modelResponse: requests.length
             ? forkJoin(requests).pipe(
                 map((response) => {
-                  let lookup = obj.modelLookup;
                   response.forEach((contentInstance) => {
-                    lookup = {
-                      ...lookup,
-                      [contentInstance.craftercms.id]: contentInstance
-                    };
+                    if (contentInstance.craftercms.path in modelResponse.unflattenedPaths) {
+                      // Complete the object reference with the freshly-fetched instance and add it to the modelLookup.
+                      // This relies on object references inside the lookup objects being referenced by the unflattenedPaths.
+                      // i.e. unflattenedPaths is a shortcut to the objects withing the guts of the models on the modelLookup.
+                      modelResponse.modelLookup[contentInstance.craftercms.id] = Object.assign(
+                        modelResponse.unflattenedPaths[contentInstance.craftercms.path],
+                        contentInstance
+                      );
+                    } else {
+                      modelResponse.modelLookup[contentInstance.craftercms.id] = contentInstance;
+                    }
                   });
-                  return {
-                    ...obj,
-                    modelLookup: lookup
-                  };
+                  return modelResponse;
                 })
               )
-            : of(obj)
+            : of(modelResponse)
         });
       })
     )
-    .subscribe(({ sandboxItems, models: { model, modelLookup } }) => {
+    .subscribe(({ sandboxItems, modelResponse }) => {
+      const { model, modelLookup } = modelResponse;
       const normalizedModels = normalizeModelsLookup(modelLookup);
       const hierarchyMap = createModelHierarchyDescriptorMap(normalizedModels, contentTypes);
       const normalizedModel = normalizedModels[model.craftercms.id];
@@ -272,7 +290,7 @@ const issueDescriptorRequest = (props) => {
 
       dispatch(
         batchActions([
-          completeAction({
+          completeActionCreator({
             model: normalizedModel,
             modelLookup: normalizedModels,
             modelIdByPath: modelIdByPath,
@@ -281,9 +299,8 @@ const issueDescriptorRequest = (props) => {
           updateItemsByPath({ items: sandboxItems })
         ])
       );
-      hostToGuest$.next({
-        type: 'FETCH_GUEST_MODEL_COMPLETE',
-        payload: {
+      hostToGuest$.next(
+        fetchGuestModelComplete({
           path,
           model: normalizedModel,
           modelLookup: normalizedModels,
@@ -291,11 +308,10 @@ const issueDescriptorRequest = (props) => {
           modelIdByPath: modelIdByPath,
           sandboxItems,
           permissions
-        }
-      });
+        })
+      );
     });
 };
-// endregion
 
 const dataSourceActionsListInitialState = {
   show: false,
@@ -322,7 +338,6 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
   const models = guest?.models;
   const modelIdByPath = guest?.modelIdByPath;
   const hierarchyMap = guest?.hierarchyMap;
-  const mainModelModifier = guest?.mainModelModifier;
   const requestedSourceMapPaths = useRef({});
   const currentItemPath = guest?.path;
   const uiConfig = useSiteUIConfig();
@@ -336,16 +351,14 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
   const [dataSourceActionsListState, setDataSourceActionsListState] = useSpreadState<DataSourcesActionsListProps>(
     dataSourceActionsListInitialState
   );
-  const conditionallyToggleEditMode = (nextHighlightMode?: HighlightMode) => {
-    if (item && !isItemLockedForMe(item, username) && hasEditAction(item.availableActions)) {
-      dispatch(
-        setPreviewEditMode({
-          // If switching from highlight modes (all vs move), we just want to switch modes without turning off edit mode.
-          editMode: nextHighlightMode !== highlightMode ? true : !editMode,
-          highlightMode: nextHighlightMode
-        })
-      );
-    }
+  const toggleEditMode = (nextHighlightMode?: HighlightMode) => {
+    dispatch(
+      setPreviewEditMode({
+        // If switching from highlight modes (all vs move), we just want to switch modes without turning off edit mode.
+        editMode: nextHighlightMode !== highlightMode ? true : !editMode,
+        highlightMode: nextHighlightMode
+      })
+    );
   };
   const env = useEnv();
   const upToDateRefs = useUpdateRefs({
@@ -370,7 +383,7 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
     enqueueSnackbar,
     editModePadding,
     cdataEscapedFieldPatterns,
-    conditionallyToggleEditMode,
+    toggleEditMode,
     keyboardShortcutsDialogState,
     setDataSourceActionsListState,
     showToolsPanel,
@@ -380,10 +393,10 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
       const key = event.key;
       switch (key) {
         case 'e':
-          upToDateRefs.current.conditionallyToggleEditMode('all');
+          upToDateRefs.current.toggleEditMode('all');
           break;
         case 'm':
-          upToDateRefs.current.conditionallyToggleEditMode('move');
+          upToDateRefs.current.toggleEditMode('move');
           break;
         case 'p':
           upToDateRefs.current.dispatch(toggleEditModePadding());
@@ -396,14 +409,17 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
           getHostToHostBus().next(reloadRequest());
           break;
         case 'E':
-          dispatch(
-            showEditDialog({
-              site: upToDateRefs.current.siteId,
-              path: upToDateRefs.current.guest.path,
-              readonly: isItemLockedForMe(upToDateRefs.current.item, upToDateRefs.current.user.username),
-              authoringBase: upToDateRefs.current.authoringBase
-            })
-          );
+          upToDateRefs.current.item &&
+            dispatch(
+              showEditDialog({
+                site: upToDateRefs.current.siteId,
+                path: upToDateRefs.current.guest.path,
+                readonly:
+                  !upToDateRefs.current.item.availableActionsMap.edit ||
+                  isItemLockedForMe(upToDateRefs.current.item, upToDateRefs.current.user.username),
+                authoringBase: upToDateRefs.current.authoringBase
+              })
+            );
           break;
         case 'a':
           if (store.getState().dialogs.itemMegaMenu.open) {
@@ -473,12 +489,9 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
   useEffect(() => {
     // FYI. Path navigator refresh triggers this effect too due to item changing.
     if (item) {
-      const mode =
-        getComputedEditMode({ item, username: username, editMode }) &&
-        (mainModelModifier == null || mainModelModifier.username === username);
-      getHostToGuestBus().next(setPreviewEditMode({ editMode: mode }));
+      getHostToGuestBus().next(setPreviewEditMode({ editMode }));
     }
-  }, [item, editMode, username, dispatch, mainModelModifier]);
+  }, [item, editMode]);
 
   // Fetch active item
   useEffect(() => {
@@ -494,13 +507,6 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
       getHostToGuestBus().next(updateRteConfig({ rteConfig }));
     }
   }, [rteConfig]);
-
-  // Document domain restoring.
-  useMount(() => {
-    return () => {
-      document.domain = originalDocDomain;
-    };
-  });
 
   // Retrieve stored site clipboard, retrieve stored tools panel page.
   useEffect(() => {
@@ -608,7 +614,7 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
               contentTypes,
               requestedSourceMapPaths,
               dispatch,
-              completeAction: fetchPrimaryGuestModelComplete,
+              completeActionCreator: fetchPrimaryGuestModelComplete,
               permissions
             });
           });
@@ -637,66 +643,55 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
           break;
         }
         // endregion
-        case guestCheckIn.type:
+        case guestCheckIn.type: {
+          getHostToGuestBus().next(
+            hostCheckIn({
+              editMode: false,
+              username: upToDateRefs.current.user.username,
+              highlightMode: upToDateRefs.current.highlightMode,
+              authoringBase: upToDateRefs.current.authoringBase,
+              site: upToDateRefs.current.siteId,
+              editModePadding: upToDateRefs.current.editModePadding,
+              rteConfig: upToDateRefs.current.rteConfig ?? {}
+            })
+          );
+          dispatch(guestCheckIn(payload));
+
+          if (payload.__CRAFTERCMS_GUEST_LANDING__) {
+            nnou(siteId) && dispatch(changeCurrentUrl('/'));
+          } else {
+            const path = payload.path;
+
+            contentTypes$.subscribe((contentTypes) => {
+              hostToGuest$.next(contentTypesResponse({ contentTypes: Object.values(contentTypes) }));
+              issueDescriptorRequest({
+                site: siteId,
+                path,
+                contentTypes,
+                requestedSourceMapPaths,
+                dispatch,
+                completeActionCreator: fetchPrimaryGuestModelComplete,
+                permissions
+              });
+            });
+          }
+          break;
+        }
         case fetchGuestModel.type: {
-          if (type === guestCheckIn.type) {
-            getHostToGuestBus().next(
-              hostCheckIn({
-                editMode: false,
-                username: upToDateRefs.current.user.username,
-                highlightMode: upToDateRefs.current.highlightMode,
-                authoringBase: upToDateRefs.current.authoringBase,
-                site: upToDateRefs.current.siteId,
-                editModePadding: upToDateRefs.current.editModePadding,
-                rteConfig: upToDateRefs.current.rteConfig ?? {}
-              })
-            );
-            dispatch(guestCheckIn(payload));
-
-            if (payload.documentDomain) {
-              try {
-                document.domain = payload.documentDomain;
-              } catch (e) {
-                console.error(e);
-              }
-            } else if (document.domain !== originalDocDomain) {
-              document.domain = originalDocDomain;
-            }
-
-            if (payload.__CRAFTERCMS_GUEST_LANDING__) {
-              nnou(siteId) && dispatch(changeCurrentUrl('/'));
-            } else {
-              const path = payload.path;
-
-              contentTypes$.subscribe((contentTypes) => {
-                hostToGuest$.next(contentTypesResponse({ contentTypes: Object.values(contentTypes) }));
-                issueDescriptorRequest({
-                  site: siteId,
-                  path,
-                  contentTypes,
-                  requestedSourceMapPaths,
-                  dispatch,
-                  completeAction: fetchPrimaryGuestModelComplete,
-                  permissions
-                });
+          if (payload.path?.startsWith('/')) {
+            contentTypes$.subscribe((contentTypes) => {
+              issueDescriptorRequest({
+                site: siteId,
+                path: payload.path,
+                contentTypes,
+                requestedSourceMapPaths,
+                dispatch,
+                completeActionCreator: fetchGuestModelsComplete,
+                permissions
               });
-            }
-          } /* else if (type === FETCH_GUEST_MODEL) */ else {
-            if (payload.path?.startsWith('/')) {
-              contentTypes$.subscribe((contentTypes) => {
-                issueDescriptorRequest({
-                  site: siteId,
-                  path: payload.path,
-                  contentTypes,
-                  requestedSourceMapPaths,
-                  dispatch,
-                  completeAction: fetchGuestModelComplete,
-                  permissions
-                });
-              });
-            } else {
-              return console.warn(`Ignoring FETCH_GUEST_MODEL request since "${payload.path}" is not a valid path.`);
-            }
+            });
+          } else {
+            return console.warn(`Ignoring FETCH_GUEST_MODEL request since "${payload.path}" is not a valid path.`);
           }
           break;
         }
@@ -738,7 +733,7 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
                 contentTypes,
                 requestedSourceMapPaths,
                 dispatch,
-                completeAction: fetchGuestModelComplete,
+                completeActionCreator: fetchGuestModelsComplete,
                 permissions
               });
               hostToHost$.next(sortItemOperationComplete(payload));
@@ -825,7 +820,7 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
                 contentTypes,
                 requestedSourceMapPaths,
                 dispatch,
-                completeAction: fetchGuestModelComplete,
+                completeActionCreator: fetchGuestModelsComplete,
                 permissions
               });
               hostToGuest$.next(
@@ -878,7 +873,7 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
                 contentTypes,
                 requestedSourceMapPaths,
                 dispatch,
-                completeAction: fetchPrimaryGuestModelComplete,
+                completeActionCreator: fetchPrimaryGuestModelComplete,
                 permissions
               });
               hostToGuest$.next(duplicateItemOperationComplete());
@@ -973,7 +968,7 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
                 contentTypes,
                 requestedSourceMapPaths,
                 dispatch,
-                completeAction: fetchGuestModelComplete,
+                completeActionCreator: fetchGuestModelsComplete,
                 permissions
               });
 
@@ -1019,6 +1014,7 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
               },
               error(error) {
                 console.error(`${type} failed`, error);
+                dispatch(unlockItem({ path }));
                 hostToGuest$.next(updateFieldValueOperationFailed());
                 enqueueSnackbar(formatMessage(guestMessages.updateOperationFailed), { variant: 'error' });
               }
@@ -1126,8 +1122,22 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
           });
           break;
         }
+        case showItemMegaMenu.type: {
+          const extendedAction = action as StandardAction<Partial<ItemMegaMenuStateProps>>;
+          const iframe: HTMLIFrameElement = document.querySelector('#crafterCMSPreviewIframe');
+          const iframeRect = iframe.getBoundingClientRect();
+          const id = 'xbItemMegaMenuClosed';
+          extendedAction.payload.anchorPosition.top += iframeRect.top;
+          extendedAction.payload.anchorPosition.left += iframeRect.left;
+          extendedAction.payload.onClosed = batchActions([itemMegaMenuClosed(), dispatchDOMEvent({ id })]);
+          createCustomDocumentEventListener(id, () => iframe.contentWindow.focus());
+          dispatch(action);
+          break;
+        }
         // region actions whitelisted
-        case unlockItem.type: {
+        case unlockItem.type:
+        case errorPageCheckIn.type:
+        case allowedContentTypesUpdate.type: {
           dispatch(action);
           break;
         }
@@ -1359,7 +1369,7 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
 
   // Host hotkeys
   useHotkeys(
-    'a,r,e,m,p,shift+/,shift,/,shift+e',
+    'a,r,e,m,p,shift+slash,shift+e',
     (e) => {
       upToDateRefs.current.onShortCutKeypress(e);
     },
