@@ -847,6 +847,7 @@
   "PgwNgt": "Veröffentlichen",
   "phNH1z": "Zuletzt bearbeitet",
   "PHPhuH": "Abrufen abhängiger Elemente",
+  "PIPPcG": "Der Artikel ist Teil eines Veröffentlichungs-Pakets. Das Bearbeiten wird das gesamte Paket stornieren.",
   "ple8XM": "Quellprojekt ist erforderlich",
   "plugin.by": "Durch",
   "plugin.crafterCMS": "CrafterCMS",
@@ -1012,6 +1013,7 @@
   "Q8Qw5B": "Beschreibung",
   "Qbejj7": "Konflikte lösen",
   "QFEZtO": "Genehmigt von {name} für <render_target>{publishingTarget}</render_target> um {date}",
+  "qIdViu": "Warnung zur Veröffentlichung Stornierung",
   "qnwnPU": "Schreibgeschützte Blob-Speicher",
   "QoUxBT": "Veröffentlicht",
   "QpGBxv": "Audio aus dem Repository",
@@ -1604,8 +1606,6 @@
   "words.yes": "Ja",
   "workflowCancellation.cancel": "Stornieren",
   "workflowCancellation.continue": "Fortsetzen",
-  "workflowCancellation.subtitle": "Bearbeiten bricht alle Elemente ab, die sich im geplanten Bereitstellungsbatch befinden. Bitte überprüfen Sie die Liste der Dateien unten und wählen Sie „Weiter“, um den Workflow abzubrechen und zu bearbeiten, oder „Abbrechen“, um in Ihrem Dashboard zu bleiben.",
-  "workflowCancellation.title": "Warnung: Workflow-Abbruch",
   "workflowCancellationDialog.noAffectedFiles": "Es gibt keine betroffenen Dateien",
   "workflowStateManagementMessages.statesUpdatedMessage": "Zustand für {count} {count, plural, one {item} other {items}} erfolgreich aktualisiert",
   "workflowStates.locked": "Verschlossen",
@@ -1624,6 +1624,7 @@
   "yNmV/R": "Artikel",
   "yRy625": "Navigationsstatus der linken Seitenleiste",
   "YZl6cv": "Verschiedenes",
+  "Z6hPZP": "Artikel in diesem Paket",
   "ZIX1sG": "Klicken Sie oben auf Token erstellen, um eines zu erstellen.",
   "zQvVDJ": "Alles"
 }
