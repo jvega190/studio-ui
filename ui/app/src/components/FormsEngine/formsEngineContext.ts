@@ -22,32 +22,35 @@ import ApiResponse from '../../models/ApiResponse';
 import { FormsEngineProps } from './FormsEngine';
 import LookupTable from '../../models/LookupTable';
 
+export type FormsEngineSourceMap = LookupTable<string>;
+
 export interface FormsEngineContextProps {
-  activeTab: number;
   readonly: boolean;
   values: LookupTable<unknown>;
-  contentDom: XMLDocument | Element;
-  contentXml: string;
+  originalValuesJson: string;
+  sourceMap: FormsEngineSourceMap;
   contentType: ContentType;
-  contentTypeXml: string;
-  fieldHelpExpandedState: LookupTable<boolean>;
   fieldValidityState: LookupTable<{ isValid: boolean; messages: string[] }>;
-  formsEngineExtensions: PluginDescriptor;
-  formsStackProps: FormsEngineProps[];
-  formsStackState: FormsEngineContextProps[];
   item: SandboxItem;
   locked: boolean;
   lockError: ApiResponse;
+  affectedItemsInWorkflow: SandboxItem[];
   pathInProject: string;
-  previousScrollTopPosition: number;
   requirementsFetched: boolean;
-  sectionExpandedState: LookupTable<boolean>;
   isSubmitting: boolean;
   hasPendingChanges: boolean;
-  affectedItemsInWorkflow: SandboxItem[];
-  // TODO: probably not needed anymore as child state is kept up to date
-  currentStackedFormHasPendingChanges: boolean;
-  currentStackedFormIsSubmitting: boolean;
+  // TODO: Move to local state?
+  fieldHelpExpandedState: LookupTable<boolean>;
+  formsStackProps: FormsEngineProps[];
+  formsStackState: FormsEngineContextProps[];
+  previousScrollTopPosition: number;
+  sectionExpandedState: LookupTable<boolean>;
+  activeTab: number;
+  // TODO Remove if not in use:
+  formsEngineExtensions: PluginDescriptor;
+  contentDom: XMLDocument | Element;
+  contentXml: string;
+  contentTypeXml: string;
 }
 
 export interface FormsEngineContextApi {
@@ -60,7 +63,7 @@ export interface FormsEngineContextApi {
   setAccordionExpandedState(sectionId: string, expanded: boolean): void;
   handleToggleSectionAccordion(event: SyntheticEvent, expanded: boolean): void;
   handleViewFieldHelpText(event: SyntheticEvent, field: ContentTypeField): void;
-  pushForm(formProps: FormsEngineProps, openerFormState?: FormsEngineContextProps): void;
+  pushForm(formProps: FormsEngineProps): void;
   popForm(): void;
   updateStackedFormState(stackIndex: number, state: FormsEngineContextProps): void;
 }

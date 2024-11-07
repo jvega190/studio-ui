@@ -129,9 +129,9 @@ import { fetchItemVersions } from '../state/actions/versions';
 import StandardAction from '../models/StandardAction';
 import { fetchDependant } from '../services/dependencies';
 import { pickShowContentFormAction } from './state';
-import { pushDialog, updateDialogState } from '../state/reducers/dialogStack';
 import { NewContentDialogProps } from '../components/NewContentDialog/utils';
 import { nanoid } from 'nanoid';
+import { pushDialog, updateDialogState } from '../state/actions/dialogStack';
 
 export type ContextMenuOptionDescriptor<ID extends string = string> = {
   id: ID;

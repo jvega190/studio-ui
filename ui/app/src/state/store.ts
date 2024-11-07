@@ -51,7 +51,7 @@ import { SHARED_WORKER_NAME } from '../utils/constants';
 import { fetchActiveEnvironment } from '../services/environment';
 import { batchActions, dispatchDOMEvent } from './actions/misc';
 import { closeSingleFileUploadDialog } from './actions/dialogs';
-import { pushDialog, pushNonDialog } from './reducers/dialogStack';
+import { pushDialog, pushNonDialog } from './actions/dialogStack';
 
 export type EpicMiddlewareDependencies = { getIntl: () => IntlShape; worker: SharedWorker };
 

@@ -43,7 +43,7 @@ import { asArray } from '../utils/array';
 import { fromPromise } from 'rxjs/internal/observable/innerFrom';
 import AllowedContentTypesData from '../models/AllowedContentTypesData';
 
-// FE2 TODO: Assess removal
+// FE2 TODO: Verify removal
 // const typeMap = {
 //   input: 'text',
 //   rte: 'html',
@@ -274,6 +274,10 @@ function parseLegacyFormDefinitionFields(
       properties: {},
       defaultValue: legacyField.defaultValue
     };
+
+    if (legacyField.plugin) {
+      field.properties.plugin = legacyField.plugin;
+    }
 
     asArray<LegacyFormDefinitionProperty>(legacyField.properties?.property).forEach((legacyProp) => {
       let value;

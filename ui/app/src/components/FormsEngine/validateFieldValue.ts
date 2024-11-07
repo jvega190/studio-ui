@@ -120,10 +120,7 @@ export const valueRetrieverLookup: Record<BuiltInControlType, (field: ContentTyp
 
 export function validateFieldValue(field: ContentTypeField, currentValue: unknown): boolean {
   const isRequired = isFieldRequired(field);
-  const isEmpty =
-    !currentValue ||
-    (typeof currentValue === 'string' && currentValue.trim() === '') ||
-    (Array.isArray(currentValue) && currentValue.length === 0);
+  const isEmpty = isEmptyValue(field, currentValue);
   if (!isRequired && isEmpty) {
     // If not required and its empty, then it's valid.
     return true;
@@ -132,6 +129,14 @@ export function validateFieldValue(field: ContentTypeField, currentValue: unknow
     return true;
   }
   return false;
+}
+
+export function isEmptyValue(field: ContentTypeField, currentValue: unknown): boolean {
+  return (
+    !currentValue ||
+    (typeof currentValue === 'string' && currentValue.trim() === '') ||
+    (Array.isArray(currentValue) && currentValue.length === 0)
+  );
 }
 
 export function createCleanValuesObject(

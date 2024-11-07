@@ -15,7 +15,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { FormEngineField } from '../common/FormEngineField';
+import { FormsEngineField } from '../common/FormsEngineField';
 import { ControlProps } from '../types';
 import useRTEConfig from '../../../hooks/useRTEConfig';
 import { initRichTextEditorConfig } from '../../../state/actions/preview';
@@ -48,7 +48,8 @@ declare global {
 // FE2 TODO: Reuse this on XB
 function getTinyMceInitOptions(
   field: ContentTypeField,
-  rteConfig: GlobalState['preview']['richTextEditor'] // GlobalState['preview']['richTextEditor']['']['']
+  rteConfig: GlobalState['preview']['richTextEditor'], // GlobalState['preview']['richTextEditor']['']['']
+  setup?: Editor['props']['init']['setup']
 ): Editor['props']['init'] {
   const setupId: string = field.properties?.rteConfiguration?.value ?? 'generic';
   const tinymceOptions: Editor['props']['init'] = (
@@ -353,6 +354,8 @@ function getTinyMceInitOptions(
           },
           'loaded'
         );
+
+      setup?.(editor);
     },
     ...(tinymceOptions && {
       ...reversePluckProps(
@@ -392,6 +395,7 @@ export function RichTextEditor(props: RichTextEditorProps) {
   const { field, value, setValue, readonly } = props;
   const rteConfig = useRTEConfig();
   const editorRef = useRef<Editor>();
+  const hasReceivedFocusRef = useRef(false);
 
   // region Initialize RTE config FE2 TODO: Move elsewhere
   const uiConfig = useSiteUIConfig();
@@ -421,14 +425,22 @@ export function RichTextEditor(props: RichTextEditorProps) {
   const [currentLength, setCurrentLength] = useState(0);
   const maxLength = field.validations.maxLength?.value;
   const handleChange: Editor['props']['onEditorChange'] = (newValue, editor) => {
+    if (!hasReceivedFocusRef.current) {
+      // When the editor initializes, it may trigger a change event with virtually the
+      // same content, after it does its internal HTML cleansing. This causes the form to
+      // think the content was changed and warn about losing changes if trying to close
+      // the form without any user input. We'll ignore this event until the editor
+      // has received focus at least once.
+      return;
+    }
     setCurrentLength(editor.getContent({ format: 'text' }).length);
     setValue(newValue);
   };
   if (!rteConfig || !scriptLoaded) {
-    return <FormEngineField field={field} max={maxLength} length={value.length} children={<ControlSkeleton />} />;
+    return <FormsEngineField field={field} max={maxLength} length={value.length} children={<ControlSkeleton />} />;
   }
   return (
-    <FormEngineField
+    <FormsEngineField
       field={field}
       max={maxLength}
       length={currentLength}
@@ -463,10 +475,13 @@ export function RichTextEditor(props: RichTextEditorProps) {
         ref={editorRef}
         onInit={(event, editor) => {
           setCurrentLength(editor.getContent({ format: 'text' }).length);
+          editor.once('focus', () => {
+            hasReceivedFocusRef.current = true;
+          });
         }}
         disabled={readonly}
       />
-    </FormEngineField>
+    </FormsEngineField>
   );
 }
 

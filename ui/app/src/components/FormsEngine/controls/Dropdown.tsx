@@ -15,7 +15,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { FormEngineField } from '../common/FormEngineField';
+import { FormsEngineField } from '../common/FormsEngineField';
 import { ControlProps } from '../types';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
@@ -31,7 +31,7 @@ export interface DropdownProps extends ControlProps {
 }
 
 export function Dropdown(props: DropdownProps) {
-  const { field, contentType, value, setValue, readonly } = props;
+  const { field, contentType, value, setValue, readonly, autoFocus } = props;
   const contentTypes = useContentTypes();
   const effectRefs = useUpdateRefs({ contentTypes });
   const maxLength = field.validations.maxLength?.value;
@@ -43,9 +43,9 @@ export function Dropdown(props: DropdownProps) {
   );
   if (!optionGroups) {
     return (
-      <FormEngineField field={field} max={maxLength} length={value.length}>
+      <FormsEngineField field={field} max={maxLength} length={value.length}>
         <Skeleton variant="rounded" height={56} />
-      </FormEngineField>
+      </FormsEngineField>
     );
   }
   // TODO: Add argument typing
@@ -56,8 +56,8 @@ export function Dropdown(props: DropdownProps) {
       </MenuItem>
     ));
   return (
-    <FormEngineField field={field} max={maxLength} length={value.length}>
-      <Select value={value} label="" onChange={handleChange} disabled={readonly}>
+    <FormsEngineField field={field} max={maxLength} length={value.length}>
+      <Select value={value} label="" onChange={handleChange} disabled={readonly} autoFocus={autoFocus}>
         {optionGroups.length > 1
           ? optionGroups.map((group) => [
               <ListSubheader key={group.id}>{group.label}</ListSubheader>,
@@ -65,7 +65,7 @@ export function Dropdown(props: DropdownProps) {
             ])
           : renderGroup(optionGroups[0])}
       </Select>
-    </FormEngineField>
+    </FormsEngineField>
   );
 }
 

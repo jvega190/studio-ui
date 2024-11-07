@@ -336,7 +336,8 @@ export const components = {
   WorkflowCancellationDialog: lazy(() => import('../components/WorkflowCancellationDialog')),
   WorkflowStateManagement: lazy(() => import('../components/WorkflowStateManagement')),
   FormsEngine: lazy(() => import('../components/FormsEngine/FormsEngine')),
-  FormsEngineDialog: lazy(() => import('../components/FormsEngine/FormsEngineDialog'))
+  FormsEngineDialog: lazy(() => import('../components/FormsEngine/FormsEngineDialog')),
+  FormsEngineField: lazy(() => import('../components/FormsEngine/common/FormsEngineField'))
 };
 export const icons = {
   About: lazy(() => import('../icons/About')),

@@ -14,27 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { DialogStackItem, GlobalState } from '../../models/GlobalState';
-import { createAction, createReducer } from '@reduxjs/toolkit';
+import { GlobalState } from '../../models/GlobalState';
+import { createReducer } from '@reduxjs/toolkit';
 import { nanoid } from 'nanoid';
-import { EnhancedDialogProps } from '../../components';
 import { WidgetDialogProps } from '../../components/WidgetDialog/utils';
-
-export const pushDialog = /*#__PURE__*/ createAction<Partial<DialogStackItem> & Pick<DialogStackItem, 'component'>>(
-  'PUSH_DIALOG'
-);
-export const popDialog = /*#__PURE__*/ createAction<{ id: string }>('POP_DIALOG');
-export const updateDialogState = /*#__PURE__*/ createAction<{ id: string; props: unknown }>('UPDATE_DIALOG_STATE');
-
-// TODO: Perhaps discard these actions and leave the existing showWidgetDialog family of actions
-export const pushNonDialog = /*#__PURE__*/ createAction<
-  Partial<DialogStackItem & { dialogProps: EnhancedDialogProps }> & Pick<DialogStackItem, 'component'>
->('PUSH_NON_DIALOG');
-export const updateNonDialogState = /*#__PURE__*/ createAction<{
-  id: string;
-  props: unknown;
-  dialogProps?: EnhancedDialogProps;
-}>('UPDATE_NON_DIALOG_STATE');
+import { popDialog, pushDialog, pushNonDialog, updateDialogState, updateNonDialogState } from '../actions/dialogStack';
 
 const reducer = createReducer<GlobalState['dialogStack']>(
   {

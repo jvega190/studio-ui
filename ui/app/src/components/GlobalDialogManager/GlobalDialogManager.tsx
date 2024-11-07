@@ -41,9 +41,9 @@ import useActiveSiteId from '../../hooks/useActiveSiteId';
 import { components } from '../../utils/constants';
 import { EnhancedDialogProps } from '../EnhancedDialog';
 import { DialogStackItem } from '../../models/GlobalState';
-import { popDialog, pushDialog, updateDialogState } from '../../state/reducers/dialogStack';
 import { nanoid } from 'nanoid';
 import { ConfirmDialogProps } from '../ConfirmDialog';
+import { popDialog, pushDialog, updateDialogState } from '../../state/actions/dialogStack';
 
 // region const ... = lazy(() => import('...'));
 const ViewVersionDialog = lazy(() => import('../ViewVersionDialog'));
@@ -116,14 +116,18 @@ function createCallback(action: StandardAction, dispatch: Dispatch): (output?: u
 // @formatter:on
 
 // FE2 TODO: Find a better place for this
-export const displayWithPendingChangesConfirm = (dispatch: ReduxDispatch, onClose: () => void) => {
+export const displayWithPendingChangesConfirm = (
+  dispatch: ReduxDispatch,
+  onClose: () => void,
+  message = <FormattedMessage defaultMessage="Close without saving changes?" />
+) => {
   const id = nanoid();
   dispatch(
     pushDialog({
       id,
       component: 'craftercms.components.ConfirmDialog',
       props: {
-        title: <FormattedMessage defaultMessage="Close without saving changes?" />,
+        title: message,
         onOk() {
           dispatch(popDialog({ id }));
           onClose();

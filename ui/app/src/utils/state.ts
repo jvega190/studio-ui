@@ -26,7 +26,8 @@ import { PathNavInitPayload } from '../state/actions/pathNavigator';
 import { MediaCardViewModes } from '../components';
 import { FormsEngineProps } from '../components/FormsEngine/FormsEngine';
 import { showEditDialog } from '../state/actions/dialogs';
-import { pushDialog } from '../state/reducers/dialogStack';
+
+import { pushDialog } from '../state/actions/dialogStack';
 
 export function setStoredGlobalMenuSiteViewPreference(value: 'grid' | 'list', user: string) {
   window.localStorage.setItem(`craftercms.${user}.globalMenuSiteViewPreference`, value);

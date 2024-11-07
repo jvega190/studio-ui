@@ -22,7 +22,7 @@ import DeleteOutlined from '@mui/icons-material/DeleteOutlined';
 import EditOutlined from '@mui/icons-material/EditOutlined';
 import HelpOutline from '@mui/icons-material/HelpOutline';
 import SearchRounded from '@mui/icons-material/SearchRounded';
-import { FormEngineField } from '../common/FormEngineField';
+import { FormsEngineField } from '../common/FormsEngineField';
 import { ControlProps } from '../types';
 import { MediaItem, Primitive } from '../../../models';
 import List from '@mui/material/List';
@@ -61,7 +61,6 @@ import SecondaryButton from '../../SecondaryButton';
 import { DialogBody } from '../../DialogBody';
 import Typography from '@mui/material/Typography';
 import { useDispatch } from 'react-redux';
-import { pushDialog, pushNonDialog } from '../../../state/reducers/dialogStack';
 import { nanoid } from 'nanoid';
 import useUpdateRefs from '../../../hooks/useUpdateRefs';
 import { SearchProps } from '../../Search';
@@ -72,6 +71,7 @@ import useActiveUser from '../../../hooks/useActiveUser';
 import { processPathMacros } from '../../../utils/path';
 import { XmlKeys } from '../validateFieldValue';
 import { ensureSingleSlash } from '../../../utils/string';
+import { pushDialog, pushNonDialog } from '../../../state/actions/dialogStack';
 
 // TODO: process path macros
 
@@ -305,7 +305,7 @@ function DataSourcePicker(props: { allowedPaths: AllowedPathsData[]; onChange(e,
 }
 
 export function NodeSelector(props: NodeSelectorProps) {
-  const { field, contentType, value, setValue, readonly } = props;
+  const { field, contentType, value, setValue, readonly, autoFocus } = props;
   useFetchSandboxItems(value.flatMap((item) => item.include ?? []));
   const itemsByPath = useItemsByPath();
   const user = useActiveUser();
@@ -319,6 +319,8 @@ export function NodeSelector(props: NodeSelectorProps) {
   const addMenuButtonRef = useRef<HTMLButtonElement>();
   const contentTypes = useContentTypes();
   const siteId = useActiveSiteId();
+  // const saveRef = useRef(setValue);
+  // saveRef.current = setValue;
   // TODO: Handle '*' from components DS
   const dataSourceSummary = useMemo(() => {
     const allowedCreateTypes: LookupTable<AllowedContentTypesDataWithDestinations> = {};
@@ -700,7 +702,8 @@ export function NodeSelector(props: NodeSelectorProps) {
     return menuOptions;
   }, [memoRefs, dataSourceSummary, readonly]);
   const { allowedCreateTypes, allowedCreatePaths, allowedBrowsePaths, allowedSearchPaths } = dataSourceSummary;
-  const isAddDisabled = readonly || field.validations.maxCount?.value >= value;
+  const maxLimitReached = value.length >= field.validations.maxCount?.value;
+  const isAddDisabled = readonly || maxLimitReached;
   return (
     <>
       <Menu
@@ -748,24 +751,39 @@ export function NodeSelector(props: NodeSelectorProps) {
           </DialogFooter>
         )}
       </Dialog>
-      <FormEngineField
+      <FormsEngineField
         field={field}
         min={field.validations.minCount?.value}
         max={field.validations.maxCount?.value}
         length={value.length}
-        actions={
-          <Tooltip title={isAddDisabled ? '' : <FormattedMessage defaultMessage="Add items" />}>
-            <IconButton
-              ref={addMenuButtonRef}
-              disabled={isAddDisabled}
-              size="small"
-              color="primary"
-              onClick={() => {
-                setAddMenuOpen(true);
-              }}
-            >
-              <AddRounded fontSize="small" />
-            </IconButton>
+        action={
+          <Tooltip
+            title={
+              isAddDisabled ? (
+                maxLimitReached ? (
+                  <FormattedMessage defaultMessage="Maximum amount of items reached" />
+                ) : (
+                  ''
+                )
+              ) : (
+                <FormattedMessage defaultMessage="Add items" />
+              )
+            }
+          >
+            <span>
+              <IconButton
+                autoFocus={autoFocus}
+                ref={addMenuButtonRef}
+                disabled={isAddDisabled}
+                size="small"
+                color="primary"
+                onClick={() => {
+                  setAddMenuOpen(true);
+                }}
+              >
+                <AddRounded fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
         }
       >
@@ -873,7 +891,7 @@ export function NodeSelector(props: NodeSelectorProps) {
             />
           )}
         </Box>
-      </FormEngineField>
+      </FormsEngineField>
     </>
   );
 }

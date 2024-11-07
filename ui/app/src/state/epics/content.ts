@@ -249,7 +249,7 @@ const content: CrafterCMSEpic[] = [
     action$.pipe(
       ofType(fetchSandboxItems.type),
       withLatestFrom(state$),
-      switchMap(([{ payload }, state]) =>
+      mergeMap(([{ payload }, state]) =>
         fetchItemsByPath(state.sites.active, payload.paths).pipe(
           map((items) => fetchSandboxItemsComplete({ items })),
           catchAjaxError(fetchSandboxItemsFailed)

@@ -20,7 +20,7 @@ import IconButton, { IconButtonProps } from '@mui/material/IconButton';
 import AddRounded from '@mui/icons-material/AddRounded';
 import DeleteOutlined from '@mui/icons-material/DeleteOutlined';
 import EditOutlined from '@mui/icons-material/EditOutlined';
-import { FormEngineField } from '../common/FormEngineField';
+import { FormsEngineField } from '../common/FormsEngineField';
 import { ControlProps } from '../types';
 import List from '@mui/material/List';
 import ListItemText from '@mui/material/ListItemText';
@@ -39,7 +39,7 @@ export interface RepeatProps extends ControlProps {
 }
 
 export function Repeat(props: RepeatProps) {
-  const { field, value, setValue, readonly } = props;
+  const { field, value, setValue, readonly, autoFocus } = props;
   const [, apiRef] = useFormsEngineContext();
   const hasContent = value.length;
   const handleRemoveItem = (event: ReactMouseEvent, index: number) => {
@@ -58,14 +58,14 @@ export function Repeat(props: RepeatProps) {
   const isAddDisabled = readonly || field.validations.maxCount?.value >= value;
   return (
     <>
-      <FormEngineField
+      <FormsEngineField
         field={field}
         min={field.validations.minCount?.value}
         max={field.validations.maxCount?.value}
         length={value.length}
-        actions={
+        action={
           <Tooltip title={isAddDisabled ? '' : <FormattedMessage defaultMessage="Add items" />}>
-            <IconButton size="small" color="primary" onClick={handleAddItem}>
+            <IconButton size="small" color="primary" onClick={handleAddItem} autoFocus={autoFocus}>
               <AddRounded fontSize="small" />
             </IconButton>
           </Tooltip>
@@ -123,7 +123,7 @@ export function Repeat(props: RepeatProps) {
             </>
           )}
         </Box>
-      </FormEngineField>
+      </FormsEngineField>
     </>
   );
 }

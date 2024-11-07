@@ -23,7 +23,7 @@ import Typography from '@mui/material/Typography';
 import CardMedia from '@mui/material/CardMedia';
 import IconButton from '@mui/material/IconButton';
 import { DeleteOutlined, DownloadOutlined, EditOutlined } from '@mui/icons-material';
-import { FormEngineField } from '../common/FormEngineField';
+import { FormsEngineField } from '../common/FormsEngineField';
 import useEnv from '../../../hooks/useEnv';
 import { ControlProps } from '../types';
 import { StackedButton } from '../common/StackedButton';
@@ -34,11 +34,11 @@ export interface ImagePickerProps extends ControlProps {
 }
 
 export function ImagePicker(props: ImagePickerProps) {
-  const { field, value } = props;
+  const { field, value, autoFocus } = props;
   const { guestBase } = useEnv();
   const hasValue = Boolean(value);
   return (
-    <FormEngineField field={field}>
+    <FormsEngineField field={field}>
       {hasValue ? (
         <Card sx={{ display: 'flex' }}>
           <CardMedia
@@ -108,7 +108,7 @@ export function ImagePicker(props: ImagePickerProps) {
           </StackedButton>
         </Box>
       )}
-    </FormEngineField>
+    </FormsEngineField>
   );
 }
 

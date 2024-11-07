@@ -14,14 +14,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { ContentTypeField } from '../../models';
-import ContentType from '../../models/ContentType';
+import Tooltip from '@mui/material/Tooltip';
+import { FormattedMessage } from 'react-intl';
+import CheckRounded from '@mui/icons-material/CheckRounded';
+import React from 'react';
 
-export interface ControlProps {
-  value: unknown;
-  setValue(newValue: unknown): void;
-  field: ContentTypeField;
-  contentType: ContentType;
-  readonly: boolean;
-  autoFocus: boolean;
+export function FieldEmptyStateIndicator({ isEmpty }: { isEmpty: boolean }) {
+  return isEmpty ? undefined : (
+    <Tooltip title={<FormattedMessage defaultMessage="Complete" />}>
+      <CheckRounded fontSize="small" color="success" />
+    </Tooltip>
+  );
 }
+
+export default FieldEmptyStateIndicator;

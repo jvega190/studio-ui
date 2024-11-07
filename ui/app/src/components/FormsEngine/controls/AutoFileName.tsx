@@ -16,7 +16,7 @@
 
 import OutlinedInput from '@mui/material/OutlinedInput';
 import React, { useEffect, useId } from 'react';
-import { FormEngineField } from '../common/FormEngineField';
+import { FormsEngineField } from '../common/FormsEngineField';
 import { ControlProps } from '../types';
 import { useFormsEngineContext } from '../formsEngineContext';
 
@@ -25,7 +25,7 @@ export interface AutoFileNameProps extends ControlProps {
 }
 
 export function AutoFileName(props: AutoFileNameProps) {
-  const { field, value, setValue } = props;
+  const { field, value, setValue, autoFocus } = props;
   const [{ values }] = useFormsEngineContext();
   const htmlId = useId();
   useEffect(() => {
@@ -34,9 +34,9 @@ export function AutoFileName(props: AutoFileNameProps) {
     }
   }, [setValue, value, values.objectId]);
   return (
-    <FormEngineField htmlFor={htmlId} field={field}>
-      <OutlinedInput readOnly fullWidth id={htmlId} value={value.replace(/\.xml$/, '')} />
-    </FormEngineField>
+    <FormsEngineField htmlFor={htmlId} field={field}>
+      <OutlinedInput readOnly fullWidth id={htmlId} value={value.replace(/\.xml$/, '')} autoFocus={autoFocus} />
+    </FormsEngineField>
   );
 }
 
