@@ -128,8 +128,6 @@ import useDebouncedInput from '../../hooks/useDebouncedInput';
 import MenuOpenIcon from '@mui/icons-material/MenuOpenRounded';
 import useUpdateRefs from '../../hooks/useUpdateRefs';
 import { Fade } from '@mui/material';
-import FormLabel from '@mui/material/FormLabel';
-import Skeleton from '@mui/material/Skeleton';
 import FormHelperText from '@mui/material/FormHelperText';
 import { showSystemNotification } from '../../state/actions/system';
 import { Dispatch as ReduxDispatch } from 'redux';
@@ -151,6 +149,7 @@ import { FormsEngineField } from './common/FormsEngineField';
 import ErrorBoundary from '../ErrorBoundary';
 import useSubject from '../../hooks/useSubject';
 import { debounceTime } from 'rxjs/operators';
+import { ControlSkeleton } from './common/ControlSkeleton';
 
 // TODO:
 //  - PathNav and other ares to open new edit form
@@ -613,6 +612,25 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
         fieldUpdates$.next(fieldId);
         update({
           hasPendingChanges: true,
+          values: { ...stateRef.current.values, [fieldId]: value },
+          fieldValidityState: stateRef.current.contentType.fields[fieldId]
+            ? {
+                ...stateRef.current.fieldValidityState,
+                [fieldId]: {
+                  messages: null,
+                  isValid: validateFieldValue(stateRef.current.contentType.fields[fieldId], value)
+                }
+              }
+            : stateRef.current.fieldValidityState
+        });
+      },
+      rollbackValue(fieldId) {
+        const originalValues = JSON.parse(stateRef.current.originalValuesJson);
+        const value = originalValues[fieldId];
+        stateRef.current.changedFieldIds.delete(fieldId);
+        fieldUpdates$.next(fieldId);
+        update({
+          hasPendingChanges: stateRef.current.changedFieldIds.size > 0,
           values: { ...stateRef.current.values, [fieldId]: value },
           fieldValidityState: stateRef.current.contentType.fields[fieldId]
             ? {
@@ -1603,26 +1621,6 @@ function ControlPluginNoDefaultError({ field }: ControlProps) {
         />
       </Alert>
     </FormsEngineField>
-  );
-}
-
-function ControlSkeleton({ label }: { label: string }) {
-  return (
-    <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" height={30}>
-        <Box display="flex" alignItems="center" className="space-x">
-          {<FormLabel component="div">{label}</FormLabel> ?? <Skeleton variant="text" width={100} />}
-          <Skeleton variant="circular" />
-        </Box>
-        <Box display="flex" alignItems="center" className="space-x">
-          <Skeleton variant="text" width={30} />
-          <Skeleton variant="circular" width={15} height={15} />
-          <Skeleton variant="circular" width={15} height={15} />
-        </Box>
-      </Box>
-      <Skeleton variant="rounded" width="100%" height={50} />
-      <Skeleton variant="text" width={200} height={15} />
-    </Box>
   );
 }
 

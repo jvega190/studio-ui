@@ -33,7 +33,17 @@ import { FormattedMessage } from 'react-intl';
 import LinkOffRoundedIcon from '@mui/icons-material/LinkOffRounded';
 import Tooltip from '@mui/material/Tooltip';
 import useContentTypes from '../../../hooks/useContentTypes';
-import { MouseEvent as ReactMouseEvent, SyntheticEvent, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  lazy,
+  MouseEvent as ReactMouseEvent,
+  Suspense,
+  SyntheticEvent,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import { BrowseFilesDialogProps } from '../../BrowseFilesDialog';
 import Menu from '@mui/material/Menu';
 import MenuItem, { menuItemClasses } from '@mui/material/MenuItem';
@@ -72,6 +82,10 @@ import { processPathMacros } from '../../../utils/path';
 import { XmlKeys } from '../validateFieldValue';
 import { ensureSingleSlash } from '../../../utils/string';
 import { pushDialog, pushNonDialog } from '../../../state/actions/dialogStack';
+import FieldBox from '../common/FieldBox';
+import OrderOptionsIcon from '@mui/icons-material/ImportExportRounded';
+
+const ReorderUI = lazy(() => import('../common/ReorderUI'));
 
 // TODO: process path macros
 
@@ -304,8 +318,8 @@ function DataSourcePicker(props: { allowedPaths: AllowedPathsData[]; onChange(e,
   );
 }
 
-export function NodeSelector(props: NodeSelectorProps) {
-  const { field, contentType, value, setValue, readonly, autoFocus } = props;
+function Main(props: NodeSelectorProps & { onReorder(): void }) {
+  const { field, contentType, value, setValue, readonly, autoFocus, onReorder } = props;
   useFetchSandboxItems(value.flatMap((item) => item.include ?? []));
   const itemsByPath = useItemsByPath();
   const user = useActiveUser();
@@ -752,6 +766,7 @@ export function NodeSelector(props: NodeSelectorProps) {
           </DialogFooter>
         )}
       </Dialog>
+
       <FormsEngineField
         field={field}
         min={field.validations.minCount?.value}
@@ -787,16 +802,10 @@ export function NodeSelector(props: NodeSelectorProps) {
             </span>
           </Tooltip>
         }
+        menuOptions={['divider', { id: 'reorder', text: 'Reorder' }]}
+        onMenuOptionClick={() => onReorder()}
       >
-        <Box
-          sx={{
-            border: 1,
-            display: 'flex',
-            borderColor: 'divider',
-            borderRadius: 1,
-            ...(hasContent ? { flexDirection: 'column' } : { flexDirection: 'column' })
-          }}
-        >
+        <FieldBox>
           {hasContent ? (
             <List dense>
               {value.map((item, index) => {
@@ -853,6 +862,18 @@ export function NodeSelector(props: NodeSelectorProps) {
                           </Tooltip>
                         )}
                         {!readonly && (
+                          <Tooltip title="Move">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                              }}
+                            >
+                              <OrderOptionsIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {!readonly && (
                           <Tooltip title={iconTooltip}>
                             <IconButton size="small" onClick={(e) => handleRemoveItem(e, index)}>
                               <Icon fontSize="small" />
@@ -891,9 +912,37 @@ export function NodeSelector(props: NodeSelectorProps) {
               }}
             />
           )}
-        </Box>
+        </FieldBox>
       </FormsEngineField>
     </>
+  );
+}
+
+export function NodeSelector(props: NodeSelectorProps) {
+  const [reorder, setReorder] = useState(false);
+  const [minHeight, setMinHeight] = useState(0);
+  const containerRef = useRef<HTMLDivElement>();
+  const handleCancelReorder = () => setReorder(false);
+  const handleAcceptOrder = () => setReorder(false);
+  useLayoutEffect(() => {
+    const height = parseInt(getComputedStyle(containerRef.current).height);
+    // console.log(reorder, height);
+    // setMinHeight(height)
+    if (height > 0) {
+      setMinHeight(height);
+    }
+  }, [reorder]);
+  return (
+    <Box ref={containerRef} sx={{ minHeight }}>
+      <Suspense fallback="">
+        {reorder ? (
+          // Perhaps is best to render this as a dialog?
+          <ReorderUI {...props} onCancel={handleCancelReorder} onDone={handleAcceptOrder} />
+        ) : (
+          <Main {...props} onReorder={() => setReorder(true)} />
+        )}
+      </Suspense>
+    </Box>
   );
 }
 

@@ -25,7 +25,7 @@ import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
 import Collapse from '@mui/material/Collapse';
 import Alert, { alertClasses } from '@mui/material/Alert';
 import FormHelperText from '@mui/material/FormHelperText';
-import React, { PropsWithChildren, ReactNode, useEffect, useRef, useState } from 'react';
+import React, { forwardRef, PropsWithChildren, ReactNode, SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { isEmptyValue, isFieldRequired } from '../validateFieldValue';
 import FormLabel from '@mui/material/FormLabel';
 import Button from '@mui/material/Button';
@@ -36,6 +36,7 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Divider from '@mui/material/Divider';
 import ListItemText from '@mui/material/ListItemText';
+import { SystemIconDescriptor } from '../../SystemIcon';
 
 function createLengthBlock({ length, max, min }: { length: number; max: number; min: number }) {
   const pieces = [];
@@ -70,11 +71,32 @@ export interface FormsEngineFieldProps
     isValid?: boolean;
     sx?: FormControlProps['sx'];
     menu?: false;
+    menuOptions?: Array<
+      | {
+          id: string;
+          text: string;
+          icon?: SystemIconDescriptor;
+        }
+      | 'divider'
+    >;
+    onMenuOptionClick?(e: SyntheticEvent, optionId: string): void;
   }> {}
 
-export function FormsEngineField(props: FormsEngineFieldProps) {
-  const { children, field, max, min, length, action, htmlFor, autoFocus, menu = true } = props;
-  const { fieldHelpExpandedState, fieldValidityState, sourceMap, values } = useFormsEngineContext();
+export const FormsEngineField = forwardRef<HTMLDivElement, FormsEngineFieldProps>(function (props, ref) {
+  const {
+    children,
+    field,
+    max,
+    min,
+    length,
+    action,
+    htmlFor,
+    autoFocus,
+    menu = true,
+    menuOptions,
+    onMenuOptionClick
+  } = props;
+  const { fieldHelpExpandedState, fieldValidityState, sourceMap, values, changedFieldIds } = useFormsEngineContext();
   const api = useFormsEngineContextApi();
   const { formatMessage } = useIntl();
   const itemsByPath = useItemsByPath();
@@ -82,6 +104,7 @@ export function FormsEngineField(props: FormsEngineFieldProps) {
   const menuButtonRef = useRef<HTMLButtonElement>();
   const [openMenu, setOpenMenu] = useState(false);
   const fieldId = field.id;
+  const hasChanges = changedFieldIds.has(field.id);
   const hasHelpText = Boolean(field.helpText);
   const hasDescription = Boolean(field.description);
   const lengthBlock = createLengthBlock({ length, max, min });
@@ -89,6 +112,7 @@ export function FormsEngineField(props: FormsEngineFieldProps) {
   const validityData = fieldValidityState[field.id];
   const isValid = props.isValid ?? validityData?.isValid;
   const handleCloseMenu = () => setOpenMenu(false);
+  const handleRollback = () => api.rollbackValue(field.id);
   useEffect(() => {
     // Offer controls the option to focus on the label when the field is rendered.
     if (autoFocus) {
@@ -97,6 +121,7 @@ export function FormsEngineField(props: FormsEngineFieldProps) {
   }, [autoFocus]);
   return (
     <FormControl
+      ref={ref}
       fullWidth
       error={!isValid}
       variant="standard"
@@ -132,12 +157,27 @@ export function FormsEngineField(props: FormsEngineFieldProps) {
                 onClick={handleCloseMenu}
               >
                 <MenuItem>
-                  <ListItemText>Field Information</ListItemText>
+                  <ListItemText>
+                    <FormattedMessage defaultMessage="Field Information" />
+                  </ListItemText>
                 </MenuItem>
-                <Divider />
-                <MenuItem>
-                  <ListItemText>Rollback changes</ListItemText>
-                </MenuItem>
+                {hasChanges && [
+                  <Divider key="rollback-divider" />,
+                  <MenuItem key="rollback-action" onClick={handleRollback}>
+                    <ListItemText>
+                      <FormattedMessage defaultMessage="Rollback changes" />
+                    </ListItemText>
+                  </MenuItem>
+                ]}
+                {menuOptions?.map((option, index) =>
+                  option === 'divider' ? (
+                    <Divider key={`divider_${index}`} />
+                  ) : (
+                    <MenuItem key={option.id} onClick={(e) => onMenuOptionClick?.(e, option.id)}>
+                      <ListItemText children={option.text} />
+                    </MenuItem>
+                  )
+                )}
               </Menu>
             </>
           )}
@@ -218,6 +258,6 @@ export function FormsEngineField(props: FormsEngineFieldProps) {
         validityData.messages.map((message, key) => <FormHelperText key={key}>{message}</FormHelperText>)}
     </FormControl>
   );
-}
+});
 
 export default FormsEngineField;

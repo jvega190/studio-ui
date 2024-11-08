@@ -61,6 +61,7 @@ export interface FormsEngineContextApiProps {
     <K extends keyof FormsEngineContextProps>(key: K, value: FormsEngineContextProps[K]): void;
   };
   updateValue: (fieldId: string, value: unknown) => void;
+  rollbackValue: (fieldId: string) => void;
   handleTabChange(event: SyntheticEvent, newValue: number): void;
   setAccordionExpandedState(sectionId: string, expanded: boolean): void;
   handleToggleSectionAccordion(event: SyntheticEvent, expanded: boolean): void;
