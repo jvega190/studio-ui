@@ -55,7 +55,7 @@ export interface FormsEngineContextProps {
   contentTypeXml: string;
 }
 
-export interface FormsEngineContextApi {
+export interface FormsEngineContextApiProps {
   update: {
     (newState: Partial<FormsEngineContextProps>): void;
     <K extends keyof FormsEngineContextProps>(key: K, value: FormsEngineContextProps[K]): void;
@@ -70,9 +70,11 @@ export interface FormsEngineContextApi {
   updateStackedFormState(stackIndex: number, state: FormsEngineContextProps): void;
 }
 
-export type FormsEngineContextType = [FormsEngineContextProps, MutableRefObject<FormsEngineContextApi>];
+export type FormsEngineContextType = [FormsEngineContextProps, MutableRefObject<FormsEngineContextApiProps>];
 
-export const FormsEngineContext = createContext<FormsEngineContextType>(null);
+export const FormsEngineContext = createContext<FormsEngineContextProps>(null);
+
+export const FormsEngineContextApi = createContext<FormsEngineContextApiProps>(null);
 
 export function useFormsEngineContext() {
   const context = useContext(FormsEngineContext);
@@ -81,3 +83,44 @@ export function useFormsEngineContext() {
   }
   return context;
 }
+
+export function useFormsEngineContextApi() {
+  const context = useContext(FormsEngineContextApi);
+  if (!context) {
+    throw new Error('useFormsEngineContextApi must be used within a FormEngineContextApiProvider');
+  }
+  return context;
+}
+
+export const createInitialState: (mixin?: Partial<FormsEngineContextProps>) => FormsEngineContextProps = (
+  mixin?: Partial<FormsEngineContextProps>
+) => ({
+  pathInProject: null,
+  readonly: false,
+  activeTab: 0,
+  values: null,
+  contentDom: null,
+  contentXml: null,
+  contentType: null,
+  contentTypeXml: null,
+  fieldHelpExpandedState: {},
+  fieldValidityState: {},
+  formsEngineExtensions: null,
+  formsStackProps: [],
+  formsStackState: [],
+  item: null,
+  locked: false,
+  lockError: null,
+  previousScrollTopPosition: null,
+  requirementsFetched: false,
+  sectionExpandedState: {},
+  isCreateMode: false,
+  isSubmitting: false,
+  hasPendingChanges: false,
+  affectedItemsInWorkflow: null,
+  originalValuesJson: null,
+  sourceMap: null,
+  changedFieldIds: new Set<string>(),
+  versionComment: '',
+  ...mixin
+});

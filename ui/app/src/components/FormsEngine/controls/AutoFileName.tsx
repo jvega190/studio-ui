@@ -26,7 +26,7 @@ export interface AutoFileNameProps extends ControlProps {
 
 export function AutoFileName(props: AutoFileNameProps) {
   const { field, value, setValue, autoFocus } = props;
-  const [{ values }] = useFormsEngineContext();
+  const { values } = useFormsEngineContext();
   const htmlId = useId();
   useEffect(() => {
     if (!value) {

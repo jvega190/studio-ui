@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { useFormsEngineContext } from '../formsEngineContext';
+import { useFormsEngineContextApi } from '../formsEngineContext';
 import Box from '@mui/material/Box';
 import IconButton, { IconButtonProps } from '@mui/material/IconButton';
 import AddRounded from '@mui/icons-material/AddRounded';
@@ -40,7 +40,7 @@ export interface RepeatProps extends ControlProps {
 
 export function Repeat(props: RepeatProps) {
   const { field, value, setValue, readonly, autoFocus } = props;
-  const [, apiRef] = useFormsEngineContext();
+  const api = useFormsEngineContextApi();
   const hasContent = value.length;
   const handleRemoveItem = (event: ReactMouseEvent, index: number) => {
     event.stopPropagation();
@@ -49,7 +49,7 @@ export function Repeat(props: RepeatProps) {
     setValue(nextValue);
   };
   const handleEditItem = (event: ReactMouseEvent, item: RepeatItem, index: number) => {
-    apiRef.current.pushForm({
+    api.pushForm({
       repeat: { fieldId: field.id, values: item, index },
       fieldsToRender: Object.values(field.fields)
     });

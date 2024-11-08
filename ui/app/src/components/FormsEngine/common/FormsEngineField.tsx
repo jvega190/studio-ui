@@ -15,7 +15,7 @@
  */
 
 import { ContentTypeField } from '../../../models';
-import { useFormsEngineContext } from '../formsEngineContext';
+import { useFormsEngineContext, useFormsEngineContextApi } from '../formsEngineContext';
 import FormControl, { FormControlProps } from '@mui/material/FormControl';
 import Box from '@mui/material/Box';
 import FieldRequiredStateIndicator from './FieldRequiredStateIndicator';
@@ -74,7 +74,8 @@ export interface FormsEngineFieldProps
 
 export function FormsEngineField(props: FormsEngineFieldProps) {
   const { children, field, max, min, length, action, htmlFor, autoFocus, menu = true } = props;
-  const [{ fieldHelpExpandedState, fieldValidityState, sourceMap, values }, contextApiRef] = useFormsEngineContext();
+  const { fieldHelpExpandedState, fieldValidityState, sourceMap, values } = useFormsEngineContext();
+  const api = useFormsEngineContextApi();
   const { formatMessage } = useIntl();
   const itemsByPath = useItemsByPath();
   const labelRef = useRef<HTMLLabelElement>(null);
@@ -110,7 +111,7 @@ export function FormsEngineField(props: FormsEngineFieldProps) {
           </FormLabel>
           {isRequired && <FieldRequiredStateIndicator isValid={isValid} />}
           {hasHelpText && (
-            <IconButton size="small" onClick={(e) => contextApiRef.current.handleViewFieldHelpText(e, field)}>
+            <IconButton size="small" onClick={(e) => api.handleViewFieldHelpText(e, field)}>
               <HelpOutlineRounded fontSize="small" />
             </IconButton>
           )}
@@ -166,7 +167,7 @@ export function FormsEngineField(props: FormsEngineFieldProps) {
                 size="small"
                 sx={{ px: 0.5, minWidth: 0 }}
                 onClick={() => {
-                  contextApiRef.current.pushForm({
+                  api.pushForm({
                     readonly: true,
                     update: { path: sourceMap[fieldId] }
                   });

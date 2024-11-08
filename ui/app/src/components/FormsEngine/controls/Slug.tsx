@@ -16,7 +16,7 @@
 
 import OutlinedInput, { OutlinedInputProps } from '@mui/material/OutlinedInput';
 import React, { useId } from 'react';
-import { useFormsEngineContext } from '../formsEngineContext';
+import { useFormsEngineContext, useFormsEngineContextApi } from '../formsEngineContext';
 import { applyContentNameRules } from '../../../utils/content';
 import { FormsEngineField } from '../common/FormsEngineField';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -32,12 +32,13 @@ export function Slug(props: SlugProps) {
   const { field, readonly, autoFocus } = props;
   const htmlId = useId();
   const fieldId = field.id === 'fileName' || field.id === 'file-name' ? 'folder-name' : field.id;
-  const [context, api] = useFormsEngineContext();
+  const context = useFormsEngineContext();
+  const api = useFormsEngineContextApi();
   const { pathInProject, values } = context;
   // In some cases the values[fieldId] is null
   const value = (values[fieldId] as string) ?? '';
   const handleChange: OutlinedInputProps['onChange'] = (e) =>
-    api.current.updateValue(fieldId, applyContentNameRules(e.currentTarget.value));
+    api.updateValue(fieldId, applyContentNameRules(e.currentTarget.value));
   return (
     <FormsEngineField
       htmlFor={htmlId}

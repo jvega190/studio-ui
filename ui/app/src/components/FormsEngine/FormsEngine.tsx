@@ -43,10 +43,11 @@ import React, {
 } from 'react';
 import { ContentTypeField, ContentTypeSection, SandboxItem } from '../../models';
 import {
+  createInitialState,
   FormsEngineContext,
   FormsEngineContextApi,
+  FormsEngineContextApiProps,
   FormsEngineContextProps,
-  FormsEngineContextType,
   FormsEngineSourceMap
 } from './formsEngineContext';
 import {
@@ -296,39 +297,6 @@ function buildContentXml(values: LookupTable<unknown>, contentTypesLookup: Looku
 function getScrollContainer(container: HTMLElement): HTMLElement {
   return container;
 }
-
-const createInitialState: (mixin?: Partial<FormsEngineContextProps>) => FormsEngineContextProps = (
-  mixin?: Partial<FormsEngineContextProps>
-) => ({
-  pathInProject: null,
-  readonly: false,
-  activeTab: 0,
-  values: null,
-  contentDom: null,
-  contentXml: null,
-  contentType: null,
-  contentTypeXml: null,
-  fieldHelpExpandedState: {},
-  fieldValidityState: {},
-  formsEngineExtensions: null,
-  formsStackProps: [],
-  formsStackState: [],
-  item: null,
-  locked: false,
-  lockError: null,
-  previousScrollTopPosition: null,
-  requirementsFetched: false,
-  sectionExpandedState: {},
-  isCreateMode: false,
-  isSubmitting: false,
-  hasPendingChanges: false,
-  affectedItemsInWorkflow: null,
-  originalValuesJson: null,
-  sourceMap: null,
-  changedFieldIds: new Set<string>(),
-  versionComment: '',
-  ...mixin
-});
 
 const buildSectionExpandedState = (contentTypeSections: ContentTypeSection[]) => {
   return contentTypeSections.reduce(
@@ -584,7 +552,8 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
   const [enablingEditInProgress, setEnablingEditInProgress] = useState(false);
   const [acceptedWorkflowCancellation, setAcceptedWorkflowCancellation] = useState(false);
   const [collapsedToC, setCollapsedToC] = useState(false); // Controls the Table of Contents being collapsed under a drawer or visible
-  const [parentState, parentContextApiRef] = useContext(FormsEngineContext) ?? [];
+  const parentState = useContext(FormsEngineContext);
+  const parentContextApi = useContext(FormsEngineContextApi);
   const effectRefs = useUpdateRefs({ contentTypesById, parentState, stackIndex, fieldsToRender });
   const valueSettersRef = useRef<Record<string, (value: unknown) => void>>({});
   const fieldUpdates$ = useSubject<string>();
@@ -597,61 +566,63 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
   });
   if (parentState) state = parentState.formsStackState[stackIndex];
   const stateRef = useUpdateRefs(state);
-  const contextApiRef = useRef<FormsEngineContextApi>(null);
-  const context = useMemo<FormsEngineContextType>(() => {
-    const hasParentContext = Boolean(parentContextApiRef);
+  const contextApi = useMemo<FormsEngineContextApiProps>(() => {
+    const hasParentContext = Boolean(parentContextApi);
     const update = <K extends keyof FormsEngineContextProps>(
       newStateOrKey: K | Partial<FormsEngineContextProps>,
       newState?: FormsEngineContextProps[K]
     ) => {
       let nextState: FormsEngineContextProps;
       if (typeof newStateOrKey === 'string') {
-        nextState = { ...state, [newStateOrKey]: newState };
+        nextState = { ...stateRef.current, [newStateOrKey]: newState };
       } else {
-        nextState = { ...state, ...newStateOrKey };
+        nextState = { ...stateRef.current, ...newStateOrKey };
       }
       if (hasParentContext) {
-        parentContextApiRef.current.updateStackedFormState(effectRefs.current.stackIndex, nextState);
+        parentContextApi.updateStackedFormState(effectRefs.current.stackIndex, nextState);
       } else {
         setState(nextState);
       }
     };
-    const api: FormsEngineContextApi = {
+    const api: FormsEngineContextApiProps = {
       update,
       pushForm(formProps: FormsEngineProps) {
-        if (parentContextApiRef) {
+        if (hasParentContext) {
           update('previousScrollTopPosition', getScrollContainer(containerRef.current).scrollTop);
-          parentContextApiRef.current.pushForm(formProps);
+          parentContextApi.pushForm(formProps);
         } else {
           const newState: FormsEngineContextProps = createInitialState({ readonly: formProps.readonly ?? false });
           update({
-            formsStackProps: [...state.formsStackProps, formProps],
-            formsStackState: [...state.formsStackState, newState]
+            formsStackProps: [...stateRef.current.formsStackProps, formProps],
+            formsStackState: [...stateRef.current.formsStackState, newState]
           });
         }
       },
       popForm() {
-        if (parentContextApiRef) {
-          parentContextApiRef.current.popForm();
+        if (hasParentContext) {
+          parentContextApi.popForm();
         } else {
           update({
-            formsStackProps: state.formsStackProps.slice(0, -1),
-            formsStackState: state.formsStackState.slice(0, -1)
+            formsStackProps: stateRef.current.formsStackProps.slice(0, -1),
+            formsStackState: stateRef.current.formsStackState.slice(0, -1)
           });
         }
       },
       updateValue(fieldId, value) {
-        state.changedFieldIds.add(fieldId);
+        stateRef.current.changedFieldIds.add(fieldId);
         fieldUpdates$.next(fieldId);
         update({
           hasPendingChanges: true,
-          values: { ...state.values, [fieldId]: value },
-          fieldValidityState: state.contentType.fields[fieldId]
+          values: { ...stateRef.current.values, [fieldId]: value },
+          fieldValidityState: stateRef.current.contentType.fields[fieldId]
             ? {
-                ...state.fieldValidityState,
-                [fieldId]: { messages: null, isValid: validateFieldValue(state.contentType.fields[fieldId], value) }
+                ...stateRef.current.fieldValidityState,
+                [fieldId]: {
+                  messages: null,
+                  isValid: validateFieldValue(stateRef.current.contentType.fields[fieldId], value)
+                }
               }
-            : state.fieldValidityState
+            : stateRef.current.fieldValidityState
         });
       },
       handleTabChange(event, newValue) {
@@ -664,26 +635,25 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
         event.preventDefault();
         const key = field.id;
         update('fieldHelpExpandedState', {
-          ...state.fieldHelpExpandedState,
-          [key]: !state.fieldHelpExpandedState[key]
+          ...stateRef.current.fieldHelpExpandedState,
+          [key]: !stateRef.current.fieldHelpExpandedState[key]
         });
       },
       setAccordionExpandedState(sectionId, expanded) {
         update('sectionExpandedState', {
-          ...state.sectionExpandedState,
+          ...stateRef.current.sectionExpandedState,
           [sectionId]: expanded
         });
       },
       updateStackedFormState(stackIndex, childFormState) {
         // Nothing depends on `formsStackState` itself to re-render so not treating as immutable
         // for efficiency and speed (avoid `concat` & `slice`).
-        state.formsStackState[stackIndex] = childFormState;
-        update('formsStackState', state.formsStackState);
+        stateRef.current.formsStackState[stackIndex] = childFormState;
+        update('formsStackState', stateRef.current.formsStackState);
       }
     };
-    contextApiRef.current = api;
-    return [state, contextApiRef];
-  }, [parentContextApiRef, state, effectRefs, fieldUpdates$]);
+    return api;
+  }, [parentContextApi, stateRef, effectRefs, fieldUpdates$]);
   // endregion
 
   const requirementsFetched = state.requirementsFetched;
@@ -718,17 +688,20 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
         currentMessage !== '' &&
         // A repeated field is reporting changes, no need to set
         (currentMessage === newMessage ||
-          // The version comment hasn't been manually altered by the user
+          // The version comment hasn't been manually altered by the user (i.e. if the current message is the same
+          // as the message generated without the last field added to changedFieldIds, we can assume the message
+          // has not been altered by user input)
           currentMessage !== produceMessage(fieldsChanged.slice(0, -1)))
       ) {
+        // Do not set a new message
         return;
       }
-      contextApiRef.current.update('versionComment', newMessage);
+      contextApi.update('versionComment', newMessage);
     });
     return () => {
       sub.unsubscribe();
     };
-  }, [effectRefs, fieldUpdates$, stateRef]);
+  }, [contextApi, effectRefs, fieldUpdates$, stateRef]);
 
   // Fetch/prepare requirements
   useEffect(() => {
@@ -765,7 +738,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
         newState.fieldValidityState = buildInitialFieldValidityState(fieldsToRender, newState.values);
         newState.readonly = parentState.readonly;
         newState.requirementsFetched = true;
-        contextApiRef.current.update(newState);
+        contextApi.update(newState);
       } else if (
         // An embedded component is being opened as a stacked form.
         parentState &&
@@ -788,14 +761,14 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
         newState.sectionExpandedState = buildSectionExpandedState(newState.contentType.sections);
         newState.requirementsFetched = true;
         if (newState.readonly === parentState.readonly) {
-          contextApiRef.current.update(newState);
+          contextApi.update(newState);
         } else {
           const sub = internalLockContentService(siteId, newState.item.path).subscribe((result) => {
             newState.locked = result.locked;
             newState.lockError = result.error;
             newState.readonly = !result.locked;
             newState.affectedItemsInWorkflow = result.affectedItemsInWorkflow;
-            contextApiRef.current.update(newState);
+            contextApi.update(newState);
           });
           return () => sub.unsubscribe();
         }
@@ -826,7 +799,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
         createElements(contentDom.documentElement, values);
         const contentXml = serialize(contentDom);
         // TODO: Sourcemap? How can we determine what would be inherited by this content? New API?
-        contextApiRef.current.update({
+        contextApi.update({
           values,
           originalValuesJson: JSON.stringify(values),
           contentType,
@@ -847,7 +820,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
           contentTypesById
         }).subscribe((newState) => {
           dispatch(fetchSandboxItemComplete({ item: newState.item }));
-          contextApiRef.current.update(newState);
+          contextApi.update(newState);
         });
         return () => subscription.unsubscribe();
       }
@@ -862,7 +835,8 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
     repeat,
     readonlyProp,
     effectRefs,
-    fieldsToRender
+    fieldsToRender,
+    contextApi
   ]);
 
   const sourceMapPaths = useMemo(() => {
@@ -874,10 +848,10 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
   useEffect(() => {
     // It'd be good to have a sandboxItem.lastSystemUpdateDate to know if updates other than the content itself have happened
     if (requirementsFetched && liveUpdatedItem) {
-      contextApiRef.current.update('item', parseDetailedItemToSandboxItem(liveUpdatedItem));
+      contextApi.update('item', parseDetailedItemToSandboxItem(liveUpdatedItem));
       // TODO: Re-fetch content?
     }
-  }, [liveUpdatedItem, requirementsFetched]);
+  }, [contextApi, liveUpdatedItem, requirementsFetched]);
 
   // Resize observer attached to the [scroll] container
   useLayoutEffect(() => {
@@ -956,13 +930,13 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
   // If rendered in a dialog, update the dialog's isSubmitting and hasPendingChanges. Only the root form.
   // Stacked forms have their own changes and submit state management.
   useEffect(() => {
-    if (!parentContextApiRef) {
+    if (!parentContextApi) {
       updateSubmittingOrHasPendingChanges?.({
         isSubmitting: state.isSubmitting,
         hasPendingChanges: state.hasPendingChanges
       });
     }
-  }, [state.isSubmitting, state.hasPendingChanges, parentContextApiRef, updateSubmittingOrHasPendingChanges]);
+  }, [state.isSubmitting, state.hasPendingChanges, parentContextApi, updateSubmittingOrHasPendingChanges]);
 
   // If the form is rendered in/as a dialog, take up the whole screen minus
   // top/bottom margins (2 top, 2 bottom). If not a dialog, take up the whole screen.
@@ -988,7 +962,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
   const contentType = state.contentType;
   const contentTypeFields = contentType.fields;
   const contentTypeSections = contentType.sections;
-  const { handleToggleSectionAccordion } = contextApiRef.current;
+  const { handleToggleSectionAccordion } = contextApi;
   const { activeTab, sectionExpandedState } = state;
   const objectId = state.values[XmlKeys.modelId] as string;
   const values = state.values;
@@ -1027,7 +1001,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
       }
       // Only unlock scroll if this is the last item in the forms stack
       childProps.stackIndex === 0 && (containerRef.current.style.overflowY = '');
-      contextApiRef.current.popForm();
+      contextApi.popForm();
     };
     if (childState.isSubmitting) {
       displayFormBeingSavedSnack(dispatch, formatMessage);
@@ -1044,7 +1018,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
       values={values}
       fieldsToRender={fieldsToRender}
       containerRef={containerRef}
-      contextApiRef={contextApiRef}
+      contextApi={contextApi}
       contentTypeFields={contentTypeFields}
       fieldValidityState={state.fieldValidityState}
       contentTypeSections={contentTypeSections}
@@ -1068,11 +1042,11 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
 
   const disableSave = state.isSubmitting || (affectsWorkflowItems && !acceptedWorkflowCancellation);
   const handleSave: ButtonProps['onClick'] = (e) => {
-    contextApiRef.current.update({ isSubmitting: true });
+    contextApi.update({ isSubmitting: true });
     setTimeout(() => {
       const xml = buildContentXml(values, contentTypesById);
       const dom = fromString(xml);
-      contextApiRef.current.update({
+      contextApi.update({
         contentXml: xml,
         contentDom: dom,
         isSubmitting: false,
@@ -1098,7 +1072,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
       const service = enableEdit ? internalLockContentService : internalUnlockContentService;
       service(siteId, state.item.path).subscribe((lockResult) => {
         setEnablingEditInProgress(false);
-        contextApiRef.current.update({
+        contextApi.update({
           locked: lockResult.locked,
           lockError: lockResult.error,
           readonly: !lockResult.locked,
@@ -1173,7 +1147,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
       Control = controlMap[field.type] ?? UnknownControl;
     }
     if (!valueSettersRef.current[fieldId]) {
-      valueSettersRef.current[fieldId] = (newValue) => contextApiRef.current.updateValue(fieldId, newValue);
+      valueSettersRef.current[fieldId] = (newValue) => contextApi.updateValue(fieldId, newValue);
     }
     return (
       <ErrorBoundary key={fieldId}>
@@ -1259,8 +1233,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
             isLargeContainer={isLargeContainer}
             useCollapsedToC={useCollapsedToC}
             setCollapsedToC={setCollapsedToC}
-            readonly={state.readonly}
-            contextApiRef={contextApiRef}
+            contextApi={contextApi}
             isEmbedded={isEmbedded}
             state={state}
             theme={theme}
@@ -1389,7 +1362,8 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
                             fullWidth
                             label={<FormattedMessage defaultMessage="Version Comment" />}
                             value={state.versionComment}
-                            onChange={(e) => contextApiRef.current.update('versionComment', e.target.value)}
+                            onChange={(e) => contextApi.update('versionComment', e.target.value)}
+                            onFocus={(e) => e.target.select()}
                           />
                           <div>
                             {affectsWorkflowItems && (
@@ -1578,8 +1552,10 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
   return (
     // The Fade provides some transitioning for the stacked forms that show without the Slide
     // transition since the Drawer is already open and there's only one.
-    <FormsEngineContext.Provider value={context}>
-      {parentState ? <Fade in children={bodyFragment} /> : bodyFragment}
+    <FormsEngineContext.Provider value={state}>
+      <FormsEngineContextApi.Provider value={contextApi}>
+        {parentState ? <Fade in children={bodyFragment} /> : bodyFragment}
+      </FormsEngineContextApi.Provider>
     </FormsEngineContext.Provider>
   );
 });
@@ -1653,7 +1629,7 @@ function ControlSkeleton({ label }: { label: string }) {
 // region TableOfContents
 function TableOfContents({
   containerRef,
-  contextApiRef,
+  contextApi,
   contentTypeFields,
   fieldValidityState,
   contentTypeSections,
@@ -1663,7 +1639,7 @@ function TableOfContents({
   values
 }: {
   containerRef: MutableRefObject<HTMLDivElement>;
-  contextApiRef: MutableRefObject<FormsEngineContextApi>;
+  contextApi: FormsEngineContextApiProps;
   contentTypeFields: LookupTable<ContentTypeField>;
   fieldValidityState: FormsEngineContextProps['fieldValidityState'];
   contentTypeSections: ContentTypeSection[];
@@ -1686,7 +1662,7 @@ function TableOfContents({
     setOpenDrawerSidebar(false);
     const sectionId = event.currentTarget.parentElement.getAttribute('data-section-id');
     if (!sectionExpandedState[sectionId]) {
-      contextApiRef.current.setAccordionExpandedState(sectionId, true);
+      contextApi.setAccordionExpandedState(sectionId, true);
     }
     scrollToTarget(containerRef.current.querySelector(`[data-area-id="formBody"] [data-section-id="${sectionId}"]`));
   };
@@ -1697,7 +1673,7 @@ function TableOfContents({
   };
   const handleItemExpansionToggleClick = (event: SyntheticEvent, itemId: string, expanded: boolean) => {
     event.stopPropagation(); // Avoid accordion expansion
-    contextApiRef.current.setAccordionExpandedState(itemId, expanded);
+    contextApi.setAccordionExpandedState(itemId, expanded);
     setOpenDrawerSidebar(false);
   };
   const [searchFieldValue, setSearchFieldValue] = useState('');
@@ -1772,31 +1748,30 @@ function TableOfContents({
 
 // region EditModeHeader
 function EditModeHeader({
-  contextApiRef,
+  contextApi,
   isEmbedded,
   state,
   theme,
   objectId,
   activeTab,
-  readonly,
   isLargeContainer,
   useCollapsedToC,
   setCollapsedToC
 }: {
-  contextApiRef: MutableRefObject<FormsEngineContextApi>;
+  contextApi: FormsEngineContextApiProps;
   isEmbedded: boolean;
   state: FormsEngineContextProps;
   theme: Theme;
   objectId: string;
   activeTab: number;
-  readonly: boolean;
   isLargeContainer: boolean;
   useCollapsedToC: boolean;
   setCollapsedToC: ReactDispatch<SetStateAction<boolean>>;
 }) {
+  const readonly = state.readonly;
   const item = state.item;
   const localeConf = useLocale();
-  const { handleTabChange } = contextApiRef.current;
+  const { handleTabChange } = contextApi;
   const itemLabel = isEmbedded ? (state.values[XmlKeys.internalName] as string) : item.label;
   const typeIconItem: Pick<SandboxItem, 'systemType' | 'mimeType'> = isEmbedded
     ? { systemType: 'component', mimeType: 'application/xml' }

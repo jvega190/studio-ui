@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { useFormsEngineContext } from '../formsEngineContext';
+import { useFormsEngineContext, useFormsEngineContextApi } from '../formsEngineContext';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import AddRounded from '@mui/icons-material/AddRounded';
@@ -309,7 +309,8 @@ export function NodeSelector(props: NodeSelectorProps) {
   useFetchSandboxItems(value.flatMap((item) => item.include ?? []));
   const itemsByPath = useItemsByPath();
   const user = useActiveUser();
-  const [{ item: contextItem, pathInProject, values }, apiRef] = useFormsEngineContext();
+  const { item: contextItem, pathInProject, values } = useFormsEngineContext();
+  const api = useFormsEngineContextApi();
   const hasContent = Boolean(value.length);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [pickerType, setPickerType] = useState<DataSourcePickerType>(null);
@@ -444,7 +445,7 @@ export function NodeSelector(props: NodeSelectorProps) {
     const item: NodeSelectorItem = value[index];
     if (item.component || item.include) {
       const isEmbedded = Boolean(item.component);
-      apiRef.current.pushForm({
+      api.pushForm({
         readonly: fromEditButton ? false : readonly,
         update: {
           path: item.include ?? contextItem.path,
@@ -550,7 +551,7 @@ export function NodeSelector(props: NodeSelectorProps) {
         const isEmbedded = pickerChoice.strategy === 'embedded';
         const destinationPath = processPath(pickerChoice.path);
         // Push to form stack a new form in create mode with the selected content type
-        apiRef.current.pushForm({
+        api.pushForm({
           create: {
             contentTypeId: pickerChoice.contentTypeId,
             path: pickerChoice.strategy === 'embedded' ? contextItem.path : processPath(pickerChoice.path)
