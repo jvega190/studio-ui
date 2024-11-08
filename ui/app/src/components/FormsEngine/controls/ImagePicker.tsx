@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { useFormEngineContext } from '../formEngineContext';
+import { useFormsEngineContext, useFormsEngineContextApi } from '../formsEngineContext';
 import Box from '@mui/material/Box';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import { svgIconClasses } from '@mui/material';
@@ -35,9 +35,8 @@ import MenuItem, { menuItemClasses } from '@mui/material/MenuItem';
 import ListItemIcon, { listItemIconClasses } from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import { getFileNameFromPath, processPathMacros } from '../../../utils/path';
-import BrowseFilesDialog, { BrowseFilesDialogProps } from '../../BrowseFilesDialog';
-import { SingleFileUploadDialog, SingleFileUploadDialogProps } from '../../SingleFileUploadDialog';
-import useSpreadState from '../../../hooks/useSpreadState';
+import { BrowseFilesDialogProps } from '../../BrowseFilesDialog';
+import { SingleFileUploadDialogProps } from '../../SingleFileUploadDialog';
 import useActiveSiteId from '../../../hooks/useActiveSiteId';
 import { FileUploadResult } from '../../SingleFileUpload';
 import { ensureSingleSlash } from '../../../utils/string';
@@ -47,7 +46,12 @@ import Dialog from '@mui/material/Dialog';
 import { DialogHeader } from '../../DialogHeader';
 import { DialogBody } from '../../DialogBody';
 import { AllowedPathsData, ContentPicker } from '../common/ContentPicker';
-import useEnv from '../../../hooks/useEnv';
+import SearchRounded from '@mui/icons-material/SearchRounded';
+import useUpdateRefs from '../../../hooks/useUpdateRefs';
+import { useDispatch } from 'react-redux';
+import { popDialog, pushDialog, pushNonDialog } from '../../../state/actions/dialogStack';
+import { nanoid } from 'nanoid';
+import { SearchProps } from '../../Search';
 
 export interface ImagePickerProps extends ControlProps {
   value: string;
@@ -66,7 +70,7 @@ export interface ImagePickerProps extends ControlProps {
   value: string;
 }
 
-type PickerType = 'browse' | 'upload';
+type PickerType = 'browse' | 'upload' | 'search';
 
 export function ImagePicker(props: ImagePickerProps) {
   const { field, value, contentType, autoFocus } = props;
@@ -75,38 +79,36 @@ export function ImagePicker(props: ImagePickerProps) {
   const { guestBase } = useEnv();
   // For testing, by using 3000 as the guestBase both the fetch in `useImageInfo` and the download functionality will work
   // const guestBase = 'http://localhost:3000';
-  const [, apiRef] = useFormEngineContext();
+  const { item: contextItem, pathInProject, values } = useFormsEngineContext();
+  const api = useFormsEngineContextApi();
   const imageInfo = useImageInfo(`${guestBase}${value}`);
   const hasValue = Boolean(value);
   const addMenuButtonRef = useRef<HTMLButtonElement>();
   const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const dispatch = useDispatch();
   const [openPickerDialog, setOpenPickerDialog] = useState(false);
   const [pickerType, setPickerType] = useState<PickerType>(null);
-  const [browseDialogState, setBrowseDialogState] = useSpreadState<BrowseFilesDialogProps>({
-    path: '',
-    open: false,
-    allowUpload: false
-  });
-  const [uploadDialogState, setUploadDialogState] = useSpreadState<
-    Omit<SingleFileUploadDialogProps, 'site' | 'onClose'>
-  >({
-    open: false,
-    path: '',
-    fileTypes: ['image/*']
-  });
   const contentTypes = useContentTypes();
-  const { menuOptions, allowedBrowsePaths, allowedUploadPaths } = useMemo(() => {
-    const dataSourceIds = field.properties.imageManager.value.split(',');
+  const dataSourceSummary = useMemo(() => {
     const allowedBrowsePaths: AllowedPathsData[] = [];
     const allowedUploadPaths: AllowedPathsData[] = [];
+    const allowedSearchPaths: AllowedPathsData[] = [];
+    const dataSourceIds = (field.properties.imageManager.value as string).split(',');
 
     contentTypes[contentType.id].dataSources.forEach((ds) => {
       if (dataSourceIds.includes(ds.id)) {
         if (imageDataSourcesTypesMap[ds.type] === 'browse') {
-          allowedBrowsePaths.push({
-            title: ds.title,
-            path: ds.properties.repoPath || ds.properties.path
-          });
+          if (ds.properties.useSearch) {
+            allowedSearchPaths.push({
+              title: ds.title,
+              path: ds.properties.repoPath || ds.properties.path
+            });
+          } else {
+            allowedBrowsePaths.push({
+              title: ds.title,
+              path: ds.properties.repoPath || ds.properties.path
+            });
+          }
         } else if (imageDataSourcesTypesMap[ds.type] === 'upload') {
           // TODO: check if prop is always 'repoPath'
           allowedUploadPaths.push({
@@ -119,41 +121,135 @@ export function ImagePicker(props: ImagePickerProps) {
       }
     });
 
-    const menuOptions = [];
-    const handleDataSourceOptionClick = (event: ReactMouseEvent<HTMLLIElement, MouseEvent>, option: PickerType) => {
-      setAddMenuOpen(false);
-      switch (option) {
-        case 'browse': {
-          if (allowedBrowsePaths.length === 1) {
-            setBrowseDialogState({
-              open: true,
-              path: processPathMacros({ path: allowedBrowsePaths[0].path })
-            });
-          } else {
-            // Open browse picker
-            setPickerType('browse');
-            setOpenPickerDialog(true);
-          }
-          break;
+    return {
+      allowedBrowsePaths,
+      allowedUploadPaths,
+      allowedSearchPaths
+    };
+  }, [contentType.id, contentTypes, field]);
+  const { allowedBrowsePaths, allowedUploadPaths, allowedSearchPaths } = dataSourceSummary;
+  const executeDataSourceOption = (optionType: PickerType, choice: AllowedPathsData) => {
+    const processPath = (path: string) =>
+      processPathMacros({
+        path,
+        objectId: values.objectId as string,
+        fullParentPath: contextItem?.path ?? pathInProject
+      });
+
+    switch (optionType) {
+      case 'browse': {
+        const id = nanoid();
+        dispatch(
+          pushDialog({
+            id,
+            component: 'craftercms.components.BrowseFilesDialog',
+            props: {
+              path: processPath(choice.path),
+              allowUpload: false,
+              onSuccess(imageData: MediaItem) {
+                api.updateValue(field.id, imageData.path);
+                dispatch(popDialog({ id }));
+              }
+            } as BrowseFilesDialogProps
+          })
+        );
+        break;
+      }
+      case 'search': {
+        const id = nanoid();
+        dispatch(
+          pushNonDialog({
+            id,
+            component: 'craftercms.components.Search',
+            props: {
+              mode: 'select',
+              embedded: true,
+              initialParameters: {
+                path: ensureSingleSlash(`${processPath(choice.path)}/.+`),
+                sortBy: 'internalName'
+              },
+              onAcceptSelection(images) {
+                // TODO: how do I set Search to single selection?
+                api.updateValue(field.id, images[0]);
+                dispatch(popDialog({ id }));
+              }
+            } as SearchProps
+          })
+        );
+        break;
+      }
+      case 'upload': {
+        const id = nanoid();
+        dispatch(
+          pushDialog({
+            id,
+            component: 'craftercms.components.SingleFileUploadDialog',
+            props: {
+              site: siteId,
+              path: processPath(choice.path),
+              fileTypes: ['image/*'],
+              onUploadComplete(result: FileUploadResult) {
+                if (result.successful.length) {
+                  const newValue = ensureSingleSlash(
+                    `${result.successful[0].meta.path}/${result.successful[0].meta.name}`
+                  );
+                  api.updateValue(field.id, newValue);
+                  dispatch(popDialog({ id }));
+                }
+              }
+            } as SingleFileUploadDialogProps
+          })
+        );
+        break;
+      }
+    }
+  };
+  const handleDataSourceOptionClick = (event: ReactMouseEvent<HTMLLIElement, MouseEvent>, option: PickerType) => {
+    setAddMenuOpen(false);
+    switch (option) {
+      case 'browse': {
+        if (allowedBrowsePaths.length === 1) {
+          executeDataSourceOption('browse', allowedBrowsePaths[0]);
+        } else {
+          // Open browse picker
+          setPickerType('browse');
+          setOpenPickerDialog(true);
         }
-        case 'upload': {
-          if (allowedUploadPaths.length === 1) {
-            setUploadDialogState({
-              open: true,
-              path: processPathMacros({ path: allowedUploadPaths[0].path })
-            });
-          } else {
-            // Open upload picker
-            setPickerType('upload');
-            setOpenPickerDialog(true);
-          }
-          break;
+        break;
+      }
+      case 'upload': {
+        if (allowedUploadPaths.length === 1) {
+          executeDataSourceOption('upload', allowedBrowsePaths[0]);
+        } else {
+          // Open upload picker
+          setPickerType('upload');
+          setOpenPickerDialog(true);
+        }
+        break;
+      }
+      case 'search': {
+        if (allowedSearchPaths.length === 1) {
+          executeDataSourceOption('search', allowedSearchPaths[0]);
+        } else {
+          // Open search picker
+          setPickerType('search');
+          setOpenPickerDialog(true);
         }
       }
-    };
+    }
+  };
+  const handleDataSourcePickerDialogChange = (event, choice: AllowedPathsData) => {
+    executeDataSourceOption(pickerType, choice);
+    setOpenPickerDialog(false);
+  };
+  const memoRefs = useUpdateRefs({ handleDataSourceOptionClick });
+  const menuOptions = useMemo(() => {
+    const { allowedBrowsePaths, allowedUploadPaths, allowedSearchPaths } = dataSourceSummary;
+    const menuOptions = [];
+
     if (allowedBrowsePaths.length > 0) {
       menuOptions.push(
-        <MenuItem key="search" onClick={(event) => handleDataSourceOptionClick(event, 'browse')}>
+        <MenuItem key="browse" onClick={(event) => memoRefs.current.handleDataSourceOptionClick(event, 'browse')}>
           <ListItemIcon sx={{ mr: 0 }}>
             <TravelExploreOutlined fontSize="small" />
           </ListItemIcon>
@@ -161,9 +257,19 @@ export function ImagePicker(props: ImagePickerProps) {
         </MenuItem>
       );
     }
+    if (allowedSearchPaths.length > 0) {
+      menuOptions.push(
+        <MenuItem key="search" onClick={(event) => memoRefs.current.handleDataSourceOptionClick(event, 'search')}>
+          <ListItemIcon sx={{ mr: 0 }}>
+            <SearchRounded fontSize="small" />
+          </ListItemIcon>
+          <ListItemText children={<FormattedMessage defaultMessage="Search" />} />
+        </MenuItem>
+      );
+    }
     if (allowedUploadPaths.length > 0) {
       menuOptions.push(
-        <MenuItem key="upload" onClick={(event) => handleDataSourceOptionClick(event, 'upload')}>
+        <MenuItem key="upload" onClick={(event) => memoRefs.current.handleDataSourceOptionClick(event, 'upload')}>
           <ListItemIcon sx={{ mr: 0 }}>
             <UploadFileOutlinedIcon fontSize="small" />
           </ListItemIcon>
@@ -171,16 +277,11 @@ export function ImagePicker(props: ImagePickerProps) {
         </MenuItem>
       );
     }
-
-    return {
-      menuOptions,
-      allowedBrowsePaths,
-      allowedUploadPaths
-    };
-  }, [contentType.id, contentTypes, field, setBrowseDialogState, setUploadDialogState]);
-
+    return menuOptions;
+    // TODO: check readonly in NodeSelector control
+  }, [memoRefs, dataSourceSummary]);
   const handleRemoveImage = () => {
-    apiRef.current.updateValue(field.id, null);
+    api.updateValue(field.id, null);
   };
   const onDownload = () => {
     const link = document.createElement('a');
@@ -188,32 +289,10 @@ export function ImagePicker(props: ImagePickerProps) {
     link.download = getFileNameFromPath(value); // Extracts the file name from the URL
     link.click();
   };
-  const handleBrowseDialogClose = () => setBrowseDialogState({ open: false });
-  const handleBrowseDialogSuccess = (imageData: MediaItem) => {
-    apiRef.current.updateValue(field.id, imageData.path);
-    handleBrowseDialogClose();
-  };
   const handleClosePickerDialog = () => setOpenPickerDialog(false);
 
   return (
     <>
-      <BrowseFilesDialog
-        {...browseDialogState}
-        onClose={handleBrowseDialogClose}
-        onSuccess={handleBrowseDialogSuccess}
-      />
-      <SingleFileUploadDialog
-        {...uploadDialogState}
-        site={siteId}
-        onClose={() => setUploadDialogState({ open: false })}
-        onUploadComplete={(result: FileUploadResult) => {
-          if (result.successful.length) {
-            const newValue = ensureSingleSlash(`${result.successful[0].meta.path}/${result.successful[0].meta.name}`);
-            apiRef.current.updateValue(field.id, newValue);
-            setUploadDialogState({ open: false });
-          }
-        }}
-      />
       <Menu
         anchorEl={addMenuButtonRef.current}
         open={addMenuOpen}
@@ -236,14 +315,7 @@ export function ImagePicker(props: ImagePickerProps) {
                   <ContentPicker
                     label={<FormattedMessage defaultMessage="Browse Settings" />}
                     allowedPaths={allowedBrowsePaths}
-                    onChange={(e, choice) => {
-                      handleClosePickerDialog();
-                      // TODO: this doesn't work yet with s3 or webdav
-                      setBrowseDialogState({
-                        open: true,
-                        path: processPathMacros({ path: choice.path })
-                      });
-                    }}
+                    onChange={handleDataSourcePickerDialogChange}
                   />
                 );
               case 'upload':
@@ -251,16 +323,11 @@ export function ImagePicker(props: ImagePickerProps) {
                   <ContentPicker
                     label={<FormattedMessage defaultMessage="Upload Settings" />}
                     allowedPaths={allowedUploadPaths}
-                    onChange={(e, choice) => {
-                      handleClosePickerDialog();
-                      // TODO: this doesn't work yet with s3 or webdav
-                      setUploadDialogState({
-                        open: true,
-                        path: processPathMacros({ path: choice.path })
-                      });
-                    }}
+                    onChange={handleDataSourcePickerDialogChange}
                   />
                 );
+              case 'search':
+                return <>search</>;
             }
           })()}
         </DialogBody>
