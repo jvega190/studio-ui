@@ -190,25 +190,25 @@ export function DialogHeader(props: DialogHeaderProps) {
             ))}
             {onMinimizeButtonClick && (
               <Tooltip title={disabled ? '' : formatMessage(translations.minimize)}>
-                <IconButton aria-label="close" onClick={onMinimizeButtonClick} disabled={disabled}>
+                <IconButton size="medium" aria-label="close" onClick={onMinimizeButtonClick} disabled={disabled}>
                   <MinimizeIcon />
                 </IconButton>
               </Tooltip>
             )}
             {onFullScreenButtonClick && (
               <Tooltip title={disabled ? '' : formatMessage(translations.fullScreen)}>
-                <IconButton aria-label="close" onClick={onFullScreenButtonClick} disabled={disabled}>
-                  <FullScreenIcon />
+                <IconButton size="medium" aria-label="close" onClick={onFullScreenButtonClick} disabled={disabled}>
+                  <FullScreenIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
             )}
             {onCloseButtonClick && (
               <Tooltip title={disabled ? '' : formatMessage(translations.dismiss)}>
                 <IconButton
+                  size="medium"
                   aria-label="close"
                   onClick={(event) => onCloseButtonClick(event, 'closeButton')}
                   disabled={disabled}
-                  size="large"
                 >
                   <CloseIcon />
                 </IconButton>

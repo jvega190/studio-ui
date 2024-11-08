@@ -16,9 +16,9 @@
 
 import OutlinedInput, { OutlinedInputProps } from '@mui/material/OutlinedInput';
 import React, { useId } from 'react';
-import { useFormEngineContext } from '../formEngineContext';
+import { useFormsEngineContext, useFormsEngineContextApi } from '../formsEngineContext';
 import { applyContentNameRules } from '../../../utils/content';
-import { FormEngineField } from '../common/FormEngineField';
+import { FormsEngineField } from '../common/FormsEngineField';
 import InputAdornment from '@mui/material/InputAdornment';
 import { ControlProps } from '../types';
 
@@ -26,17 +26,21 @@ export interface SlugProps extends ControlProps {
   value: string;
 }
 
+// TODO: Check behaviour for embedded components. Seems to be hidden on current engine.
+
 export function Slug(props: SlugProps) {
-  const { field, readonly } = props;
+  const { field, readonly, autoFocus } = props;
   const htmlId = useId();
   const fieldId = field.id === 'fileName' || field.id === 'file-name' ? 'folder-name' : field.id;
-  const [context, api] = useFormEngineContext();
+  const context = useFormsEngineContext();
+  const api = useFormsEngineContextApi();
   const { pathInProject, values } = context;
-  const value = values[fieldId] as string;
+  // In some cases the values[fieldId] is null
+  const value = (values[fieldId] as string) ?? '';
   const handleChange: OutlinedInputProps['onChange'] = (e) =>
-    api.current.updateValue(fieldId, applyContentNameRules(e.currentTarget.value));
+    api.updateValue(fieldId, applyContentNameRules(e.currentTarget.value));
   return (
-    <FormEngineField
+    <FormsEngineField
       htmlFor={htmlId}
       field={field}
       min={field.validations.minValue?.value}
@@ -44,6 +48,7 @@ export function Slug(props: SlugProps) {
       length={value.length}
     >
       <OutlinedInput
+        autoFocus={autoFocus}
         fullWidth
         id={htmlId}
         value={value}
@@ -55,7 +60,7 @@ export function Slug(props: SlugProps) {
           </InputAdornment>
         }
       />
-    </FormEngineField>
+    </FormsEngineField>
   );
 }
 

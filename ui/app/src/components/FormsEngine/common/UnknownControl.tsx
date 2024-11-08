@@ -17,10 +17,10 @@
 import Alert from '@mui/material/Alert';
 import React from 'react';
 import { ContentTypeField } from '../../../models';
-import { FormEngineField } from './FormEngineField';
+import { FormsEngineField } from './FormsEngineField';
 
 export const UnknownControl = ({ field }: { field: ContentTypeField }) => (
-  <FormEngineField field={field}>
+  <FormsEngineField field={field}>
     <Alert
       severity="error"
       variant="outlined"
@@ -34,5 +34,5 @@ export const UnknownControl = ({ field }: { field: ContentTypeField }) => (
       </strong>
       . No mapping found in the system for the <strong>{field.type}</strong> type.
     </Alert>
-  </FormEngineField>
+  </FormsEngineField>
 );

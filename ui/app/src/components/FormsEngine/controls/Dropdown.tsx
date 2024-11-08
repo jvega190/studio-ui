@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React from 'react';
-import { FormEngineField } from '../common/FormEngineField';
+import React, { useMemo } from 'react';
+import { FormsEngineField } from '../common/FormsEngineField';
 import { ControlProps } from '../types';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
@@ -31,32 +31,33 @@ export interface DropdownProps extends ControlProps {
 }
 
 export function Dropdown(props: DropdownProps) {
-  const { field, contentType, value, setValue, readonly } = props;
+  const { field, contentType, value, setValue, readonly, autoFocus } = props;
   const contentTypes = useContentTypes();
   const effectRefs = useUpdateRefs({ contentTypes });
   const maxLength = field.validations.maxLength?.value;
   const handleChange = (event: SelectChangeEvent) => setValue(event.target.value);
   const optionGroups = useKVPLoader(
     useActiveSiteId(),
-    field.properties.datasource.value.split(','),
+    useMemo(() => field.properties.datasource.value.split(','), [field.properties.datasource?.value]),
     effectRefs.current.contentTypes[contentType.id].dataSources
   );
+  if (!optionGroups) {
+    return (
+      <FormsEngineField field={field} max={maxLength} length={value.length}>
+        <Skeleton variant="rounded" height={56} />
+      </FormsEngineField>
+    );
+  }
+  // TODO: Add argument typing
   const renderGroup = (group) =>
     group.items.map((option, index) => (
       <MenuItem key={`${group.id}_${index}`} value={option.key}>
         {option.value}
       </MenuItem>
     ));
-  if (!optionGroups) {
-    return (
-      <FormEngineField field={field} max={maxLength} length={value.length}>
-        <Skeleton variant="rounded" height={56} />
-      </FormEngineField>
-    );
-  }
   return (
-    <FormEngineField field={field} max={maxLength} length={value.length}>
-      <Select value={value} label="" onChange={handleChange} disabled={readonly}>
+    <FormsEngineField field={field} max={maxLength} length={value.length}>
+      <Select value={value} label="" onChange={handleChange} disabled={readonly} autoFocus={autoFocus}>
         {optionGroups.length > 1
           ? optionGroups.map((group) => [
               <ListSubheader key={group.id}>{group.label}</ListSubheader>,
@@ -64,7 +65,7 @@ export function Dropdown(props: DropdownProps) {
             ])
           : renderGroup(optionGroups[0])}
       </Select>
-    </FormEngineField>
+    </FormsEngineField>
   );
 }
 

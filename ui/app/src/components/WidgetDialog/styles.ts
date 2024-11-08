@@ -19,10 +19,10 @@ import { makeStyles } from 'tss-react/mui';
 const useStyles = makeStyles()((theme) => {
   let widgetDialogBody;
   const toolbarMixin: any = theme.mixins.toolbar;
-  const key1 = '@media (min-width:0px)';
-  const key1a = '@media (orientation: landscape)';
-  const key2 = '@media (min-width:600px)';
-  if (!toolbarMixin[key1]?.[key1a] || !toolbarMixin[key2] || !toolbarMixin.minHeight) {
+  const minWidth0 = '@media (min-width:0px)';
+  const orientationLandscape = '@media (orientation: landscape)';
+  const minWidth600 = '@media (min-width:600px)';
+  if (!toolbarMixin[minWidth0]?.[orientationLandscape] || !toolbarMixin[minWidth600] || !toolbarMixin.minHeight) {
     console.error('[WidgetDialog] MUI may have changed their toolbar mixin.', toolbarMixin);
     widgetDialogBody = {
       overflow: 'auto',
@@ -30,13 +30,13 @@ const useStyles = makeStyles()((theme) => {
     };
   } else {
     widgetDialogBody = {
-      [key1]: {
-        [key1a]: {
-          height: `calc(90vh - ${toolbarMixin[key1].minHeight}px - 1px)`
+      [minWidth0]: {
+        [orientationLandscape]: {
+          height: `calc(90vh - ${toolbarMixin[minWidth0].minHeight}px - 1px)`
         }
       },
-      [key2]: {
-        height: `calc(90vh - ${toolbarMixin[key2].minHeight}px - 1px)`
+      [minWidth600]: {
+        height: `calc(90vh - ${toolbarMixin[minWidth600].minHeight}px - 1px)`
       },
       overflow: 'auto',
       height: `calc(90vh - ${toolbarMixin.minHeight}px - 1px)`

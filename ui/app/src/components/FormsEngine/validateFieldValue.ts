@@ -22,20 +22,25 @@ import LookupTable from '../../models/LookupTable';
 import { NodeSelectorItem } from './controls/NodeSelector';
 
 export enum XmlKeys {
-  objectId = 'objectId',
-  contentTypeId = 'content-type'
+  modelId = 'objectId',
+  contentTypeId = 'content-type',
+  displayTemplate = 'display-template',
+  mergeStrategy = 'merge-strategy',
+  fileName = 'file-name',
+  folderName = 'folder-name',
+  internalName = 'internal-name'
 }
 
 // These are not in the content type definition
 export const systemFieldsNotInType = [
   XmlKeys.contentTypeId,
-  'display-template',
+  XmlKeys.displayTemplate,
   'no-template-required',
-  'merge-strategy',
-  XmlKeys.objectId,
-  'file-name',
-  'folder-name',
-  'internal-name',
+  XmlKeys.mergeStrategy,
+  XmlKeys.modelId,
+  XmlKeys.fileName,
+  XmlKeys.folderName,
+  XmlKeys.internalName,
   'createdDate',
   'createdDate_dt',
   'lastModifiedDate',
@@ -115,10 +120,7 @@ export const valueRetrieverLookup: Record<BuiltInControlType, (field: ContentTyp
 
 export function validateFieldValue(field: ContentTypeField, currentValue: unknown): boolean {
   const isRequired = isFieldRequired(field);
-  const isEmpty =
-    !currentValue ||
-    (typeof currentValue === 'string' && currentValue.trim() === '') ||
-    (Array.isArray(currentValue) && currentValue.length === 0);
+  const isEmpty = isEmptyValue(field, currentValue);
   if (!isRequired && isEmpty) {
     // If not required and its empty, then it's valid.
     return true;
@@ -129,8 +131,16 @@ export function validateFieldValue(field: ContentTypeField, currentValue: unknow
   return false;
 }
 
+export function isEmptyValue(field: ContentTypeField, currentValue: unknown): boolean {
+  return (
+    !currentValue ||
+    (typeof currentValue === 'string' && currentValue.trim() === '') ||
+    (Array.isArray(currentValue) && currentValue.length === 0)
+  );
+}
+
 export function createCleanValuesObject(
-  contentTypeFields: LookupTable<ContentTypeField>,
+  contentTypeFields: LookupTable<ContentTypeField> | ContentTypeField[],
   xmlDeserialisedValues: LookupTable<unknown>,
   contentTypesLookup: LookupTable<ContentType>
 ): LookupTable<unknown> {
@@ -140,7 +150,7 @@ export function createCleanValuesObject(
       values[systemFieldId] = xmlDeserialisedValues[systemFieldId] ?? '';
     }
   });
-  Object.values(contentTypeFields).forEach((field) => {
+  (Array.isArray(contentTypeFields) ? contentTypeFields : Object.values(contentTypeFields)).forEach((field) => {
     values[field.id] = retrieveFieldValue(field, xmlDeserialisedValues);
     const controlType = field.type as BuiltInControlType;
     if (controlType === 'node-selector' || controlType === 'repeat') {

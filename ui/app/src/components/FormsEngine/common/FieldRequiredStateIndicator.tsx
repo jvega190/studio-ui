@@ -17,12 +17,18 @@
 import Tooltip from '@mui/material/Tooltip';
 import { FormattedMessage } from 'react-intl';
 import Asterisk from '../../../icons/Asterisk';
-import React from 'react';
 
 export function FieldRequiredStateIndicator({ isValid }: { isValid: boolean }) {
   return (
-    <Tooltip title={<FormattedMessage defaultMessage="Required" />}>
+    <Tooltip
+      title={isValid ? <FormattedMessage defaultMessage="Complete" /> : <FormattedMessage defaultMessage="Required" />}
+    >
       <Asterisk fontSize="small" color={isValid ? 'success' : 'error'} />
+      {/* Colour blind mode:
+      {isValid ? <CheckRounded fontSize="small" color="success" /> : <Asterisk fontSize="small" color="error" />}
+      Could also use CheckCircleRounded to maintain a distinction with non-required fields */}
     </Tooltip>
   );
 }
+
+export default FieldRequiredStateIndicator;

@@ -51,7 +51,7 @@ import { SHARED_WORKER_NAME } from '../utils/constants';
 import { fetchActiveEnvironment } from '../services/environment';
 import { batchActions, dispatchDOMEvent } from './actions/misc';
 import { closeSingleFileUploadDialog } from './actions/dialogs';
-import { pushDialog } from './reducers/dialogStack';
+import { pushDialog, pushNonDialog } from './actions/dialogStack';
 
 export type EpicMiddlewareDependencies = { getIntl: () => IntlShape; worker: SharedWorker };
 
@@ -183,12 +183,13 @@ export function createStoreSync(args: { preloadedState?: any; dependencies?: any
             batchActions.type,
             dispatchDOMEvent.type,
             closeSingleFileUploadDialog.type,
-            pushDialog.type
+            pushDialog.type,
+            pushNonDialog.type
           ]
         }
       }).concat(epicMiddleware as Middleware),
     preloadedState,
-    devTools: { name: 'Studio Store' }
+    devTools: { name: `Studio Store ${window.location.host}` }
     // devTools: import.meta.env.NODE_ENV === 'production' ? false : { name: 'Studio Store' }
   });
   epicMiddleware.run(epic);

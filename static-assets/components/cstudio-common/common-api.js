@@ -6459,9 +6459,11 @@ var nodeOpen = false,
           var path,
             prefix,
             name,
-            missingProp = [];
+            missingProp = [],
+            isPlugin = false;
 
           if (item.plugin != null) {
+            isPlugin = true;
             name = item.plugin.name;
             path = CStudioAuthoring.Service.getPluginURL + '?siteId=' + CStudioAuthoringContext.site;
             prefix = name;
@@ -6494,7 +6496,7 @@ var nodeOpen = false,
             prefix = 'cstudio-forms-controls-' + name;
           }
 
-          return { path: path, prefix: prefix, name: name, missingProp: missingProp };
+          return { path, prefix, name, missingProp, isPlugin };
         },
 
         getPluginError: function (errorObject, CMgs, formsLangBundle) {

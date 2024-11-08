@@ -93,6 +93,7 @@
 <#include "/static-assets/app/pages/legacy.html">
 <script>
   document.addEventListener("CrafterCMS.CodebaseBridgeReady", () => {
+    // Main call that starts the form engine
     CStudioForms.engine.render(null, "default", "formContainer");
   });
 </script>

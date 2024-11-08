@@ -15,10 +15,11 @@
  */
 
 import React from 'react';
+import { TinyMCE } from 'tinymce';
 
 declare global {
   interface Window {
-    tinymce: any;
+    tinymce: TinyMCE;
     ace: AceAjax.Ace;
   }
   type CrafterCMSCustomElementProps = React.DetailedHTMLProps<

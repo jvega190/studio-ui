@@ -14,14 +14,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { ContentTypeField } from '../../models';
-import ContentType from '../../models/ContentType';
+import { styled } from '@mui/material/styles';
+import Box from '@mui/material/Box';
 
-export interface ControlProps {
-  value: unknown;
-  setValue(newValue: unknown): void;
-  field: ContentTypeField;
-  contentType: ContentType;
-  readonly: boolean;
-  autoFocus: boolean;
-}
+export const FieldBox = styled(Box)(({ theme }) => ({
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  display: 'flex',
+  borderColor: theme.palette.divider,
+  borderRadius: 1,
+  flexDirection: 'column'
+}));
+
+export default FieldBox;

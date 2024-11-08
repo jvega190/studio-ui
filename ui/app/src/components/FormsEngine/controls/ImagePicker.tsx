@@ -24,7 +24,7 @@ import Typography from '@mui/material/Typography';
 import CardMedia from '@mui/material/CardMedia';
 import IconButton from '@mui/material/IconButton';
 import { DeleteOutlined, DownloadOutlined, EditOutlined } from '@mui/icons-material';
-import { FormEngineField } from '../common/FormEngineField';
+import { FormsEngineField } from '../common/FormsEngineField';
 import { ControlProps } from '../types';
 import React, { MouseEvent as ReactMouseEvent, useMemo, useRef, useState } from 'react';
 import useContentTypes from '../../../hooks/useContentTypes';
@@ -69,7 +69,7 @@ export interface ImagePickerProps extends ControlProps {
 type PickerType = 'browse' | 'upload';
 
 export function ImagePicker(props: ImagePickerProps) {
-  const { field, value, contentType } = props;
+  const { field, value, contentType, autoFocus } = props;
 
   const siteId = useActiveSiteId();
   const { guestBase } = useEnv();
@@ -265,7 +265,7 @@ export function ImagePicker(props: ImagePickerProps) {
           })()}
         </DialogBody>
       </Dialog>
-      <FormEngineField field={field}>
+      <FormsEngineField field={field}>
         {hasValue ? (
           <Card sx={{ display: 'flex' }}>
             <CardMedia component="img" sx={{ width: '40%' }} image={`${guestBase}${value}`} alt={value} />
@@ -328,7 +328,7 @@ export function ImagePicker(props: ImagePickerProps) {
             }}
           />
         )}
-      </FormEngineField>
+      </FormsEngineField>
     </>
   );
 }

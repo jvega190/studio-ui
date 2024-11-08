@@ -15,7 +15,7 @@
  */
 
 import React, { ChangeEvent, useMemo, useState } from 'react';
-import { FormEngineField } from '../common/FormEngineField';
+import { FormsEngineField } from '../common/FormsEngineField';
 import { ControlProps } from '../types';
 import Checkbox, { CheckboxProps } from '@mui/material/Checkbox';
 import FormGroup from '@mui/material/FormGroup';
@@ -76,8 +76,7 @@ const VirtualRow = (
 
 export function CheckboxGroup(props: CheckboxGroupProps) {
   const theme = useTheme();
-  const { contentType, field, value, setValue } = props;
-  // console.log('CheckboxGroup rendering');
+  const { contentType, field, value, setValue, autoFocus } = props;
   const [searchFieldValue, setSearchFieldValue] = useState('');
   const [keyword, setKeyword] = useState('');
   const onKeyword$ = useDebouncedInput(() => {
@@ -123,11 +122,12 @@ export function CheckboxGroup(props: CheckboxGroupProps) {
     }
   };
   return (
-    <FormEngineField field={field}>
+    <FormsEngineField field={field} autoFocus={!showFilter && autoFocus}>
       {showFilter && (
         <SearchBar
           sx={{ mb: 1 }}
-          showActionButton
+          autoFocus={autoFocus}
+          showActionButton={searchFieldValue !== ''}
           keyword={searchFieldValue}
           onChange={(value) => {
             setSearchFieldValue(value);
@@ -177,7 +177,7 @@ export function CheckboxGroup(props: CheckboxGroupProps) {
           finalOptions?.map((option) => buildOption(option, handleChange, checkedValuesLookup))
         )}
       </FormGroup>
-    </FormEngineField>
+    </FormsEngineField>
   );
 }
 

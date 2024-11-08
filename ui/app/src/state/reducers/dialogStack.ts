@@ -14,15 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { DialogStackItem, GlobalState } from '../../models/GlobalState';
-import { createAction, createReducer } from '@reduxjs/toolkit';
+import { GlobalState } from '../../models/GlobalState';
+import { createReducer } from '@reduxjs/toolkit';
 import { nanoid } from 'nanoid';
-
-export const pushDialog = /*#__PURE__*/ createAction<Partial<DialogStackItem> & Pick<DialogStackItem, 'component'>>(
-  'PUSH_DIALOG'
-);
-export const popDialog = /*#__PURE__*/ createAction<{ id: string }>('POP_DIALOG');
-export const updateDialogState = /*#__PURE__*/ createAction<{ id: string; state: unknown }>('UPDATE_DIALOG_STATE');
+import { WidgetDialogProps } from '../../components/WidgetDialog/utils';
+import { popDialog, pushDialog, pushNonDialog, updateDialogState, updateNonDialogState } from '../actions/dialogStack';
 
 const reducer = createReducer<GlobalState['dialogStack']>(
   {
@@ -52,10 +48,38 @@ const reducer = createReducer<GlobalState['dialogStack']>(
     });
     builder.addCase(updateDialogState, (state, { payload }) => {
       state.byId[payload.id].props = {
-        // @ts-expect-error: TypeScript doesn't think the WritableDraft can be spread.
+        // @ts-expect-error TS2698: TypeScript doesn't think the WritableDraft can be spread.
         ...state.byId[payload.id].props,
+        // @ts-expect-error TS2698: Don't know how to type this all around. Type is too dynamic.
+        ...payload.props
+      };
+    });
+    builder.addCase(pushNonDialog, (state, { payload }) => {
+      const id = payload.id ?? nanoid();
+      state.ids.push(id);
+      state.byId[id] = {
+        id,
+        component: 'craftercms.components.WidgetDialog',
+        props: {
+          open: true,
+          isMinimized: false,
+          isFullScreen: false,
+          hasPendingChanges: false,
+          isSubmitting: false,
+          ...(payload.dialogProps as object),
+          widget: {
+            id: payload.component,
+            configuration: payload.props
+          }
+        } as WidgetDialogProps
+      };
+    });
+    builder.addCase(updateNonDialogState, (state, { payload }) => {
+      const target = (state.byId[payload.id].props as WidgetDialogProps).widget;
+      target.configuration = {
+        ...target.configuration,
         // @ts-expect-error: Don't know how to type this all around. Type is too dynamic.
-        ...payload.state
+        ...payload.props
       };
     });
   }

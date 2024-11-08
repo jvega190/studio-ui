@@ -322,27 +322,30 @@ export function SiteSearchFilters(props: SiteSearchFiltersProps) {
           <PathSelector value={parsedSelectedPath} onPathSelected={onPathSelected} rootPath={rootPath} />
         </AccordionDetails>
       </Accordion>
-      {filterKeys.map((key: string) => (
-        <Accordion key={key} expanded={expanded[key] ?? false} elevation={0} onChange={() => handleExpandClick(key)}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography className={classes.accordionTitle}>
-              {formatMessage(messages[camelize(key)])}
-              {checkedFilters[key] && <CheckIcon />}
-            </Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <SiteSearchFilter
-              facet={key}
-              handleFilterChange={handleFilterChange}
-              checkedFilters={checkedFilters}
-              setCheckedFilters={setCheckedFilters}
-              facetsLookupTable={facetsLookupTable}
-              facetLabelLookup={facetLabelLookup}
-              handleClearClick={handleClearClick}
-            />
-          </AccordionDetails>
-        </Accordion>
-      ))}
+      {filterKeys.map((key: string) => {
+        const camelizedKey = camelize(key);
+        return (
+          <Accordion key={key} expanded={expanded[key] ?? false} elevation={0} onChange={() => handleExpandClick(key)}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography className={classes.accordionTitle}>
+                {camelizedKey in messages ? formatMessage(messages[camelizedKey]) : key}
+                {checkedFilters[key] && <CheckIcon />}
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <SiteSearchFilter
+                facet={key}
+                handleFilterChange={handleFilterChange}
+                checkedFilters={checkedFilters}
+                setCheckedFilters={setCheckedFilters}
+                facetsLookupTable={facetsLookupTable}
+                facetLabelLookup={facetLabelLookup}
+                handleClearClick={handleClearClick}
+              />
+            </AccordionDetails>
+          </Accordion>
+        );
+      })}
     </Box>
   );
 }

@@ -15,7 +15,7 @@
  */
 
 import React, { ChangeEvent, useId } from 'react';
-import { FormEngineField } from '../common/FormEngineField';
+import { FormsEngineField } from '../common/FormsEngineField';
 import { ControlProps } from '../types';
 import Switch from '@mui/material/Switch';
 
@@ -24,13 +24,13 @@ export interface CheckboxProps extends ControlProps {
 }
 
 export function Checkbox(props: CheckboxProps) {
-  const { field, value, setValue, readonly } = props;
+  const { field, value, setValue, readonly, autoFocus } = props;
   const htmlId = useId();
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => setValue(e.target.checked);
   return (
-    <FormEngineField htmlFor={htmlId} field={field}>
-      <Switch checked={value} onChange={handleChange} disabled={readonly} />
-    </FormEngineField>
+    <FormsEngineField htmlFor={htmlId} field={field}>
+      <Switch checked={value} onChange={handleChange} disabled={readonly} autoFocus={autoFocus} />
+    </FormsEngineField>
   );
 }
 

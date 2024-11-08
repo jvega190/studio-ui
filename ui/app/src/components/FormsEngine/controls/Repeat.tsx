@@ -14,13 +14,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { useFormEngineContext } from '../formEngineContext';
+import { useFormsEngineContextApi } from '../formsEngineContext';
 import Box from '@mui/material/Box';
 import IconButton, { IconButtonProps } from '@mui/material/IconButton';
 import AddRounded from '@mui/icons-material/AddRounded';
 import DeleteOutlined from '@mui/icons-material/DeleteOutlined';
 import EditOutlined from '@mui/icons-material/EditOutlined';
-import { FormEngineField } from '../common/FormEngineField';
+import { FormsEngineField } from '../common/FormsEngineField';
 import { ControlProps } from '../types';
 import List from '@mui/material/List';
 import ListItemText from '@mui/material/ListItemText';
@@ -39,10 +39,9 @@ export interface RepeatProps extends ControlProps {
 }
 
 export function Repeat(props: RepeatProps) {
-  const { field, value, setValue } = props;
-  const [, apiRef] = useFormEngineContext();
+  const { field, value, setValue, readonly, autoFocus } = props;
+  const api = useFormsEngineContextApi();
   const hasContent = value.length;
-
   const handleRemoveItem = (event: ReactMouseEvent, index: number) => {
     event.stopPropagation();
     const nextValue = value.concat();
@@ -50,22 +49,23 @@ export function Repeat(props: RepeatProps) {
     setValue(nextValue);
   };
   const handleEditItem = (event: ReactMouseEvent, item: RepeatItem, index: number) => {
-    // console.log('Edit repeat item', item);
-    // const nextValue = value.concat();
-    // setValue(nextValue);
-    apiRef.current.pushForm({ repeat: { fieldId: field.id, values: item, index } });
+    api.pushForm({
+      repeat: { fieldId: field.id, values: item, index },
+      fieldsToRender: Object.values(field.fields)
+    });
   };
   const handleAddItem: IconButtonProps['onClick'] = (e) => {};
+  const isAddDisabled = readonly || field.validations.maxCount?.value >= value;
   return (
     <>
-      <FormEngineField
+      <FormsEngineField
         field={field}
         min={field.validations.minCount?.value}
         max={field.validations.maxCount?.value}
         length={value.length}
-        actions={
-          <Tooltip title={<FormattedMessage defaultMessage="Add item" />}>
-            <IconButton size="small" color="primary" onClick={handleAddItem}>
+        action={
+          <Tooltip title={isAddDisabled ? '' : <FormattedMessage defaultMessage="Add items" />}>
+            <IconButton size="small" color="primary" onClick={handleAddItem} autoFocus={autoFocus}>
               <AddRounded fontSize="small" />
             </IconButton>
           </Tooltip>
@@ -94,18 +94,20 @@ export function Repeat(props: RepeatProps) {
                       secondary={JSON.stringify(item)}
                       secondaryTypographyProps={{ noWrap: true }}
                     />
-                    <ListItemSecondaryAction sx={{ position: 'static', display: 'flex', transform: 'none' }}>
-                      <Tooltip title="Edit">
-                        <IconButton size="small">
-                          <EditOutlined fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title={<FormattedMessage defaultMessage="Delete" />}>
-                        <IconButton size="small" onClick={(e) => handleRemoveItem(e, index)}>
-                          <DeleteOutlined fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </ListItemSecondaryAction>
+                    {!readonly && (
+                      <ListItemSecondaryAction sx={{ position: 'static', display: 'flex', transform: 'none' }}>
+                        <Tooltip title="Edit">
+                          <IconButton size="small">
+                            <EditOutlined fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title={<FormattedMessage defaultMessage="Delete" />}>
+                          <IconButton size="small" onClick={(e) => handleRemoveItem(e, index)}>
+                            <DeleteOutlined fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </ListItemSecondaryAction>
+                    )}
                   </ListItemButton>
                 );
               })}
@@ -121,7 +123,7 @@ export function Repeat(props: RepeatProps) {
             </>
           )}
         </Box>
-      </FormEngineField>
+      </FormsEngineField>
     </>
   );
 }

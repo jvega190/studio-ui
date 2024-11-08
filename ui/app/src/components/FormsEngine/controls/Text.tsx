@@ -16,7 +16,7 @@
 
 import OutlinedInput, { OutlinedInputProps } from '@mui/material/OutlinedInput';
 import React, { useId } from 'react';
-import { FormEngineField } from '../common/FormEngineField';
+import { FormsEngineField } from '../common/FormsEngineField';
 import { ControlProps } from '../types';
 
 export interface TextProps extends ControlProps {
@@ -24,13 +24,14 @@ export interface TextProps extends ControlProps {
 }
 
 export function Text(props: TextProps) {
-  const { field, value, setValue, readonly } = props;
+  const { field, value, setValue, readonly, autoFocus } = props;
   const htmlId = useId();
   const maxLength = field.validations.maxLength?.value;
   const handleChange: OutlinedInputProps['onChange'] = (e) => setValue(e.currentTarget.value);
   return (
-    <FormEngineField htmlFor={htmlId} field={field} max={maxLength} length={value.length}>
+    <FormsEngineField htmlFor={htmlId} field={field} max={maxLength} length={value.length}>
       <OutlinedInput
+        autoFocus={autoFocus}
         id={htmlId}
         fullWidth
         inputProps={{ maxLength }}
@@ -38,7 +39,7 @@ export function Text(props: TextProps) {
         onChange={handleChange}
         disabled={readonly}
       />
-    </FormEngineField>
+    </FormsEngineField>
   );
 }
 
