@@ -148,6 +148,8 @@ import useFetchSandboxItems from '../../hooks/useFetchSandboxItems';
 import { buildFileUrl } from '../../services/plugin';
 import { FormsEngineField } from './common/FormsEngineField';
 import ErrorBoundary from '../ErrorBoundary';
+import useSubject from '../../hooks/useSubject';
+import { debounceTime } from 'rxjs/operators';
 
 // TODO:
 //  - PathNav and other ares to open new edit form
@@ -167,6 +169,8 @@ import ErrorBoundary from '../ErrorBoundary';
 //     - Permanently hide ToC (though also controlled by the tab bar button)
 //     - Colour blind mode:
 //        - required field indicators to show check instead of asterisk when valid
+//     - Flush control cache?
+//     - Close after saving & options
 
 export interface BaseProps extends Partial<UpdateModeProps & RepeatModeProps & CreateModeProps> {
   stackIndex?: number;
@@ -321,6 +325,8 @@ const createInitialState: (mixin?: Partial<FormsEngineContextProps>) => FormsEng
   affectedItemsInWorkflow: null,
   originalValuesJson: null,
   sourceMap: null,
+  changedFieldIds: new Set<string>(),
+  versionComment: '',
   ...mixin
 });
 
@@ -517,7 +523,7 @@ const addLazyControl = (url: string) => {
   lazyControlMap.set(
     url,
     lazy(() =>
-      import(url)
+      import(/* @vite-ignore */ url)
         .then((m) => {
           if (m.default) return m;
           else return { default: ControlPluginNoDefaultError };
@@ -569,7 +575,6 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
     isLargeContainer: boolean;
   }>(null);
   const [openDrawerSidebar, setOpenDrawerSidebar] = useState(false);
-  const [versionComment, setVersionComment] = useState<string>('');
   const {
     isFullScreen = false,
     updateSubmittingOrHasPendingChanges,
@@ -580,7 +585,9 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
   const [acceptedWorkflowCancellation, setAcceptedWorkflowCancellation] = useState(false);
   const [collapsedToC, setCollapsedToC] = useState(false); // Controls the Table of Contents being collapsed under a drawer or visible
   const [parentState, parentContextApiRef] = useContext(FormsEngineContext) ?? [];
-  const effectRefs = useUpdateRefs({ contentTypesById, parentState, stackIndex });
+  const effectRefs = useUpdateRefs({ contentTypesById, parentState, stackIndex, fieldsToRender });
+  const valueSettersRef = useRef<Record<string, (value: unknown) => void>>({});
+  const fieldUpdates$ = useSubject<string>();
 
   // region Context
   // eslint-disable-next-line prefer-const -- state is reassigned and don't want to split the declaration.
@@ -589,6 +596,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
     return parentState?.formsStackState ? null : createInitialState({ readonly: readonlyProp });
   });
   if (parentState) state = parentState.formsStackState[stackIndex];
+  const stateRef = useUpdateRefs(state);
   const contextApiRef = useRef<FormsEngineContextApi>(null);
   const context = useMemo<FormsEngineContextType>(() => {
     const hasParentContext = Boolean(parentContextApiRef);
@@ -612,7 +620,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
       update,
       pushForm(formProps: FormsEngineProps) {
         if (parentContextApiRef) {
-          state.previousScrollTopPosition = getScrollContainer(containerRef.current).scrollTop;
+          update('previousScrollTopPosition', getScrollContainer(containerRef.current).scrollTop);
           parentContextApiRef.current.pushForm(formProps);
         } else {
           const newState: FormsEngineContextProps = createInitialState({ readonly: formProps.readonly ?? false });
@@ -633,6 +641,8 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
         }
       },
       updateValue(fieldId, value) {
+        state.changedFieldIds.add(fieldId);
+        fieldUpdates$.next(fieldId);
         update({
           hasPendingChanges: true,
           values: { ...state.values, [fieldId]: value },
@@ -673,7 +683,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
     };
     contextApiRef.current = api;
     return [state, contextApiRef];
-  }, [parentContextApiRef, state, effectRefs]);
+  }, [parentContextApiRef, state, effectRefs, fieldUpdates$]);
   // endregion
 
   const requirementsFetched = state.requirementsFetched;
@@ -681,6 +691,44 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
   const liveUpdatedItem = useItemsByPath()[update?.path ?? parentState?.item.path];
 
   useImperativeHandle(ref, () => containerRef.current);
+
+  // Version comment generator
+  useEffect(() => {
+    const produceMessage = (fieldsChanged: string[]) => {
+      if (fieldsChanged.length === 0) return '';
+      return fieldsChanged.length > 1
+        ? `Updated ${fieldsChanged.slice(0, -1).join(', ')} and ${fieldsChanged[fieldsChanged.length - 1]}`
+        : `Updated ${fieldsChanged[fieldsChanged.length - 1]}`;
+    };
+    const sub = fieldUpdates$.pipe(debounceTime(500)).subscribe(() => {
+      const state = stateRef.current;
+      const fieldsToRender = state.contentType.fields;
+      if (effectRefs.current.fieldsToRender) {
+        effectRefs.current.fieldsToRender.forEach((field) => {
+          fieldsToRender[field.id] = field;
+        });
+      }
+      const fieldsChanged = Array.from(state.changedFieldIds).flatMap(
+        (f) => fieldsToRender[f === 'folder-name' ? 'file-name' : f]?.name ?? []
+      );
+      const currentMessage = state.versionComment.trim();
+      const newMessage = produceMessage(fieldsChanged);
+      if (
+        // If message is blank, no point in checking if the user has altered the message.
+        currentMessage !== '' &&
+        // A repeated field is reporting changes, no need to set
+        (currentMessage === newMessage ||
+          // The version comment hasn't been manually altered by the user
+          currentMessage !== produceMessage(fieldsChanged.slice(0, -1)))
+      ) {
+        return;
+      }
+      contextApiRef.current.update('versionComment', newMessage);
+    });
+    return () => {
+      sub.unsubscribe();
+    };
+  }, [effectRefs, fieldUpdates$, stateRef]);
 
   // Fetch/prepare requirements
   useEffect(() => {
@@ -936,7 +984,6 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
   const isEmbedded = Boolean(update?.modelId);
   const isCreateMode = Boolean(create?.path);
   const isRepeatMode = Boolean(repeat?.fieldId);
-  // const fieldsToRender = props.fieldsToRender;
   const isLargeContainer = containerStats?.isLargeContainer;
   const contentType = state.contentType;
   const contentTypeFields = contentType.fields;
@@ -978,7 +1025,8 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
         }
         shouldUnlock && internalUnlockContentService(siteId, childState.item.path).subscribe();
       }
-      containerRef.current.style.overflowY = '';
+      // Only unlock scroll if this is the last item in the forms stack
+      childProps.stackIndex === 0 && (containerRef.current.style.overflowY = '');
       contextApiRef.current.popForm();
     };
     if (childState.isSubmitting) {
@@ -1124,6 +1172,9 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
     } else {
       Control = controlMap[field.type] ?? UnknownControl;
     }
+    if (!valueSettersRef.current[fieldId]) {
+      valueSettersRef.current[fieldId] = (newValue) => contextApiRef.current.updateValue(fieldId, newValue);
+    }
     return (
       <ErrorBoundary key={fieldId}>
         <Suspense fallback={<ControlSkeleton label={field.name} />}>
@@ -1132,8 +1183,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
             // Focus might not work consistently on disabled controls anyway.
             autoFocus={!readonly && autoFocus}
             value={values[fieldId]}
-            // TODO: It'd be good for controls to have a consistent ref that doesn't change every render
-            setValue={(newValue) => contextApiRef.current.updateValue(fieldId, newValue)}
+            setValue={valueSettersRef.current[fieldId]}
             field={field}
             contentType={contentType}
             readonly={readonly}
@@ -1155,6 +1205,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
         position: 'relative',
         overflow: 'auto',
         '.space-y > :not([hidden]) ~ :not([hidden])': { mt: 1 },
+        '.space-y-half > :not([hidden]) ~ :not([hidden])': { mt: 0.5 },
         '.space-x > :not([hidden]) ~ :not([hidden])': { ml: 1 },
         '.space-y-2 > :not([hidden]) ~ :not([hidden])': { mt: 2 }
       }}
@@ -1331,31 +1382,47 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
                   <>
                     {state.hasPendingChanges ? (
                       <Grow in={state.hasPendingChanges}>
-                        <Paper sx={{ p: 1 }} className="space-y">
+                        <Paper sx={{ p: 1 }} className="space-y-half">
                           <TextField
+                            size="small"
                             multiline
                             fullWidth
                             label={<FormattedMessage defaultMessage="Version Comment" />}
-                            value={versionComment}
-                            onChange={(e) => setVersionComment(e.target.value)}
+                            value={state.versionComment}
+                            onChange={(e) => contextApiRef.current.update('versionComment', e.target.value)}
                           />
-                          {affectsWorkflowItems && (
+                          <div>
+                            {affectsWorkflowItems && (
+                              <FormControlLabel
+                                title={formatMessage({
+                                  defaultMessage:
+                                    'The item is part of a publishing package. Editing it will cancel the entire package.'
+                                })}
+                                label={<FormattedMessage defaultMessage="Accept publish cancellation" />}
+                                control={
+                                  <Checkbox
+                                    size="small"
+                                    checked={acceptedWorkflowCancellation}
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                                      setAcceptedWorkflowCancellation(e.target.checked);
+                                    }}
+                                  />
+                                }
+                              />
+                            )}
                             <FormControlLabel
-                              title={formatMessage({
-                                defaultMessage:
-                                  'The item is part of a publishing package. Editing it will cancel the entire package.'
-                              })}
-                              label={<FormattedMessage defaultMessage="Accept publish cancellation" />}
+                              label={<FormattedMessage defaultMessage="Close after saving" />}
                               control={
                                 <Checkbox
-                                  checked={acceptedWorkflowCancellation}
+                                  size="small"
+                                  checked={false}
                                   onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                    setAcceptedWorkflowCancellation(e.target.checked);
+                                    // (e.target.checked);
                                   }}
                                 />
                               }
                             />
-                          )}
+                          </div>
                           <PrimaryButton
                             fullWidth
                             variant="contained"
@@ -1388,7 +1455,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
                             onClick={handleDisableEditing}
                             loading={enablingEditInProgress}
                           >
-                            <FormattedMessage defaultMessage="Release lock" />
+                            <FormattedMessage defaultMessage="Unlock" />
                           </SecondaryButton>
                         )}
                         {/* For embedded components, only allow publishing if it's the top form.

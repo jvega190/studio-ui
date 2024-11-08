@@ -39,6 +39,8 @@ export interface FormsEngineContextProps {
   requirementsFetched: boolean;
   isSubmitting: boolean;
   hasPendingChanges: boolean;
+  changedFieldIds: Set<string>;
+  versionComment: string;
   // TODO: Move to local state?
   fieldHelpExpandedState: LookupTable<boolean>;
   formsStackProps: FormsEngineProps[];
