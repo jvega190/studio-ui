@@ -82,7 +82,7 @@ export function ImagePicker(props: ImagePickerProps) {
   // const guestBase = 'http://localhost:3000';
   const { item: contextItem, pathInProject, values } = useFormsEngineContext();
   const api = useFormsEngineContextApi();
-  const imageInfo = useImageInfo(`${guestBase}${value}`);
+  const imageInfo = useImageInfo(value ? `${guestBase}${value}` : null);
   const hasValue = Boolean(value);
   const addMenuButtonRef = useRef<HTMLButtonElement>();
   const [addMenuOpen, setAddMenuOpen] = useState(false);
