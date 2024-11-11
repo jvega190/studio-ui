@@ -28,6 +28,7 @@ import useEnv from '../../../hooks/useEnv';
 import { ControlProps } from '../types';
 import { StackedButton } from '../common/StackedButton';
 import { FormattedMessage } from 'react-intl';
+import FieldBox from '../common/FieldBox';
 
 export interface ImagePickerProps extends ControlProps {
   value: string;
@@ -74,18 +75,13 @@ export function ImagePicker(props: ImagePickerProps) {
           </Box>
         </Card>
       ) : (
-        <Box
+        <FieldBox
+          dashed
           sx={{
-            p: 2,
-            border: 1,
-            borderRadius: 1,
-            borderColor: 'divider',
-            borderStyle: 'dashed',
-            display: 'flex',
+            p: 1,
+            gap: 1,
             flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 1
+            justifyContent: 'center'
           }}
         >
           <StackedButton>
@@ -106,7 +102,7 @@ export function ImagePicker(props: ImagePickerProps) {
             </Avatar>
             <FormattedMessage defaultMessage="Search" />
           </StackedButton>
-        </Box>
+        </FieldBox>
       )}
     </FormsEngineField>
   );
