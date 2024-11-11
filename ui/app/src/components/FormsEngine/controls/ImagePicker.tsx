@@ -52,6 +52,7 @@ import { useDispatch } from 'react-redux';
 import { popDialog, pushDialog, pushNonDialog } from '../../../state/actions/dialogStack';
 import { nanoid } from 'nanoid';
 import { SearchProps } from '../../Search';
+import useEnv from '../../../hooks/useEnv';
 
 export interface ImagePickerProps extends ControlProps {
   value: string;
