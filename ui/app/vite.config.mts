@@ -31,6 +31,7 @@ export default defineConfig(({ mode }) => ({
   ],
   server: {
     port: 3000,
+    host: true,
     proxy: {
       '/studio/api': proxyConfig,
       '/studio/static-assets': proxyConfig,

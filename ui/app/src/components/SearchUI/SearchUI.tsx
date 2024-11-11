@@ -20,8 +20,8 @@ import Drawer from '@mui/material/Drawer';
 import SiteSearchFilters from '../SiteSearchFilters';
 import { makeStyles } from 'tss-react/mui';
 import palette from '../../styles/palette';
-import { ElasticParams, Filter, MediaItem, SearchResult } from '../../models/Search';
-import { CheckedFilter, drawerWidth } from '../Search/utils';
+import { ElasticParams, Filter, MediaItem } from '../../models/Search';
+import { CheckedFilter, drawerWidth, SearchProps, UseSearchStateReturn } from '../Search/utils';
 import LookupTable from '../../models/LookupTable';
 import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -37,51 +37,49 @@ import ItemActionsSnackbar from '../ItemActionsSnackbar';
 import Button from '@mui/material/Button';
 import ListItemText from '@mui/material/ListItemText';
 import { FormattedMessage, useIntl } from 'react-intl';
-import { AllItemActions } from '../../models/Item';
-import { ContextMenuOption } from '../ContextMenu';
 import ApiResponse from '../../models/ApiResponse';
 import IconButton from '@mui/material/IconButton';
 import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
 import { UNDEFINED } from '../../utils/constants';
 import { LoadingState } from '../LoadingState';
 
-export interface SearchUIProps {
-  selectedPath: string;
-  selected: string[];
-  selectionOptions: ContextMenuOption[];
-  guestBase: string;
+export interface SearchUIProps
+  extends Required<Pick<SearchProps, 'mode' | 'embedded' | 'onClose' | 'onAcceptSelection'>>,
+    Pick<
+      UseSearchStateReturn,
+      | 'currentView'
+      | 'drawerOpen'
+      | 'guestBase'
+      | 'handleSelect'
+      | 'handleChangeView'
+      | 'handleSelectAll'
+      | 'handleClearSelected'
+      | 'isFetching'
+      | 'onHeaderButtonClick'
+      | 'onPreview'
+      | 'onActionClicked'
+      | 'onSelectedPathChanges'
+      | 'toggleDrawer'
+      | 'selectedPath'
+      | 'selectionOptions'
+      | 'searchResults'
+      | 'selected'
+    > {
   sortBy?: string;
   sortOrder?: string;
   keyword: string;
-  mode: 'select' | 'default';
-  drawerOpen: boolean;
-  embedded: boolean;
   desktopScreen: boolean;
-  currentView: 'grid' | 'list';
-  searchResults: SearchResult;
   areAllSelected: boolean;
   checkedFilters: LookupTable<CheckedFilter>;
   searchParameters: ElasticParams;
   error: ApiResponse;
-  isFetching: boolean;
-  onActionClicked(option: AllItemActions, event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void;
-  handleSelectAll(checked: any): void;
-  onSelectedPathChanges(path: string): void;
-  onCheckedFiltersChanges(checkedFilters: LookupTable<CheckedFilter>): any;
+  onCheckedFiltersChanges(checkedFilters: LookupTable<CheckedFilter>): void;
   clearFilter(facet: string): void;
   clearFilters(): void;
   handleSearchKeyword(keyword: string): void;
-  handleChangeView(): void;
-  toggleDrawer(): void;
   handleFilterChange(filter: Filter, isFilter?: boolean): void;
   handleChangePage(event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, newPage: number): void;
   handleChangeRowsPerPage(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void;
-  handleSelect(path: string, isSelected: boolean): void;
-  onPreview(item: MediaItem): void;
-  onHeaderButtonClick(event: any, item: MediaItem): void;
-  handleClearSelected(): void;
-  onClose(): void;
-  onAcceptSelection?(items: string[]): void;
 }
 
 const useStyles = makeStyles()((theme) => ({
@@ -378,7 +376,7 @@ export function SearchUI(props: SearchUIProps) {
                 <Checkbox
                   color="primary"
                   checked={areAllSelected}
-                  onClick={(e: any) => handleSelectAll(e.target.checked)}
+                  onClick={(e) => handleSelectAll((e.target as HTMLInputElement).checked)}
                 />
               }
               label={<Typography color="textPrimary">{formatMessage(translations.selectAll)}</Typography>}
@@ -526,7 +524,12 @@ export function SearchUI(props: SearchUIProps) {
               variant="contained"
               color="primary"
               disabled={selected.length === 0}
-              onClick={() => onAcceptSelection(selected)}
+              onClick={() =>
+                onAcceptSelection(
+                  selected,
+                  selected.flatMap((path) => searchResults.items?.find((item) => item.path === path) ?? [])
+                )
+              }
             >
               {formatMessage(translations.acceptSelection)}
             </Button>

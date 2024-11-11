@@ -1,4 +1,4 @@
-import { CSSProperties, SyntheticEvent, useEffect, useRef, useState } from 'react';
+import { CSSProperties, useEffect, useRef, useState } from 'react';
 import {
   draggable,
   dropTargetForElements,
@@ -12,7 +12,7 @@ import {
 import { reorderWithEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge';
 import { triggerPostMoveFlash } from '@atlaskit/pragmatic-drag-and-drop-flourish/trigger-post-move-flash';
 import { createPortal, flushSync } from 'react-dom';
-import GripVertical from '@mui/icons-material/DragIndicatorRounded';
+import DragIndicator from '@mui/icons-material/DragIndicatorRounded';
 import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview';
 import { pointerOutsideOfPreview } from '@atlaskit/pragmatic-drag-and-drop/element/pointer-outside-of-preview';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
@@ -21,27 +21,35 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemButton from '@mui/material/ListItemButton';
 import Box from '@mui/material/Box';
-import { SxProps } from '@mui/system';
-import FieldBox from './FieldBox';
+import { SxProps, SystemStyleObject } from '@mui/system';
 import List from '@mui/material/List';
-import { NodeSelectorItem, NodeSelectorProps } from '../controls/NodeSelector';
-import FormsEngineField from './FormsEngineField';
-import Button from '@mui/material/Button';
-import { FormattedMessage } from 'react-intl';
+import useUpdateRefs from '../../../hooks/useUpdateRefs';
 
-// https://atlassian.design/components/pragmatic-drag-and-drop/about
+// Adapted from:
 // https://stackblitz.com/github/alexreardon/pdnd-react-tailwind
+// https://atlassian.design/components/pragmatic-drag-and-drop/about
+// https://atlassian.design/components/pragmatic-drag-and-drop/examples#simple-list-on-other-stacks
 
-type Orientation = 'horizontal' | 'vertical';
+export type Orientation = 'horizontal' | 'vertical';
 
-type ItemState =
+export type ItemState =
   | { type: 'idle' }
   | { type: 'preview'; container: HTMLElement }
   | { type: 'is-dragging' }
   | { type: 'is-dragging-over'; closestEdge: Edge | null };
 
-type TItemData = { [itemDataKey]: true; taskId: NodeSelectorItem['key'] };
+export type TItem<T = unknown> = { key: string; value: string; data?: T };
 
+export type TItemData = { [itemDataKey]: true; itemId: TItem['key'] };
+
+const strokeSize = 2;
+const terminalSize = 8;
+const gapBetweenItems = '4px';
+const offsetToAlignTerminalWithLine = (strokeSize - terminalSize) / 2;
+const idle: ItemState = { type: 'idle' };
+const itemDataKey = Symbol('SortableItem');
+
+// Drop Indicator orientation
 const edgeToOrientationMap: Record<Edge, Orientation> = {
   top: 'horizontal',
   bottom: 'horizontal',
@@ -49,47 +57,49 @@ const edgeToOrientationMap: Record<Edge, Orientation> = {
   right: 'vertical'
 };
 
+// Drop Indicator orientation-related styles
 const orientationStyles: Record<Orientation, SxProps> = {
   horizontal: {
     height: `var(--line-thickness)`,
     left: `var(--terminal-radius)`,
-    right: 0,
-    '::before': {
-      left: `var(--negative-terminal-size)`
-    }
+    right: 0
   },
   vertical: {
     width: `var(--line-thickness)`,
     top: 'var(--terminal-radius)',
-    bottom: 0,
-    '::before': { top: 'var(--negative-terminal-size)' }
+    bottom: 0
   }
 };
 
+// Drop Indicator `::before` block orientation-related styles
+const terminalOrientationStyles: Record<Orientation, SystemStyleObject> = {
+  horizontal: { left: `var(--negative-terminal-size)` },
+  vertical: { top: 'var(--negative-terminal-size)' }
+};
+
+// Drop Indicator edge-related styles
 const edgeStyles: Record<Edge, SxProps> = {
-  top: {
-    top: 'var(--line-offset)',
-    '::before': { top: 'var(--offset-terminal)' }
-  },
-  right: {
-    right: 'var(--line-offset)',
-    '::before': { right: 'var(--offset-terminal)' }
-  },
-  bottom: {
-    bottom: 'var(--line-offset)',
-    '::before': { bottom: 'var(--offset-terminal)' }
-  },
-  left: {
-    left: 'var(--line-offset)',
-    '::before': { left: 'var(--offset-terminal)' }
-  }
+  top: { top: 'var(--line-offset)' },
+  right: { right: 'var(--line-offset)' },
+  bottom: { bottom: 'var(--line-offset)' },
+  left: { left: 'var(--line-offset)' }
 };
 
-const strokeSize = 2;
-const terminalSize = 8;
-const offsetToAlignTerminalWithLine = (strokeSize - terminalSize) / 2;
-const idle: ItemState = { type: 'idle' };
-const itemDataKey = Symbol('item');
+// Drop Indicator `::before` block edge-related styles
+const terminalEdgeStyles: Record<Edge, SystemStyleObject> = {
+  top: { top: 'var(--offset-terminal)' },
+  right: { right: 'var(--offset-terminal)' },
+  bottom: { bottom: 'var(--offset-terminal)' },
+  left: { left: 'var(--offset-terminal)' }
+};
+
+function getItemData(item: TItem): TItemData {
+  return { [itemDataKey]: true, itemId: item.key };
+}
+
+function isItemData(data: Record<string | symbol, unknown>): data is TItemData {
+  return data[itemDataKey] === true;
+}
 
 function DropIndicator({ edge, gap }: { edge: Edge; gap: string }) {
   const lineOffset = `calc(-0.5 * (${gap} + ${strokeSize}px))`;
@@ -111,29 +121,44 @@ function DropIndicator({ edge, gap }: { edge: Edge; gap: string }) {
         zIndex: 10,
         bgcolor: 'primary.main',
         pointerEvents: 'none',
+        ...orientationStyles[orientation],
+        ...edgeStyles[edge],
         '::before': {
-          position: 'absolute',
           content: '""',
           width: `var(--terminal-size)`,
           height: `var(--terminal-size)`,
+          position: 'absolute',
           boxSizing: 'border-box',
           borderWidth: `var(--line-thickness)`,
           borderStyle: 'solid',
           borderColor: 'primary.main',
-          borderRadius: 5
-        },
-        ...orientationStyles[orientation],
-        ...edgeStyles[edge]
+          borderRadius: 10,
+          ...terminalOrientationStyles[orientation],
+          ...terminalEdgeStyles[edge]
+        }
       }}
-      // className={`absolute z-10 bg-blue-700 pointer-events-none before:content-[''] before:w-[--terminal-size] before:h-[--terminal-size] box-border before:absolute before:border-[length:--line-thickness] before:border-solid before:border-blue-700 before:rounded-full ${orientationStyles[orientation]} ${[edgeStyles[edge]]}`}
     />
   );
 }
 
-function Item({ item }: { item: NodeSelectorItem }) {
+function DragPreview({ item }: { item: TItem }) {
+  return (
+    <Box
+      sx={{
+        borderStyle: 'solid',
+        borderRadius: 2,
+        bgcolor: 'secondary.main',
+        p: 2
+      }}
+    >
+      {item.value}
+    </Box>
+  );
+}
+
+function SortableItem({ item }: { item: TItem }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [state, setState] = useState<ItemState>(idle);
-
   useEffect(() => {
     const element = ref.current;
     invariant(element);
@@ -169,8 +194,8 @@ function Item({ item }: { item: NodeSelectorItem }) {
           if (source.element === element) {
             return false;
           }
-          // only allowing tasks to be dropped on me
-          return isTaskData(source.data);
+          // only allowing items to be dropped on me
+          return isItemData(source.data);
         },
         getData({ input }) {
           const data = getItemData(item);
@@ -208,55 +233,35 @@ function Item({ item }: { item: NodeSelectorItem }) {
       })
     );
   }, [item]);
-
   return (
     <>
       <ListItemButton
-        data-item-id={item.key}
         ref={ref}
-        className="relative"
-        sx={[state.type === 'is-dragging' && { opacity: 0.4 }]}
+        data-item-id={item.key}
+        sx={[
+          { position: 'relative', borderRadius: 1, cursor: 'grab' },
+          state.type === 'is-dragging' && { opacity: 0.4 }
+        ]}
       >
-        <ListItemIcon className="w-6 flex justify-center">
-          <GripVertical fontSize="small" />
+        <ListItemIcon>
+          <DragIndicator fontSize="small" />
         </ListItemIcon>
         <ListItemText primary={item.value} />
         {state.type === 'is-dragging-over' && state.closestEdge ? (
-          <DropIndicator edge={state.closestEdge} gap="8px" />
+          <DropIndicator edge={state.closestEdge} gap={gapBetweenItems} />
         ) : null}
       </ListItemButton>
-      {state.type === 'preview' ? createPortal(<DragPreview task={item} />, state.container) : null}
+      {state.type === 'preview' ? createPortal(<DragPreview item={item} />, state.container) : null}
     </>
   );
 }
 
-function DragPreview({ task }: { task: NodeSelectorItem }) {
-  return <div className="border-solid rounded p-2 bg-white">{task.value}</div>;
-}
-
-function getItemData(task: NodeSelectorItem): TItemData {
-  return { [itemDataKey]: true, taskId: task.key };
-}
-
-function isTaskData(data: Record<string | symbol, unknown>): data is TItemData {
-  return data[itemDataKey] === true;
-}
-
-export function ReorderUI({
-  value,
-  field,
-  onCancel,
-  onDone
-}: NodeSelectorProps & {
-  onCancel(event: SyntheticEvent): void;
-  onDone(event: SyntheticEvent, items: NodeSelectorItem[]): void;
-}) {
-  const [items, setItems] = useState(value);
-
+export function SortableList({ items, onChange }: { items: TItem[]; onChange(items: TItem[]): void }) {
+  const onChangeRef = useUpdateRefs(onChange);
   useEffect(() => {
     return monitorForElements({
       canMonitor({ source }) {
-        return isTaskData(source.data);
+        return isItemData(source.data);
       },
       onDrop({ location, source }) {
         const target = location.current.dropTargets[0];
@@ -267,12 +272,12 @@ export function ReorderUI({
         const sourceData = source.data;
         const targetData = target.data;
 
-        if (!isTaskData(sourceData) || !isTaskData(targetData)) {
+        if (!isItemData(sourceData) || !isItemData(targetData)) {
           return;
         }
 
-        const indexOfSource = items.findIndex((task) => task.key === sourceData.taskId);
-        const indexOfTarget = items.findIndex((task) => task.key === targetData.taskId);
+        const indexOfSource = items.findIndex((item) => item.key === sourceData.itemId);
+        const indexOfTarget = items.findIndex((item) => item.key === targetData.itemId);
 
         if (indexOfTarget < 0 || indexOfSource < 0) {
           return;
@@ -280,9 +285,18 @@ export function ReorderUI({
 
         const closestEdgeOfTarget = extractClosestEdge(targetData);
 
+        // Avoid any re-rendering when nothing moved: when the target position is below or above itself,
+        // there won't be a move, no change.
+        if (
+          (closestEdgeOfTarget === 'top' && indexOfSource < indexOfTarget && indexOfSource + 1 === indexOfTarget) ||
+          (closestEdgeOfTarget === 'bottom' && indexOfSource > indexOfTarget && indexOfSource - 1 === indexOfTarget)
+        ) {
+          return;
+        }
+
         // Using `flushSync` so we can query the DOM straight after this line
         flushSync(() => {
-          setItems(
+          onChangeRef.current(
             reorderWithEdge({
               list: items,
               startIndex: indexOfSource,
@@ -292,42 +306,25 @@ export function ReorderUI({
             })
           );
         });
-        // Being simple and just querying for the task after the drop.
-        // We could use react context to register the element in a lookup,
+
+        // Being simple and just querying for the item after the drop.
+        // We could use React context to register the element in a lookup,
         // and then we could retrieve that element after the drop and use
         // `triggerPostMoveFlash`. But this gets the job done.
-        const element = document.querySelector(`[data-item-id="${sourceData.taskId}"]`);
+        const element = document.querySelector(`[data-item-id="${sourceData.itemId}"]`);
         if (element instanceof HTMLElement) {
           triggerPostMoveFlash(element);
         }
       }
     });
-  }, [items]);
-
+  }, [items, onChangeRef]);
   return (
-    <FormsEngineField
-      field={field}
-      menu={false}
-      action={
-        <>
-          <Button size="small" onClick={onCancel}>
-            <FormattedMessage defaultMessage="Cancel" />
-          </Button>
-          <Button size="small" disabled={items === value} onClick={(e) => onDone(e, items)}>
-            <FormattedMessage defaultMessage="Done" />
-          </Button>
-        </>
-      }
-    >
-      <FieldBox>
-        <List>
-          {items.map((task) => (
-            <Item key={task.key} item={task} />
-          ))}
-        </List>
-      </FieldBox>
-    </FormsEngineField>
+    <List sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, px: 1 }}>
+      {items.map((item) => (
+        <SortableItem key={item.key} item={item} />
+      ))}
+    </List>
   );
 }
 
-export default ReorderUI;
+export default SortableList;

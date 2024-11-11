@@ -39,7 +39,6 @@ import {
   Suspense,
   SyntheticEvent,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState
@@ -81,11 +80,13 @@ import useActiveUser from '../../../hooks/useActiveUser';
 import { processPathMacros } from '../../../utils/path';
 import { XmlKeys } from '../validateFieldValue';
 import { ensureSingleSlash } from '../../../utils/string';
-import { pushDialog, pushNonDialog } from '../../../state/actions/dialogStack';
+import { popDialog, pushDialog, pushNonDialog } from '../../../state/actions/dialogStack';
 import FieldBox from '../common/FieldBox';
-import OrderOptionsIcon from '@mui/icons-material/ImportExportRounded';
+import { isTouchDevice, KeyDownEvent, sortableListKeyDownHandler } from '../common/util';
+import SortableListSkeleton from '../common/SortableListSkeleton';
 
-const ReorderUI = lazy(() => import('../common/ReorderUI'));
+const SortableList = lazy(() => import('../common/SortableList'));
+const TouchSortableList = lazy(() => import('../common/TouchSortableList'));
 
 // TODO: process path macros
 
@@ -318,9 +319,13 @@ function DataSourcePicker(props: { allowedPaths: AllowedPathsData[]; onChange(e,
   );
 }
 
-function Main(props: NodeSelectorProps & { onReorder(): void }) {
-  const { field, contentType, value, setValue, readonly, autoFocus, onReorder } = props;
+function NodeSelector(props: NodeSelectorProps) {
+  const { field, contentType, value, setValue, readonly, autoFocus } = props;
   useFetchSandboxItems(value.flatMap((item) => item.include ?? []));
+  const [sortMode, setSortMode] = useState(false);
+  const useTouchSorting = useMemo(() => isTouchDevice(), []);
+  const handleCancelReorder = () => setSortMode(false);
+  const onReorder = () => setSortMode(true);
   const itemsByPath = useItemsByPath();
   const user = useActiveUser();
   const { item: contextItem, pathInProject, values } = useFormsEngineContext();
@@ -344,7 +349,7 @@ function Main(props: NodeSelectorProps & { onReorder(): void }) {
     const allowedSearchPaths: AllowedPathsData[] = [];
 
     // In dropdown, the `itemManager` "property" is called datasource
-    const dataSourceIds = field.properties.itemManager.value.split(',');
+    const dataSourceIds = ((field.properties.itemManager?.value as string) ?? '').split(',');
     contentTypes[contentType.id].dataSources.forEach((ds) => {
       if (dataSourceIds.includes(ds.id)) {
         switch (ds.type) {
@@ -454,13 +459,13 @@ function Main(props: NodeSelectorProps & { onReorder(): void }) {
     nextValue.splice(index, 1);
     setValue(nextValue);
   };
-  const handleEditItem = (event: ReactMouseEvent, index: number, fromEditButton: boolean = false) => {
+  const handleOpenItem = (event: { stopPropagation(): void }, index: number, edit: boolean = false) => {
     event.stopPropagation();
     const item: NodeSelectorItem = value[index];
     if (item.component || item.include) {
       const isEmbedded = Boolean(item.component);
       api.pushForm({
-        readonly: fromEditButton ? false : readonly,
+        readonly: !edit,
         update: {
           path: item.include ?? contextItem.path,
           // In the case of shared, item.component === undefined.
@@ -477,7 +482,7 @@ function Main(props: NodeSelectorProps & { onReorder(): void }) {
             key,
             value: values[XmlKeys.internalName] as string,
             [isEmbedded ? 'component' : 'include']: isEmbedded ? (values as LookupTable<Primitive>) : key,
-            disableFlattening: field.properties.disableFlattening?.value ?? false
+            disableFlattening: (field.properties.disableFlattening?.value as boolean) ?? false
           };
           const nextValue = value.concat();
           nextValue.splice(index, 1, newItem);
@@ -489,6 +494,15 @@ function Main(props: NodeSelectorProps & { onReorder(): void }) {
       // console.log('Edit item', item);
       console.log('Is file', item);
     }
+  };
+  const handleItemKeyDown = (e: KeyDownEvent, index: number) => {
+    sortableListKeyDownHandler(
+      e,
+      value,
+      index,
+      (newList) => setValue(newList),
+      (index, edit) => handleOpenItem(e, index, edit && !readonly)
+    );
   };
   const executeDataSourceOption = (
     optionType: DataSourcePickerType,
@@ -515,21 +529,23 @@ function Main(props: NodeSelectorProps & { onReorder(): void }) {
               multiSelect: true,
               allowUpload: false,
               contentTypes: pickerChoice.allowedContentTypes ?? [],
+              onClose() {
+                dispatch(popDialog({ id }));
+              },
               onSuccess(items: MediaItem | MediaItem[]) {
+                dispatch(popDialog({ id }));
                 const nextValue = value.concat();
-                const existingKeys = nextValue.map((item) => item.key);
                 asArray(items).forEach((item) => {
-                  !existingKeys.includes(item.path) &&
-                    nextValue.push({
-                      key: item.path,
-                      value: item.name,
-                      include: item.path,
-                      disableFlattening: Boolean(field.properties?.disableFlattening?.value)
-                    });
+                  nextValue.push({
+                    key: item.path,
+                    value: item.name,
+                    include: item.path,
+                    disableFlattening: Boolean(field.properties?.disableFlattening?.value)
+                  });
                 });
                 setValue(nextValue);
               }
-            } as BrowseFilesDialogProps
+            } as Partial<BrowseFilesDialogProps>
           })
         );
         break;
@@ -548,14 +564,25 @@ function Main(props: NodeSelectorProps & { onReorder(): void }) {
               initialParameters: {
                 path: ensureSingleSlash(`${processPath(pickerChoice.path)}/.+`),
                 sortBy: 'internalName',
-                filters: {
-                  'content-type': pickerChoice.allowedContentTypes
-                }
+                filters: { 'content-type': pickerChoice.allowedContentTypes }
               },
-              onAcceptSelection(items) {
-                console.log(items);
+              onClose() {
+                dispatch(popDialog({ id }));
+              },
+              onAcceptSelection(paths, items) {
+                dispatch(popDialog({ id }));
+                const nextValue = value.concat();
+                items?.forEach((item) => {
+                  nextValue.push({
+                    key: item.path,
+                    value: item.name,
+                    include: item.path,
+                    disableFlattening: Boolean(field.properties?.disableFlattening?.value)
+                  });
+                });
+                setValue(nextValue);
               }
-            } as SearchProps
+            } as Partial<SearchProps>
           })
         );
         break;
@@ -578,7 +605,7 @@ function Main(props: NodeSelectorProps & { onReorder(): void }) {
               key,
               value: result.values[XmlKeys.internalName] as string,
               [isEmbedded ? 'component' : 'include']: isEmbedded ? (result.values as LookupTable<Primitive>) : key,
-              disableFlattening: field.properties.disableFlattening?.value ?? false
+              disableFlattening: (field.properties.disableFlattening?.value as boolean) ?? false
             };
             const nextValue = value.concat();
             nextValue.push(newItem);
@@ -766,7 +793,20 @@ function Main(props: NodeSelectorProps & { onReorder(): void }) {
           </DialogFooter>
         )}
       </Dialog>
-
+      <Dialog open={sortMode} onClose={handleCancelReorder} maxWidth="xs" fullWidth>
+        <DialogHeader
+          title={field.name}
+          rightActions={[{ text: <FormattedMessage defaultMessage="Done" />, onClick: handleCancelReorder }]}
+        />
+        {useTouchSorting ? (
+          <TouchSortableList items={value} onChange={setValue} />
+        ) : (
+          <Suspense
+            fallback={<SortableListSkeleton items={value} />}
+            children={<SortableList items={value} onChange={setValue} />}
+          />
+        )}
+      </Dialog>
       <FormsEngineField
         field={field}
         min={field.validations.minCount?.value}
@@ -802,10 +842,13 @@ function Main(props: NodeSelectorProps & { onReorder(): void }) {
             </span>
           </Tooltip>
         }
-        menuOptions={['divider', { id: 'reorder', text: 'Reorder' }]}
-        onMenuOptionClick={() => onReorder()}
+        menuOptions={[{ id: 'reorder', text: <FormattedMessage defaultMessage="Reorder Items" /> }]}
+        onMenuOptionClick={(_, __, closeMenu) => {
+          onReorder();
+          closeMenu();
+        }}
       >
-        <FieldBox>
+        <FieldBox dashed={!hasContent}>
           {hasContent ? (
             <List dense>
               {value.map((item, index) => {
@@ -827,7 +870,8 @@ function Main(props: NodeSelectorProps & { onReorder(): void }) {
                   <ListItemButton
                     key={item.key}
                     divider={index !== value.length - 1}
-                    onClick={(e) => handleEditItem(e, index)}
+                    onClick={(e) => handleOpenItem(e, index, false)}
+                    onKeyDown={(e) => handleItemKeyDown(e, index)}
                   >
                     <ListItemText
                       primary={
@@ -856,20 +900,8 @@ function Main(props: NodeSelectorProps & { onReorder(): void }) {
                       <ListItemSecondaryAction sx={{ position: 'static', display: 'flex', transform: 'none' }}>
                         {canBeEdited && (
                           <Tooltip title="Edit">
-                            <IconButton size="small" onClick={(e) => handleEditItem(e, index, true)}>
+                            <IconButton size="small" onClick={(e) => handleOpenItem(e, index, !readonly)}>
                               <EditOutlined fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                        {!readonly && (
-                          <Tooltip title="Move">
-                            <IconButton
-                              size="small"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                              }}
-                            >
-                              <OrderOptionsIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         )}
@@ -915,34 +947,6 @@ function Main(props: NodeSelectorProps & { onReorder(): void }) {
         </FieldBox>
       </FormsEngineField>
     </>
-  );
-}
-
-export function NodeSelector(props: NodeSelectorProps) {
-  const [reorder, setReorder] = useState(false);
-  const [minHeight, setMinHeight] = useState(0);
-  const containerRef = useRef<HTMLDivElement>();
-  const handleCancelReorder = () => setReorder(false);
-  const handleAcceptOrder = () => setReorder(false);
-  useLayoutEffect(() => {
-    const height = parseInt(getComputedStyle(containerRef.current).height);
-    // console.log(reorder, height);
-    // setMinHeight(height)
-    if (height > 0) {
-      setMinHeight(height);
-    }
-  }, [reorder]);
-  return (
-    <Box ref={containerRef} sx={{ minHeight }}>
-      <Suspense fallback="">
-        {reorder ? (
-          // Perhaps is best to render this as a dialog?
-          <ReorderUI {...props} onCancel={handleCancelReorder} onDone={handleAcceptOrder} />
-        ) : (
-          <Main {...props} onReorder={() => setReorder(true)} />
-        )}
-      </Suspense>
-    </Box>
   );
 }
 

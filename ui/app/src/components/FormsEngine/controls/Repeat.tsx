@@ -15,7 +15,6 @@
  */
 
 import { useFormsEngineContextApi } from '../formsEngineContext';
-import Box from '@mui/material/Box';
 import IconButton, { IconButtonProps } from '@mui/material/IconButton';
 import AddRounded from '@mui/icons-material/AddRounded';
 import DeleteOutlined from '@mui/icons-material/DeleteOutlined';
@@ -28,9 +27,15 @@ import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
 import ListItemButton from '@mui/material/ListItemButton';
 import { FormattedMessage } from 'react-intl';
 import Tooltip from '@mui/material/Tooltip';
-import { MouseEvent as ReactMouseEvent } from 'react';
+import { lazy, MouseEvent as ReactMouseEvent, Suspense, useMemo, useState } from 'react';
 import Avatar from '@mui/material/Avatar';
 import { StackedButton } from '../common/StackedButton';
+import { isTouchDevice } from '../common/util';
+import { DialogHeader } from '../../DialogHeader';
+import Dialog from '@mui/material/Dialog';
+import SortableListSkeleton from '../common/SortableListSkeleton';
+import type { TItem } from '../common/SortableList';
+import FieldBox from '../common/FieldBox';
 
 export type RepeatItem = Record<string, unknown>;
 
@@ -38,8 +43,31 @@ export interface RepeatProps extends ControlProps {
   value: RepeatItem[];
 }
 
+const SortableList = lazy(() => import('../common/SortableList'));
+const TouchSortableList = lazy(() => import('../common/TouchSortableList'));
+
+function getRepeatItemTitle(item: RepeatItem): string {
+  const keys = Object.keys(item);
+  const titleKey = keys.find((key) => key.includes('title'));
+  if (titleKey && item[titleKey]) {
+    return String(item[titleKey]);
+  }
+  return String(item[keys[0]]);
+}
+
+function getRepeatItemSummary(item: RepeatItem): string {
+  // TODO: HTML tags would look quite bad; somehow exclude HTML fields or convert to text?
+  return Object.values(item)
+    .flatMap((value) => (typeof value === 'string' && value ? value.substring(0, 50) : []))
+    .join(' | ');
+}
+
 export function Repeat(props: RepeatProps) {
   const { field, value, setValue, readonly, autoFocus } = props;
+  const [sortMode, setSortMode] = useState(false);
+  const useTouchSorting = useMemo(() => isTouchDevice(), []);
+  const handleCancelReorder = () => setSortMode(false);
+  const onReorder = () => setSortMode(true);
   const api = useFormsEngineContextApi();
   const hasContent = value.length;
   const handleRemoveItem = (event: ReactMouseEvent, index: number) => {
@@ -54,10 +82,34 @@ export function Repeat(props: RepeatProps) {
       fieldsToRender: Object.values(field.fields)
     });
   };
-  const handleAddItem: IconButtonProps['onClick'] = (e) => {};
+  const handleAddItem: IconButtonProps['onClick'] = (e) => {
+    api.pushForm({
+      repeat: { fieldId: field.id },
+      fieldsToRender: Object.values(field.fields)
+    });
+  };
   const isAddDisabled = readonly || field.validations.maxCount?.value >= value;
+  const sortList = useMemo<Array<TItem<RepeatItem>>>(
+    () => (sortMode ? value.map((i, index) => ({ key: String(index), value: getRepeatItemTitle(i), data: i })) : []),
+    [sortMode, value]
+  );
+  const onSortChange = (newList: TItem<RepeatItem>[]) => setValue(newList.map((i) => i.data));
   return (
     <>
+      <Dialog open={sortMode} onClose={handleCancelReorder} maxWidth="xs" fullWidth>
+        <DialogHeader
+          title={field.name}
+          rightActions={[{ text: <FormattedMessage defaultMessage="Done" />, onClick: handleCancelReorder }]}
+        />
+        {useTouchSorting ? (
+          <TouchSortableList items={sortList} onChange={onSortChange} />
+        ) : (
+          <Suspense
+            fallback={<SortableListSkeleton items={sortList} />}
+            children={<SortableList items={sortList} onChange={onSortChange} />}
+          />
+        )}
+      </Dialog>
       <FormsEngineField
         field={field}
         min={field.validations.minCount?.value}
@@ -70,47 +122,43 @@ export function Repeat(props: RepeatProps) {
             </IconButton>
           </Tooltip>
         }
+        menuOptions={[{ id: 'reorder', text: <FormattedMessage defaultMessage="Reorder Items" /> }]}
+        onMenuOptionClick={(_, __, closeMenu) => {
+          onReorder();
+          closeMenu();
+        }}
       >
-        <Box
-          sx={{
-            border: 1,
-            display: 'flex',
-            borderColor: 'divider',
-            borderRadius: 1,
-            ...(hasContent ? { flexDirection: 'column' } : { flexDirection: 'column', borderStyle: 'dashed' })
-          }}
-        >
+        <FieldBox dashed={!hasContent}>
           {hasContent ? (
             <List dense>
-              {value.map((item, index) => {
-                return (
-                  <ListItemButton
-                    key={index}
-                    divider={index !== value.length - 1}
-                    onClick={(e) => handleEditItem(e, item, index)}
-                  >
-                    <ListItemText
-                      primary={<FormattedMessage defaultMessage="Item # {num}" values={{ num: index + 1 }} />}
-                      secondary={JSON.stringify(item)}
-                      secondaryTypographyProps={{ noWrap: true }}
-                    />
-                    {!readonly && (
-                      <ListItemSecondaryAction sx={{ position: 'static', display: 'flex', transform: 'none' }}>
-                        <Tooltip title="Edit">
-                          <IconButton size="small">
-                            <EditOutlined fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title={<FormattedMessage defaultMessage="Delete" />}>
-                          <IconButton size="small" onClick={(e) => handleRemoveItem(e, index)}>
-                            <DeleteOutlined fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </ListItemSecondaryAction>
-                    )}
-                  </ListItemButton>
-                );
-              })}
+              {value.map((item, index) => (
+                <ListItemButton
+                  key={index}
+                  divider={index !== value.length - 1}
+                  onClick={(e) => handleEditItem(e, item, index)}
+                >
+                  <ListItemText
+                    primary={getRepeatItemTitle(item)}
+                    secondary={getRepeatItemSummary(item)}
+                    primaryTypographyProps={{ noWrap: true }}
+                    secondaryTypographyProps={{ noWrap: true }}
+                  />
+                  {!readonly && (
+                    <ListItemSecondaryAction sx={{ position: 'static', display: 'flex', transform: 'none' }}>
+                      <Tooltip title="Edit">
+                        <IconButton size="small">
+                          <EditOutlined fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title={<FormattedMessage defaultMessage="Delete" />}>
+                        <IconButton size="small" onClick={(e) => handleRemoveItem(e, index)}>
+                          <DeleteOutlined fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </ListItemSecondaryAction>
+                  )}
+                </ListItemButton>
+              ))}
             </List>
           ) : (
             <>
@@ -122,7 +170,7 @@ export function Repeat(props: RepeatProps) {
               </StackedButton>
             </>
           )}
-        </Box>
+        </FieldBox>
       </FormsEngineField>
     </>
   );

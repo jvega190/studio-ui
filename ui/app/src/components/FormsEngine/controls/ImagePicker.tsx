@@ -16,6 +16,7 @@
 
 import { useFormsEngineContext, useFormsEngineContextApi } from '../formsEngineContext';
 import Box from '@mui/material/Box';
+import Avatar from '@mui/material/Avatar';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import { svgIconClasses } from '@mui/material';
 import Card from '@mui/material/Card';
@@ -25,7 +26,9 @@ import CardMedia from '@mui/material/CardMedia';
 import IconButton from '@mui/material/IconButton';
 import { DeleteOutlined, DownloadOutlined, EditOutlined } from '@mui/icons-material';
 import { FormsEngineField } from '../common/FormsEngineField';
+import useEnv from '../../../hooks/useEnv';
 import { ControlProps } from '../types';
+import { StackedButton } from '../common/StackedButton';
 import React, { MouseEvent as ReactMouseEvent, useMemo, useRef, useState } from 'react';
 import useContentTypes from '../../../hooks/useContentTypes';
 import { FormattedMessage } from 'react-intl';
@@ -52,7 +55,7 @@ import { useDispatch } from 'react-redux';
 import { popDialog, pushDialog, pushNonDialog } from '../../../state/actions/dialogStack';
 import { nanoid } from 'nanoid';
 import { SearchProps } from '../../Search';
-import useEnv from '../../../hooks/useEnv';
+import FieldBox from '../common/FieldBox';
 
 export interface ImagePickerProps extends ControlProps {
   value: string;

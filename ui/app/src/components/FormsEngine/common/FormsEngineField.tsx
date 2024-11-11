@@ -74,12 +74,12 @@ export interface FormsEngineFieldProps
     menuOptions?: Array<
       | {
           id: string;
-          text: string;
+          text: ReactNode;
           icon?: SystemIconDescriptor;
         }
       | 'divider'
     >;
-    onMenuOptionClick?(e: SyntheticEvent, optionId: string): void;
+    onMenuOptionClick?(e: SyntheticEvent, optionId: string, closeMenu: () => void): void;
   }> {}
 
 export const FormsEngineField = forwardRef<HTMLDivElement, FormsEngineFieldProps>(function (props, ref) {
@@ -169,11 +169,12 @@ export const FormsEngineField = forwardRef<HTMLDivElement, FormsEngineFieldProps
                     </ListItemText>
                   </MenuItem>
                 ]}
+                {menuOptions && <Divider />}
                 {menuOptions?.map((option, index) =>
                   option === 'divider' ? (
                     <Divider key={`divider_${index}`} />
                   ) : (
-                    <MenuItem key={option.id} onClick={(e) => onMenuOptionClick?.(e, option.id)}>
+                    <MenuItem key={option.id} onClick={(e) => onMenuOptionClick?.(e, option.id, handleCloseMenu)}>
                       <ListItemText children={option.text} />
                     </MenuItem>
                   )

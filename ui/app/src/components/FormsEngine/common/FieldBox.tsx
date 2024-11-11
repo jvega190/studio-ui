@@ -14,16 +14,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { styled } from '@mui/material/styles';
-import Box from '@mui/material/Box';
+import Box, { BoxProps } from '@mui/material/Box';
 
-export const FieldBox = styled(Box)(({ theme }) => ({
-  borderWidth: '1px',
-  borderStyle: 'solid',
-  display: 'flex',
-  borderColor: theme.palette.divider,
-  borderRadius: 1,
-  flexDirection: 'column'
-}));
+export const FieldBox = ({ dashed, sx, ...boxProps }: BoxProps & { dashed?: boolean }) => (
+  <Box
+    {...boxProps}
+    sx={{
+      borderWidth: '1px',
+      borderStyle: dashed ? 'dashed' : 'solid',
+      display: 'flex',
+      borderColor: (theme) => theme.palette.divider,
+      borderRadius: 1,
+      flexDirection: 'column',
+      ...sx
+    }}
+  />
+);
 
 export default FieldBox;

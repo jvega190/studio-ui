@@ -164,6 +164,9 @@ import { ControlSkeleton } from './common/ControlSkeleton';
 //  - AI to summarise changes for the save comment
 //  - Control guidelines: autoFocus
 //  - API to retrieve inherited props from an item that doesn't yet exist (is being created)
+//  - Docs notes:
+//    - Controls should manage autoFocus; make sure their internal controls reacts to changes in autoFocus or use effect to focus programmatically
+//    - Should test controls in a root form and in a nested form
 //  - Settings:
 //     - Enable tabbing through control menu button
 //     - Permanently hide ToC (though also controlled by the tab bar button)
@@ -174,6 +177,7 @@ import { ControlSkeleton } from './common/ControlSkeleton';
 
 export interface BaseProps extends Partial<UpdateModeProps & RepeatModeProps & CreateModeProps> {
   stackIndex?: number;
+  stackTransitionEnded?: boolean;
   readonly?: boolean;
   /** Whether the form is rendered in a dialog. Causes various layout adjustments. **/
   isDialog?: boolean;
@@ -514,6 +518,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
     update,
     repeat,
     stackIndex,
+    stackTransitionEnded,
     fieldsToRender,
     isDialog = false,
     readonly: readonlyProp = false,
@@ -1173,7 +1178,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
           <Control
             // Only auto-focus on controls that are not readonly.
             // Focus might not work consistently on disabled controls anyway.
-            autoFocus={!readonly && autoFocus}
+            autoFocus={autoFocus && !readonly}
             value={values[fieldId]}
             setValue={valueSettersRef.current[fieldId]}
             field={field}
@@ -1499,12 +1504,16 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
         // scroll position to jump off the page (where the drawer panel is shown at) and looks like it
         // is the background element the one that's moving/animating in a jittery fashion.
         disableAutoFocus={disableStackedFormDrawerAutoFocus}
-        onTransitionExited={() => setDisableStackedFormDrawerAutoFocus(true)}
+        onTransitionExited={() => {
+          setDisableStackedFormDrawerAutoFocus(true);
+        }}
         onTransitionEnd={
           // onTransitionEnd keeps triggering after the Drawer transition has finished on certain interactions (e.g. when hovering buttons)
+          // This callback is also invoked during other transitions other than the Drawer's open transition.
           disableStackedFormDrawerAutoFocus
-            ? () => {
-                setDisableStackedFormDrawerAutoFocus(false);
+            ? (e) => {
+                // Make sure it is the drawer paper that finished transitioning before considering the transition complete.
+                if ((e.target as HTMLElement).getAttribute('data-area-id') !== 'stackedFormDrawerPaper') return;
                 const paper = containerRef.current.querySelector(
                   `[data-area-id="stackedFormDrawer"] .${drawerClasses.paper}`
                 ) as HTMLDivElement;
@@ -1514,6 +1523,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
                 if (!paper.contains(document.activeElement)) {
                   paper.focus();
                 }
+                setDisableStackedFormDrawerAutoFocus(false);
               }
             : undefined
         }
@@ -1527,11 +1537,13 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
             position: 'absolute'
           }
         }}
+        PaperProps={{ 'data-area-id': 'stackedFormDrawerPaper' }}
       >
         {hasStackedForms && (
           <FormsEngine
-            stackIndex={state.formsStackProps.length - 1}
             key={stackedFormKey}
+            stackIndex={state.formsStackProps.length - 1}
+            stackTransitionEnded={!disableStackedFormDrawerAutoFocus}
             {...currentStackedFormProps}
             isDialog={isDialog}
             onClose={handleCloseDrawerForm}
@@ -1572,7 +1584,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
     // transition since the Drawer is already open and there's only one.
     <FormsEngineContext.Provider value={state}>
       <FormsEngineContextApi.Provider value={contextApi}>
-        {parentState ? <Fade in children={bodyFragment} /> : bodyFragment}
+        {parentState ? <Fade in={stackTransitionEnded} mountOnEnter children={bodyFragment} /> : bodyFragment}
       </FormsEngineContextApi.Provider>
     </FormsEngineContext.Provider>
   );
