@@ -84,6 +84,7 @@ import { popDialog, pushDialog, pushNonDialog } from '../../../state/actions/dia
 import FieldBox from '../common/FieldBox';
 import { isTouchDevice, KeyDownEvent, sortableListKeyDownHandler } from '../common/util';
 import SortableListSkeleton from '../common/SortableListSkeleton';
+import { EmptyState } from '../../EmptyState';
 
 const SortableList = lazy(() => import('../common/SortableList'));
 const TouchSortableList = lazy(() => import('../common/TouchSortableList'));
@@ -393,6 +394,8 @@ function NodeSelector(props: NodeSelectorProps) {
             break;
           }
           case 'shared-content': {
+            // TODO: For some reason, in editorial, the home type doesn't have any of the "enable" properties: enableCreateNew, enableBrowseExisting, enableSearchExisting
+            //   Unsure if this is a BP issue or something that comes from legacy which loads of other old client sites could have.
             // Shared content DS properties:
             // - enableBrowseExisting
             // - enableCreateNew
@@ -738,6 +741,17 @@ function NodeSelector(props: NodeSelectorProps) {
           </ListItemIcon>
           <ListItemText children={<FormattedMessage defaultMessage="Create" />} />
         </MenuItem>
+      );
+    }
+
+    if (menuOptions.length === 0) {
+      menuOptions.push(
+        <EmptyState
+          title={<FormattedMessage defaultMessage="No options are available for this control" />}
+          subtitle={
+            <FormattedMessage defaultMessage="Update the content type definition to add options to this control" />
+          }
+        />
       );
     }
 
