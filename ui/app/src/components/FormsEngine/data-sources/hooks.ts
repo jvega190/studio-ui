@@ -27,7 +27,7 @@ export interface KVPLoaderItem {
   items: Array<{ key: string; value: string }>;
 }
 
-export function useKVPLoader(siteId: string, dataSourceIds: string, dataSourceList: DataSource[]): KVPLoaderItem[] {
+export function useKVPLoader(siteId: string, dataSourceIds: string[], dataSourceList: DataSource[]): KVPLoaderItem[] {
   const [optionGroups, setOptionGroups] = useState<KVPLoaderItem[]>();
   useEffect(() => {
     const keyValuePairItemsToLoad = [];

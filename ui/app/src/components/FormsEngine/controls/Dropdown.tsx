@@ -38,7 +38,7 @@ export function Dropdown(props: DropdownProps) {
   const handleChange = (event: SelectChangeEvent) => setValue(event.target.value);
   const optionGroups = useKVPLoader(
     useActiveSiteId(),
-    useMemo(() => field.properties.datasource.value.split(','), [field.properties.datasource?.value]),
+    useMemo(() => (field.properties.datasource.value as string).split(','), [field.properties.datasource?.value]),
     effectRefs.current.contentTypes[contentType.id].dataSources
   );
   if (!optionGroups) {
