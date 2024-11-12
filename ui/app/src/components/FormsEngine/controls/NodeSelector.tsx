@@ -329,7 +329,7 @@ function NodeSelector(props: NodeSelectorProps) {
   const onReorder = () => setSortMode(true);
   const itemsByPath = useItemsByPath();
   const user = useActiveUser();
-  const { item: contextItem, pathInProject, values } = useFormsEngineContext();
+  const { item: contextItem, pathInSite, values } = useFormsEngineContext();
   const api = useFormsEngineContextApi();
   const hasContent = Boolean(value.length);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
@@ -516,7 +516,7 @@ function NodeSelector(props: NodeSelectorProps) {
       processPathMacros({
         path,
         objectId: values.objectId as string,
-        fullParentPath: contextItem?.path ?? pathInProject
+        fullParentPath: contextItem?.path ?? pathInSite
       });
     switch (optionType) {
       case 'browse': {
@@ -747,6 +747,7 @@ function NodeSelector(props: NodeSelectorProps) {
     if (menuOptions.length === 0) {
       menuOptions.push(
         <EmptyState
+          key="emptyState"
           title={<FormattedMessage defaultMessage="No options are available for this control" />}
           subtitle={
             <FormattedMessage defaultMessage="Update the content type definition to add options to this control" />
