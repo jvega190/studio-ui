@@ -16,7 +16,7 @@
 
 import React, { MouseEvent as ReactMouseEvent, useMemo } from 'react';
 import { ControlProps } from '../types';
-import { FormEngineField } from '../common/FormEngineField';
+import { FormsEngineField } from '../common/FormsEngineField';
 import Card from '@mui/material/Card';
 import CardMedia from '@mui/material/CardMedia';
 import Box from '@mui/material/Box';
@@ -115,7 +115,7 @@ export function VideoPicker(props: VideoPickerProps) {
 
   return (
     <>
-      <FormEngineField field={field}>
+      <FormsEngineField field={field}>
         {hasValue ? (
           <Card sx={{ display: 'flex' }}>
             <CardMedia component="video" sx={{ width: '40%' }} image={`${guestBase}${value}`} />
@@ -178,7 +178,7 @@ export function VideoPicker(props: VideoPickerProps) {
             }}
           />
         )}
-      </FormEngineField>
+      </FormsEngineField>
     </>
   );
 }

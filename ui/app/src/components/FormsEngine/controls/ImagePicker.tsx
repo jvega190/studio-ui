@@ -337,68 +337,70 @@ export function ImagePicker(props: ImagePickerProps) {
         </DialogBody>
       </Dialog>
       <FormsEngineField field={field}>
-        {hasValue ? (
-          <Card sx={{ display: 'flex' }}>
-            <CardMedia component="img" sx={{ width: '40%' }} image={`${guestBase}${value}`} alt={value} />
-            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-              <CardContent sx={{ flex: '1 0 auto' }}>
-                <Typography component="div" variant="body1" marginBottom={1}>
-                  {value}
-                </Typography>
-                <Typography variant="body2" component="div" color="textSecondary" marginBottom={1}>
-                  {imageInfo?.contentType}
-                  <br />
-                  {imageInfo?.width} x {imageInfo?.height}
-                  <br />
-                  {imageInfo?.size}Kb
-                </Typography>
-                <Box>
-                  <IconButton
-                    size="small"
-                    ref={addMenuButtonRef}
-                    onClick={() => {
-                      setAddMenuOpen(true);
-                    }}
-                  >
-                    <EditOutlined />
-                  </IconButton>
-                  <IconButton component="a" size="small" onClick={() => onDownload()}>
-                    <DownloadOutlined />
-                  </IconButton>
-                  <IconButton size="small" onClick={handleRemoveImage}>
-                    <DeleteOutlined />
-                  </IconButton>
-                </Box>
-              </CardContent>
-            </Box>
-          </Card>
-        ) : (
-          // TODO: same as NodeSelector and VideoPicker
-          <Box
-            children={menuOptions}
-            sx={{
-              p: 1,
-              gap: 1,
-              py: 0.5,
-              display: 'flex',
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              color: 'primary.main',
-              justifyContent: 'center',
-              [`.${svgIconClasses.root}`]: {
-                color: 'primary.main'
-              },
-              [`.${menuItemClasses.root}`]: {
-                flexDirection: 'column',
+        <FieldBox dashed={!hasValue}>
+          {hasValue ? (
+            <Card sx={{ display: 'flex' }}>
+              <CardMedia component="img" sx={{ width: '40%' }} image={`${guestBase}${value}`} alt={value} />
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                <CardContent sx={{ flex: '1 0 auto' }}>
+                  <Typography component="div" variant="body1" marginBottom={1}>
+                    {value}
+                  </Typography>
+                  <Typography variant="body2" component="div" color="textSecondary" marginBottom={1}>
+                    {imageInfo?.contentType}
+                    <br />
+                    {imageInfo?.width} x {imageInfo?.height}
+                    <br />
+                    {imageInfo?.size}Kb
+                  </Typography>
+                  <Box>
+                    <IconButton
+                      size="small"
+                      ref={addMenuButtonRef}
+                      onClick={() => {
+                        setAddMenuOpen(true);
+                      }}
+                    >
+                      <EditOutlined />
+                    </IconButton>
+                    <IconButton component="a" size="small" onClick={() => onDownload()}>
+                      <DownloadOutlined />
+                    </IconButton>
+                    <IconButton size="small" onClick={handleRemoveImage}>
+                      <DeleteOutlined />
+                    </IconButton>
+                  </Box>
+                </CardContent>
+              </Box>
+            </Card>
+          ) : (
+            // TODO: same as NodeSelector and VideoPicker
+            <Box
+              children={menuOptions}
+              sx={{
+                p: 1,
+                gap: 1,
+                py: 0.5,
+                display: 'flex',
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                color: 'primary.main',
                 justifyContent: 'center',
-                borderRadius: 1
-              },
-              [`.${listItemIconClasses.root}`]: {
-                justifyContent: 'center'
-              }
-            }}
-          />
-        )}
+                [`.${svgIconClasses.root}`]: {
+                  color: 'primary.main'
+                },
+                [`.${menuItemClasses.root}`]: {
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  borderRadius: 1
+                },
+                [`.${listItemIconClasses.root}`]: {
+                  justifyContent: 'center'
+                }
+              }}
+            />
+          )}
+        </FieldBox>
       </FormsEngineField>
     </>
   );
