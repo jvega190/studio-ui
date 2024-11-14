@@ -81,14 +81,20 @@ export function ContentInstanceComponents(props: ContentInstanceComponentsProps)
     const embeddedAIndex = contentA.findIndex((item) => item.craftercms?.id === id);
     const embeddedBIndex = contentB.findIndex((item) => item.craftercms?.id === id);
     return {
-      embeddedA: embeddedAIndex !== -1 && {
-        content: contentA[embeddedAIndex] ?? mockContentInstance,
-        xml: getContentInstanceXmlItemFromIndex(aXml, embeddedAIndex)
-      },
-      embeddedB: embeddedBIndex !== -1 && {
-        content: contentB[embeddedBIndex] ?? mockContentInstance,
-        xml: getContentInstanceXmlItemFromIndex(bXml, embeddedBIndex)
-      }
+      embeddedA:
+        embeddedAIndex !== -1
+          ? {
+              content: contentA[embeddedAIndex] ?? mockContentInstance,
+              xml: getContentInstanceXmlItemFromIndex(aXml, embeddedAIndex)
+            }
+          : null,
+      embeddedB:
+        embeddedBIndex !== -1
+          ? {
+              content: contentB[embeddedBIndex] ?? mockContentInstance,
+              xml: getContentInstanceXmlItemFromIndex(bXml, embeddedBIndex)
+            }
+          : null
     };
   };
 
@@ -128,12 +134,13 @@ export function ContentInstanceComponents(props: ContentInstanceComponentsProps)
   };
 
   const onViewEmbedded = (id: string) => {
-    const { embeddedA } = getEmbeddedVersions(id);
-    const fields = contentTypes[(embeddedA.content as ContentInstance).craftercms.contentTypeId].fields;
+    const { embeddedA, embeddedB } = getEmbeddedVersions(id);
+    const embeddedComponent = embeddedA ?? embeddedB;
+    const fields = contentTypes[(embeddedComponent.content as ContentInstance).craftercms.contentTypeId].fields;
     contextApiRef.current.setViewSlideOutState({
       open: true,
       data: {
-        content: embeddedA.content as ContentInstance,
+        content: embeddedComponent.content as ContentInstance,
         xml: aXml,
         fields
       },
