@@ -101,7 +101,7 @@ export function CompareAssetPanel(props) {
         bContent={b}
         type={assetType}
         renderContent={(content) => (
-          <Box sx={{ height: isVerticalLayout ? 'calc(50% - 9px)' : '100%', width: '50%' }}>
+          <Box sx={{ height: isVerticalLayout ? 'calc(50% - 9px)' : '100%', width: '50%', textAlign: 'center' }}>
             <ViewComponent content={content} {...viewComponentProps} />
           </Box>
         )}
