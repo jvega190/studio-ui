@@ -221,8 +221,7 @@ export function ZoneMenu(props: ZoneMenuProps) {
     const itemModelId = isNodeSelectorItem ? nodeSelectorItemRecord.modelId : modelId;
     const itemFieldId = isNodeSelectorItem ? nodeSelectorItemRecord.fieldId : fieldId;
     const itemIndex = isNodeSelectorItem ? nodeSelectorItemRecord.index : index;
-    const parentModelId = getParentModelId(itemModelId, models, modelHierarchyMap);
-    const path = modelPath;
+    const path = models[itemModelId]?.craftercms.path ?? modelPath;
     return { path, itemModelId, itemFieldId, itemIndex };
   };
 
