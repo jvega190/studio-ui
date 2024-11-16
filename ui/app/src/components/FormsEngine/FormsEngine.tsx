@@ -26,16 +26,15 @@ import React, {
   ComponentType,
   Dispatch as ReactDispatch,
   ElementType,
-  forwardRef,
   lazy,
   LazyExoticComponent,
+  memo,
   MutableRefObject,
   SetStateAction,
   Suspense,
   SyntheticEvent,
   useContext,
   useEffect,
-  useImperativeHandle,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -43,24 +42,33 @@ import React, {
 } from 'react';
 import { ContentTypeField, ContentTypeSection, SandboxItem } from '../../models';
 import {
-  createInitialState,
-  FormsEngineContext,
-  FormsEngineContextApi,
-  FormsEngineContextApiProps,
+  FormRequirementsResponse,
+  FormsEngineAtoms,
   FormsEngineContextProps,
-  FormsEngineSourceMap
+  FormsEngineEditContextProps,
+  FormsEngineFormApiContextProps,
+  FormsEngineFormContextApi,
+  FormsEngineGlobalApiContextProps,
+  FormsEngineItemMetaContextProps,
+  FormsEngineSourceMap,
+  ItemContext,
+  ItemMetaContext,
+  StableFormContext,
+  StableFormContextProps,
+  StableGlobalContext,
+  StableGlobalContextProps
 } from './formsEngineContext';
 import {
   fetchContentXML,
   fetchDescriptorXML,
-  fetchSandboxItem,
+  fetchDetailedItem,
   fetchWorkflowAffectedItems,
   lock,
   unlock
 } from '../../services/content';
-import { fetchSandboxItemComplete } from '../../state/actions/content';
-import { catchError, forkJoin, map, Observable, of, switchMap } from 'rxjs';
-import { createElements, deserialize, fromString, getInnerHtml, newXMLDocument, serialize } from '../../utils/xml';
+import { fetchDetailedItemComplete } from '../../state/actions/content';
+import { catchError, forkJoin, map, Observable, of, Subject, switchMap } from 'rxjs';
+import { deserialize, fromString, getInnerHtml } from '../../utils/xml';
 import LoadingState from '../LoadingState';
 import Paper, { paperClasses } from '@mui/material/Paper';
 import Container from '@mui/material/Container';
@@ -77,7 +85,7 @@ import CalendarTodayRounded from '@mui/icons-material/CalendarTodayRounded';
 import ItemPublishingTargetIcon from '../ItemPublishingTargetIcon';
 import { getItemPublishingTargetText, getItemStateText } from '../ItemDisplay/utils';
 import ItemStateIcon from '../ItemStateIcon';
-import Tabs from '@mui/material/Tabs';
+import Tabs, { TabsProps } from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
@@ -107,6 +115,7 @@ import ContentType from '../../models/ContentType';
 import { SearchBar } from '../SearchBar';
 import validateFieldValue, {
   createCleanValuesObject,
+  FieldValidityState,
   isEmptyValue,
   isFieldRequired,
   retrieveFieldValue,
@@ -120,8 +129,6 @@ import { toColor } from '../../utils/string';
 import { NodeSelectorItem } from './controls/NodeSelector';
 import { RepeatItem } from './controls/Repeat';
 import Chip, { chipClasses } from '@mui/material/Chip';
-import useItemsByPath from '../../hooks/useItemsByPath';
-import { parseDetailedItemToSandboxItem } from '../../utils/content';
 import SecondaryButton from '../SecondaryButton';
 import Fab from '@mui/material/Fab';
 import useDebouncedInput from '../../hooks/useDebouncedInput';
@@ -133,7 +140,6 @@ import { showSystemNotification } from '../../state/actions/system';
 import { Dispatch as ReduxDispatch } from 'redux';
 import { IntlShape } from 'react-intl/src/types';
 import { displayWithPendingChangesConfirm } from '../GlobalDialogManager';
-import ApiResponse from '../../models/ApiResponse';
 import AlertTitle from '@mui/material/AlertTitle';
 import { WorkflowCancellationDialogProps } from '../WorkflowCancellationDialog/utils';
 import Checkbox from '@mui/material/Checkbox';
@@ -147,9 +153,13 @@ import useFetchSandboxItems from '../../hooks/useFetchSandboxItems';
 import { buildFileUrl } from '../../services/plugin';
 import { FormsEngineField } from './common/FormsEngineField';
 import ErrorBoundary from '../ErrorBoundary';
-import useSubject from '../../hooks/useSubject';
 import { debounceTime } from 'rxjs/operators';
 import { ControlSkeleton } from './common/ControlSkeleton';
+import { Atom, atom, createStore, Provider, useAtom, useAtomValue, useStore } from 'jotai';
+import useActiveSiteId from '../../hooks/useActiveSiteId';
+import useSelection from '../../hooks/useSelection';
+import ApiResponse from '../../models/ApiResponse';
+import { PrimitiveAtom } from 'jotai/index';
 
 // TODO:
 //  - PathNav and other ares to open new edit form
@@ -164,6 +174,7 @@ import { ControlSkeleton } from './common/ControlSkeleton';
 //  - AI to summarise changes for the save comment
 //  - Control guidelines: autoFocus
 //  - API to retrieve inherited props from an item that doesn't yet exist (is being created)
+//  - Rollback confirm with diff
 //  - Docs notes:
 //    - Controls should manage autoFocus; make sure their internal controls reacts to changes in autoFocus or use effect to focus programmatically
 //    - Should test controls in a root form and in a nested form
@@ -174,6 +185,8 @@ import { ControlSkeleton } from './common/ControlSkeleton';
 //        - required field indicators to show check instead of asterisk when valid
 //     - Flush control cache?
 //     - Close after saving & options
+
+type JotaiStore = ReturnType<typeof createStore>;
 
 export interface BaseProps extends Partial<UpdateModeProps & RepeatModeProps & CreateModeProps> {
   stackIndex?: number;
@@ -331,31 +344,28 @@ const buildInitialFieldValidityState = (
   );
 };
 
-interface LockResult {
-  locked: boolean;
-  error: ApiResponse;
-  affectedItemsInWorkflow?: SandboxItem[];
-}
-
-const internalLockContentService: (siteId: string, path: string) => Observable<LockResult> = (siteId, path) =>
+const internalLockContentService: (siteId: string, path: string) => Observable<FormsEngineEditContextProps> = (
+  siteId,
+  path
+) =>
   lock(siteId, path).pipe(
-    map(() => ({ locked: true, error: null })),
-    catchError((error) => of({ locked: false, error: error.response?.response })),
+    map(() => ({ locked: true, lockError: null })),
+    catchError((error) => of({ locked: false, lockError: error.response?.response })),
     switchMap((lockResult) =>
       fetchWorkflowAffectedItems(siteId, path).pipe(
         map((affectedItemsInWorkflow) => ({ ...lockResult, affectedItemsInWorkflow })),
-        catchError((error) => of({ ...lockResult, affectedItemsInWorkflow: null, error: error.response?.response }))
+        catchError((error) => of({ ...lockResult, affectedItemsInWorkflow: null, lockError: error.response?.response }))
       )
     )
   );
 
-const internalUnlockContentService: (siteId: string, path: string) => Observable<LockResult> = (
+const internalUnlockContentService: (siteId: string, path: string) => Observable<FormsEngineEditContextProps> = (
   siteId: string,
   path: string
 ) =>
   unlock(siteId, path).pipe(
-    map(() => ({ locked: false, error: null })),
-    catchError((error) => of({ locked: true, error: error.response?.response }))
+    map(() => ({ locked: false, lockError: null })),
+    catchError((error) => of({ locked: true, lockError: error.response?.response }))
   );
 
 const deserializeContentDom = (contentDom: XMLDocument | Element) => {
@@ -391,19 +401,19 @@ const fetchRequirements: (args: {
   modelId: string;
   readonly: boolean;
   contentTypesById: LookupTable<ContentType>;
-}) => Observable<Partial<FormsEngineContextProps>> = ({ siteId, path, modelId, readonly, contentTypesById }) => {
+}) => Observable<FormRequirementsResponse> = ({ siteId, path, modelId, readonly, contentTypesById }) => {
   // Good to start with the lock so that posterior fetch of the item comes with the lock status. If we need
   // to fetch the content type, will need the item first to determine its content type id, but currently relying
   // on a separate load for all content types. Alternatively, we could fetch all types here too if we get a form
   // requirements service.
   return (
     readonly
-      ? of({ locked: false, error: null, affectedItemsInWorkflow: null } as LockResult)
+      ? of({ locked: false, lockError: null, affectedItemsInWorkflow: null } as FormsEngineEditContextProps)
       : internalLockContentService(siteId, path)
   ).pipe(
     switchMap((lockResult) =>
       forkJoin([
-        fetchSandboxItem(siteId, path),
+        fetchDetailedItem(siteId, path),
         of(lockResult),
         fetchContentXML(siteId, path),
         fetchDescriptorXML(siteId, path, { flatten: false })
@@ -427,35 +437,22 @@ const fetchRequirements: (args: {
         contentType = contentTypesById[getInnerHtml(contentDom.querySelector(':scope > content-type'))];
       }
       const contentObject = deserializeContentDom(contentDom);
-      const values = createCleanValuesObject(contentType.fields, contentObject, contentTypesById);
+      // const values = createCleanValuesObject(contentType.fields, contentObject, contentTypesById);
       const sourceMap = createSourceMap(descriptorXml);
-      return {
+      const props: FormRequirementsResponse = {
         item,
-        values,
+        contentObject,
         sourceMap,
-        originalValuesJson: JSON.stringify(values),
-        contentDom,
         locked: lockResult.locked,
-        lockError: lockResult.error,
+        lockError: lockResult.lockError,
         affectedItemsInWorkflow: lockResult.affectedItemsInWorkflow,
         // If opening as readonly, lock result is of no consequence. If opened for edit, will set to readonly
         // if there was an error locking the content (the item is not locked).
-        readonly: readonly || !lockResult.locked,
-        contentXml,
-        contentTypeXml: null,
+        // readonly: readonly || !lockResult.locked,
         contentType,
-        pathInProject: createPathInProject(path),
-        fieldValidityState: buildInitialFieldValidityState(contentType.fields, values),
-        requirementsFetched: true,
-        sectionExpandedState: buildSectionExpandedState(contentType.sections)
-        // formsEngineExtensions: null
-        // formsStack: [
-        //   !modelId && {
-        //     path: '/site/website/index.xml',
-        //     modelId: '310b0c87-c3ca-4da0-4aa2-7002a318d7ce'
-        //   }
-        // ].filter(Boolean)
+        pathInSite: createPathInProject(path)
       };
+      return props;
     })
   );
 };
@@ -511,17 +508,478 @@ const addLazyControl = (url: string) => {
   );
 };
 
-export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function (props, ref) {
+const getTargetHeight = (isDialog: boolean, isFullScreen: boolean, theme: Theme) =>
+  isDialog ? `calc(100vh - ${isFullScreen ? 0 : theme.spacing(4)})` : '100%';
+
+const renderFieldControl = (
+  field: ContentTypeField,
+  atoms: FormsEngineAtoms['valueByFieldId'],
+  autoFocus: boolean,
+  readonly: boolean,
+  contentType: ContentType
+) => {
+  const fieldId = field.id;
+  return (
+    <ControlWrapper
+      key={fieldId}
+      field={field}
+      atom={atoms[fieldId]}
+      readonly={readonly}
+      autoFocus={autoFocus}
+      contentType={contentType}
+    />
+  );
+};
+
+const findPathInProps = (stackProps: FormsEngineProps[]): string | undefined => {
+  // stackProps.find((props) => Boolean(props.update?.path))?.update.path;
+  for (let path: string, i = stackProps.length - 1; i--; i > 0) {
+    path = stackProps[i].update?.path;
+    if (path) return path;
+  }
+  return;
+};
+
+const getFieldAtomValue = (atom: Atom<unknown>, store: JotaiStore) => store.get(atom);
+
+// region Atoms
+// endregion
+
+const stackFormCountAtom = atom(0);
+const versionCommentAtom = atom('');
+const createValueAtoms: (
+  field: ContentTypeField,
+  initialValue: unknown,
+  changedFieldIds: Set<string>,
+  fieldUpdates$: Subject<string>
+) => [PrimitiveAtom<unknown>, Atom<FieldValidityState>] = (field, initialValue, changedFieldIds, fieldUpdates$) => {
+  const valueAtom = atom(initialValue);
+  return [
+    valueAtom,
+    atom((get) => {
+      fieldUpdates$.next(field.id);
+      changedFieldIds.add(field.id);
+      return validateFieldValue(field, get(valueAtom));
+    })
+  ];
+};
+const createReadonlyAtom = (lockedResultAtom: Atom<FormsEngineEditContextProps>) =>
+  atom((get) => !get(lockedResultAtom).locked);
+const extractValueAtoms: (store: JotaiStore, valueAtoms: LookupTable<Atom<unknown>>) => LookupTable<unknown> = (
+  store,
+  valueAtoms
+) =>
+  Object.entries(valueAtoms).reduce((values, [fieldId, valueAtom]) => {
+    values[fieldId] = store.get(valueAtom);
+    return values;
+  }, {});
+
+// const PrepperFwdRef = forwardRef<HTMLDivElement, FormsEngineProps>(Prepper);
+
+// const FormFwdRef = forwardRef<HTMLDivElement, FormsEngineProps>(Form);
+
+// const RootFwdRef = forwardRef<HTMLDivElement, FormsEngineProps>(Root);
+
+// console.clear();
+
+function Root(props: FormsEngineProps) {
+  // TODO: Use stable memo?
+  const store = useMemo(() => createStore(), []);
+  const stableGlobalContextRef = useRef<StableGlobalContextProps>({ props: [], atoms: [], api: null, state: {} });
+  stableGlobalContextRef.current.api = useMemo<FormsEngineGlobalApiContextProps>(() => {
+    const setCount = (factor: 1 | -1) => {
+      const currentCount = store.get(stackFormCountAtom);
+      store.set(stackFormCountAtom, currentCount + factor);
+    };
+    const api: FormsEngineGlobalApiContextProps = {
+      pushForm(formProps) {
+        stableGlobalContextRef.current.props.push(formProps);
+        stableGlobalContextRef.current.atoms.push(null);
+        setCount(1);
+      },
+      popForm() {
+        stableGlobalContextRef.current.props.pop();
+        stableGlobalContextRef.current.atoms.pop();
+        setCount(-1);
+      },
+      updateProps(stackIndex, formProps) {
+        stableGlobalContextRef.current.props[stackIndex] = formProps;
+      },
+      setStateCache(stackIndex, state) {
+        stableGlobalContextRef.current.state[stackIndex] = state;
+      },
+      deleteStateCache(stackIndex) {
+        delete stableGlobalContextRef.current.state[stackIndex];
+      }
+    };
+    return api;
+  }, [store]);
+  return (
+    <StableGlobalContext.Provider value={stableGlobalContextRef.current}>
+      <Provider store={store}>
+        <Prepper {...props} />
+      </Provider>
+    </StableGlobalContext.Provider>
+  );
+}
+
+function Prepper(props: FormsEngineProps) {
+  const { create, update, repeat, fieldsToRender, readonly: readonlyProp, stackIndex = 0, isDialog } = props;
+  const siteId = useActiveSiteId();
+  const dispatch = useDispatch();
+  const contentTypesById = useContentTypes();
+  const effectRefs = useUpdateRefs({ contentTypesById });
+  const [contentTypesLoaded, setContentTypesLoaded] = useState(false);
+  const [itemMeta, setItemMeta] = useState<FormsEngineItemMetaContextProps>();
+  const [ready, setReady] = useState(false);
+  const store = useStore();
+  const theme = useTheme();
+  const { isFullScreen = false } = useEnhancedDialogContext() ?? {};
+  const { props: formsStackProps, atoms: formStackAtoms, api } = useContext(StableGlobalContext);
+  const parentItemMetaContext = useContext(ItemMetaContext);
+
+  const stableFormContextRef = useRef<StableFormContextProps>();
+  if (stableFormContextRef.current == null) {
+    stableFormContextRef.current = {
+      originalValuesJson: null,
+      changedFieldIds: new Set<string>(),
+      atoms: null,
+      fieldUpdates$: new Subject<string>()
+    };
+  }
+
+  const contextApi = useMemo<FormsEngineFormApiContextProps>(() => {
+    const getInitialValues = () => JSON.parse(stableFormContextRef.current.originalValuesJson);
+    const rollbackAtom = (atom: PrimitiveAtom<unknown>, value: unknown) => store.set(atom, value);
+    const internalRollbackValue = (initialValues: LookupTable<unknown>, fieldId: string) => {
+      const value = initialValues[fieldId];
+      const atom = stableFormContextRef.current.atoms.valueByFieldId[fieldId];
+      rollbackAtom(atom, value);
+    };
+    const api: FormsEngineFormApiContextProps = {
+      rollbackValue(fieldId: string) {
+        internalRollbackValue(getInitialValues(), fieldId);
+      },
+      rollbackChanges() {
+        const initialValues = getInitialValues();
+        Object.keys(initialValues).forEach((fieldId) => {
+          internalRollbackValue(initialValues, fieldId);
+        });
+      }
+    };
+    return api;
+  }, [store]);
+
+  const liveUpdatedItem = useSelection((state) =>
+    // If we're in create mode, there's no item yet. If updating, we can get the path from props or parent props in the case of repeat mode.
+    create ? undefined : state.content.itemsByPath[(props ?? formsStackProps[stackIndex - 1])?.update?.path]
+  );
+
+  api.updateProps(stackIndex, props);
+
+  useEffect(() => {
+    contentTypesById && setContentTypesLoaded(true);
+  }, [contentTypesById]);
+
+  // Fetch/prepare requirements
+  useEffect(() => {
+    // TODO:
+    //  - Content type not found
+    //  - Item/Content not found
+    //  - Invalid params (e.g. create mode without a content type id)
+    // TODO: don't want to refetch unnecessarily (e.g. content types by id ref updated), but currently this is
+    //   excluding refetching if siteId or other props change.
+    // TODO: Consider backend that provides all form requirements: form def xml, context xml, sandbox/detailed item, affected workflow, lock(?)
+    if (contentTypesLoaded) {
+      const isChildForm = stackIndex > 0;
+      // In the form stack, the present form being opened would be in the last position [length-1], the parent form
+      // state would be on [length-2] if it is nested (e.g. Root => Component(L1) => Repeat(L2)|Component(L2)). Otherwise,
+      // the parent should be the root.
+      const parentAtoms = isChildForm ? formStackAtoms[stackIndex - 1] : null;
+      const {
+        id: parentId,
+        contentType: parentContentType,
+        pathInSite: parentPathInSite,
+        path: parentPath
+      } = parentItemMetaContext ?? {};
+      if (
+        // A repeat group is being opened as a stacked form.
+        isChildForm &&
+        repeat?.fieldId
+      ) {
+        const contentType: ContentType = effectRefs.current.contentTypesById[parentContentType.id];
+        const parentLockResult = store.get(parentAtoms.lockResult);
+        const isParentLocked = parentLockResult.locked;
+        const lockResultAtom = atom<FormsEngineEditContextProps>({
+          locked: isParentLocked,
+          lockError: parentLockResult.lockError,
+          affectedItemsInWorkflow: parentLockResult.affectedItemsInWorkflow
+        });
+        const readonlyAtom = createReadonlyAtom(lockResultAtom);
+        const atoms: FormsEngineAtoms = {
+          isSubmitting: atom(false),
+          hasPendingChanges: atom(false),
+          valueByFieldId: {},
+          validationByFieldId: {},
+          lockResult: lockResultAtom,
+          readonly: readonlyAtom
+        };
+        const atomValueCreator: Parameters<typeof createCleanValuesObject>[3] = (fieldId, value) => {
+          const field = contentType.fields[repeat.fieldId].fields[fieldId];
+          const [valueAtom, validityAtom] = createValueAtoms(
+            field,
+            value,
+            stableFormContextRef.current.changedFieldIds,
+            stableFormContextRef.current.fieldUpdates$
+          );
+          atoms.valueByFieldId[fieldId] = valueAtom;
+          atoms.validationByFieldId[fieldId] = validityAtom;
+        };
+        const values =
+          repeat.values ??
+          createCleanValuesObject(fieldsToRender, {}, effectRefs.current.contentTypesById, atomValueCreator);
+
+        // If repeat.values was provided, `createCleanValuesObject` didn't run; hence, atomValueCreator needs to be run manually.
+        repeat.values && Object.keys(values).forEach((fieldId) => atomValueCreator(fieldId, values[fieldId]));
+
+        formStackAtoms[stackIndex] = atoms;
+        stableFormContextRef.current.atoms = atoms;
+        stableFormContextRef.current.originalValuesJson = JSON.stringify(values);
+        setItemMeta({
+          id: parentId,
+          path: parentPath,
+          sourceMap: null,
+          pathInSite: parentPathInSite,
+          contentType: parentContentType
+        });
+        setReady(true);
+      } else if (
+        // An embedded component is being opened as a stacked form.
+        isChildForm &&
+        update?.modelId
+      ) {
+        const contentType: ContentType =
+          effectRefs.current.contentTypesById[update.values[XmlKeys.contentTypeId] as string];
+        const parentLockResult = store.get(parentAtoms.lockResult);
+        const isParentLocked = parentLockResult.locked;
+        const isParentReadonly = store.get(parentAtoms.readonly);
+        const readonly = readonlyProp ?? isParentReadonly;
+        const atoms: FormsEngineAtoms = {
+          isSubmitting: atom(false),
+          hasPendingChanges: atom(false),
+          valueByFieldId: {},
+          validationByFieldId: {},
+          lockResult: null,
+          readonly: null
+        };
+        const values = update.values;
+        Object.entries(values).forEach(([fieldId, value]) => {
+          const [valueAtom, validityAtom] = createValueAtoms(
+            contentType.fields[fieldId],
+            value,
+            stableFormContextRef.current.changedFieldIds,
+            stableFormContextRef.current.fieldUpdates$
+          );
+          atoms.valueByFieldId[fieldId] = valueAtom;
+          atoms.validationByFieldId[fieldId] = validityAtom;
+        });
+        const setStateValues = (locked: boolean, lockError: ApiResponse, affectedItemsInWorkflow: SandboxItem[]) => {
+          const lockResultAtom = atom<FormsEngineEditContextProps>({
+            locked,
+            lockError,
+            affectedItemsInWorkflow
+          });
+          atoms.lockResult = lockResultAtom;
+          atoms.readonly = createReadonlyAtom(lockResultAtom);
+          formStackAtoms[stackIndex] = atoms;
+          stableFormContextRef.current.atoms = atoms;
+          stableFormContextRef.current.originalValuesJson = JSON.stringify(values);
+          setItemMeta({
+            id: values[XmlKeys.modelId] as string,
+            path: update.path,
+            sourceMap: null,
+            pathInSite: parentPathInSite,
+            contentType: contentType
+          });
+        };
+
+        if (readonly === isParentReadonly) {
+          setStateValues(isParentLocked, parentLockResult.lockError, parentLockResult.affectedItemsInWorkflow);
+          setReady(true);
+        } else {
+          const sub = internalLockContentService(siteId, update.path).subscribe((result) => {
+            setStateValues(result.locked, result.lockError, result.affectedItemsInWorkflow);
+            setReady(true);
+          });
+          return () => sub.unsubscribe();
+        }
+      } else if (
+        // Create mode (stacked or not)
+        create
+      ) {
+        // Create mode
+        const dateIsoString = new Date().toISOString();
+        const newModelId = uuid();
+        const contentType = effectRefs.current.contentTypesById[create.contentTypeId];
+        const lockResultAtom = atom<FormsEngineEditContextProps>({
+          locked: false,
+          lockError: null,
+          affectedItemsInWorkflow: null
+        });
+        const atoms: FormsEngineAtoms = {
+          isSubmitting: atom(false),
+          hasPendingChanges: atom(false),
+          valueByFieldId: {},
+          validationByFieldId: {},
+          lockResult: lockResultAtom,
+          readonly: createReadonlyAtom(lockResultAtom)
+        };
+        const values = createCleanValuesObject(
+          contentType.fields,
+          {
+            objectId: newModelId,
+            [XmlKeys.contentTypeId]: contentType.id,
+            'display-template': contentType.displayTemplate,
+            'no-template-required': Boolean(contentType.displayTemplate ? 'false' : 'true'),
+            'merge-strategy': 'inherit-levels',
+            createdDate: dateIsoString,
+            createdDate_dt: dateIsoString,
+            lastModifiedDate: dateIsoString,
+            lastModifiedDate_dt: dateIsoString
+          },
+          contentTypesById,
+          (fieldId, value) => {
+            const [valueAtom, validityAtom] = createValueAtoms(
+              contentType.fields[fieldId],
+              value,
+              stableFormContextRef.current.changedFieldIds,
+              stableFormContextRef.current.fieldUpdates$
+            );
+            atoms.valueByFieldId[fieldId] = valueAtom;
+            atoms.validationByFieldId[fieldId] = validityAtom;
+          }
+        );
+
+        formStackAtoms[stackIndex] = atoms;
+        stableFormContextRef.current.atoms = atoms;
+        stableFormContextRef.current.originalValuesJson = JSON.stringify(values);
+        setItemMeta({
+          id: newModelId,
+          // TODO: Should/can we somehow deduce the target path?
+          path: null,
+          // TODO: Sourcemap? How can we determine what would be inherited by this content? New API?
+          sourceMap: null,
+          pathInSite: create.path,
+          contentType
+        });
+        setReady(true);
+      } /* if (isUpdateMode) */ else {
+        const subscription = fetchRequirements({
+          siteId,
+          path: update.path,
+          modelId: update.modelId,
+          readonly: readonlyProp,
+          contentTypesById
+        }).subscribe((requirements) => {
+          dispatch(fetchDetailedItemComplete(requirements.item));
+          const lockResultAtom = atom<FormsEngineEditContextProps>({
+            locked: requirements.locked,
+            lockError: requirements.lockError,
+            affectedItemsInWorkflow: requirements.affectedItemsInWorkflow
+          });
+          const atoms: FormsEngineAtoms = {
+            isSubmitting: atom(false),
+            hasPendingChanges: atom(false),
+            valueByFieldId: {},
+            validationByFieldId: {},
+            lockResult: lockResultAtom,
+            readonly: createReadonlyAtom(lockResultAtom)
+          };
+          const values = createCleanValuesObject(
+            requirements.contentType.fields,
+            requirements.contentObject,
+            contentTypesById,
+            (fieldId, value) => {
+              const [valueAtom, validityAtom] = createValueAtoms(
+                requirements.contentType.fields[fieldId],
+                value,
+                stableFormContextRef.current.changedFieldIds,
+                stableFormContextRef.current.fieldUpdates$
+              );
+              atoms.valueByFieldId[fieldId] = valueAtom;
+              atoms.validationByFieldId[fieldId] = validityAtom;
+            }
+          );
+          // const values =
+          formStackAtoms[stackIndex] = atoms;
+          stableFormContextRef.current.atoms = atoms;
+          stableFormContextRef.current.originalValuesJson = JSON.stringify(values);
+          setItemMeta({
+            id: values[XmlKeys.modelId] as string,
+            path: requirements.item.path,
+            // TODO: Sourcemap? How can we determine what would be inherited by this content? New API?
+            sourceMap: requirements.sourceMap,
+            pathInSite: requirements.pathInSite,
+            contentType: requirements.contentType
+          });
+          setReady(true);
+        });
+        return () => subscription.unsubscribe();
+      }
+    }
+  }, [
+    contentTypesById,
+    contentTypesLoaded,
+    create,
+    dispatch,
+    effectRefs,
+    fieldsToRender,
+    formStackAtoms,
+    parentItemMetaContext,
+    readonlyProp,
+    repeat?.fieldId,
+    repeat?.values,
+    siteId,
+    stackIndex,
+    store,
+    update?.modelId,
+    update?.path,
+    update?.values
+  ]);
+
+  if (ready) {
+    return (
+      <FormsEngineFormContextApi.Provider value={contextApi}>
+        <StableFormContext.Provider value={stableFormContextRef.current}>
+          <ItemContext.Provider value={liveUpdatedItem}>
+            <ItemMetaContext.Provider value={itemMeta}>
+              <Form {...props} />
+            </ItemMetaContext.Provider>
+          </ItemContext.Provider>
+        </StableFormContext.Provider>
+      </FormsEngineFormContextApi.Provider>
+    );
+  } else {
+    return (
+      <LoadingState
+        sx={{ height: getTargetHeight(isDialog, isFullScreen, theme) }}
+        title={<FormattedMessage defaultMessage="Please wait" />}
+        subtitle={<FormattedMessage defaultMessage="Gathering content information" />}
+      />
+    );
+  }
+}
+
+function Form(props: FormsEngineProps) {
   // region const {...} = props
   const {
     create,
     update,
     repeat,
-    stackIndex,
+    stackIndex = 0,
     stackTransitionEnded,
     fieldsToRender,
     isDialog = false,
-    readonly: readonlyProp = false,
     onSave,
     onClose: onCloseProp
   } = props;
@@ -556,134 +1014,51 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
   const [enablingEditInProgress, setEnablingEditInProgress] = useState(false);
   const [acceptedWorkflowCancellation, setAcceptedWorkflowCancellation] = useState(false);
   const [collapsedToC, setCollapsedToC] = useState(false); // Controls the Table of Contents being collapsed under a drawer or visible
-  const parentState = useContext(FormsEngineContext);
-  const parentContextApi = useContext(FormsEngineContextApi);
-  const effectRefs = useUpdateRefs({ contentTypesById, parentState, stackIndex, fieldsToRender });
-  const valueSettersRef = useRef<Record<string, (value: unknown) => void>>({});
-  const fieldUpdates$ = useSubject<string>();
+  const store = useStore();
+  const stableGlobalContext = useContext(StableGlobalContext);
+  const stableFormContext = useContext(StableFormContext);
+  const contextApi = stableGlobalContext.api;
+  const { props: formsStackProps, atoms: formStackAtoms } = stableGlobalContext;
+  const { changedFieldIds } = stableFormContext;
+  const item = useContext(ItemContext);
+  const { id, contentType, sourceMap } = useContext(ItemMetaContext);
+  const [isSubmitting, setIsSubmitting] = useAtom(formStackAtoms[stackIndex].isSubmitting);
+  const [hasPendingChanges, setHasPendingChanges] = useAtom(formStackAtoms[stackIndex].hasPendingChanges);
+  const [readonly, setReadonly] = useAtom(formStackAtoms[stackIndex].readonly);
+  const [lockStatus, setLockStatus] = useAtom(formStackAtoms[stackIndex].lockResult);
+  const [sectionExpandedState, setSectionExpandedState] = useState<LookupTable<boolean>>(
+    () => stableGlobalContext.state[stackIndex]?.sectionExpandedState ?? buildSectionExpandedState(contentType.sections)
+  );
+  const [activeTab, setActiveTab] = useState<number>(0);
+  const [versionComment, setVersionComment] = useAtom(versionCommentAtom);
+  const stackFormCount = useAtomValue(stackFormCountAtom);
+  const isStackedForm = stackIndex > 0;
+  const hasStackedForms = !isStackedForm && stackFormCount > 0;
+  const effectRefs = useUpdateRefs({ store, contentTypesById, stackIndex, fieldsToRender, sectionExpandedState });
 
-  // region Context
-  // eslint-disable-next-line prefer-const -- state is reassigned and don't want to split the declaration.
-  let [state, setState] = useState<FormsEngineContextProps>(() => {
-    // Stacked forms state come from the parent context formsStackState. `state` is reassigned below.
-    return parentState?.formsStackState ? null : createInitialState({ readonly: readonlyProp });
-  });
-  if (parentState) state = parentState.formsStackState[stackIndex];
-  const stateRef = useUpdateRefs(state);
-  const contextApi = useMemo<FormsEngineContextApiProps>(() => {
-    const hasParentContext = Boolean(parentContextApi);
-    const update = <K extends keyof FormsEngineContextProps>(
-      newStateOrKey: K | Partial<FormsEngineContextProps>,
-      newState?: FormsEngineContextProps[K]
-    ) => {
-      let nextState: FormsEngineContextProps;
-      if (typeof newStateOrKey === 'string') {
-        nextState = { ...stateRef.current, [newStateOrKey]: newState };
-      } else {
-        nextState = { ...stateRef.current, ...newStateOrKey };
-      }
-      if (hasParentContext) {
-        parentContextApi.updateStackedFormState(effectRefs.current.stackIndex, nextState);
-      } else {
-        setState(nextState);
-      }
-    };
-    const api: FormsEngineContextApiProps = {
-      update,
-      pushForm(formProps: FormsEngineProps) {
-        if (hasParentContext) {
-          update('previousScrollTopPosition', getScrollContainer(containerRef.current).scrollTop);
-          parentContextApi.pushForm(formProps);
-        } else {
-          const newState: FormsEngineContextProps = createInitialState({ readonly: formProps.readonly ?? false });
-          update({
-            formsStackProps: [...stateRef.current.formsStackProps, formProps],
-            formsStackState: [...stateRef.current.formsStackState, newState]
-          });
-        }
-      },
-      popForm() {
-        if (hasParentContext) {
-          parentContextApi.popForm();
-        } else {
-          update({
-            formsStackProps: stateRef.current.formsStackProps.slice(0, -1),
-            formsStackState: stateRef.current.formsStackState.slice(0, -1)
-          });
-        }
-      },
-      updateValue(fieldId, value) {
-        stateRef.current.changedFieldIds.add(fieldId);
-        fieldUpdates$.next(fieldId);
-        update({
-          hasPendingChanges: true,
-          values: { ...stateRef.current.values, [fieldId]: value },
-          fieldValidityState: stateRef.current.contentType.fields[fieldId]
-            ? {
-                ...stateRef.current.fieldValidityState,
-                [fieldId]: {
-                  messages: null,
-                  isValid: validateFieldValue(stateRef.current.contentType.fields[fieldId], value)
-                }
-              }
-            : stateRef.current.fieldValidityState
+  // Restore previous scroll position if provided.
+  const previousScrollTopPosition = stableGlobalContext.state[stackIndex]?.previousScrollTopPosition;
+  useLayoutEffect(() => {
+    // Only a single stacked form is rendered at a time, so the scroll position of stacked forms is stored before opening a new one for later restoration here.
+    if (containerRef.current != null && previousScrollTopPosition != null) {
+      // Restore the previous scroll position
+      const container: HTMLElement = getScrollContainer(containerRef.current);
+      container.scrollTop = previousScrollTopPosition;
+    }
+    // Once mounted back, clean the state cache. Assumes everything should have grabbed the cached values by now.
+    contextApi.deleteStateCache(stackIndex);
+    return () => {
+      // Getting the count directly from the store provides the latest value. React may not have been updated `stackFormCount` yet.
+      const currentCount = effectRefs.current.store.get(stackFormCountAtom);
+      // If the count is greater than the stackIndex, a new form is being opened, so store the scroll position before dismounting.
+      if (currentCount > stackIndex) {
+        contextApi.setStateCache(stackIndex, {
+          previousScrollTopPosition: getScrollContainer(containerRef.current).scrollTop,
+          sectionExpandedState: effectRefs.current.sectionExpandedState
         });
-      },
-      rollbackValue(fieldId) {
-        const originalValues = JSON.parse(stateRef.current.originalValuesJson);
-        const value = originalValues[fieldId];
-        stateRef.current.changedFieldIds.delete(fieldId);
-        fieldUpdates$.next(fieldId);
-        update({
-          hasPendingChanges: stateRef.current.changedFieldIds.size > 0,
-          values: { ...stateRef.current.values, [fieldId]: value },
-          fieldValidityState: stateRef.current.contentType.fields[fieldId]
-            ? {
-                ...stateRef.current.fieldValidityState,
-                [fieldId]: {
-                  messages: null,
-                  isValid: validateFieldValue(stateRef.current.contentType.fields[fieldId], value)
-                }
-              }
-            : stateRef.current.fieldValidityState
-        });
-      },
-      handleTabChange(event, newValue) {
-        update('activeTab', newValue);
-      },
-      handleToggleSectionAccordion(event, expanded) {
-        api.setAccordionExpandedState(event.currentTarget.getAttribute('data-section-id'), expanded);
-      },
-      handleViewFieldHelpText(event, field) {
-        event.preventDefault();
-        const key = field.id;
-        update('fieldHelpExpandedState', {
-          ...stateRef.current.fieldHelpExpandedState,
-          [key]: !stateRef.current.fieldHelpExpandedState[key]
-        });
-      },
-      setAccordionExpandedState(sectionId, expanded) {
-        update('sectionExpandedState', {
-          ...stateRef.current.sectionExpandedState,
-          [sectionId]: expanded
-        });
-      },
-      updateStackedFormState(stackIndex, childFormState) {
-        // Nothing depends on `formsStackState` itself to re-render so not treating as immutable
-        // for efficiency and speed (avoid `concat` & `slice`).
-        stateRef.current.formsStackState[stackIndex] = childFormState;
-        update('formsStackState', stateRef.current.formsStackState);
       }
     };
-    return api;
-  }, [parentContextApi, stateRef, effectRefs, fieldUpdates$]);
-  // endregion
-
-  const requirementsFetched = state.requirementsFetched;
-  const hasStackedForms = state.formsStackProps.length > 0;
-  const liveUpdatedItem = useItemsByPath()[update?.path ?? parentState?.item.path];
-
-  useImperativeHandle(ref, () => containerRef.current);
+  }, [contextApi, effectRefs, previousScrollTopPosition, stackIndex]);
 
   // Version comment generator
   useEffect(() => {
@@ -693,18 +1068,17 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
         ? `Updated ${fieldsChanged.slice(0, -1).join(', ')} and ${fieldsChanged[fieldsChanged.length - 1]}`
         : `Updated ${fieldsChanged[fieldsChanged.length - 1]}`;
     };
-    const sub = fieldUpdates$.pipe(debounceTime(500)).subscribe(() => {
-      const state = stateRef.current;
-      const fieldsToRender = state.contentType.fields;
+    const sub = stableFormContext.fieldUpdates$.pipe(debounceTime(500)).subscribe(() => {
+      const fieldsToRender = contentType.fields;
       if (effectRefs.current.fieldsToRender) {
         effectRefs.current.fieldsToRender.forEach((field) => {
           fieldsToRender[field.id] = field;
         });
       }
-      const fieldsChanged = Array.from(state.changedFieldIds).flatMap(
+      const fieldsChanged = Array.from(changedFieldIds).flatMap(
         (f) => fieldsToRender[f === 'folder-name' ? 'file-name' : f]?.name ?? []
       );
-      const currentMessage = state.versionComment.trim();
+      const currentMessage = store.get(versionCommentAtom).trim();
       const newMessage = produceMessage(fieldsChanged);
       if (
         // If message is blank, no point in checking if the user has altered the message.
@@ -719,166 +1093,20 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
         // Do not set a new message
         return;
       }
-      contextApi.update('versionComment', newMessage);
+      store.set(versionCommentAtom, newMessage);
     });
     return () => {
       sub.unsubscribe();
     };
-  }, [contextApi, effectRefs, fieldUpdates$, stateRef]);
+  }, [changedFieldIds, contentType.fields, effectRefs, stableFormContext.fieldUpdates$, store]);
 
-  // Fetch/prepare requirements
-  useEffect(() => {
-    // TODO:
-    //  - Content type not found
-    //  - Item/Content not found
-    //  - Invalid params (e.g. create mode without a content type id)
-    // TODO: don't want to refetch unnecessarily (e.g. content types by id ref updated), but currently this is
-    //   excluding refetching if siteId or other props change.
-    // TODO: Consider backend that provides all form requirements: form def xml, context xml, sandbox/detailed item, affected workflow, lock(?)
-    if (!requirementsFetched && contentTypesById) {
-      let parentState = effectRefs.current.parentState;
-      const getCurrentFormParentState = () =>
-        // In the form stack, the present form being opened would be in the last position [length-1], the parent form
-        // state would be on [length-2] if it is nested (e.g. Root => Component(L1) => Repeat(L2)|Component(L2)). Otherwise,
-        // the parent should be the root.
-        (parentState = parentState.formsStackState[parentState.formsStackState.length - 2] ?? parentState);
-      if (
-        // A repeat group is being opened as a stacked form.
-        parentState &&
-        repeat?.fieldId
-      ) {
-        parentState = getCurrentFormParentState();
-        const newState: Partial<FormsEngineContextProps> = {};
-        newState.item = parentState.item;
-        newState.locked = parentState.locked;
-        // newState.contentDom = parentState.contentDom.querySelector(`:scope > ${repeat.fieldId}`);
-        // newState.contentXml = newState.contentDom.outerHTML;
-        newState.contentType = parentState.contentType;
-        newState.pathInProject = parentState.pathInProject;
-        newState.values =
-          repeat.values ?? createCleanValuesObject(fieldsToRender, {}, effectRefs.current.contentTypesById);
-        newState.originalValuesJson = JSON.stringify(newState.values);
-        newState.fieldValidityState = buildInitialFieldValidityState(fieldsToRender, newState.values);
-        newState.readonly = parentState.readonly;
-        newState.requirementsFetched = true;
-        contextApi.update(newState);
-      } else if (
-        // An embedded component is being opened as a stacked form.
-        parentState &&
-        update?.modelId
-      ) {
-        parentState = getCurrentFormParentState();
-        const newState: Partial<FormsEngineContextProps> = {};
-        newState.item = parentState.item;
-        newState.locked = parentState.locked;
-        // newState.contentDom = parentState.contentDom.querySelector(`[id="${update.modelId}"]`);
-        // newState.contentXml = newState.contentDom.outerHTML;
-        // newState.contentType =
-        //   effectRefs.current.contentTypesById[getInnerHtml(newState.contentDom.querySelector(':scope > content-type'))];
-        newState.contentType = effectRefs.current.contentTypesById[update.values[XmlKeys.contentTypeId] as string];
-        newState.pathInProject = parentState.pathInProject;
-        newState.values = update.values;
-        newState.originalValuesJson = JSON.stringify(update.values);
-        newState.fieldValidityState = buildInitialFieldValidityState(newState.contentType.fields, newState.values);
-        newState.readonly = readonlyProp ?? parentState.readonly;
-        newState.sectionExpandedState = buildSectionExpandedState(newState.contentType.sections);
-        newState.requirementsFetched = true;
-        if (newState.readonly === parentState.readonly) {
-          contextApi.update(newState);
-        } else {
-          const sub = internalLockContentService(siteId, newState.item.path).subscribe((result) => {
-            newState.locked = result.locked;
-            newState.lockError = result.error;
-            newState.readonly = !result.locked;
-            newState.affectedItemsInWorkflow = result.affectedItemsInWorkflow;
-            contextApi.update(newState);
-          });
-          return () => sub.unsubscribe();
-        }
-      } else if (
-        // Create mode (stacked or not)
-        create
-      ) {
-        // Create mode
-        const dateIsoString = new Date().toISOString();
-        const newModelId = uuid();
-        const contentType = contentTypesById[create.contentTypeId];
-        const contentDom = newXMLDocument(contentType.type);
-        const values = createCleanValuesObject(
-          contentType.fields,
-          {
-            objectId: newModelId,
-            [XmlKeys.contentTypeId]: contentType.id,
-            'display-template': contentType.displayTemplate,
-            'no-template-required': Boolean(contentType.displayTemplate ? 'false' : 'true'),
-            'merge-strategy': 'inherit-levels',
-            createdDate: dateIsoString,
-            createdDate_dt: dateIsoString,
-            lastModifiedDate: dateIsoString,
-            lastModifiedDate_dt: dateIsoString
-          },
-          contentTypesById
-        );
-        createElements(contentDom.documentElement, values);
-        const contentXml = serialize(contentDom);
-        // TODO: Sourcemap? How can we determine what would be inherited by this content? New API?
-        contextApi.update({
-          values,
-          originalValuesJson: JSON.stringify(values),
-          contentType,
-          contentDom,
-          contentXml,
-          readonly: false,
-          pathInProject: create.path,
-          fieldValidityState: buildInitialFieldValidityState(contentType.fields, values),
-          requirementsFetched: true,
-          sectionExpandedState: buildSectionExpandedState(contentType.sections)
-        });
-      } /* if (isUpdateMode) */ else {
-        const subscription = fetchRequirements({
-          siteId,
-          path: update.path,
-          modelId: update.modelId,
-          readonly: readonlyProp,
-          contentTypesById
-        }).subscribe((newState) => {
-          dispatch(fetchSandboxItemComplete({ item: newState.item }));
-          contextApi.update(newState);
-        });
-        return () => subscription.unsubscribe();
-      }
-    }
-  }, [
-    requirementsFetched,
-    siteId,
-    dispatch,
-    contentTypesById,
-    create,
-    update,
-    repeat,
-    readonlyProp,
-    effectRefs,
-    fieldsToRender,
-    contextApi
-  ]);
-
-  const sourceMapPaths = useMemo(() => {
-    return state.sourceMap ? Object.values(state.sourceMap).map((path) => path) : [];
-  }, [state.sourceMap]);
+  const sourceMapPaths = useMemo(() => (sourceMap ? Object.values(sourceMap).map((path) => path) : []), [sourceMap]);
   useFetchSandboxItems(sourceMapPaths);
-
-  // Keep the state.item up to date with updates from the socket
-  useEffect(() => {
-    // It'd be good to have a sandboxItem.lastSystemUpdateDate to know if updates other than the content itself have happened
-    if (requirementsFetched && liveUpdatedItem) {
-      contextApi.update('item', parseDetailedItemToSandboxItem(liveUpdatedItem));
-      // TODO: Re-fetch content?
-    }
-  }, [contextApi, liveUpdatedItem, requirementsFetched]);
 
   // Resize observer attached to the [scroll] container
   useLayoutEffect(() => {
     if (containerRef.current) {
+      const resize$ = new Subject<void>();
       const container: HTMLElement = getScrollContainer(containerRef.current);
       const setValues = (rect: DOMRect) => {
         const width = rect.width;
@@ -896,44 +1124,42 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
           isLargeContainer: width >= theme.breakpoints.values.lg
         });
       };
-      const resizeObserver = new ResizeObserver((entries) =>
-        entries.forEach(() => setValues(container.getBoundingClientRect()))
-      );
+      const resizeObserver = new ResizeObserver(() => {
+        resize$.next();
+      });
+      const subscription = resize$.pipe(debounceTime(300)).subscribe(() => {
+        setValues(container.getBoundingClientRect());
+      });
       resizeObserver.observe(document.documentElement);
       return () => {
         resizeObserver.disconnect();
+        subscription.unsubscribe();
       };
     }
   }, [
     theme.breakpoints.values.lg,
-    // `requirementsFetched` isn't used inside the effect, but it is used as a way to
-    // trigger the effect when the containerRef is set.
-    requirementsFetched,
     // `isFullScreen` isn't used inside the effect but want to trigger the calculations when changed.
     isFullScreen
   ]);
 
-  // Restore previous scroll position if provided.
-  useEffect(() => {
-    // Only a single stacked form is rendered at a time, so the scroll position of stacked forms is stored before opening a new one for later restoration here.
-    if (containerRef.current) {
-      const container: HTMLElement = getScrollContainer(containerRef.current);
-      // Restore the previous scroll position
-      if (state.previousScrollTopPosition != null) {
-        container.scrollTop = state.previousScrollTopPosition;
-      }
-    }
-  }, [
-    state.previousScrollTopPosition,
-    // `requirementsFetched` isn't used inside the effect, but it is used as a way to
-    // trigger the effect when the containerRef is set.
-    requirementsFetched
-  ]);
+  // // Restore previous scroll position if provided.
+  // const previousScrollTopPosition = stableGlobalContext.state[stackIndex]?.previousScrollTopPosition;
+  // useEffect(() => {
+  //   // Only a single stacked form is rendered at a time, so the scroll position of stacked forms is stored before opening a new one for later restoration here.
+  //   if (containerRef.current) {
+  //     const container: HTMLElement = getScrollContainer(containerRef.current);
+  //     // Restore the previous scroll position
+  //     if (previousScrollTopPosition != null) {
+  //       container.scrollTop = previousScrollTopPosition;
+  //       contextApi.updateStateCache(stackIndex, { previousScrollTopPosition: null });
+  //     }
+  //   }
+  // }, [contextApi, previousScrollTopPosition, stackIndex]);
 
   // Freeze/manage scroll when stacked forms are open, and set the --scroll-top css property for stacked
   // forms to position themselves at the right position.
   useLayoutEffect(() => {
-    if (requirementsFetched && hasStackedForms) {
+    if (hasStackedForms) {
       const scrollContainer = getScrollContainer(containerRef.current);
       // Store the current scroll position to restore
       const scrollTop = scrollContainer.scrollTop;
@@ -948,47 +1174,35 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
         scrollContainer.style.overflow = '';
       };
     }
-  }, [requirementsFetched, hasStackedForms]);
+  }, [hasStackedForms]);
 
   // If rendered in a dialog, update the dialog's isSubmitting and hasPendingChanges. Only the root form.
   // Stacked forms have their own changes and submit state management.
   useEffect(() => {
-    if (!parentContextApi) {
-      updateSubmittingOrHasPendingChanges?.({
-        isSubmitting: state.isSubmitting,
-        hasPendingChanges: state.hasPendingChanges
-      });
+    if (!isStackedForm) {
+      updateSubmittingOrHasPendingChanges?.({ isSubmitting, hasPendingChanges });
     }
-  }, [state.isSubmitting, state.hasPendingChanges, parentContextApi, updateSubmittingOrHasPendingChanges]);
+  }, [isSubmitting, hasPendingChanges, isStackedForm, updateSubmittingOrHasPendingChanges]);
 
   // If the form is rendered in/as a dialog, take up the whole screen minus
   // top/bottom margins (2 top, 2 bottom). If not a dialog, take up the whole screen.
-  const targetHeight = isDialog ? `calc(100vh - ${isFullScreen ? 0 : theme.spacing(4)})` : '100%';
+  const targetHeight = getTargetHeight(isDialog, isFullScreen, theme);
 
-  if (!requirementsFetched) {
-    return (
-      <LoadingState
-        sx={{ height: targetHeight }}
-        title={<FormattedMessage defaultMessage="Please wait" />}
-        subtitle={<FormattedMessage defaultMessage="Gathering content information" />}
-      />
-    );
-  }
-
-  const readonly = state.readonly;
-  const affectsWorkflowItems = state.affectedItemsInWorkflow?.length > 0;
-  const isStackedForm = Boolean(parentState);
+  const affectsWorkflowItems = lockStatus.affectedItemsInWorkflow?.length > 0;
   const isEmbedded = Boolean(update?.modelId);
   const isCreateMode = Boolean(create?.path);
   const isRepeatMode = Boolean(repeat?.fieldId);
   const isLargeContainer = containerStats?.isLargeContainer;
-  const contentType = state.contentType;
   const contentTypeFields = contentType.fields;
   const contentTypeSections = contentType.sections;
-  const { handleToggleSectionAccordion } = contextApi;
-  const { activeTab, sectionExpandedState } = state;
-  const objectId = state.values[XmlKeys.modelId] as string;
-  const values = state.values;
+  const objectId = id;
+
+  const handleSectionExpandedChange = (fieldId: string, expanded: boolean) => {
+    setSectionExpandedState({
+      ...sectionExpandedState,
+      [fieldId]: expanded
+    });
+  };
   const handleOpenDrawerSidebar = () => {
     const scroller = getScrollContainer(containerRef.current);
     scroller.style.setProperty('--scroll-top', `${containerRef.current.scrollTop}px`);
@@ -1001,26 +1215,28 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
   };
   const handleCloseDrawerForm: DrawerProps['onClose'] = () => {
     if (!hasStackedForms) return;
-    const childState = state.formsStackState[state.formsStackState.length - 1];
+    const childState = {
+      isSubmitting: store.get(formStackAtoms[formStackAtoms.length - 1].isSubmitting),
+      hasPendingChanges: store.get(formStackAtoms[formStackAtoms.length - 1].hasPendingChanges),
+      readonly: store.get(formStackAtoms[formStackAtoms.length - 1].readonly)
+    };
     // Note: This is executed in the context of the parent form.
     // Executed in the case of escape, backdrop click or form close button click.
     const doClose = () => {
       // Unlock item if necessary
-      const childProps = state.formsStackProps[state.formsStackProps.length - 1];
+      const childProps = formsStackProps[formsStackProps.length - 1];
       // If it is not an "update" (e.g. repeat, create), should not unlock.
       if (!childState.readonly && childProps.update) {
         // No model id means it is a shared component and should be unlocked.
         let shouldUnlock = !childProps.update.modelId;
         if (!shouldUnlock) {
           // This is an embedded component...
-          const stateStack = [state, ...state.formsStackState];
-          stateStack.pop();
           // Unlock only if the parent form is readonly since, unlocking the embedded means unlocking the parent
           // document hence, if parent form is not readonly, it is being edited and shouldn't be unlocked.
           // This logic assumes the form stack is sequential so the parent component would be right before in the state stack.
-          shouldUnlock = stateStack[stateStack.length - 1].readonly;
+          shouldUnlock = store.get(formStackAtoms[formStackAtoms.length - 2].readonly);
         }
-        shouldUnlock && internalUnlockContentService(siteId, childState.item.path).subscribe();
+        shouldUnlock && internalUnlockContentService(siteId, childProps.update?.path).subscribe();
       }
       // Only unlock scroll if this is the last item in the forms stack
       childProps.stackIndex === 0 && (containerRef.current.style.overflowY = '');
@@ -1038,12 +1254,11 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
   const useCollapsedToC = isLargeContainer ? collapsedToC : true;
   const tableOfContents = (
     <TableOfContents
-      values={values}
+      handleSectionExpandedChange={handleSectionExpandedChange}
+      atoms={formStackAtoms[stackIndex]}
       fieldsToRender={fieldsToRender}
       containerRef={containerRef}
-      contextApi={contextApi}
       contentTypeFields={contentTypeFields}
-      fieldValidityState={state.fieldValidityState}
       contentTypeSections={contentTypeSections}
       sectionExpandedState={sectionExpandedState}
       setOpenDrawerSidebar={setOpenDrawerSidebar}
@@ -1051,31 +1266,30 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
   );
   // endregion
 
-  const currentStackedFormProps = hasStackedForms ? state.formsStackProps[state.formsStackProps.length - 1] : null;
+  const currentStackedFormProps = hasStackedForms ? formsStackProps[formsStackProps.length - 1] : null;
   let stackedFormKey = undefined;
   if (hasStackedForms) {
     if (currentStackedFormProps.update) {
-      stackedFormKey = `${currentStackedFormProps.update.path}_${currentStackedFormProps.update.modelId}_${state.formsStackProps.length}`;
+      stackedFormKey = `${currentStackedFormProps.update.path}_${currentStackedFormProps.update.modelId ?? ''}_${stackFormCount}`;
     } else if (currentStackedFormProps.create) {
-      stackedFormKey = `${currentStackedFormProps.create.path}_${currentStackedFormProps.create.contentTypeId}_${state.formsStackProps.length}`;
+      stackedFormKey = `${currentStackedFormProps.create.path}_${currentStackedFormProps.create.contentTypeId}_${stackFormCount}`;
     } else if (currentStackedFormProps.repeat) {
-      stackedFormKey = `${currentStackedFormProps.repeat.fieldId}_${state.formsStackProps.length}`;
+      stackedFormKey = `${currentStackedFormProps.repeat.fieldId}_${stackFormCount}`;
     }
   }
 
-  const disableSave = state.isSubmitting || (affectsWorkflowItems && !acceptedWorkflowCancellation);
+  const disableSave = isSubmitting || (affectsWorkflowItems && !acceptedWorkflowCancellation);
   const handleSave: ButtonProps['onClick'] = (e) => {
-    contextApi.update({ isSubmitting: true });
+    setIsSubmitting(isSubmitting);
     setTimeout(() => {
+      const values = extractValueAtoms(store, formStackAtoms[stackIndex].valueByFieldId);
       const xml = buildContentXml(values, contentTypesById);
       const dom = fromString(xml);
-      contextApi.update({
-        contentXml: xml,
-        contentDom: dom,
-        isSubmitting: false,
-        hasPendingChanges: false,
-        originalValuesJson: JSON.stringify(values)
-      });
+      setIsSubmitting(false);
+      setHasPendingChanges(false);
+      // TODO: Update these using a context API
+      stableFormContext.originalValuesJson = JSON.stringify(values);
+      stableFormContext.changedFieldIds = new Set<string>();
       const instructions = onSave?.({ dom, xml, values });
       if (instructions?.close) {
         setTimeout(() => {
@@ -1087,27 +1301,31 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
     }, 1000);
   };
 
-  const updateEditEnablement = (enableEdit: boolean, callback?: (lockResult: LockResult) => void) => {
-    if (enablingEditInProgress) return;
+  const updateEditEnablement = (enableEdit: boolean, callback?: (lockResult: FormsEngineEditContextProps) => void) => {
+    if (enablingEditInProgress || isCreateMode) return;
     const doEditEnablement = (restoreValues: boolean = false) => {
       // TODO: Re-fetch content when enabling edit?
       setEnablingEditInProgress(true);
       const service = enableEdit ? internalLockContentService : internalUnlockContentService;
-      service(siteId, state.item.path).subscribe((lockResult) => {
+
+      // const getPathFromProps = (props: FormsEngineProps) => update?.path
+      service(siteId, item.path).subscribe((lockResult) => {
         setEnablingEditInProgress(false);
-        contextApi.update({
+        setHasPendingChanges(false);
+        if (restoreValues) {
+          // TODO: values: restoreValues ? JSON.parse(state.originalValuesJson) : state.values;
+          throw new Error('NOT RESTORING VALUES YET');
+        }
+        setLockStatus({
           locked: lockResult.locked,
-          lockError: lockResult.error,
-          readonly: !lockResult.locked,
-          affectedItemsInWorkflow: lockResult?.affectedItemsInWorkflow ?? null,
-          hasPendingChanges: false,
-          values: restoreValues ? JSON.parse(state.originalValuesJson) : state.values
+          lockError: lockResult.lockError,
+          affectedItemsInWorkflow: lockResult?.affectedItemsInWorkflow ?? null
         });
         callback?.(lockResult);
       });
     };
     // If hasPendingChanges, should prompt user to save before enabling edit.
-    if (!enableEdit && state.hasPendingChanges) {
+    if (!enableEdit && hasPendingChanges) {
       return displayWithPendingChangesConfirm(
         dispatch,
         () => doEditEnablement(true),
@@ -1132,69 +1350,34 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
         // Stacked forms receive the onClose prop from the parent form.
         (isStackedForm ? onCloseProp : enhancedDialogOnClose)(e, null);
       };
-      if (state.isSubmitting) {
+      if (isSubmitting) {
         displayFormBeingSavedSnack(dispatch, formatMessage);
-      } else if (state.hasPendingChanges) {
+      } else if (hasPendingChanges) {
         // This is assuming the EnhancedDialog will handle showing the close without saving confirm.
         doClose();
       } else if (
         readonly ||
-        // If is an embedded component opened as a stacked form, unlocking is necessary
-        // unless the parent was opened readonly but this one was requested for edit. So:
-        // Is embedded? Is stacked (i.e. has a parent state)? The parent state matches readonly status.
-        (isEmbedded && parentState && Boolean(readonly) === Boolean(parentState.readonly))
+        // If is an embedded component opened as a stacked form, unlocking is necessary only if the
+        // parent readonly status is different from that of the present component.
+        // Is embedded? Is stacked? The parent state matches readonly status.
+        (isEmbedded &&
+          isStackedForm &&
+          Boolean(readonly) === Boolean(store.get(formStackAtoms[stackIndex - 1].readonly)))
       ) {
         doClose();
       } else {
-        internalUnlockContentService(siteId, state.item.path).subscribe(() => {
+        internalUnlockContentService(siteId, item.path).subscribe(() => {
           doClose();
         });
       }
     };
   }
 
-  const renderFieldControl = (field: ContentTypeField, autoFocus: boolean) => {
-    const fieldId = field.id;
-    let Control: ElementType<ControlProps>;
-    if (field.properties.plugin) {
-      const url = buildFileUrl(
-        siteId,
-        field.properties.plugin.type,
-        field.properties.plugin.name,
-        field.properties.plugin.filename,
-        field.properties.plugin.pluginId
-      );
-      if (!lazyControlMap.has(url)) addLazyControl(url);
-      Control = lazyControlMap.get(url);
-    } else {
-      Control = controlMap[field.type] ?? UnknownControl;
-    }
-    if (!valueSettersRef.current[fieldId]) {
-      valueSettersRef.current[fieldId] = (newValue) => contextApi.updateValue(fieldId, newValue);
-    }
-    return (
-      <ErrorBoundary key={fieldId}>
-        <Suspense fallback={<ControlSkeleton label={field.name} />}>
-          <Control
-            // Only auto-focus on controls that are not readonly.
-            // Focus might not work consistently on disabled controls anyway.
-            autoFocus={autoFocus && !readonly}
-            value={values[fieldId]}
-            setValue={valueSettersRef.current[fieldId]}
-            field={field}
-            contentType={contentType}
-            readonly={readonly}
-          />
-        </Suspense>
-      </ErrorBoundary>
-    );
-  };
-
   const bodyFragment = (
     <Box
+      ref={containerRef}
       data-model-id={objectId}
       data-area-id="formContainer"
-      ref={containerRef}
       sx={{
         display: 'flex',
         height: targetHeight,
@@ -1207,7 +1390,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
         '.space-y-2 > :not([hidden]) ~ :not([hidden])': { mt: 2 }
       }}
     >
-      <UIBlocker open={state.isSubmitting} />
+      <UIBlocker open={isSubmitting} />
       <Paper square component="header" data-area-id="formHeader" elevation={0}>
         <Box component={Container} display="flex" alignItems="center" justifyContent="space-between" pt={2}>
           <Typography variant="body2" color="textSecondary">
@@ -1253,12 +1436,12 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
           <CreateModeHeader contentType={contentType} path={create?.path} />
         ) : (
           <EditModeHeader
+            handleTabChange={(e, value) => setActiveTab(value)}
             isLargeContainer={isLargeContainer}
             useCollapsedToC={useCollapsedToC}
             setCollapsedToC={setCollapsedToC}
-            contextApi={contextApi}
             isEmbedded={isEmbedded}
-            state={state}
+            atoms={formStackAtoms[stackIndex]}
             theme={theme}
             objectId={objectId}
             activeTab={activeTab}
@@ -1300,7 +1483,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
                         dispatch(
                           pushDialog({
                             component: 'craftercms.components.WorkflowCancellationDialog',
-                            props: { items: state.affectedItemsInWorkflow } as WorkflowCancellationDialogProps
+                            props: { items: lockStatus.affectedItemsInWorkflow } as WorkflowCancellationDialogProps
                           })
                         );
                       }}
@@ -1315,21 +1498,31 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
                   <FormattedMessage defaultMessage="The item is part of a publishing package. Editing it will cancel the entire package." />
                 </Alert>
               )}
-              {state.lockError && (
+              {lockStatus.lockError && (
                 <Alert severity="error">
-                  {createErrorStatePropsFromApiResponse(state.lockError, formatMessage).message}
+                  {createErrorStatePropsFromApiResponse(lockStatus.lockError, formatMessage).message}
                 </Alert>
               )}
               {fieldsToRender ? (
                 <Paper sx={{ p: 2 }}>
-                  {fieldsToRender.map((field, index) => renderFieldControl(field, index === 0))}
+                  {fieldsToRender.map((field, index) =>
+                    renderFieldControl(
+                      field,
+                      formStackAtoms[stackIndex].valueByFieldId,
+                      index === 0,
+                      readonly,
+                      contentType
+                    )
+                  )}
                 </Paper>
               ) : (
                 contentTypeSections.map((section, sectionIndex) => (
                   <Accordion
                     key={sectionIndex}
                     expanded={sectionExpandedState[section.title]}
-                    onChange={handleToggleSectionAccordion}
+                    onChange={(event, expanded) => {
+                      handleSectionExpandedChange(event.currentTarget.getAttribute('data-section-id'), expanded);
+                    }}
                     sx={{
                       borderLeftColor: toColor(section.title, 0.7),
                       borderLeftWidth: 5,
@@ -1343,7 +1536,13 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
                     <AccordionSummary data-section-id={section.title}>{section.title}</AccordionSummary>
                     <AccordionDetails className="space-y-2">
                       {section.fields.map((fieldId, fieldIndex) =>
-                        renderFieldControl(contentTypeFields[fieldId], sectionIndex === 0 && fieldIndex === 0)
+                        renderFieldControl(
+                          contentTypeFields[fieldId],
+                          formStackAtoms[stackIndex].valueByFieldId,
+                          sectionIndex === 0 && fieldIndex === 0,
+                          readonly,
+                          contentType
+                        )
                       )}
                     </AccordionDetails>
                   </Accordion>
@@ -1376,16 +1575,16 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
                   </>
                 ) : (
                   <>
-                    {state.hasPendingChanges ? (
-                      <Grow in={state.hasPendingChanges}>
+                    {hasPendingChanges ? (
+                      <Grow in={hasPendingChanges}>
                         <Paper sx={{ p: 1 }} className="space-y-half">
                           <TextField
                             size="small"
                             multiline
                             fullWidth
                             label={<FormattedMessage defaultMessage="Version Comment" />}
-                            value={state.versionComment}
-                            onChange={(e) => contextApi.update('versionComment', e.target.value)}
+                            value={versionComment}
+                            onChange={(e) => setVersionComment(e.target.value)}
                             onFocus={(e) => e.target.select()}
                           />
                           <div>
@@ -1409,15 +1608,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
                             )}
                             <FormControlLabel
                               label={<FormattedMessage defaultMessage="Close after saving" />}
-                              control={
-                                <Checkbox
-                                  size="small"
-                                  checked={false}
-                                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                    // (e.target.checked);
-                                  }}
-                                />
-                              }
+                              control={<Checkbox size="small" checked={false} />}
                             />
                           </div>
                           <PrimaryButton
@@ -1425,7 +1616,7 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
                             variant="contained"
                             onClick={handleSave}
                             disabled={disableSave}
-                            loading={state.isSubmitting}
+                            loading={isSubmitting}
                           >
                             <FormattedMessage defaultMessage="Save" />
                           </PrimaryButton>
@@ -1493,63 +1684,65 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
       )}
       {/* endregion */}
       {/* region Stacked Form Drawer */}
-      <Drawer
-        open={hasStackedForms}
-        anchor="right"
-        variant="temporary"
-        disablePortal
-        data-area-id="stackedFormDrawer"
-        onClose={handleCloseDrawerForm}
-        // Autofocus combined with absolute positioning (as opposed to the default fixed) causes the
-        // scroll position to jump off the page (where the drawer panel is shown at) and looks like it
-        // is the background element the one that's moving/animating in a jittery fashion.
-        disableAutoFocus={disableStackedFormDrawerAutoFocus}
-        onTransitionExited={() => {
-          setDisableStackedFormDrawerAutoFocus(true);
-        }}
-        onTransitionEnd={
-          // onTransitionEnd keeps triggering after the Drawer transition has finished on certain interactions (e.g. when hovering buttons)
-          // This callback is also invoked during other transitions other than the Drawer's open transition.
-          disableStackedFormDrawerAutoFocus
-            ? (e) => {
-                // Make sure it is the drawer paper that finished transitioning before considering the transition complete.
-                if ((e.target as HTMLElement).getAttribute('data-area-id') !== 'stackedFormDrawerPaper') return;
-                const paper = containerRef.current.querySelector(
-                  `[data-area-id="stackedFormDrawer"] .${drawerClasses.paper}`
-                ) as HTMLDivElement;
-                // TODO: Could paper ever be null here?
-                // Check that the focus was moved inside the paper by the autoFocus prop in the control.
-                // If focus is not on the paper, move it to it.
-                if (!paper.contains(document.activeElement)) {
-                  paper.focus();
+      {stackIndex === 0 && (
+        <Drawer
+          open={hasStackedForms}
+          anchor="right"
+          variant="temporary"
+          disablePortal
+          data-area-id="stackedFormDrawer"
+          onClose={handleCloseDrawerForm}
+          // Autofocus combined with absolute positioning (as opposed to the default fixed) causes the
+          // scroll position to jump off the page (where the drawer panel is shown at) and looks like it
+          // is the background element the one that's moving/animating in a jittery fashion.
+          disableAutoFocus={disableStackedFormDrawerAutoFocus}
+          onTransitionExited={() => {
+            setDisableStackedFormDrawerAutoFocus(true);
+          }}
+          onTransitionEnd={
+            // onTransitionEnd keeps triggering after the Drawer transition has finished on certain interactions (e.g. when hovering buttons)
+            // This callback is also invoked during other transitions other than the Drawer's open transition.
+            disableStackedFormDrawerAutoFocus
+              ? (e) => {
+                  // Make sure it is the drawer paper that finished transitioning before considering the transition complete.
+                  if ((e.target as HTMLElement).getAttribute('data-area-id') !== 'stackedFormDrawerPaper') return;
+                  const paper = containerRef.current.querySelector(
+                    `[data-area-id="stackedFormDrawer"] .${drawerClasses.paper}`
+                  ) as HTMLDivElement;
+                  // TODO: Could paper ever be null here?
+                  // Check that the focus was moved inside the paper by the autoFocus prop in the control.
+                  // If focus is not on the paper, move it to it.
+                  if (!paper.contains(document.activeElement)) {
+                    paper.focus();
+                  }
+                  setDisableStackedFormDrawerAutoFocus(false);
                 }
-                setDisableStackedFormDrawerAutoFocus(false);
-              }
-            : undefined
-        }
-        sx={{
-          top: 'var(--scroll-top)',
-          position: 'absolute',
-          [`& > .${paperClasses.root}`]: {
-            top: 0,
-            width: 'calc(var(--container-width) - 100px)',
-            height: isDialog ? `var(--container-height)` : '100vh',
-            position: 'absolute'
+              : undefined
           }
-        }}
-        PaperProps={{ 'data-area-id': 'stackedFormDrawerPaper' }}
-      >
-        {hasStackedForms && (
-          <FormsEngine
-            key={stackedFormKey}
-            stackIndex={state.formsStackProps.length - 1}
-            stackTransitionEnded={!disableStackedFormDrawerAutoFocus}
-            {...currentStackedFormProps}
-            isDialog={isDialog}
-            onClose={handleCloseDrawerForm}
-          />
-        )}
-      </Drawer>
+          sx={{
+            top: 'var(--scroll-top)',
+            position: 'absolute',
+            [`& > .${paperClasses.root}`]: {
+              top: 0,
+              width: 'calc(var(--container-width) - 100px)',
+              height: isDialog ? `var(--container-height)` : '100vh',
+              position: 'absolute'
+            }
+          }}
+          PaperProps={{ 'data-area-id': 'stackedFormDrawerPaper' }}
+        >
+          {hasStackedForms && (
+            <Prepper
+              key={stackedFormKey}
+              stackIndex={formsStackProps.length - 1}
+              {...currentStackedFormProps}
+              stackTransitionEnded={!disableStackedFormDrawerAutoFocus}
+              isDialog={isDialog}
+              onClose={handleCloseDrawerForm}
+            />
+          )}
+        </Drawer>
+      )}
       {/* endregion */}
       {/* region Sidebar Drawer */}
       <Drawer
@@ -1582,11 +1775,52 @@ export const FormsEngine = forwardRef<HTMLDivElement, FormsEngineProps>(function
   return (
     // The Fade provides some transitioning for the stacked forms that show without the Slide
     // transition since the Drawer is already open and there's only one.
-    <FormsEngineContext.Provider value={state}>
-      <FormsEngineContextApi.Provider value={contextApi}>
-        {parentState ? <Fade in={stackTransitionEnded} mountOnEnter children={bodyFragment} /> : bodyFragment}
-      </FormsEngineContextApi.Provider>
-    </FormsEngineContext.Provider>
+    isStackedForm ? <Fade in={stackTransitionEnded} mountOnEnter children={bodyFragment} /> : bodyFragment
+  );
+}
+
+interface ControlWrapperProps {
+  field: ContentTypeField;
+  autoFocus: boolean;
+  readonly: boolean;
+  contentType: ContentType;
+  atom: Atom<unknown>;
+}
+
+const ControlWrapper = memo(function (props: ControlWrapperProps) {
+  const siteId = useActiveSiteId();
+  const { field, autoFocus, readonly, contentType, atom } = props;
+  const [value, setValue] = useAtom(atom);
+  const fieldId = field.id;
+  let Control: ElementType<ControlProps>;
+  if (field.properties.plugin) {
+    const url = buildFileUrl(
+      siteId,
+      field.properties.plugin.type,
+      field.properties.plugin.name,
+      field.properties.plugin.filename,
+      field.properties.plugin.pluginId
+    );
+    if (!lazyControlMap.has(url)) addLazyControl(url);
+    Control = lazyControlMap.get(url);
+  } else {
+    Control = controlMap[field.type] ?? UnknownControl;
+  }
+  return (
+    <ErrorBoundary key={fieldId}>
+      <Suspense fallback={<ControlSkeleton label={field.name} />}>
+        <Control
+          // Only auto-focus on controls that are not readonly.
+          // Focus might not work consistently on disabled controls anyway.
+          autoFocus={autoFocus && !readonly}
+          value={value}
+          setValue={setValue}
+          field={field}
+          contentType={contentType}
+          readonly={readonly}
+        />
+      </Suspense>
+    </ErrorBoundary>
   );
 });
 
@@ -1639,27 +1873,28 @@ function ControlPluginNoDefaultError({ field }: ControlProps) {
 // region TableOfContents
 function TableOfContents({
   containerRef,
-  contextApi,
+  handleSectionExpandedChange,
   contentTypeFields,
-  fieldValidityState,
   contentTypeSections,
   sectionExpandedState,
   setOpenDrawerSidebar,
   fieldsToRender,
-  values
+  atoms
 }: {
   containerRef: MutableRefObject<HTMLDivElement>;
-  contextApi: FormsEngineContextApiProps;
+  handleSectionExpandedChange(fieldId: string, expanded: boolean): void;
   contentTypeFields: LookupTable<ContentTypeField>;
-  fieldValidityState: FormsEngineContextProps['fieldValidityState'];
   contentTypeSections: ContentTypeSection[];
-  sectionExpandedState: FormsEngineContextProps['sectionExpandedState'];
+  sectionExpandedState: LookupTable<boolean>;
   // TODO: Should send the handleCloseDrawerSidebar instead of allowing direct access to setOpenDrawerSidebar. Consider scroll freeze.
   setOpenDrawerSidebar: ReactDispatch<SetStateAction<boolean>>;
   fieldsToRender: ContentTypeField[];
-  values: LookupTable<unknown>;
+  atoms: FormsEngineAtoms;
 }) {
-  const expandedSectionIds = Object.entries(sectionExpandedState).flatMap(([key, expanded]) => (expanded ? [key] : []));
+  const expandedSectionIds = useMemo(
+    () => Object.entries(sectionExpandedState).flatMap(([key, expanded]) => (expanded ? [key] : [])),
+    [sectionExpandedState]
+  );
   const scrollToTarget = (target: Element) => {
     // Wait for the drawer to hide so the transition focus doesn't impede the scrollIntoView.
     // When the sidebar is a drawer, the hide transition is set to 0 for this to work with minimal timeout.
@@ -1672,7 +1907,7 @@ function TableOfContents({
     setOpenDrawerSidebar(false);
     const sectionId = event.currentTarget.parentElement.getAttribute('data-section-id');
     if (!sectionExpandedState[sectionId]) {
-      contextApi.setAccordionExpandedState(sectionId, true);
+      handleSectionExpandedChange(sectionId, true);
     }
     scrollToTarget(containerRef.current.querySelector(`[data-area-id="formBody"] [data-section-id="${sectionId}"]`));
   };
@@ -1683,7 +1918,7 @@ function TableOfContents({
   };
   const handleItemExpansionToggleClick = (event: SyntheticEvent, itemId: string, expanded: boolean) => {
     event.stopPropagation(); // Avoid accordion expansion
-    contextApi.setAccordionExpandedState(itemId, expanded);
+    handleSectionExpandedChange(itemId, expanded);
     setOpenDrawerSidebar(false);
   };
   const [searchFieldValue, setSearchFieldValue] = useState('');
@@ -1698,23 +1933,13 @@ function TableOfContents({
   });
   const createFieldTreeItem = (field: ContentTypeField) => {
     const fieldId = field.id;
-    const isRequired = isFieldRequired(field);
     return (
       <TreeItem
         key={fieldId}
         itemId={fieldId}
         data-field-id={fieldId}
         onClick={handleFieldTreeItemClick}
-        label={
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <span>{field.name}</span>
-            {isRequired ? (
-              <FieldRequiredStateIndicator isValid={fieldValidityState[fieldId]?.isValid} />
-            ) : (
-              <FieldEmptyStateIndicator isEmpty={isEmptyValue(field, values[fieldId])} />
-            )}
-          </Box>
-        }
+        label={<TreeItemLabel field={field} atoms={atoms} />}
       />
     );
   };
@@ -1754,13 +1979,34 @@ function TableOfContents({
     </>
   );
 }
+function TreeItemLabel({
+  field,
+  atoms
+}: {
+  field: ContentTypeField;
+  atoms: Pick<FormsEngineAtoms, 'valueByFieldId' | 'validationByFieldId'>;
+}) {
+  const value = useAtomValue(atoms.valueByFieldId[field.id]);
+  const validity = useAtomValue(atoms.validationByFieldId[field.id]);
+  const isRequired = isFieldRequired(field);
+  return (
+    <Box display="flex" justifyContent="space-between" alignItems="center">
+      <span>{field.name}</span>
+      {isRequired ? (
+        <FieldRequiredStateIndicator isValid={validity.isValid} />
+      ) : (
+        <FieldEmptyStateIndicator isEmpty={isEmptyValue(field, value)} />
+      )}
+    </Box>
+  );
+}
 // endregion
 
 // region EditModeHeader
 function EditModeHeader({
-  contextApi,
+  handleTabChange,
   isEmbedded,
-  state,
+  atoms,
   theme,
   objectId,
   activeTab,
@@ -1768,9 +2014,9 @@ function EditModeHeader({
   useCollapsedToC,
   setCollapsedToC
 }: {
-  contextApi: FormsEngineContextApiProps;
+  handleTabChange: TabsProps['onChange'];
   isEmbedded: boolean;
-  state: FormsEngineContextProps;
+  atoms: FormsEngineAtoms;
   theme: Theme;
   objectId: string;
   activeTab: number;
@@ -1778,22 +2024,24 @@ function EditModeHeader({
   useCollapsedToC: boolean;
   setCollapsedToC: ReactDispatch<SetStateAction<boolean>>;
 }) {
-  const readonly = state.readonly;
-  const item = state.item;
+  const item = useContext(ItemContext);
+  const store = useStore();
+  const readonly = useAtomValue(atoms.readonly);
   const localeConf = useLocale();
-  const { handleTabChange } = contextApi;
-  const itemLabel = isEmbedded ? (state.values[XmlKeys.internalName] as string) : item.label;
+  const itemLabel = isEmbedded
+    ? (getFieldAtomValue(atoms.valueByFieldId[XmlKeys.internalName], store) as string)
+    : item.label;
   const typeIconItem: Pick<SandboxItem, 'systemType' | 'mimeType'> = isEmbedded
     ? { systemType: 'component', mimeType: 'application/xml' }
     : item;
-  const formattedCreator = prettyPrintPerson(item.creator);
+  const formattedCreator = prettyPrintPerson(item.sandbox.creator);
   const formattedCreationDate = new Intl.DateTimeFormat(localeConf.localeCode, {
     dateStyle: 'short'
-  }).format(new Date(item.dateCreated));
-  const formattedModifier = prettyPrintPerson(item.modifier);
+  }).format(new Date(item.sandbox.dateCreated));
+  const formattedModifier = prettyPrintPerson(item.sandbox.modifier);
   const formattedModifiedDate = new Intl.DateTimeFormat(localeConf.localeCode, {
     dateStyle: 'short'
-  }).format(new Date(item.dateModified));
+  }).format(new Date(item.sandbox.dateModified));
   return (
     <>
       <Container className="space-y" sx={{ py: 1 }}>
@@ -1919,7 +2167,9 @@ function EditModeHeader({
                 <IconButton
                   size="small"
                   sx={{ padding: '1px', ml: 1 }}
-                  onClick={() => copyToClipboard(state.values[XmlKeys.modelId] as string)}
+                  onClick={() =>
+                    copyToClipboard(getFieldAtomValue(atoms.valueByFieldId[XmlKeys.modelId], store) as string)
+                  }
                 >
                   <ContentCopyRounded fontSize="inherit" sx={{ color: 'text.secondary' }} />
                 </IconButton>
@@ -1988,4 +2238,4 @@ function CreateModeHeader({ contentType, path }: { path: string; contentType: Co
 }
 // endregion
 
-export default FormsEngine;
+export default Root;

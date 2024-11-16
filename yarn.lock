@@ -1889,6 +1889,7 @@ __metadata:
     graphql-ws: "npm:^5.16.0"
     highlight.js: "npm:^11.9.0"
     jabber: "npm:^1.5.3"
+    jotai: "npm:^2.10.2"
     js-cookie: "npm:^3.0.5"
     marked: "npm:^12.0.2"
     marked-highlight: "npm:^2.1.1"
@@ -9073,6 +9074,21 @@ __metadata:
     merge-stream: "npm:^2.0.0"
     supports-color: "npm:^8.0.0"
   checksum: 10/06c6e2a84591d9ede704d5022fc13791e8876e83397c89d481b0063332abbb64c0f01ef4ca7de520b35c7a1058556078d6bdc3631376f4e9ffb42316c1a8488e
+  languageName: node
+  linkType: hard
+
+"jotai@npm:^2.10.2":
+  version: 2.10.2
+  resolution: "jotai@npm:2.10.2"
+  peerDependencies:
+    "@types/react": ">=17.0.0"
+    react: ">=17.0.0"
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+    react:
+      optional: true
+  checksum: 10/f6de942fbe5a26e7e3cdda6238482b7cc35e8764b5165f3429fafb3d7a9f9b017acd6331fa67c6e151d637d65948557e30b8ff0b6b84f17a2b646c452a5016b6
   languageName: node
   linkType: hard
 

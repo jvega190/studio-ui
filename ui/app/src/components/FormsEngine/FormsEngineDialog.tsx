@@ -16,7 +16,7 @@
 
 import EnhancedDialog, { EnhancedDialogProps } from '../EnhancedDialog';
 import React from 'react';
-import { FormsEngine, FormsEngineProps } from './FormsEngine';
+import FormsEngine, { FormsEngineProps } from './FormsEngine';
 import { dialogClasses } from '@mui/material/Dialog';
 
 export interface FormsEngineDialogProps extends EnhancedDialogProps {

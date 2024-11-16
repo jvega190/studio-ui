@@ -16,11 +16,13 @@
 
 import OutlinedInput, { OutlinedInputProps } from '@mui/material/OutlinedInput';
 import React, { useId } from 'react';
-import { useFormsEngineContext, useFormsEngineContextApi } from '../formsEngineContext';
 import { applyContentNameRules } from '../../../utils/content';
 import { FormsEngineField } from '../common/FormsEngineField';
 import InputAdornment from '@mui/material/InputAdornment';
 import { ControlProps } from '../types';
+import { useItemMetaContext, useStableFormContext } from '../formsEngineContext';
+import { useAtom } from 'jotai';
+import { PrimitiveAtom } from 'jotai/index';
 
 export interface SlugProps extends ControlProps {
   value: string;
@@ -30,15 +32,16 @@ export interface SlugProps extends ControlProps {
 
 export function Slug(props: SlugProps) {
   const { field, readonly, autoFocus } = props;
+  const { atoms } = useStableFormContext();
+  const { pathInSite } = useItemMetaContext();
   const htmlId = useId();
-  const fieldId = field.id === 'fileName' || field.id === 'file-name' ? 'folder-name' : field.id;
-  const context = useFormsEngineContext();
-  const api = useFormsEngineContextApi();
-  const { pathInProject, values } = context;
+  if (field.id === 'fileName') {
+    throw new Error('Detected field ID "fileName" instead "file-name" at the "Slug" Control.');
+  }
+  const fieldId = field.id === 'file-name' ? 'folder-name' : field.id;
   // In some cases the values[fieldId] is null
-  const value = (values[fieldId] as string) ?? '';
-  const handleChange: OutlinedInputProps['onChange'] = (e) =>
-    api.updateValue(fieldId, applyContentNameRules(e.currentTarget.value));
+  const [value, setValue] = useAtom(atoms.valueByFieldId[fieldId] as PrimitiveAtom<string>);
+  const handleChange: OutlinedInputProps['onChange'] = (e) => setValue(applyContentNameRules(e.currentTarget.value));
   return (
     <FormsEngineField
       htmlFor={htmlId}
@@ -55,8 +58,8 @@ export function Slug(props: SlugProps) {
         onChange={handleChange}
         disabled={readonly}
         startAdornment={
-          <InputAdornment position="start" title={pathInProject} sx={{ mr: 0 }}>
-            {pathInProject}
+          <InputAdornment position="start" title={pathInSite} sx={{ mr: 0 }}>
+            {pathInSite}
           </InputAdornment>
         }
       />

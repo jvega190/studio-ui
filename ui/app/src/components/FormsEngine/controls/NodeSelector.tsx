@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { useFormsEngineContext, useFormsEngineContextApi } from '../formsEngineContext';
+import { useItemContext, useItemMetaContext, useStableGlobalApiContext } from '../formsEngineContext';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import AddRounded from '@mui/icons-material/AddRounded';
@@ -329,8 +329,9 @@ function NodeSelector(props: NodeSelectorProps) {
   const onReorder = () => setSortMode(true);
   const itemsByPath = useItemsByPath();
   const user = useActiveUser();
-  const { item: contextItem, pathInSite, values } = useFormsEngineContext();
-  const api = useFormsEngineContextApi();
+  const contextItem = useItemContext();
+  const { id, pathInSite } = useItemMetaContext();
+  const api = useStableGlobalApiContext();
   const hasContent = Boolean(value.length);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [pickerType, setPickerType] = useState<DataSourcePickerType>(null);
@@ -515,7 +516,7 @@ function NodeSelector(props: NodeSelectorProps) {
       // TODO: Test cases with paths macros; ensure behaviour is consistent with FE1
       processPathMacros({
         path,
-        objectId: values.objectId as string,
+        objectId: id,
         fullParentPath: contextItem?.path ?? pathInSite
       });
     switch (optionType) {

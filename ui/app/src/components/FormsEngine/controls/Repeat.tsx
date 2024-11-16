@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { useFormsEngineContextApi } from '../formsEngineContext';
+import { useStableGlobalApiContext } from '../formsEngineContext';
 import IconButton, { IconButtonProps } from '@mui/material/IconButton';
 import AddRounded from '@mui/icons-material/AddRounded';
 import DeleteOutlined from '@mui/icons-material/DeleteOutlined';
@@ -68,7 +68,7 @@ export function Repeat(props: RepeatProps) {
   const useTouchSorting = useMemo(() => isTouchDevice(), []);
   const handleCancelReorder = () => setSortMode(false);
   const onReorder = () => setSortMode(true);
-  const api = useFormsEngineContextApi();
+  const api = useStableGlobalApiContext();
   const hasContent = value.length;
   const handleRemoveItem = (event: ReactMouseEvent, index: number) => {
     event.stopPropagation();

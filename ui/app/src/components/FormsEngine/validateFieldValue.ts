@@ -20,6 +20,7 @@ import { BuiltInControlType } from './controlMap';
 import ContentType from '../../models/ContentType';
 import LookupTable from '../../models/LookupTable';
 import { NodeSelectorItem } from './controls/NodeSelector';
+import { RepeatItem } from './controls/Repeat';
 
 export enum XmlKeys {
   modelId = 'objectId',
@@ -78,16 +79,15 @@ export const validatorsMap: Record<BuiltInControlType, ElementType> = {
   'video-picker': null
 };
 
-const arrayFieldExtractor = (field: ContentTypeField, values: unknown): unknown => {
-  // Controls needn't worry about packaging as `items: { item: [] }`, but when it first gets deserialised, it will have that format.
-  const value = values[field.id]?.item ?? values[field.id];
-  return Array.isArray(value) ? value : [];
-};
-const textFieldExtractor = (field: ContentTypeField, values: unknown): unknown => values[field.id] ?? '';
-const booleanFieldExtractor = (field: ContentTypeField, values: unknown): unknown =>
-  (values[field.id] === true || values[field.id] === 'true') ?? false;
+type ValueRetriever<T = unknown> = (value: unknown, field: ContentTypeField) => T;
 
-export const valueRetrieverLookup: Record<BuiltInControlType, (field: ContentTypeField, values: unknown) => unknown> = {
+const arrayFieldExtractor: ValueRetriever<unknown[]> = (value) =>
+  // Controls needn't worry about packaging as `items: { item: [] }`, but when it first gets deserialised, it will have that format.
+  Array.isArray(value) ? value : ((value as Record<'item', unknown[]>)?.item ?? []);
+const textFieldExtractor: ValueRetriever<string> = (value) => String(value) ?? '';
+const booleanFieldExtractor: ValueRetriever<boolean> = (value) => (value === true || value === 'true') ?? false;
+
+export const valueRetrieverLookup: Record<BuiltInControlType, ValueRetriever> = {
   'auto-filename': textFieldExtractor,
   'aws-file-upload': null,
   'box-file-upload': null,
@@ -118,17 +118,26 @@ export const valueRetrieverLookup: Record<BuiltInControlType, (field: ContentTyp
   'video-picker': textFieldExtractor
 };
 
-export function validateFieldValue(field: ContentTypeField, currentValue: unknown): boolean {
+export interface FieldValidityState {
+  isValid: boolean;
+  messages: string[];
+}
+
+export function validateFieldValue(field: ContentTypeField, currentValue: unknown): FieldValidityState {
+  let isValid = false;
   const isRequired = isFieldRequired(field);
   const isEmpty = isEmptyValue(field, currentValue);
   if (!isRequired && isEmpty) {
     // If not required and its empty, then it's valid.
-    return true;
+    isValid = true;
   } else if (!isEmpty) {
     // FE2 TODO: Add other validation types (max length, etc)...
-    return true;
+    isValid = true;
   }
-  return false;
+  return {
+    isValid,
+    messages: isValid ? null : ['This field is required.']
+  };
 }
 
 export function isEmptyValue(field: ContentTypeField, currentValue: unknown): boolean {
@@ -141,50 +150,67 @@ export function isEmptyValue(field: ContentTypeField, currentValue: unknown): bo
 
 export function createCleanValuesObject(
   contentTypeFields: LookupTable<ContentTypeField> | ContentTypeField[],
-  xmlDeserialisedValues: LookupTable<unknown>,
-  contentTypesLookup: LookupTable<ContentType>
+  xmlDeserializedValues: LookupTable<unknown>,
+  contentTypesLookup: LookupTable<ContentType>,
+  fieldCallback?: (fieldId: string, value: unknown) => void
 ): LookupTable<unknown> {
   const values = {};
   systemFieldsNotInType.forEach((systemFieldId) => {
-    if (systemFieldId in xmlDeserialisedValues) {
-      values[systemFieldId] = xmlDeserialisedValues[systemFieldId] ?? '';
+    if (systemFieldId in xmlDeserializedValues) {
+      values[systemFieldId] = xmlDeserializedValues[systemFieldId] ?? '';
+      fieldCallback?.(systemFieldId, values[systemFieldId]);
     }
   });
   (Array.isArray(contentTypeFields) ? contentTypeFields : Object.values(contentTypeFields)).forEach((field) => {
-    values[field.id] = retrieveFieldValue(field, xmlDeserialisedValues);
-    const controlType = field.type as BuiltInControlType;
-    if (controlType === 'node-selector' || controlType === 'repeat') {
-      values[field.id] = values[field.id].map(
-        controlType === 'repeat'
-          ? (item: LookupTable<unknown>) => createCleanValuesObject(field.fields, item, contentTypesLookup)
-          : (item: NodeSelectorItem) => {
-              try {
-                return item.component
-                  ? {
-                      ...item,
-                      component: createCleanValuesObject(
-                        contentTypesLookup[(item.component[XmlKeys.contentTypeId] as string).trim()].fields,
-                        item.component,
-                        contentTypesLookup
-                      )
-                    }
-                  : item;
-              } catch (e) {
-                console.error(e);
-                return item;
-              }
-            }
-      );
-    }
+    values[field.id] = createCleanValueForField(xmlDeserializedValues[field.id], field, contentTypesLookup);
+    fieldCallback?.(field.id, values[field.id]);
   });
   return values;
 }
 
-export function retrieveFieldValue<T = unknown>(field: ContentTypeField, values: Record<string, unknown>): T {
-  if (!valueRetrieverLookup[field.type]) {
-    console.warn(`No value retriever for field ${field.id} of type ${field.type}`);
+export function createCleanValueForField<T = unknown>(
+  xmlDeserializedValue: unknown,
+  field: ContentTypeField,
+  contentTypesLookup: LookupTable<ContentType>
+): T {
+  const value = retrieveFieldValue<T>(field, xmlDeserializedValue);
+  const controlType = field.type as BuiltInControlType;
+  switch (controlType) {
+    case 'repeat': {
+      return (value as Array<RepeatItem>).map((item) =>
+        createCleanValuesObject(field.fields, item, contentTypesLookup)
+      ) as T;
+    }
+    case 'node-selector': {
+      return (value as Array<NodeSelectorItem>).map((item) => {
+        try {
+          return item.component
+            ? {
+                ...item,
+                component: createCleanValuesObject(
+                  contentTypesLookup[(item.component[XmlKeys.contentTypeId] as string).trim()].fields,
+                  item.component,
+                  contentTypesLookup
+                )
+              }
+            : item;
+        } catch (e) {
+          console.error(e);
+          return item;
+        }
+      }) as T;
+    }
   }
-  return valueRetrieverLookup[field.type]?.(field, values) ?? values[field.id];
+  return value;
+}
+
+export function retrieveFieldValue<T = unknown>(field: ContentTypeField, value: unknown): T {
+  const retriever: ValueRetriever<T> | undefined = valueRetrieverLookup[field.type];
+  if (!retriever) {
+    console.warn(`No value retriever for field ${field.id} of type ${field.type}`);
+    return Array.isArray(value) ? (arrayFieldExtractor(value, field) as T) : (value as T);
+  }
+  return retriever(value, field);
 }
 
 export function isFieldRequired(field: ContentTypeField): boolean {

@@ -14,114 +14,134 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { createContext, MutableRefObject, SyntheticEvent, useContext } from 'react';
-import { ContentTypeField, SandboxItem } from '../../models';
-import PluginDescriptor from '../../models/PluginDescriptor';
+import { Context, createContext, useContext } from 'react';
+import { DetailedItem, SandboxItem } from '../../models';
 import ContentType from '../../models/ContentType';
 import ApiResponse from '../../models/ApiResponse';
 import { FormsEngineProps } from './FormsEngine';
 import LookupTable from '../../models/LookupTable';
+import { Atom, PrimitiveAtom } from 'jotai';
+import { FieldValidityState } from './validateFieldValue';
+import { Subject } from 'rxjs';
 
 export type FormsEngineSourceMap = LookupTable<string>;
 
-export interface FormsEngineContextProps {
-  readonly: boolean;
-  values: LookupTable<unknown>;
-  originalValuesJson: string;
-  sourceMap: FormsEngineSourceMap;
-  contentType: ContentType;
-  fieldValidityState: LookupTable<{ isValid: boolean; messages: string[] }>;
-  item: SandboxItem;
-  locked: boolean;
-  lockError: ApiResponse;
-  affectedItemsInWorkflow: SandboxItem[];
-  pathInProject: string;
-  requirementsFetched: boolean;
-  isSubmitting: boolean;
-  hasPendingChanges: boolean;
-  changedFieldIds: Set<string>;
-  versionComment: string;
-  // TODO: Move to local state?
-  fieldHelpExpandedState: LookupTable<boolean>;
-  formsStackProps: FormsEngineProps[];
-  formsStackState: FormsEngineContextProps[];
-  previousScrollTopPosition: number;
-  sectionExpandedState: LookupTable<boolean>;
-  activeTab: number;
-  // TODO Remove if not in use:
-  formsEngineExtensions: PluginDescriptor;
-  contentDom: XMLDocument | Element;
-  contentXml: string;
-  contentTypeXml: string;
-}
-
-export interface FormsEngineContextApiProps {
-  update: {
-    (newState: Partial<FormsEngineContextProps>): void;
-    <K extends keyof FormsEngineContextProps>(key: K, value: FormsEngineContextProps[K]): void;
-  };
-  updateValue: (fieldId: string, value: unknown) => void;
-  rollbackValue: (fieldId: string) => void;
-  handleTabChange(event: SyntheticEvent, newValue: number): void;
-  setAccordionExpandedState(sectionId: string, expanded: boolean): void;
-  handleToggleSectionAccordion(event: SyntheticEvent, expanded: boolean): void;
-  handleViewFieldHelpText(event: SyntheticEvent, field: ContentTypeField): void;
+export interface FormsEngineGlobalApiContextProps {
+  updateProps(stackIndex: number, formProps: FormsEngineProps): void;
+  setStateCache(stackIndex: number, state: FormsEngineCachedStackedFormState): void;
+  deleteStateCache(stackIndex: number): void;
   pushForm(formProps: FormsEngineProps): void;
   popForm(): void;
-  updateStackedFormState(stackIndex: number, state: FormsEngineContextProps): void;
 }
 
-export type FormsEngineContextType = [FormsEngineContextProps, MutableRefObject<FormsEngineContextApiProps>];
-
-export const FormsEngineContext = createContext<FormsEngineContextProps>(null);
-
-export const FormsEngineContextApi = createContext<FormsEngineContextApiProps>(null);
-
-export function useFormsEngineContext() {
-  const context = useContext(FormsEngineContext);
-  if (!context) {
-    throw new Error('useFormEngineContext must be used within a FormEngineContextProvider');
-  }
-  return context;
+export interface FormsEngineFormApiContextProps {
+  rollbackValue(fieldId: string): void;
+  rollbackChanges(): void;
 }
 
-export function useFormsEngineContextApi() {
-  const context = useContext(FormsEngineContextApi);
-  if (!context) {
-    throw new Error('useFormsEngineContextApi must be used within a FormEngineContextApiProvider');
-  }
-  return context;
+export interface FormRequirementsResponse
+  extends Pick<FormsEngineItemMetaContextProps, 'sourceMap' | 'pathInSite' | 'contentType'>,
+    FormsEngineEditContextProps {
+  item: DetailedItem;
+  contentObject: LookupTable<unknown>;
 }
 
-export const createInitialState: (mixin?: Partial<FormsEngineContextProps>) => FormsEngineContextProps = (
-  mixin?: Partial<FormsEngineContextProps>
-) => ({
-  pathInProject: null,
-  readonly: false,
-  activeTab: 0,
-  values: null,
-  contentDom: null,
-  contentXml: null,
-  contentType: null,
-  contentTypeXml: null,
-  fieldHelpExpandedState: {},
-  fieldValidityState: {},
-  formsEngineExtensions: null,
-  formsStackProps: [],
-  formsStackState: [],
-  item: null,
-  locked: false,
-  lockError: null,
-  previousScrollTopPosition: null,
-  requirementsFetched: false,
-  sectionExpandedState: {},
-  isCreateMode: false,
-  isSubmitting: false,
-  hasPendingChanges: false,
-  affectedItemsInWorkflow: null,
-  originalValuesJson: null,
-  sourceMap: null,
-  changedFieldIds: new Set<string>(),
-  versionComment: '',
-  ...mixin
-});
+export interface FormsEngineContextProps extends FormsEngineItemMetaContextProps, FormsEngineEditContextProps {
+  item: DetailedItem;
+}
+
+export interface FormsEngineItemMetaContextProps {
+  id: string;
+  path: string;
+  sourceMap: FormsEngineSourceMap;
+  pathInSite: string;
+  contentType: ContentType;
+}
+
+export interface FormsEngineEditContextProps {
+  locked: boolean;
+  lockError: ApiResponse;
+  affectedItemsInWorkflow?: SandboxItem[];
+}
+
+export interface FormsEngineAtoms {
+  isSubmitting: PrimitiveAtom<boolean>;
+  hasPendingChanges: PrimitiveAtom<boolean>;
+  readonly: Atom<boolean>;
+  lockResult: PrimitiveAtom<FormsEngineEditContextProps>;
+  valueByFieldId: LookupTable<PrimitiveAtom<unknown>>;
+  validationByFieldId: LookupTable<Atom<FieldValidityState>>;
+}
+
+export interface FormsEngineCachedStackedFormState {
+  previousScrollTopPosition: number;
+  sectionExpandedState: LookupTable<boolean>;
+}
+
+export interface StableGlobalContextProps {
+  state: Record<number, FormsEngineCachedStackedFormState>;
+  props: FormsEngineProps[];
+  atoms: FormsEngineAtoms[];
+  api: FormsEngineGlobalApiContextProps;
+}
+
+export interface StableFormContextProps {
+  originalValuesJson: string;
+  changedFieldIds: Set<string>;
+  atoms: FormsEngineAtoms;
+  fieldUpdates$: Subject<string>;
+}
+
+export const FormsEngineFormContextApi = createContext<FormsEngineFormApiContextProps>(undefined);
+FormsEngineFormContextApi.displayName = 'FormsEngineFormContextApi';
+
+// Single instance context, shared between all forms of a root
+export const StableGlobalContext = createContext<StableGlobalContextProps>(undefined);
+StableGlobalContext.displayName = 'StableGlobalContext';
+
+// Each form (e.g. root form and stacked child form) has one
+export const StableFormContext = createContext<StableFormContextProps>(undefined);
+StableFormContext.displayName = 'StableFormContext';
+
+export const ItemContext = createContext<DetailedItem>(undefined);
+ItemContext.displayName = 'ItemContext';
+
+export const ItemMetaContext = createContext<FormsEngineItemMetaContextProps>(undefined);
+ItemMetaContext.displayName = 'ItemMetaContext';
+
+function createUseContextHook<T>(name: string, context: Context<T>): () => T;
+function createUseContextHook<T, K extends keyof T>(
+  name: string,
+  context: Context<T>,
+  selector: (instance: T) => T[K]
+): () => T[K];
+function createUseContextHook<T, K extends keyof T>(
+  name: string,
+  context: Context<T>,
+  selector?: (instance: T) => T[K]
+): () => T | T[K] {
+  const contextName = context.displayName ?? name.replace('use', '');
+  return () => {
+    const instance = useContext(context);
+    if (!instance) {
+      throw new Error(`${name} must be used within a ${contextName}`);
+    }
+    return selector?.(instance) ?? instance;
+  };
+}
+
+export const useFormApiContext = createUseContextHook('useFormApiContext', FormsEngineFormContextApi);
+
+export const useStableGlobalContext = createUseContextHook('useStableGlobalContext', StableGlobalContext);
+
+export const useStableGlobalApiContext = createUseContextHook<StableGlobalContextProps, 'api'>(
+  'useStableGlobalApiContext',
+  StableGlobalContext,
+  (instance) => instance.api
+);
+
+export const useStableFormContext = createUseContextHook('useStableFormContext', StableFormContext);
+
+export const useItemContext = createUseContextHook('useItemContext', ItemContext);
+
+export const useItemMetaContext = createUseContextHook('useItemMetaContext', ItemMetaContext);

@@ -15,7 +15,6 @@
  */
 
 import { ContentTypeField } from '../../../models';
-import { useFormsEngineContext, useFormsEngineContextApi } from '../formsEngineContext';
 import FormControl, { FormControlProps } from '@mui/material/FormControl';
 import Box from '@mui/material/Box';
 import FieldRequiredStateIndicator from './FieldRequiredStateIndicator';
@@ -37,6 +36,13 @@ import MenuItem from '@mui/material/MenuItem';
 import Divider from '@mui/material/Divider';
 import ListItemText from '@mui/material/ListItemText';
 import { SystemIconDescriptor } from '../../SystemIcon';
+import {
+  useFormApiContext,
+  useItemMetaContext,
+  useStableFormContext,
+  useStableGlobalApiContext
+} from '../formsEngineContext';
+import { useAtomValue } from 'jotai';
 
 function createLengthBlock({ length, max, min }: { length: number; max: number; min: number }) {
   const pieces = [];
@@ -96,23 +102,27 @@ export const FormsEngineField = forwardRef<HTMLDivElement, FormsEngineFieldProps
     menuOptions,
     onMenuOptionClick
   } = props;
-  const { fieldHelpExpandedState, fieldValidityState, sourceMap, values, changedFieldIds } = useFormsEngineContext();
-  const api = useFormsEngineContextApi();
+  const { sourceMap } = useItemMetaContext();
+  const { changedFieldIds, atoms } = useStableFormContext();
+  const formApi = useFormApiContext();
+  const globalApi = useStableGlobalApiContext();
   const { formatMessage } = useIntl();
   const itemsByPath = useItemsByPath();
   const labelRef = useRef<HTMLLabelElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>();
   const [openMenu, setOpenMenu] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const fieldId = field.id;
   const hasChanges = changedFieldIds.has(field.id);
   const hasHelpText = Boolean(field.helpText);
   const hasDescription = Boolean(field.description);
   const lengthBlock = createLengthBlock({ length, max, min });
   const isRequired = isFieldRequired(field);
-  const validityData = fieldValidityState[field.id];
+  const validityData = useAtomValue(atoms.validationByFieldId[fieldId]);
+  const value = useAtomValue(atoms.valueByFieldId[fieldId]);
   const isValid = props.isValid ?? validityData?.isValid;
   const handleCloseMenu = () => setOpenMenu(false);
-  const handleRollback = () => api.rollbackValue(field.id);
+  const handleRollback = () => formApi.rollbackValue(field.id);
   useEffect(() => {
     // Offer controls the option to focus on the label when the field is rendered.
     if (autoFocus) {
@@ -136,7 +146,7 @@ export const FormsEngineField = forwardRef<HTMLDivElement, FormsEngineFieldProps
           </FormLabel>
           {isRequired && <FieldRequiredStateIndicator isValid={isValid} />}
           {hasHelpText && (
-            <IconButton size="small" onClick={(e) => api.handleViewFieldHelpText(e, field)}>
+            <IconButton size="small" onClick={() => setShowHelp(!showHelp)}>
               <HelpOutlineRounded fontSize="small" />
             </IconButton>
           )}
@@ -185,7 +195,7 @@ export const FormsEngineField = forwardRef<HTMLDivElement, FormsEngineFieldProps
         </Box>
       </Box>
       {hasHelpText && (
-        <Collapse in={fieldHelpExpandedState[fieldId]}>
+        <Collapse in={showHelp}>
           <Alert severity="info" variant="outlined" sx={{ border: 'none' }}>
             <Typography
               variant="body2"
@@ -208,7 +218,7 @@ export const FormsEngineField = forwardRef<HTMLDivElement, FormsEngineFieldProps
                 size="small"
                 sx={{ px: 0.5, minWidth: 0 }}
                 onClick={() => {
-                  api.pushForm({
+                  globalApi.pushForm({
                     readonly: true,
                     update: { path: sourceMap[fieldId] }
                   });
@@ -239,7 +249,7 @@ export const FormsEngineField = forwardRef<HTMLDivElement, FormsEngineFieldProps
             [`.${alertClasses.icon}`]: { mr: 1 }
           }}
         >
-          {isEmptyValue(field, values[field.id]) ? (
+          {isEmptyValue(field, value) ? (
             <FormattedMessage
               defaultMessage="Value is inherited from {label}"
               values={{ label: itemsByPath[sourceMap[fieldId]]?.label ?? sourceMap[fieldId] }}
