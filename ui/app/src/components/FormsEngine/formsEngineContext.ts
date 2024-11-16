@@ -29,7 +29,6 @@ export type FormsEngineSourceMap = LookupTable<string>;
 export interface FormsEngineGlobalApiContextProps {
   updateProps(stackIndex: number, formProps: FormsEngineProps): void;
   setStateCache(stackIndex: number, state: FormsEngineCachedStackedFormState): void;
-  deleteStateCache(stackIndex: number): void;
   pushForm(formProps: FormsEngineProps): void;
   popForm(): void;
 }
@@ -74,22 +73,25 @@ export interface FormsEngineAtoms {
 }
 
 export interface FormsEngineCachedStackedFormState {
+  collapsedToC: boolean;
   previousScrollTopPosition: number;
   sectionExpandedState: LookupTable<boolean>;
 }
 
 export interface StableGlobalContextProps {
-  state: Record<number, FormsEngineCachedStackedFormState>;
-  props: FormsEngineProps[];
-  atoms: FormsEngineAtoms[];
+  formsStackData: StableFormContextProps[];
   api: FormsEngineGlobalApiContextProps;
 }
 
 export interface StableFormContextProps {
-  originalValuesJson: string;
-  changedFieldIds: Set<string>;
   atoms: FormsEngineAtoms;
+  changedFieldIds: Set<string>;
   fieldUpdates$: Subject<string>;
+  initialized: boolean;
+  itemMeta: FormsEngineItemMetaContextProps;
+  originalValuesJson: string;
+  props: FormsEngineProps;
+  state: FormsEngineCachedStackedFormState;
 }
 
 export const FormsEngineFormContextApi = createContext<FormsEngineFormApiContextProps>(undefined);
