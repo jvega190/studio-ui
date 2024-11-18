@@ -25,7 +25,7 @@ import RadioGroup from '@mui/material/RadioGroup';
 import Collapse from '@mui/material/Collapse';
 import FormControl from '@mui/material/FormControl';
 import Link from '@mui/material/Link';
-import { DateTimeTimezonePicker, DateTimeTimezonePickerProps } from '../DateTimeTimezonePIcker';
+import { DateTimeTimezonePicker, DateTimeTimezonePickerProps } from '../DateTimeTimezonePicker';
 import TextFieldWithMax from '../TextFieldWithMax/TextFieldWithMax';
 import FormLabel from '@mui/material/FormLabel';
 import Alert from '@mui/material/Alert';

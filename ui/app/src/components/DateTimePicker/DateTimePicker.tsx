@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import { DateTimeTimezonePicker, DateTimeTimezonePickerProps } from '../DateTimeTimezonePIcker';
+import { DateTimeTimezonePicker, DateTimeTimezonePickerProps } from '../DateTimeTimezonePicker';
 import useMount from '../../hooks/useMount';
 
 /** @deprecated Use DateTimeTimezonePicker instead */

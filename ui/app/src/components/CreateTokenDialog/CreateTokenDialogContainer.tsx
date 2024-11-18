@@ -25,7 +25,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import FormHelperText from '@mui/material/FormHelperText';
 import Collapse from '@mui/material/Collapse';
-import { DateTimeTimezonePicker } from '../DateTimeTimezonePIcker';
+import { DateTimeTimezonePicker } from '../DateTimeTimezonePicker';
 import DialogFooter from '../DialogFooter/DialogFooter';
 import SecondaryButton from '../SecondaryButton';
 import PrimaryButton from '../PrimaryButton';

@@ -74,7 +74,7 @@ export function DateTimeTimezonePicker(props: DateTimeTimezonePickerProps) {
   });
   const handleChange = (newValue) => {
     setSelectedDate(newValue);
-    if (newValue.toISOString() !== moment(effectRefs.current.dateProp).toISOString()) {
+    if (newValue?.isValid() && newValue.toISOString() !== moment(effectRefs.current.dateProp).toISOString()) {
       effectRefs.current.onChange?.(createTransposedToTimezoneDate(newValue, selectedTimezone));
     }
   };
@@ -83,6 +83,11 @@ export function DateTimeTimezonePicker(props: DateTimeTimezonePickerProps) {
     event.stopPropagation();
     setSelectedTimezone(value);
   }) as AutocompleteProps<string, false, true, boolean>['onChange'];
+  const onDateTimeInputBlur = () => {
+    if (!selectedDate?.isValid()) {
+      setSelectedDate(moment(dateProp).tz(selectedTimezone));
+    }
+  };
   useEffect(() => {
     if (!dateProp) {
       mountedRef.current = true;
@@ -130,28 +135,19 @@ export function DateTimeTimezonePicker(props: DateTimeTimezonePickerProps) {
     <FormControl id={id} fullWidth>
       <LocalizationProvider dateAdapter={AdapterMoment} adapterLocale={localeCode}>
         <DateTimePicker
-          // @ts-ignore - Error 'sx does not exist on type', incorrect type definition.
-          sx={{ mt: 1 }}
           ampm={hour12}
           value={selectedDate}
           onChange={handleChange}
           disablePast={disablePast}
           disabled={disabled}
           onError={onError}
-          slotProps={{ textField: { size: 'small' } }}
-          renderInput={(params) => <TextField {...params} />}
-          // Not using the timezone prop since it would cause the date to get adjusted to that timezone.
-          // The idea of this control is to keep the date/time value stable as you pick timezones and only
-          // reflect the actual value change externally; but for the user, the date doesn't move around if
-          // he/she did not manually change it.
-          // timezone={selectedTimezone}
-          timezone={controlTimezone}
+          renderInput={(params) => <TextField {...params} size="small" sx={{ mt: 1 }} onBlur={onDateTimeInputBlur} />}
         />
         <Autocomplete
           options={timeZones}
           disabled={disabled}
           getOptionLabel={(timezone) =>
-            timezone + (selectedDate ? ` (GMT${getZDateOffset(selectedDate, timezone)})` : '')
+            timezone + ` (GMT${getZDateOffset(selectedDate?.isValid() ? selectedDate : moment(), timezone)})`
           }
           value={selectedTimezone}
           onChange={handleTimezoneChange}

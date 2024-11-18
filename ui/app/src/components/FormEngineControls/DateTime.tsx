@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import { DateTimeTimezonePicker } from '../DateTimeTimezonePIcker';
+import { DateTimeTimezonePicker } from '../DateTimeTimezonePicker';
 import InputLabel from '@mui/material/InputLabel';
 import FormControl from '@mui/material/FormControl';
 import { DateTimeControl } from '../../models/FormsEngine';
