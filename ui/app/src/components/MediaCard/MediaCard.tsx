@@ -27,7 +27,7 @@ import cardTitleStyles, { cardSubtitleStyles } from '../../styles/card';
 import palette from '../../styles/palette';
 import SystemIcon from '../SystemIcon';
 import Box from '@mui/material/Box';
-import { PartialSxRecord } from '../../models';
+import { PartialSxRecord } from '../../models/CustomRecord';
 
 const useStyles = makeStyles()(() => ({
   card: {
