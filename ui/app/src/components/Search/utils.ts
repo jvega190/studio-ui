@@ -78,7 +78,7 @@ export interface SearchProps {
   mode?: 'default' | 'select';
   embedded?: boolean;
   initialParameters?: SearchParameters;
-  preSelectedPaths?: string[];
+  preselectedPaths?: string[];
   onClose?(): void;
   onSelect?(path: string, selected: boolean): any;
   onAcceptSelection?(items: string[]): any;
@@ -156,7 +156,7 @@ export const deserializeSearchFilters = (filters) => {
 
 interface useSearchStateProps {
   searchParameters: ElasticParams;
-  preSelectedPaths?: string[];
+  preselectedPaths?: string[];
   onSelect?(path: string, selected: boolean): any;
 }
 
@@ -186,7 +186,7 @@ interface useSearchStateReturn {
 
 export const useSearchState = ({
   searchParameters,
-  preSelectedPaths = [],
+  preselectedPaths = [],
   onSelect
 }: useSearchStateProps): useSearchStateReturn => {
   const { formatMessage } = useIntl();
@@ -233,9 +233,9 @@ export const useSearchState = ({
   const areAllSelected = useMemo(() => {
     if (!searchResults || searchResults.items.length === 0) return false;
     return !searchResults.items
-      .filter((item) => !preSelectedPaths.includes(item.path))
+      .filter((item) => !preselectedPaths.includes(item.path))
       .some((item: any) => !selected.includes(item.path));
-  }, [searchResults, selected, preSelectedPaths]);
+  }, [searchResults, selected, preselectedPaths]);
 
   const onActionClicked = (option: AllItemActions, event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     if (selected.length > 1) {
@@ -335,7 +335,7 @@ export const useSearchState = ({
     if (checked) {
       let selectedItems: any[] = [];
       searchResults.items.forEach((item: any) => {
-        if (selected.indexOf(item.path) === -1 && !preSelectedPaths.includes(item.path)) {
+        if (selected.indexOf(item.path) === -1 && !preselectedPaths.includes(item.path)) {
           selectedItems.push(item.path);
           onSelect?.(item.path, true);
         }

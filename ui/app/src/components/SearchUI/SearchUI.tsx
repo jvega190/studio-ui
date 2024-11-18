@@ -21,7 +21,7 @@ import SiteSearchFilters from '../SiteSearchFilters';
 import { makeStyles } from 'tss-react/mui';
 import palette from '../../styles/palette';
 import { ElasticParams, Filter, MediaItem, SearchResult } from '../../models/Search';
-import { CheckedFilter, drawerWidth } from '../Search/utils';
+import { CheckedFilter, drawerWidth, SearchProps } from '../Search/utils';
 import LookupTable from '../../models/LookupTable';
 import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -64,7 +64,7 @@ export interface SearchUIProps {
   searchParameters: ElasticParams;
   error: ApiResponse;
   isFetching: boolean;
-  preSelectedPaths?: string[];
+  preselectedPaths?: SearchProps['preselectedPaths'];
   onActionClicked(option: AllItemActions, event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void;
   handleSelectAll(checked: any): void;
   onSelectedPathChanges(path: string): void;
@@ -309,7 +309,7 @@ export function SearchUI(props: SearchUIProps) {
     handleClearSelected,
     onClose,
     onAcceptSelection,
-    preSelectedPaths = []
+    preselectedPaths = []
   } = props;
   // endregion
 
@@ -456,7 +456,7 @@ export function SearchUI(props: SearchUIProps) {
                 <>
                   {searchResults.items.length > 0 ? (
                     searchResults.items.map((item: MediaItem, i) => {
-                      const isPreSelected = preSelectedPaths.includes(item.path);
+                      const isPreselected = preselectedPaths.includes(item.path);
                       return (
                         <Grid
                           key={i}
@@ -477,19 +477,19 @@ export function SearchUI(props: SearchUIProps) {
                             }
                             sxs={{
                               root: {
-                                cursor: isPreSelected ? 'not-allowed' : 'pointer',
+                                cursor: isPreselected ? 'not-allowed' : 'pointer',
                                 boxShadow: (theme) =>
-                                  isPreSelected ? `0px 0px 4px 4px ${theme.palette.divider}` : undefined
+                                  isPreselected ? `0px 0px 4px 4px ${theme.palette.divider}` : undefined
                               }
                             }}
                             item={item}
                             onPreview={mode === 'default' ? () => onPreview(item) : UNDEFINED}
                             onClick={
-                              !isPreSelected && mode === 'select'
+                              !isPreselected && mode === 'select'
                                 ? () => handleSelect(item.path, !selected.includes(item.path))
                                 : UNDEFINED
                             }
-                            onSelect={!isPreSelected && handleSelect}
+                            onSelect={!isPreselected && handleSelect}
                             selected={selected}
                             previewAppBaseUri={guestBase}
                             action={

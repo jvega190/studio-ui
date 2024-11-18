@@ -36,7 +36,7 @@ export function Search(props: SearchProps) {
     onAcceptSelection,
     onClose,
     initialParameters: initialParametersProp,
-    preSelectedPaths = []
+    preselectedPaths = []
   } = props;
 
   // region State
@@ -79,7 +79,7 @@ export function Search(props: SearchProps) {
     handleChangeView
   } = useSearchState({
     searchParameters,
-    preSelectedPaths,
+    preselectedPaths,
     onSelect
   });
 
@@ -211,7 +211,7 @@ export function Search(props: SearchProps) {
       searchParameters={searchParameters}
       selected={selected}
       selectionOptions={selectionOptions}
-      preSelectedPaths={preSelectedPaths}
+      preselectedPaths={preselectedPaths}
     />
   );
 }

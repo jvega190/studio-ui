@@ -83,7 +83,7 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
     allowUpload = true,
     viewMode = 'card',
     onToggleViewMode,
-    preSelectedPaths = []
+    preselectedPaths = []
   } = props;
   // endregion
   const { classes, cx: clsx } = useStyles();
@@ -259,7 +259,7 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
             >
               {items
                 ? items.map((item: SearchItem) => {
-                    const isPreSelected = preSelectedPaths.includes(item.path);
+                    const isPreSelected = preselectedPaths.includes(item.path);
                     return (
                       <MediaCard
                         viewMode={viewMode}

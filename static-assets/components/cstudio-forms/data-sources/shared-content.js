@@ -120,7 +120,7 @@ YAHOO.extend(CStudioForms.Datasources.SharedContent, CStudioForms.CStudioFormDat
     }
     // Paths already in the control, by sending them to the Browse Dialog, it'll mark them as selected, and disable
     // the actions for those paths.
-    const preSelectedPaths = craftercms.utils.array
+    const preselectedPaths = craftercms.utils.array
       .asArray(control?.form.model[control.fieldDef.id])
       .map((item) => item.key);
 
@@ -129,7 +129,7 @@ YAHOO.extend(CStudioForms.Datasources.SharedContent, CStudioForms.CStudioFormDat
       path: _self.processPathsForMacros(browsePath),
       multiSelect,
       allowUpload: false,
-      preSelectedPaths,
+      preselectedPaths,
       onSuccess: (result) => {
         const items = Array.isArray(result) ? result : [result];
         items.forEach(({ name, path }) => {
@@ -169,7 +169,7 @@ YAHOO.extend(CStudioForms.Datasources.SharedContent, CStudioForms.CStudioFormDat
 
     // Paths already in the control, by sending them to the Browse Dialog, it'll mark them as selected, and disable
     // the actions for those paths.
-    searchContext.preSelectedPaths = craftercms.utils.array
+    searchContext.preselectedPaths = craftercms.utils.array
       .asArray(control?.form.model[control.fieldDef.id])
       .map((item) => item.key);
 

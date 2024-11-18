@@ -175,7 +175,7 @@
       const multiSelect = this.selectItemsCount === -1 || this.selectItemsCount > 1;
       // Paths already in the control, by sending them to the Browse Dialog, it'll mark them as selected, and disable
       // the actions for those paths.
-      const preSelectedPaths = craftercms.utils.array
+      const preselectedPaths = craftercms.utils.array
         .asArray(control?.form.model[control.fieldDef.id])
         .map((item) => item.key);
 
@@ -188,7 +188,7 @@
           sortBy: 'internalName',
           sortOrder: 'asc'
         },
-        preSelectedPaths,
+        preselectedPaths,
         onSuccess: (result) => {
           (Array.isArray(result) ? result : [result]).forEach(({ name, path }) => {
             const value = name && name !== '' ? name : path;
@@ -231,7 +231,7 @@
 
       // Paths already in the control, by sending them to the Search Dialog, it'll mark them as selected, and disable
       // the actions for those paths.
-      searchContext.preSelectedPaths = craftercms.utils.array
+      searchContext.preselectedPaths = craftercms.utils.array
         .asArray(control?.form.model[control.fieldDef.id])
         .map((item) => item.key);
 

@@ -50,7 +50,7 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
     numOfLoaderItems,
     allowUpload = true,
     initialParameters: initialParametersProp,
-    preSelectedPaths = []
+    preselectedPaths = []
   } = props;
   const [items, setItems] = useState<SearchItem[]>();
   const site = useActiveSiteId();
@@ -225,7 +225,7 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
       onRefresh={onRefresh}
       onUpload={onUpload}
       allowUpload={allowUpload}
-      preSelectedPaths={preSelectedPaths}
+      preselectedPaths={preselectedPaths}
     />
   ) : (
     <EmptyState

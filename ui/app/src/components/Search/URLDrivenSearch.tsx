@@ -46,7 +46,7 @@ export function URLDrivenSearch(props: URLDrivenSearchProps) {
   const desktopScreen = useMediaQuery(theme.breakpoints.up('md'));
   // endregion
 
-  const preSelectedPaths = JSON.parse(queryParams.preSelectedPaths as string);
+  const preselectedPaths = JSON.parse(queryParams.preselectedPaths as string);
 
   // region state
   const [keyword, setKeyword] = useState(queryParams['keywords'] || '');
@@ -77,7 +77,7 @@ export function URLDrivenSearch(props: URLDrivenSearchProps) {
     handleChangeView
   } = useSearchState({
     searchParameters,
-    preSelectedPaths,
+    preselectedPaths,
     onSelect
   });
   // endregion
@@ -247,7 +247,7 @@ export function URLDrivenSearch(props: URLDrivenSearchProps) {
       searchParameters={searchParameters}
       selected={selected}
       selectionOptions={selectionOptions}
-      preSelectedPaths={preSelectedPaths}
+      preselectedPaths={preselectedPaths}
     />
   );
 }

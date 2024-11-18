@@ -71,7 +71,7 @@ YAHOO.extend(CStudioForms.Datasources.ImgRepoUpload, CStudioForms.CStudioFormDat
         searchContext.path = this.repoPath.endsWith('/') ? `${this.repoPath}.+` : `${this.repoPath}/.+`;
       }
 
-      searchContext.preSelectedPaths = [currentValue];
+      searchContext.preselectedPaths = [currentValue];
 
       CStudioAuthoring.Operations.openSearch(
         searchContext,
@@ -95,7 +95,7 @@ YAHOO.extend(CStudioForms.Datasources.ImgRepoUpload, CStudioForms.CStudioFormDat
     } else {
       CStudioAuthoring.Operations.openBrowseFilesDialog({
         path: _self.processPathsForMacros(_self.repoPath),
-        preSelectedPaths: [currentValue],
+        preselectedPaths: [currentValue],
         onSuccess: ({ path }) => {
           const imageData = {};
           imageData.previewUrl = _self.createPreviewUrl(path);

@@ -1177,8 +1177,8 @@ var nodeOpen = false,
           searchUrl += '&path=' + encodeURIComponent(searchContext.path);
         }
 
-        if (!CStudioAuthoring.Utils.isEmpty(searchContext.preSelectedPaths)) {
-          searchUrl += `&preSelectedPaths=${encodeURIComponent(JSON.stringify(searchContext.preSelectedPaths))}`;
+        if (!CStudioAuthoring.Utils.isEmpty(searchContext.preselectedPaths)) {
+          searchUrl += `&preselectedPaths=${encodeURIComponent(JSON.stringify(searchContext.preselectedPaths))}`;
         }
 
         var childSearch = null;
