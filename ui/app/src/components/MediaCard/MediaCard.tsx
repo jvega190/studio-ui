@@ -75,7 +75,9 @@ const useStyles = makeStyles()(() => ({
 
 export type MediaCardViewModes = 'card' | 'compact' | 'row';
 
-interface MediaCardProps {
+type MediaCardClassKey = 'root' | 'checkbox' | 'media' | 'mediaIcon' | 'cardActionArea' | 'cardHeader';
+
+export interface MediaCardProps {
   item: MediaItem;
   showPath?: boolean;
   selected?: Array<string>;
@@ -83,8 +85,8 @@ interface MediaCardProps {
   viewMode?: MediaCardViewModes;
   action?: CardHeaderProps['action'];
   avatar?: CardHeaderProps['avatar'];
-  classes?: Partial<Record<'root' | 'checkbox' | 'media' | 'mediaIcon' | 'cardActionArea' | 'cardHeader', string>>;
-  sxs?: PartialSxRecord<'root' | 'checkbox' | 'media' | 'mediaIcon' | 'cardActionArea' | 'cardHeader'>;
+  classes?: Partial<Record<MediaCardClassKey, string>>;
+  sxs?: PartialSxRecord<MediaCardClassKey>;
   onClick?(e): void;
   onPreview?(e): any;
   onSelect?(path: string, selected: boolean): any;
@@ -203,6 +205,7 @@ function MediaCard(props: MediaCardProps) {
               className={cx(classes.media, props.classes?.media)}
               image={`${previewAppBaseUri}${path}`}
               title={name}
+              sx={sxs?.media}
             />
           ) : (
             <Box
