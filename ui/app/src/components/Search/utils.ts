@@ -154,7 +154,7 @@ export const deserializeSearchFilters = (filters) => {
   return deserializedFilters;
 };
 
-interface useSearchStateProps {
+interface UseSearchStateHookProps {
   searchParameters: ElasticParams;
   preselectedPaths?: string[];
   onSelect?(path: string, selected: boolean): any;
@@ -188,7 +188,7 @@ export const useSearchState = ({
   searchParameters,
   preselectedPaths = [],
   onSelect
-}: useSearchStateProps): useSearchStateReturn => {
+}: UseSearchStateHookProps): useSearchStateReturn => {
   const { formatMessage } = useIntl();
   const dispatch = useDispatch();
   const clipboard = useSelection((state) => state.content.clipboard);
