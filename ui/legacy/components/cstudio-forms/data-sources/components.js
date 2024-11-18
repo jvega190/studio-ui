@@ -177,7 +177,7 @@
       // the actions for those paths.
       const preselectedPaths = craftercms.utils.array
         .asArray(control?.form.model[control.fieldDef.id])
-        .map((item) => item.key);
+        .flatMap((item) => item.key || []);
 
       CStudioAuthoring.Operations.openBrowseFilesDialog({
         path,
@@ -233,7 +233,7 @@
       // the actions for those paths.
       searchContext.preselectedPaths = craftercms.utils.array
         .asArray(control?.form.model[control.fieldDef.id])
-        .map((item) => item.key);
+        .flatMap((item) => item.key || []);
 
       CStudioAuthoring.Operations.openSearch(
         searchContext,

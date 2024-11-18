@@ -51,7 +51,7 @@ YAHOO.extend(CStudioForms.Datasources.VideoBrowseRepo, CStudioForms.CStudioFormD
         sortBy: 'internalName',
         sortOrder: 'asc',
         mode: 'select', // open search not in default but in select mode
-        preselectedPaths: [currentValue]
+        preselectedPaths: [currentValue].filter(Boolean)
       };
 
       if (this.repoPath) {

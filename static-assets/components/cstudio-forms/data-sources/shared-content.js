@@ -122,7 +122,7 @@ YAHOO.extend(CStudioForms.Datasources.SharedContent, CStudioForms.CStudioFormDat
     // the actions for those paths.
     const preselectedPaths = craftercms.utils.array
       .asArray(control?.form.model[control.fieldDef.id])
-      .map((item) => item.key);
+      .flatMap((item) => item.key || []);
 
     const multiSelect = _self.selectItemsCount === -1 || _self.selectItemsCount > 1;
     CStudioAuthoring.Operations.openBrowseFilesDialog({
@@ -171,7 +171,7 @@ YAHOO.extend(CStudioForms.Datasources.SharedContent, CStudioForms.CStudioFormDat
     // the actions for those paths.
     searchContext.preselectedPaths = craftercms.utils.array
       .asArray(control?.form.model[control.fieldDef.id])
-      .map((item) => item.key);
+      .flatMap((item) => item.key || []);
 
     CStudioAuthoring.Operations.openSearch(
       searchContext,

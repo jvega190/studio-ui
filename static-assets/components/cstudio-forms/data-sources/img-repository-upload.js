@@ -71,7 +71,7 @@ YAHOO.extend(CStudioForms.Datasources.ImgRepoUpload, CStudioForms.CStudioFormDat
         searchContext.path = this.repoPath.endsWith('/') ? `${this.repoPath}.+` : `${this.repoPath}/.+`;
       }
 
-      searchContext.preselectedPaths = [currentValue];
+      searchContext.preselectedPaths = [currentValue].filter(Boolean);
 
       CStudioAuthoring.Operations.openSearch(
         searchContext,
