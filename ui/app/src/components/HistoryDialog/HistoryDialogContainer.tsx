@@ -39,6 +39,7 @@ import { getEditorMode, isImage, isPdfDocument, isPreviewable, isVideo } from '.
 import {
   compareBothVersions,
   compareToPreviousVersion,
+  fetchItemVersions,
   revertContent,
   revertToPreviousVersion,
   versionsChangeItem,
@@ -61,6 +62,10 @@ import Box from '@mui/material/Box';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import { showErrorDialog } from '../../state/reducers/dialogs/error';
+import { contentEvent } from '../../state/actions/system';
+import { getHostToHostBus } from '../../utils/subjects';
+import { filter } from 'rxjs/operators';
+import { getRootPath } from '../../utils/path';
 
 export function HistoryDialogContainer(props: HistoryDialogContainerProps) {
   const { versionsBranch, error } = props;
@@ -171,6 +176,8 @@ export function HistoryDialogContainer(props: HistoryDialogContainerProps) {
             [image || video || pdf ? 'url' : 'content']: content,
             mode: image || video || pdf ? UNDEFINED : getEditorMode(item),
             path: item.path,
+            url: item.path,
+            showEdit: current === version.versionNumber,
             subtitle: `v.${version.versionNumber}`,
             ...(video ? { mimeType: item.mimeType } : {})
           })
@@ -313,6 +320,26 @@ export function HistoryDialogContainer(props: HistoryDialogContainerProps) {
       setSelectedCompareVersions(newSelectedVersions);
     }
   };
+
+  // region Item Updates Propagation
+  useEffect(() => {
+    const events = [contentEvent.type];
+    const hostToHost$ = getHostToHostBus();
+    const subscription = hostToHost$
+      .pipe(filter((e) => events.includes(e.type) && e.payload.targetPath === item.path))
+      .subscribe(() => {
+        dispatch(
+          fetchItemVersions({
+            item,
+            rootPath: getRootPath(item.path)
+          })
+        );
+      });
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [dispatch, item]);
+  // endregion
 
   return (
     <>
