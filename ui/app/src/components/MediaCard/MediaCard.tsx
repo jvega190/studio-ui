@@ -16,7 +16,7 @@
 
 import React from 'react';
 import Card from '@mui/material/Card';
-import CardHeader, { CardHeaderProps, cardHeaderClasses } from '@mui/material/CardHeader';
+import CardHeader, { cardHeaderClasses, CardHeaderProps } from '@mui/material/CardHeader';
 import CardMedia, { cardMediaClasses } from '@mui/material/CardMedia';
 import CardActionArea, { CardActionAreaProps } from '@mui/material/CardActionArea';
 import { makeStyles } from 'tss-react/mui';
@@ -28,6 +28,7 @@ import palette from '../../styles/palette';
 import SystemIcon from '../SystemIcon';
 import Box from '@mui/material/Box';
 import { PartialSxRecord } from '../../models/CustomRecord';
+import { CSSSelectorObjectOrCssVariables } from '@mui/system/styleFunctionSx/styleFunctionSx';
 
 const useStyles = makeStyles()(() => ({
   card: {
@@ -152,17 +153,15 @@ function MediaCard(props: MediaCardProps) {
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onClick={onClick}
-      sx={{
-        ...(viewMode === 'row'
-          ? {
-              display: 'flex',
-              width: '100%',
-              [`& .${cardHeaderClasses.root}`]: { flexGrow: 1 },
-              [`& .${cardMediaClasses.root}`]: { paddingTop: '0 !important', height: '80px !important', width: '80px' }
-            }
-          : {}),
-        ...sxs?.root
-      }}
+      sx={[
+        viewMode === 'row' && {
+          display: 'flex',
+          width: '100%',
+          [`& .${cardHeaderClasses.root}`]: { flexGrow: 1 },
+          [`& .${cardMediaClasses.root}`]: { paddingTop: '0 !important', height: '80px !important', width: '80px' }
+        },
+        sxs?.root as CSSSelectorObjectOrCssVariables
+      ]}
     >
       <CardHeader
         classes={{ action: classes.cardHeader, root: props.classes?.cardHeader }}
@@ -210,10 +209,10 @@ function MediaCard(props: MediaCardProps) {
           ) : (
             <Box
               className={cx(classes.mediaIcon, props.classes?.mediaIcon)}
-              sx={{
-                ...(viewMode === 'row' ? { paddingTop: '0 !important', height: '80px', width: '80px' } : {}),
-                ...sxs?.mediaIcon
-              }}
+              sx={[
+                viewMode === 'row' && { paddingTop: '0 !important', height: '80px', width: '80px' },
+                sxs?.mediaIcon as CSSSelectorObjectOrCssVariables
+              ]}
             >
               {type === 'Video' ? (
                 <video className={classes.videoThumbnail}>
