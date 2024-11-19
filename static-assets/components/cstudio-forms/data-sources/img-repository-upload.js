@@ -79,7 +79,8 @@ YAHOO.extend(CStudioForms.Datasources.ImgRepoUpload, CStudioForms.CStudioFormDat
         {
           success(searchId, selectedTOs) {
             var imageData = {};
-            var path = selectedTOs[0].path;
+            const filteredSelected = selectedTOs.filter((media) => media.path !== currentValue);
+            var path = filteredSelected[0].path;
             var url = this.context.createPreviewUrl(path);
             imageData.previewUrl = url;
             imageData.relativeUrl = path;

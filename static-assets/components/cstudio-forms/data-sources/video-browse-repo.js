@@ -63,7 +63,8 @@ YAHOO.extend(CStudioForms.Datasources.VideoBrowseRepo, CStudioForms.CStudioFormD
         true,
         {
           success(searchId, selectedTOs) {
-            const path = selectedTOs[0].path;
+            const filteredSelected = selectedTOs.filter((media) => media.path !== currentValue);
+            const path = filteredSelected[0].path;
             const url = this.context.createPreviewUrl(path);
             const videoData = {
               previewUrl: url,
