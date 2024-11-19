@@ -32,11 +32,10 @@ import ListItemText from '@mui/material/ListItemText';
 import CircularProgress from '@mui/material/CircularProgress';
 import { getHostToGuestBus } from '../../utils/subjects';
 import EmptyState from '../EmptyState/EmptyState';
-import { Resource } from '../../models/Resource';
 import { useSelection } from '../../hooks/useSelection';
 import { usePreviewGuest } from '../../hooks/usePreviewGuest';
 import { useContentTypes } from '../../hooks/useContentTypes';
-import { useLogicResource } from '../../hooks/useLogicResource';
+import { LoadingState } from '../LoadingState';
 import ListItemButton from '@mui/material/ListItemButton';
 
 const translations = defineMessages({
@@ -95,6 +94,9 @@ export function PreviewInPageInstancesPanel() {
   const models = useMemo(() => {
     return guest?.models;
   }, [guest]);
+  const filteredContentTypes = Object.values(models ?? {}).filter(
+    (model) => model.craftercms.contentTypeId === contentTypeFilter
+  );
 
   const selectedModels = useMemo(() => {
     return Object.values(models ?? []).filter((model) => {
@@ -126,25 +128,6 @@ export function PreviewInPageInstancesPanel() {
       setKeyword('');
     };
   }, [models]);
-
-  const resource = useLogicResource<
-    ContentInstance[],
-    { models: LookupTable<ContentInstance>; contentTypeFilter: string }
-  >(
-    {
-      models,
-      contentTypeFilter
-    },
-    {
-      shouldRenew: (source, resource) => Boolean(contentTypeFilter) && !keyword && resource.complete,
-      shouldResolve: (source) => Boolean(source.models),
-      shouldReject: (source) => false,
-      errorSelector: (source) => null,
-      resultSelector: (source) => {
-        return Object.values(source.models)?.filter((model) => model.craftercms.contentTypeId === contentTypeFilter);
-      }
-    }
-  );
 
   const handleSearchKeyword = (keyword) => {
     setKeyword(keyword);
@@ -205,27 +188,28 @@ export function PreviewInPageInstancesPanel() {
         </Select>
       </div>
       <Suspencified>
-        <InPageInstancesUI
-          resource={resource}
-          selectedModels={selectedModels}
-          onItemClick={onItemClick}
-          contentTypeFilter={contentTypeFilter}
-        />
+        {filteredContentTypes ? (
+          <InPageInstancesUI
+            selectedModels={selectedModels}
+            onItemClick={onItemClick}
+            contentTypeFilter={contentTypeFilter}
+          />
+        ) : (
+          <LoadingState />
+        )}
       </Suspencified>
     </>
   );
 }
 
 interface InPageInstancesUIProps {
-  resource: Resource<ContentInstance[]>;
   selectedModels: ContentInstance[];
   contentTypeFilter: string;
   onItemClick(instance: ContentInstance): void;
 }
 
 function InPageInstancesUI(props: InPageInstancesUIProps) {
-  const { resource, selectedModels, onItemClick, contentTypeFilter } = props;
-  resource.read();
+  const { selectedModels, onItemClick, contentTypeFilter } = props;
   const { classes } = useStyles();
   const { formatMessage } = useIntl();
 

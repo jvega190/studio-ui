@@ -1,6 +1,17 @@
 # Changelog
 
 ## 5.0.0
+* [utils/resource] Removed `createFakeResource`, `createResource` and `createResourceBundle` utils.
+* [components]
+  * Removed `pages/QuickCreateMenu` component.
+  * Removed `SuspenseWithEmptyState` and `WithEmptyState` components.
+  * Removed `resource` prop from StoreProvider
+* [hooks]
+  * Removed `useLogicResource` hook.
+  * Removed `useSelectorResource` hook.
+  * Removed `useQuickCreateListResource` hook.
+  * Removed `useSystemVersionResource` hook.
+  * Removed `useResolveWhenNoNullResource` hook.
 * Upgrade to the latest version to date of the following libraries:
   * @mui/icons-material
   * @mui/lab

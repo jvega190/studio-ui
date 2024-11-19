@@ -36,6 +36,8 @@ import { fetchDetailedItems } from '../../services/content';
 import { DetailedItem } from '../../models';
 import { fetchDetailedItemComplete } from '../../state/actions/content';
 import { createAtLeastHalfHourInFutureDate } from '../../utils/datetime';
+import { batchActions } from '../../state/actions/misc';
+import { showErrorDialog } from '../../state/reducers/dialogs/error';
 
 export function PublishDialogContainer(props: PublishDialogContainerProps) {
   const { items, scheduling = 'now', onSuccess, onClose, isSubmitting } = props;
@@ -266,8 +268,10 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
           items: items.map((path) => props.items.find((item) => item.path === path))
         });
       },
-      (error) => {
-        dispatch(updatePublishDialog({ isSubmitting: false }));
+      ({ response }) => {
+        dispatch(
+          batchActions([updatePublishDialog({ isSubmitting: false }), showErrorDialog({ error: response.response })])
+        );
       }
     );
   };
