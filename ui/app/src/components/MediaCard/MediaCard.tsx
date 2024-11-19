@@ -87,6 +87,7 @@ export interface MediaCardProps {
   action?: CardHeaderProps['action'];
   avatar?: CardHeaderProps['avatar'];
   classes?: Partial<Record<MediaCardClassKey, string>>;
+  disableSelection?: boolean;
   sxs?: PartialSxRecord<MediaCardClassKey>;
   onClick?(e): void;
   onPreview?(e): any;
@@ -112,6 +113,7 @@ function MediaCard(props: MediaCardProps) {
     onDragStart,
     onDragEnd,
     viewMode = 'card',
+    disableSelection,
     sxs
   } = props;
   // endregion
@@ -171,7 +173,8 @@ function MediaCard(props: MediaCardProps) {
             <FormGroup className={props.classes?.checkbox} sx={sxs?.checkbox}>
               <Checkbox
                 checked={selected.includes(path)}
-                onClick={(e: any) => onSelect(path, e.target.checked)}
+                disabled={disableSelection}
+                onClick={(e: any) => !disableSelection && onSelect(path, e.target.checked)}
                 color="primary"
                 size="small"
               />

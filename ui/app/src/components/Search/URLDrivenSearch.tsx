@@ -47,6 +47,9 @@ export function URLDrivenSearch(props: URLDrivenSearchProps) {
   // endregion
 
   const preselectedPaths = JSON.parse(queryParams.preselectedPaths as string);
+  const disableChangePreselected = queryParams.disableChangePreselected
+    ? queryParams.disableChangePreselected === 'true'
+    : true;
 
   // region state
   const [keyword, setKeyword] = useState(queryParams['keywords'] || '');
@@ -78,6 +81,7 @@ export function URLDrivenSearch(props: URLDrivenSearchProps) {
   } = useSearchState({
     searchParameters,
     preselectedPaths,
+    disableChangePreselected,
     onSelect
   });
   // endregion
@@ -248,6 +252,7 @@ export function URLDrivenSearch(props: URLDrivenSearchProps) {
       selected={selected}
       selectionOptions={selectionOptions}
       preselectedPaths={preselectedPaths}
+      disableChangePreselected={disableChangePreselected}
     />
   );
 }

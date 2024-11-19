@@ -79,6 +79,7 @@ export interface SearchProps {
   embedded?: boolean;
   initialParameters?: SearchParameters;
   preselectedPaths?: string[];
+  disableChangePreselected?: boolean;
   onClose?(): void;
   onSelect?(path: string, selected: boolean): any;
   onAcceptSelection?(items: string[]): any;
@@ -157,6 +158,7 @@ export const deserializeSearchFilters = (filters) => {
 interface UseSearchStateHookProps {
   searchParameters: ElasticParams;
   preselectedPaths?: string[];
+  disableChangePreselected?: SearchProps['disableChangePreselected'];
   onSelect?(path: string, selected: boolean): any;
 }
 
@@ -187,6 +189,7 @@ interface useSearchStateReturn {
 export const useSearchState = ({
   searchParameters,
   preselectedPaths = [],
+  disableChangePreselected = true,
   onSelect
 }: UseSearchStateHookProps): useSearchStateReturn => {
   const { formatMessage } = useIntl();
@@ -194,7 +197,7 @@ export const useSearchState = ({
   const clipboard = useSelection((state) => state.content.clipboard);
   const site = useActiveSiteId();
   const { authoringBase, guestBase } = useEnv();
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(preselectedPaths);
   const [searchResults, setSearchResults] = useState<SearchResult>(null);
   const [selectedPath, setSelectedPath] = useState<string>(searchParameters.path ?? '');
   useFetchSandboxItems(selected);
@@ -232,10 +235,8 @@ export const useSearchState = ({
 
   const areAllSelected = useMemo(() => {
     if (!searchResults || searchResults.items.length === 0) return false;
-    return !searchResults.items
-      .filter((item) => !preselectedPaths.includes(item.path))
-      .some((item: any) => !selected.includes(item.path));
-  }, [searchResults, selected, preselectedPaths]);
+    return !searchResults.items.some((item: any) => !selected.includes(item.path));
+  }, [searchResults, selected]);
 
   const onActionClicked = (option: AllItemActions, event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     if (selected.length > 1) {
@@ -335,7 +336,8 @@ export const useSearchState = ({
     if (checked) {
       let selectedItems: any[] = [];
       searchResults.items.forEach((item: any) => {
-        if (selected.indexOf(item.path) === -1 && !preselectedPaths.includes(item.path)) {
+        const allowSelect = disableChangePreselected ? !preselectedPaths.includes(item.path) : true;
+        if (allowSelect && selected.indexOf(item.path) === -1) {
           selectedItems.push(item.path);
           onSelect?.(item.path, true);
         }
@@ -345,7 +347,8 @@ export const useSearchState = ({
       let newSelectedItems = [...selected];
       searchResults.items.forEach((item: any) => {
         let index = newSelectedItems.indexOf(item.path);
-        if (index >= 0) {
+        const allowUnselect = disableChangePreselected ? !preselectedPaths.includes(item.path) : true;
+        if (allowUnselect && index >= 0) {
           newSelectedItems.splice(index, 1);
           onSelect?.(item.path, false);
         }

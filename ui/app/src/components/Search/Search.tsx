@@ -36,7 +36,8 @@ export function Search(props: SearchProps) {
     onAcceptSelection,
     onClose,
     initialParameters: initialParametersProp,
-    preselectedPaths = []
+    preselectedPaths = [],
+    disableChangePreselected = true
   } = props;
 
   // region State
@@ -80,6 +81,7 @@ export function Search(props: SearchProps) {
   } = useSearchState({
     searchParameters,
     preselectedPaths,
+    disableChangePreselected,
     onSelect
   });
 
@@ -212,6 +214,7 @@ export function Search(props: SearchProps) {
       selected={selected}
       selectionOptions={selectionOptions}
       preselectedPaths={preselectedPaths}
+      disableChangePreselected={disableChangePreselected}
     />
   );
 }

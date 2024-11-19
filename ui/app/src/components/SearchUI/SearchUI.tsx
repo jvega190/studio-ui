@@ -65,6 +65,7 @@ export interface SearchUIProps {
   error: ApiResponse;
   isFetching: boolean;
   preselectedPaths?: SearchProps['preselectedPaths'];
+  disableChangePreselected?: SearchProps['disableChangePreselected'];
   onActionClicked(option: AllItemActions, event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void;
   handleSelectAll(checked: any): void;
   onSelectedPathChanges(path: string): void;
@@ -309,7 +310,8 @@ export function SearchUI(props: SearchUIProps) {
     handleClearSelected,
     onClose,
     onAcceptSelection,
-    preselectedPaths = []
+    preselectedPaths = [],
+    disableChangePreselected
   } = props;
   // endregion
 
@@ -477,19 +479,18 @@ export function SearchUI(props: SearchUIProps) {
                             }
                             sxs={{
                               root: {
-                                cursor: isPreselected ? 'not-allowed' : 'pointer',
-                                boxShadow: (theme) =>
-                                  isPreselected ? `0px 0px 4px 4px ${theme.palette.divider}` : undefined
+                                cursor: disableChangePreselected && isPreselected ? 'not-allowed' : 'pointer'
                               }
                             }}
                             item={item}
                             onPreview={mode === 'default' ? () => onPreview(item) : UNDEFINED}
                             onClick={
-                              !isPreselected && mode === 'select'
+                              !(disableChangePreselected && isPreselected) && mode === 'select'
                                 ? () => handleSelect(item.path, !selected.includes(item.path))
                                 : UNDEFINED
                             }
-                            onSelect={!isPreselected && handleSelect}
+                            onSelect={handleSelect}
+                            disableSelection={disableChangePreselected && isPreselected}
                             selected={selected}
                             previewAppBaseUri={guestBase}
                             action={
