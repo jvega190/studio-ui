@@ -26,6 +26,9 @@ import ItemStateIcon, { ItemStateIconProps } from '../ItemStateIcon';
 import ItemTypeIcon, { ItemTypeIconProps } from '../ItemTypeIcon';
 import ItemPublishingTargetIcon, { ItemPublishingTargetIconProps } from '../ItemPublishingTargetIcon';
 import { isInWorkflow } from './utils';
+import Box from '@mui/material/Box';
+import { SxProps } from '@mui/system';
+import { Theme } from '@mui/material/styles';
 
 export type ItemDisplayClassKey = 'root' | 'label' | 'labelPreviewable' | 'icon' | 'typeIcon';
 export type ItemDisplayStyles = Partial<Record<ItemDisplayClassKey, CSSProperties>>;
@@ -47,6 +50,8 @@ export interface ItemDisplayProps<LabelTypographyComponent extends React.Element
   stateIconProps?: Partial<ItemStateIconProps>;
   publishingTargetIconProps?: Partial<ItemPublishingTargetIconProps>;
   itemTypeIconProps?: Partial<ItemTypeIconProps>;
+  sx?: SxProps<Theme>;
+  component?: ElementType;
 }
 
 const useStyles = makeStyles<ItemDisplayStyles, ItemDisplayClassKey>()(
@@ -98,6 +103,7 @@ const ItemDisplay = forwardRef<HTMLSpanElement, ItemDisplayProps>((props, ref) =
     stateIconProps,
     publishingTargetIconProps,
     itemTypeIconProps,
+    component = 'span',
     ...rest
   } = props;
   // endregion
@@ -108,7 +114,7 @@ const ItemDisplay = forwardRef<HTMLSpanElement, ItemDisplayProps>((props, ref) =
   }
   const inWorkflow = isInWorkflow(item.stateMap) || item.systemType === 'folder';
   return (
-    <span ref={ref} {...rest} className={cx(classes.root, propClasses?.root, rest?.className)}>
+    <Box component={component} ref={ref} {...rest} className={cx(classes.root, propClasses?.root, rest?.className)}>
       {/* @see https://github.com/craftercms/craftercms/issues/5442 */}
       {inWorkflow
         ? showWorkflowState && (
@@ -144,7 +150,7 @@ const ItemDisplay = forwardRef<HTMLSpanElement, ItemDisplayProps>((props, ref) =
         title={item[titleDisplayProp]}
         children={item[labelDisplayProp]}
       />
-    </span>
+    </Box>
   );
 });
 

@@ -66,9 +66,9 @@ export interface InternalDialogState {
 }
 
 export interface PublishDialogUIProps {
-  items: DetailedItem[];
+  detailedItems: DetailedItem[];
   publishingTargets: PublishingTarget[];
-  isFetching: boolean;
+  isFetchingItems: boolean;
   error: ApiResponse;
   published: boolean;
   publishingTargetsStatus: string;

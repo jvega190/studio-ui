@@ -16,7 +16,73 @@
 
 import { makeStyles } from 'tss-react/mui';
 
-const useStyles = makeStyles()(() => ({
+const useStyles = makeStyles()((theme) => ({
+  root: {
+    width: 'auto'
+  },
+  title: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+
+  formSection: {
+    width: '100%',
+    marginBottom: '20px'
+  },
+  formInputs: {
+    fontSize: '14px'
+  },
+  selectInput: {
+    padding: '10px 12px'
+  },
+  publishingTargetLoaderContainer: {
+    paddingTop: '24px',
+    display: 'inline-flex'
+  },
+  publishingTargetLoader: {
+    border: '1px solid #ced4da',
+    padding: '10px 12px',
+    borderRadius: '4px',
+    width: '100%'
+  },
+  publishingTargetEmpty: {
+    padding: '10px 12px',
+    borderRadius: '4px',
+    width: '100%'
+  },
+  datePicker: {
+    position: 'relative',
+    paddingLeft: 30,
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      width: '5px',
+      height: '100%',
+      top: '0',
+      left: '7px',
+      backgroundColor: theme.palette.background.paper,
+      borderRadius: '5px'
+    }
+  },
+  radioGroup: {
+    paddingTop: '10px',
+    fontSize: '14px'
+  },
+  radioInput: {
+    padding: '4px',
+    marginLeft: '5px',
+    marginRight: '5px'
+  },
+  selectIcon: {
+    right: '12px'
+  },
+  mixedDatesWarningMessage: {
+    marginBottom: '10px'
+  },
+  mixedTargetsWarningMessage: {
+    marginTop: '10px'
+  },
   leftAlignedAction: {
     marginRight: 'auto'
   },
