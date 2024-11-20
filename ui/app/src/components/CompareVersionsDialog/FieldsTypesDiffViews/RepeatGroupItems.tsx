@@ -70,7 +70,7 @@ export function RepeatGroupItems(props: RepeatGroupItemsProps) {
   const isCompareModeEnabled = itemsCompareModeSelection.a?.content && itemsCompareModeSelection.b?.content;
   const areSelectedItemsEqual =
     isCompareModeEnabled && itemsCompareModeSelection.a?.xml === itemsCompareModeSelection.b?.xml;
-  const [{ fieldsViewState }, contextApiRef] = useVersionsDialogContext();
+  const [{ fieldsViewState, viewSlideOutState, compareSlideOutState }, contextApiRef] = useVersionsDialogContext();
   const compareMode = fieldsViewState[field.id]?.compareMode;
 
   const getItemDataAtVersion = (side: RepItemDiffSide, index: number): { content: ContentInstance; xml: string } => {
@@ -113,14 +113,21 @@ export function RepeatGroupItems(props: RepeatGroupItemsProps) {
 
   const onViewItemVersion = (side: RepItemDiffSide, index: number): void => {
     const { content, xml } = getItemDataAtVersion(side, index);
-    contextApiRef.current.setViewSlideOutState({
-      open: true,
-      error: null,
-      isFetching: false,
-      data: { content, xml, fields },
-      title: field.name,
-      subtitle: <FormattedMessage defaultMessage="{fieldId} - Repeat Group" values={{ fieldId: field.id }} />,
-      onClose: () => contextApiRef.current.closeSlideOuts()
+    contextApiRef.current.setState({
+      compareSlideOutState: {
+        ...compareSlideOutState,
+        open: false
+      },
+      viewSlideOutState: {
+        ...viewSlideOutState,
+        open: true,
+        error: null,
+        isFetching: false,
+        data: { content, xml, fields },
+        title: field.name,
+        subtitle: <FormattedMessage defaultMessage="{fieldId} - Repeat Group" values={{ fieldId: field.id }} />,
+        onClose: () => contextApiRef.current.closeSlideOuts()
+      }
     });
   };
 
@@ -188,15 +195,22 @@ export function RepeatGroupItems(props: RepeatGroupItemsProps) {
 
   useEffect(() => {
     if (itemsCompareModeSelection.a?.content && itemsCompareModeSelection.b?.content) {
-      contextApiRef.current.setCompareSlideOutState({
-        open: true,
-        error: null,
-        isFetching: false,
-        selectionContent: deepCopy(itemsCompareModeSelection),
-        fields,
-        title: field.name,
-        subtitle: <FormattedMessage defaultMessage="{fieldId} - Repeat Group" values={{ fieldId: field.id }} />,
-        onClose: () => contextApiRef.current.closeSlideOuts()
+      contextApiRef.current.setState({
+        viewSlideOutState: {
+          ...viewSlideOutState,
+          open: false
+        },
+        compareSlideOutState: {
+          ...compareSlideOutState,
+          open: true,
+          error: null,
+          isFetching: false,
+          selectionContent: deepCopy(itemsCompareModeSelection),
+          fields,
+          title: field.name,
+          subtitle: <FormattedMessage defaultMessage="{fieldId} - Repeat Group" values={{ fieldId: field.id }} />,
+          onClose: () => contextApiRef.current.closeSlideOuts()
+        }
       });
       setItemsCompareModeSelection?.({ a: null, b: null });
     }

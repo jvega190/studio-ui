@@ -62,7 +62,7 @@ export function ContentInstanceComponents(props: ContentInstanceComponentsProps)
     });
     return byId;
   }, [contentA, contentB]);
-  const [, contextApiRef] = useVersionsDialogContext();
+  const [{ viewSlideOutState, compareSlideOutState }, contextApiRef] = useVersionsDialogContext();
 
   const getItemLabel = (item: ContentInstance): string => {
     return item.craftercms?.label ?? itemsByPath?.[item.craftercms?.path]?.label ?? item.craftercms?.id ?? item.key;
@@ -120,16 +120,23 @@ export function ContentInstanceComponents(props: ContentInstanceComponentsProps)
     const fields = contentTypes[contentTypeId].fields;
     // It may happen that one of the embedded components we're comparing is null (doesn't exist at a specific version),
     // in that scenario we use a mock (empty) content instance.
-    contextApiRef.current.setCompareSlideOutState({
-      open: true,
-      selectionContent: {
-        a: embeddedA,
-        b: embeddedB
+    contextApiRef.current.setState({
+      viewSlideOutState: {
+        ...viewSlideOutState,
+        open: false
       },
-      fields,
-      title: field.name,
-      subtitle: <FormattedMessage defaultMessage="{fieldId}" values={{ fieldId: field.id }} />,
-      onClose: () => contextApiRef.current.closeSlideOuts()
+      compareSlideOutState: {
+        ...compareSlideOutState,
+        open: true,
+        selectionContent: {
+          a: embeddedA,
+          b: embeddedB
+        },
+        fields,
+        title: field.name,
+        subtitle: <FormattedMessage defaultMessage="{fieldId}" values={{ fieldId: field.id }} />,
+        onClose: () => contextApiRef.current.closeSlideOuts()
+      }
     });
   };
 
@@ -137,16 +144,24 @@ export function ContentInstanceComponents(props: ContentInstanceComponentsProps)
     const { embeddedA, embeddedB } = getEmbeddedVersions(id);
     const embeddedComponent = embeddedA ?? embeddedB;
     const fields = contentTypes[(embeddedComponent.content as ContentInstance).craftercms.contentTypeId].fields;
-    contextApiRef.current.setViewSlideOutState({
-      open: true,
-      data: {
-        content: embeddedComponent.content as ContentInstance,
-        xml: embeddedComponent.xml,
-        fields
+
+    contextApiRef.current.setState({
+      compareSlideOutState: {
+        ...compareSlideOutState,
+        open: false
       },
-      title: field.name,
-      subtitle: <FormattedMessage defaultMessage="{fieldId}" values={{ fieldId: field.id }} />,
-      onClose: () => contextApiRef.current.closeSlideOuts()
+      viewSlideOutState: {
+        ...viewSlideOutState,
+        open: true,
+        data: {
+          content: embeddedComponent.content as ContentInstance,
+          xml: embeddedComponent.xml,
+          fields
+        },
+        title: field.name,
+        subtitle: <FormattedMessage defaultMessage="{fieldId}" values={{ fieldId: field.id }} />,
+        onClose: () => contextApiRef.current.closeSlideOuts()
+      }
     });
   };
 
