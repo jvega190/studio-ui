@@ -29,6 +29,7 @@ export interface BrowseFilesDialogBaseProps {
   allowUpload?: boolean;
   initialParameters?: Partial<ElasticParams>;
   preselectedPaths?: string[];
+  disableChangePreselected?: boolean;
 }
 
 export interface BrowseFilesDialogProps extends BrowseFilesDialogBaseProps, EnhancedDialogProps {
@@ -64,6 +65,7 @@ export interface BrowseFilesDialogUIProps {
   allowUpload?: boolean;
   sortKeys: Array<string>;
   preselectedPaths?: BrowseFilesDialogBaseProps['preselectedPaths'];
+  disableChangePreselected?: BrowseFilesDialogBaseProps['disableChangePreselected'];
   onCardSelected(item: MediaItem): void;
   onPreviewImage?(item: MediaItem): void;
   onCheckboxChecked(path: string, selected: boolean): void;

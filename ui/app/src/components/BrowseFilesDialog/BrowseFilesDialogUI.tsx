@@ -83,7 +83,8 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
     allowUpload = true,
     viewMode = 'card',
     onToggleViewMode,
-    preselectedPaths = []
+    preselectedPaths = [],
+    disableChangePreselected
   } = props;
   // endregion
   const { classes, cx: clsx } = useStyles();
@@ -255,11 +256,13 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
             </Paper>
             <Box
               className={classes.cardsContainer}
-              sx={viewMode === 'row' && { display: 'flex !important', flexFlow: 'wrap' }}
+              sx={[viewMode === 'row' && { display: 'flex !important', flexFlow: 'wrap' }]}
             >
               {items
                 ? items.map((item: SearchItem) => {
                     const isPreSelected = preselectedPaths.includes(item.path);
+                    const onSelect = disableChangePreselected && isPreSelected ? () => null : onCheckboxChecked;
+
                     return (
                       <MediaCard
                         viewMode={viewMode}
@@ -267,19 +270,16 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
                           root: item.path === selectedCard?.path && classes.selectedCard
                         }}
                         sxs={{
-                          root: {
-                            cursor: isPreSelected ? 'not-allowed' : 'pointer',
-                            boxShadow: (theme) =>
-                              isPreSelected ? `0px 0px 4px 4px ${theme.palette.divider}` : undefined
-                          }
+                          root: { cursor: disableChangePreselected && isPreSelected ? 'not-allowed' : 'pointer' }
                         }}
                         key={item.path}
                         item={item}
-                        selected={multiSelect ? [...selectedArray] : null}
-                        onSelect={multiSelect && !isPreSelected ? onCheckboxChecked : null}
+                        disableSelection={disableChangePreselected && isPreSelected}
+                        selected={multiSelect ? [...selectedArray] : []}
+                        onSelect={multiSelect ? onSelect : null}
                         onPreview={onPreviewImage ? () => onPreviewImage(item) : null}
                         previewAppBaseUri={guestBase}
-                        onClick={() => !isPreSelected && onCardSelected(item)}
+                        onClick={() => !(disableChangePreselected && isPreSelected) && onCardSelected(item)}
                         showPath={true}
                       />
                     );

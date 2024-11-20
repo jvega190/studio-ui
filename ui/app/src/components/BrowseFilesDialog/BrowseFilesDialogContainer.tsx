@@ -50,7 +50,8 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
     numOfLoaderItems,
     allowUpload = true,
     initialParameters: initialParametersProp,
-    preselectedPaths = []
+    preselectedPaths = [],
+    disableChangePreselected = true
   } = props;
   const [items, setItems] = useState<SearchItem[]>();
   const site = useActiveSiteId();
@@ -93,6 +94,21 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
       setSortKeys(response.facets.map((facet) => facet.name));
     });
   }, [searchParameters, currentPath, site]);
+
+  useEffect(() => {
+    const query = preselectedPaths?.map((path) => `localId:"${path}"`).join(' ');
+    search(site, { query }).subscribe(({ items }) => {
+      if (multiSelect) {
+        items.forEach((item) => {
+          setSelectedLookup({ [item.path]: item });
+        });
+      } else {
+        if (items.length) {
+          setSelectedCard(items[0]);
+        }
+      }
+    });
+  }, [site, preselectedPaths, multiSelect, setSelectedLookup]);
 
   useEffect(() => {
     let subscription;
@@ -226,6 +242,7 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
       onUpload={onUpload}
       allowUpload={allowUpload}
       preselectedPaths={preselectedPaths}
+      disableChangePreselected={disableChangePreselected}
     />
   ) : (
     <EmptyState
