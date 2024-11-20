@@ -86,15 +86,17 @@ YAHOO.extend(CStudioForms.Datasources.VideoBrowseRepo, CStudioForms.CStudioFormD
         preselectedPaths: [currentValue],
         onSuccess: (result) => {
           const items = Array.isArray(result) ? result : [result];
-          items.forEach(({ path }) => {
-            const url = CStudioAuthoringContext.previewAppBaseUri + path;
-            const videoData = {
-              previewUrl: url,
-              relativeUrl: path,
-              fileExtension: url.substring(url.lastIndexOf('.') + 1)
-            };
-            callback.success(videoData);
-          });
+          items
+            .filter((item) => item.path !== currentValue)
+            .forEach(({ path }) => {
+              const url = CStudioAuthoringContext.previewAppBaseUri + path;
+              const videoData = {
+                previewUrl: url,
+                relativeUrl: path,
+                fileExtension: url.substring(url.lastIndexOf('.') + 1)
+              };
+              callback.success(videoData);
+            });
         }
       });
     }
