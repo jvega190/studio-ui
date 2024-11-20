@@ -141,7 +141,7 @@ export function ContentInstanceComponents(props: ContentInstanceComponentsProps)
       open: true,
       data: {
         content: embeddedComponent.content as ContentInstance,
-        xml: aXml,
+        xml: embeddedComponent.xml,
         fields
       },
       title: field.name,
