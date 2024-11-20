@@ -30,7 +30,7 @@ export function ImageDiffView(props: ImageDiffViewProps) {
       bXml={bXml}
       field={field}
       renderContent={(xml) => (
-        <Box sx={{ height: 'calc(50% - 9px)' }}>
+        <Box sx={{ height: 'calc(50% - 9px)', textAlign: 'center' }}>
           <ImageView xml={xml} field={field} sxs={{ image: { maxHeight: 'calc(100% - 40px)' } }} />
         </Box>
       )}
