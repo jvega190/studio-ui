@@ -25,10 +25,10 @@ export interface FetchDependenciesResponse {
   softDependencies: string[];
 }
 
-export function fetchDependencies(siteId: string, items: any): Observable<FetchDependenciesResponse> {
+export function fetchDependencies(siteId: string, paths: string[]): Observable<FetchDependenciesResponse> {
   return postJSON('/studio/api/2/dependency/dependencies', {
     siteId,
-    paths: items
+    paths
   }).pipe(map((response) => response?.response?.items));
 }
 

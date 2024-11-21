@@ -19,6 +19,7 @@ import { makeStyles } from 'tss-react/mui';
 import Typography from '@mui/material/Typography';
 import Gears from '../Gears/Gears';
 import { CSSObject as CSSProperties } from 'tss-react';
+import Box, { BoxProps } from '@mui/material/Box';
 
 type LoadingStateClassKey = 'root' | 'title' | 'subtitle' | 'graphic' | 'graphicRoot';
 
@@ -64,6 +65,7 @@ export interface LoadingStateProps {
   graphicProps?: any;
   classes?: Partial<Record<LoadingStateClassKey, string>>;
   styles?: LoadingStateStyles;
+  sx?: BoxProps['sx'];
 }
 
 export type ConditionalLoadingStateProps = LoadingStateProps & PropsWithChildren<{ isLoading: boolean }>;
@@ -72,7 +74,7 @@ export function LoadingState(props: LoadingStateProps) {
   const { classes, cx } = useStyles(props.styles);
   const { graphic: Graphic = Gears, classes: propClasses } = props;
   return (
-    <div className={cx(classes.root, propClasses?.root)}>
+    <Box className={cx(classes.root, propClasses?.root)} sx={props.sx}>
       {props.title && (
         <Typography variant="h6" component="h3" className={cx(classes.title, propClasses?.title)}>
           {props.title}
@@ -86,7 +88,7 @@ export function LoadingState(props: LoadingStateProps) {
       <div className={cx(classes.graphicRoot, propClasses?.graphicRoot)}>
         <Graphic className={cx(classes.graphic, propClasses?.graphic)} {...props.graphicProps} />
       </div>
-    </div>
+    </Box>
   );
 }
 

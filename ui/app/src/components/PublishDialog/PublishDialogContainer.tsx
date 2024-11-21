@@ -15,17 +15,16 @@
  */
 
 import { useSpreadState } from '../../hooks/useSpreadState';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { SyntheticEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { PublishingTarget } from '../../models/Publishing';
 import LookupTable from '../../models/LookupTable';
-import { InternalDialogState, paths, PublishDialogContainerProps } from './utils';
+import { InternalDialogState, PublishDialogContainerProps } from './utils';
 import { useActiveSiteId } from '../../hooks/useActiveSiteId';
 import { useDispatch } from 'react-redux';
 import { fetchPublishingTargets, FetchPublishingTargetsResponse } from '../../services/publishing';
 import { getComputedPublishingTarget, getDateScheduled } from '../../utils/content';
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
-import { createPresenceTable } from '../../utils/array';
-import { fetchDependencies, FetchDependenciesResponse } from '../../services/dependencies';
+import { fetchDependencies } from '../../services/dependencies';
 import useStyles from './styles';
 import { useSelection } from '../../hooks/useSelection';
 import { capitalize, isBlank } from '../../utils/string';
@@ -44,8 +43,7 @@ import { ApiResponseErrorState } from '../ApiResponseErrorState';
 import { LoadingState } from '../LoadingState';
 import Grid from '@mui/material/Grid2';
 import Alert from '@mui/material/Alert';
-import { buttonClasses, Typography } from '@mui/material';
-import DependencySelection from '../DependencySelection';
+import { buttonClasses, listItemSecondaryActionClasses, Typography } from '@mui/material';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import FormControl from '@mui/material/FormControl';
@@ -69,10 +67,20 @@ import Button from '@mui/material/Button';
 import UnfoldMoreRoundedIcon from '@mui/icons-material/UnfoldMoreRounded';
 import UnfoldLessRoundedIcon from '@mui/icons-material/UnfoldLessRounded';
 import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView';
-import { TreeItem } from '@mui/x-tree-view/TreeItem';
+import { TreeItem, treeItemClasses } from '@mui/x-tree-view/TreeItem';
 import ItemDisplay from '../ItemDisplay';
 import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
 import ListRoundedIcon from '@mui/icons-material/ListRounded';
+import Chip from '@mui/material/Chip';
+import List from '@mui/material/List';
+import ListItem, { listItemClasses } from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
+import { map, switchMap } from 'rxjs/operators';
+import { createLookupTable } from '../../utils/object';
+import TreeOutlined from '../../icons/TreeOutlined';
+import { HelpOutlineOutlined } from '@mui/icons-material';
+import Tooltip from '@mui/material/Tooltip';
+import ErrorOutlineRounded from '@mui/icons-material/ErrorOutlineRounded';
 
 const messages = defineMessages({
   emailLabel: {
@@ -131,67 +139,118 @@ const messages = defineMessages({
 
 // More button: dependencies, diff
 
-function renderTreeNode(itemMap: LookupTable<DetailedItem>, node: PathTreeNode) {
+type DependencyType = 'soft' | 'hard';
+type DependencyMap = Record<string, DependencyType>;
+type DependencyDataState = {
+  paths: string[];
+  typeByPath: DependencyMap;
+  itemsByPath: LookupTable<DetailedItem>;
+  items: DetailedItem[];
+};
+
+function DependencyChip({ type }: { type: DependencyType }) {
+  if (!type) return null;
+  const isSoft = type === 'soft';
+  return (
+    <Chip
+      size="small"
+      variant="outlined"
+      color={isSoft ? 'info' : 'warning'}
+      label={isSoft ? <FormattedMessage defaultMessage="Optional" /> : <FormattedMessage defaultMessage="Required" />}
+    />
+  );
+}
+
+function renderTreeNode(
+  itemMap: LookupTable<DetailedItem>,
+  node: PathTreeNode,
+  dependencyTypeMap: DependencyMap = {},
+  onMenuClick: (e: React.MouseEvent<HTMLButtonElement>, path: string) => void,
+  onCheckboxChange: (e: React.ChangeEvent<HTMLInputElement>, checked: boolean, path: string) => void
+) {
+  const isItem = Boolean(itemMap[node.path]);
+  const isDependency = Boolean(dependencyTypeMap?.[node.path]);
+  const isSoft = dependencyTypeMap?.[node.path] === 'soft';
   return (
     <TreeItem
       key={node.path}
       itemId={node.path}
+      data-is-item={isItem}
       label={
-        itemMap[node.path] ? (
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-            sx={{
-              '.tree-item-more-section': { display: 'none' },
-              '&:hover': { '.tree-item-more-section': { display: 'flex' } }
-            }}
-          >
+        isItem ? (
+          <Box display="flex" justifyContent="space-between" alignItems="center">
             <div>
-              <ItemDisplay item={itemMap[node.path]} showNavigableAsLinks={false} component="div" />
-              <Typography variant="body2" color="text.secondary" children={node.path} />
+              <Box display="flex">
+                <ItemDisplay item={itemMap[node.path]} showNavigableAsLinks={false} sx={{ mr: 1 }} />
+                {isDependency && <DependencyChip type={dependencyTypeMap[node.path]} />}
+              </Box>
+              <Typography
+                component="div"
+                variant="body2"
+                color="text.secondary"
+                children={node.path}
+                title={node.path}
+                noWrap
+              />
             </div>
-            <div className="tree-item-more-section">
+            <Box display="flex">
               <IconButton
+                className="tree-item-more-section"
                 onClick={(e) => {
                   e.stopPropagation();
+                  onMenuClick?.(e, node.path);
                 }}
               >
                 <MoreVertRounded />
               </IconButton>
-            </div>
+              {isSoft && (
+                <Checkbox
+                  size="small"
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e, checked) => {
+                    onCheckboxChange?.(e, checked, node.path);
+                  }}
+                />
+              )}
+            </Box>
           </Box>
         ) : (
-          node.label
+          <span title={node.path}>{node.label}</span>
         )
       }
-      children={node.children?.length === 0 ? undefined : node.children.map((child) => renderTreeNode(itemMap, child))}
+      children={
+        node.children?.length === 0
+          ? undefined
+          : node.children.map((child) => renderTreeNode(itemMap, child, dependencyTypeMap))
+      }
     />
   );
 }
 
 export function PublishDialogContainer(props: PublishDialogContainerProps) {
   const { items, scheduling = 'now', onSuccess, onClose, isSubmitting } = props;
+  const siteId = useActiveSiteId();
+  const dispatch = useDispatch();
   const [detailedItems, setDetailedItems] = useState<DetailedItem[]>();
   const [isFetchingItems, setIsFetchingItems] = useState(false);
   const [state, setState] = useSpreadState<InternalDialogState>({
     emailOnApprove: false,
     requestApproval: false,
-    publishingTarget: '',
+    publishingTarget: null,
     submissionComment: '',
     scheduling,
     scheduledDateTime: createAtLeastHalfHourInFutureDate(),
-    publishingChannel: null,
     error: null,
     fetchingDependencies: false
   });
   const [published, setPublished] = useState<boolean>(null);
   const [publishingTargets, setPublishingTargets] = useState<PublishingTarget[]>(null);
   const [publishingTargetsStatus, setPublishingTargetsStatus] = useState('Loading');
+  const [isTreeView, setIsTreeView] = useState(true); // TODO: Add preference storage
   const [selectedItems, setSelectedItems] = useState<LookupTable<boolean>>({});
-  const [dependencies, setDependencies] = useState<FetchDependenciesResponse>(null);
+  const [dependencyData, setDependencyData] = useState<DependencyDataState>(null);
+  const submissionCommentRequired = useSelection((state) => state.uiConfig.publishing.publishCommentRequired);
   const effectRefs = useUpdateRefs({ items, state });
-
   const itemsDataSummary = useMemo(() => {
     let allItemsInSubmittedState = true;
     let allItemsHavePublishPermission = true;
@@ -207,10 +266,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
         incompleteDetailedItemPaths.push(item.path);
       }
     });
-    const [trees, treePaths] = buildPathTrees(itemPaths);
     return {
-      trees,
-      treePaths,
       itemMap,
       itemPaths,
       allItemsInSubmittedState,
@@ -218,11 +274,18 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
       incompleteDetailedItemPaths
     };
   }, [items]);
-
-  const siteId = useActiveSiteId();
+  const dependencyPaths = dependencyData?.paths;
+  const [trees, parentTreeNodePaths, itemsAndDependenciesPaths] = useMemo(() => {
+    const treeItemPaths = itemsDataSummary.itemPaths.concat(dependencyPaths ?? []);
+    const treeBuilderResult = buildPathTrees(treeItemPaths);
+    return [...treeBuilderResult, treeItemPaths] as [PathTreeNode[], string[], string[]];
+  }, [dependencyPaths, itemsDataSummary.itemPaths]);
+  const dependencyItemMap = dependencyData?.itemsByPath;
+  const itemsAndDependenciesMap = useMemo(
+    () => ({ ...itemsDataSummary.itemMap, ...dependencyItemMap }),
+    [itemsDataSummary.itemMap, dependencyItemMap]
+  );
   const hasPublishPermission = itemsDataSummary.allItemsHavePublishPermission;
-  const dispatch = useDispatch();
-  const submissionCommentRequired = useSelection((state) => state.uiConfig.publishing.publishCommentRequired);
   const isApprove = hasPublishPermission && itemsDataSummary.allItemsInSubmittedState;
   const submitServiceFn =
     !hasPublishPermission || state.requestApproval ? requestPublish : isApprove ? approve : publish;
@@ -231,23 +294,23 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
       mixedPublishingTargets: false,
       mixedPublishingDates: false,
       dateScheduled: null,
-      publishingTarget: null
+      publishingTarget: '' as InternalDialogState['publishingTarget']
     };
 
     if (detailedItems) {
-      const itemsChecked = detailedItems.flatMap((item) => (selectedItems[item.path] ? [item] : []));
-
-      if (itemsChecked.length === 0) {
-        state.publishingTarget = '';
+      // TODO: This should be based on the items that will be submitted. Main, hard and *selected* softs.
+      // const itemsIncludedForPublish = detailedItems.flatMap((item) => (selectedItems[item.path] ? [item] : []));
+      const itemsIncludedForPublish = detailedItems;
+      if (itemsIncludedForPublish.length === 0) {
         return state;
       }
 
       // region Discover mixed targets and/or schedules and sets the publishingTarget based off the items
       let target: string;
       let schedule: string;
-      itemsChecked.some((item, index) => {
-        const computedTarget = getComputedPublishingTarget(itemsChecked[0]);
-        const computedSchedule = getDateScheduled(itemsChecked[0]);
+      itemsIncludedForPublish.some((item, index) => {
+        const computedTarget = getComputedPublishingTarget(itemsIncludedForPublish[0]);
+        const computedSchedule = getDateScheduled(itemsIncludedForPublish[0]); // TODO: Uses .live/.staging
         if (index === 0) {
           target = computedTarget;
           schedule = computedSchedule;
@@ -263,7 +326,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
             state.mixedPublishingDates = true;
           }
         }
-        if (state.publishingTarget === null && computedTarget !== null) {
+        if (state.publishingTarget === '' && computedTarget !== null) {
           state.publishingTarget = computedTarget;
         }
         // First found dateScheduled cached for later
@@ -279,17 +342,11 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
       if (publishingTargets?.length) {
         // If there are mixed targets, we want manual user selection of a target.
         // Otherwise, use what was previously found as the target on the selected items.
-        if (state.mixedPublishingTargets) {
-          state.publishingTarget = '';
-        } else {
+        if (!state.mixedPublishingTargets && state.publishingTarget === '') {
           // If we haven't found a target by this point, we wish to default the dialog to
           // staging (as long as that target is enabled in the system, which is checked next).
-          if (state.publishingTarget === null) {
-            state.publishingTarget = 'staging';
-          }
-          state.publishingTarget = publishingTargets.some((target) => target.name === state.publishingTarget)
-            ? state.publishingTarget
-            : publishingTargets[0].name;
+          state.publishingTarget =
+            publishingTargets.find((target) => target.name === 'staging')?.name ?? publishingTargets[0].name;
         }
       } else {
         state.publishingTarget = '';
@@ -297,15 +354,15 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     }
 
     return state;
-  }, [selectedItems, publishingTargets, detailedItems]);
+  }, [publishingTargets, detailedItems]);
 
-  const getPublishingChannels = useCallback(
+  const fetchPublishingTargetsFn = useCallback(
     (
       success?: (channels: FetchPublishingTargetsResponse['publishingTargets']) => void,
       error?: (error: unknown) => void
     ) => {
       setPublishingTargetsStatus('Loading');
-      fetchPublishingTargets(siteId).subscribe({
+      return fetchPublishingTargets(siteId).subscribe({
         next({ publishingTargets: targets, published }) {
           setPublished(published);
           setPublishingTargets(targets);
@@ -321,7 +378,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     [siteId]
   );
 
-  // TODO: This could be optimised to run the least expensive checks first.
   // Submit button should be disabled when:
   const submitDisabled =
     // Detailed items haven't loaded
@@ -343,10 +399,48 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     !Object.values(selectedItems).filter(Boolean).length;
 
   useEffect(() => {
-    getPublishingChannels(() => {
-      setSelectedItems(createPresenceTable(items, true, (item) => item.path));
-    });
-  }, [getPublishingChannels, items]);
+    setState({ fetchingDependencies: true });
+    // TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // TODO: This is not scalable (bulk fetch of countless DetailedItems). We must review and discuss how to adjust.
+    // TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    fetchDependencies(siteId, itemsDataSummary.itemPaths)
+      .pipe(
+        switchMap((dependenciesByType) =>
+          fetchDetailedItems(siteId, [
+            ...dependenciesByType.hardDependencies,
+            ...dependenciesByType.softDependencies
+          ]).pipe(map((detailedItemsList) => ({ dependenciesByType, detailedItemsList })))
+        )
+      )
+      .subscribe({
+        next({ dependenciesByType, detailedItemsList }) {
+          const depMap: DependencyMap = {};
+          const depLookup: LookupTable<DetailedItem> = createLookupTable(detailedItemsList, 'path');
+          dependenciesByType.hardDependencies.forEach((path) => {
+            depMap[path] = 'hard';
+          });
+          dependenciesByType.softDependencies.forEach((path) => {
+            depMap[path] = 'soft';
+          });
+          setState({ fetchingDependencies: false });
+          setDependencyData({
+            typeByPath: depMap,
+            paths: Object.keys(depMap),
+            itemsByPath: depLookup,
+            items: detailedItemsList
+          });
+        },
+        error() {
+          setState({ fetchingDependencies: false });
+          setDependencyData(null);
+        }
+      });
+  }, [itemsDataSummary.itemPaths, setState, siteId]);
+
+  useEffect(() => {
+    const subscription = fetchPublishingTargetsFn();
+    return () => subscription.unsubscribe();
+  }, [fetchPublishingTargetsFn, items]);
 
   useEffect(() => {
     scheduling !== effectRefs.current.state.scheduling && setState({ scheduling });
@@ -354,14 +448,14 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 
   useEffect(() => {
     const partialState: Partial<InternalDialogState> = {
-      publishingTarget,
+      publishingTarget: publishingTarget || effectRefs.current.state.publishingTarget,
       scheduling: dateScheduled || scheduling !== 'now' ? 'custom' : 'now'
     };
     if (dateScheduled) {
       partialState.scheduledDateTime = dateScheduled;
     }
     setState(partialState);
-  }, [dateScheduled, publishingTarget, setState, scheduling]);
+  }, [dateScheduled, publishingTarget, setState, scheduling, effectRefs]);
 
   useEffect(() => {
     // If `incompleteDetailedItemPaths` is empty, we have all the detailed items we need.
@@ -386,94 +480,45 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     }
   }, [effectRefs, itemsDataSummary, siteId, setState, dispatch]);
 
-  const handleSubmit = () => {
-    const {
-      publishingTarget,
-      scheduling: schedule,
-      emailOnApprove: sendEmail,
-      submissionComment,
-      scheduledDateTime: scheduledDate
-    } = state;
+  const handleSubmit = (e?: SyntheticEvent) => {
+    e?.preventDefault();
+
+    const { publishingTarget, scheduling: schedule } = state;
 
     const items = Object.entries(selectedItems)
       .filter(([, isChecked]) => isChecked)
       .map(([path]) => path);
 
     const data = {
-      publishingTarget,
       items,
-      sendEmailNotifications: sendEmail,
-      comment: submissionComment,
-      ...(schedule === 'custom' ? { schedule: scheduledDate } : {})
+      publishingTarget,
+      sendEmailNotifications: state.emailOnApprove,
+      comment: state.submissionComment,
+      ...(schedule === 'custom' && { schedule: state.scheduledDateTime.toISOString() })
     };
 
     dispatch(updatePublishDialog({ isSubmitting: true }));
 
-    submitServiceFn(siteId, data).subscribe(
-      () => {
+    submitServiceFn(siteId, data).subscribe({
+      next() {
         dispatch(updatePublishDialog({ isSubmitting: false, hasPendingChanges: false }));
         onSuccess?.({
           schedule: schedule,
           publishingTarget,
-          // @ts-expect-error: TODO: Not quite sure if users of this dialog are making use of the `environment` prop name. Should use `publishingTarget` instead.
+          // @ts-expect-error: TODO: Not quite sure if users of this dialog are making use of the `environment` prop name. Should remove (keep publishingTarget only).
           environment: publishingTarget,
           type: !hasPublishPermission || state.requestApproval ? 'submit' : 'publish',
+          // TODO: Should send all items that were submitted. Check usages.
           items: items.map((path) => props.items.find((item) => item.path === path))
         });
       },
-      ({ response }) => {
+      error({ response }) {
         dispatch(
           batchActions([updatePublishDialog({ isSubmitting: false }), showErrorDialog({ error: response.response })])
         );
       }
-    );
+    });
   };
-
-  const onItemClicked = (e: React.MouseEvent, path: string) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setSelectedItems({ ...selectedItems, [path]: !selectedItems[path] });
-  };
-
-  const onSelectAll = () => {
-    setSelectedItems(
-      items.reduce(
-        (checked, item) => {
-          checked[item.path] = true;
-          return checked;
-        },
-        { ...selectedItems }
-      )
-    );
-  };
-
-  function onSelectAllSoft() {
-    // If one that is not checked is found, check all. Otherwise, uncheck all.
-    const check = Boolean(dependencies.softDependencies.find((path) => !selectedItems[path]));
-    setSelectedItems(
-      dependencies.softDependencies.reduce(
-        (nextCheckedSoftDependencies, path) => {
-          nextCheckedSoftDependencies[path] = check;
-          return nextCheckedSoftDependencies;
-        },
-        { ...selectedItems }
-      )
-    );
-  }
-
-  function onFetchDependenciesClick() {
-    setState({ fetchingDependencies: true });
-    fetchDependencies(siteId, paths(selectedItems)).subscribe(
-      (items) => {
-        setState({ fetchingDependencies: false });
-        setDependencies(items);
-      },
-      () => {
-        setState({ fetchingDependencies: false });
-        setDependencies(null);
-      }
-    );
-  }
 
   const onPublishingArgumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value: unknown;
@@ -529,18 +574,19 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 
   return (
     <>
-      <DialogBody sx={{ px: 4 }}>
+      <DialogBody sx={{ px: 4, minHeight: 'calc(100vh * 0.5)' }}>
         {state.error ? (
           <ApiResponseErrorState error={state.error} />
         ) : isFetchingItems ? (
-          <LoadingState />
+          <LoadingState sx={{ flexGrow: 1 }} />
         ) : detailedItems && publishingTargets ? (
           detailedItems.length ? (
             <>
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 5 }}>
-                  <form className={classes.root}>
+                  <form className={classes.root} onSubmit={handleSubmit}>
                     <TextField
+                      autoFocus
                       fullWidth
                       sx={{ mb: 1 }}
                       label={<FormattedMessage defaultMessage="Package Title" />}
@@ -575,19 +621,32 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                             />
                           }
                           label={
-                            <FormattedMessage id="publishForm.requestApproval" defaultMessage="Request approval" />
+                            <Box display="inline-flex" alignItems="center">
+                              <FormattedMessage id="publishForm.requestApproval" defaultMessage="Request approval" />
+                              <Tooltip
+                                title={
+                                  <FormattedMessage
+                                    id="publishDialog.requestPublishHint"
+                                    defaultMessage="Items will be submitted for review and published upon approval"
+                                  />
+                                }
+                              >
+                                <IconButton
+                                  aria-label="help"
+                                  size="small"
+                                  sx={{ ml: 1 }}
+                                  color={isRequestPublish ? 'warning' : undefined}
+                                >
+                                  {isRequestPublish ? (
+                                    <ErrorOutlineRounded fontSize="small" />
+                                  ) : (
+                                    <HelpOutlineOutlined fontSize="small" />
+                                  )}
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
                           }
                         />
-                      )}
-                      {isRequestPublish && (
-                        <Alert severity="info">
-                          <Typography>
-                            <FormattedMessage
-                              id="publishDialog.requestPublishHint"
-                              defaultMessage="Items will be submitted for review and published upon approval"
-                            />
-                          </Typography>
-                        </Alert>
                       )}
                       {isRequestPublish && (
                         <FormControlLabel
@@ -666,16 +725,14 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                             onChange={onPublishingArgumentChange}
                             name="publishingTarget"
                           >
-                            {publishingTargets.map((publishingChannel) => (
+                            {publishingTargets.map((target) => (
                               <FormControlLabel
-                                key={publishingChannel.name}
+                                key={target.name}
                                 disabled={disabled}
-                                value={publishingChannel.name}
+                                value={target.name}
                                 control={<Radio color="primary" className={classes.radioInput} />}
                                 label={
-                                  messages[publishingChannel.name]
-                                    ? formatMessage(messages[publishingChannel.name])
-                                    : capitalize(publishingChannel.name)
+                                  messages[target.name] ? formatMessage(messages[target.name]) : capitalize(target.name)
                                 }
                                 classes={{ label: classes.formInputs }}
                               />
@@ -698,7 +755,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                           >
                             {formatMessage(messages[`publishingTarget${publishingTargetsStatus}`])}
                             {publishingTargetsStatus === 'Error' && (
-                              <Link href="#" onClick={() => getPublishingChannels()}>
+                              <Link href="#" onClick={() => fetchPublishingTargetsFn()}>
                                 ({formatMessage(messages.publishingTargetRetry)})
                               </Link>
                             )}
@@ -719,43 +776,38 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                 <Grid size={{ xs: 12, sm: 7 }}>
                   {published ? (
                     <>
-                      {/* <DependencySelection
-                        items={detailedItems}
-                        selectedItems={selectedItems}
-                        onItemClicked={onItemClicked}
-                        dependencies={dependencies}
-                        onSelectAllClicked={onSelectAll}
-                        onSelectAllSoftClicked={onSelectAllSoft}
-                        disabled={isSubmitting}
-                      /> */}
                       <Paper
                         elevation={1}
-                        sx={
-                          {
-                            // borderColor: 'divider',
-                            // borderWidth: 1,
-                            // borderStyle: 'solid',
-                            // bgcolor: 'background.paper',
-                            // borderRadius: 1
-                          }
-                        }
+                        sx={{
+                          bgcolor: (theme) =>
+                            theme.palette.mode === 'dark' ? theme.palette.background.default : 'background.paper'
+                        }}
                       >
                         <Box display="flex" justifyContent="space-between" alignItems="center" mr={1} ml={1}>
                           <Box display="flex" py={0.5}>
-                            <IconButton size="small" color="primary">
-                              <UnfoldMoreRoundedIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton size="small" color="primary">
-                              <UnfoldLessRoundedIcon fontSize="small" />
-                            </IconButton>
-                            <Divider flexItem orientation="vertical" sx={{ mx: 0.5 }} />
                             <Button
                               size="small"
-                              startIcon={<ListRoundedIcon />}
+                              startIcon={isTreeView ? <ListRoundedIcon /> : <TreeOutlined />}
                               sx={{ [`.${buttonClasses.startIcon}`]: { mr: 0.5 } }}
+                              onClick={() => setIsTreeView(!isTreeView)}
                             >
-                              <FormattedMessage defaultMessage="List View" />
+                              {isTreeView ? (
+                                <FormattedMessage defaultMessage="List View" />
+                              ) : (
+                                <FormattedMessage defaultMessage="Tree View" />
+                              )}
                             </Button>
+                            {isTreeView && (
+                              <>
+                                <Divider flexItem orientation="vertical" sx={{ mx: 0.5 }} />
+                                <IconButton size="small" color="primary" onClick={() => setExpandedPaths(undefined)}>
+                                  <UnfoldMoreRoundedIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton size="small" color="primary" onClick={() => setExpandedPaths([])}>
+                                  <UnfoldLessRoundedIcon fontSize="small" />
+                                </IconButton>
+                              </>
+                            )}
                           </Box>
                           <Button size="small">
                             <FormattedMessage defaultMessage="Exclude optional references" />
@@ -763,16 +815,68 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                         </Box>
                         <Divider />
                         <Box sx={{ p: 1 }}>
-                          <SimpleTreeView
-                            expandedItems={expandedPaths ?? itemsDataSummary.treePaths}
-                            onExpandedItemsChange={(event, itemIds) => {
-                              setExpandedPaths(itemIds);
-                            }}
-                            disableSelection
-                            disabledItemsFocusable
-                          >
-                            {itemsDataSummary.trees.map((node) => renderTreeNode(itemsDataSummary.itemMap, node))}
-                          </SimpleTreeView>
+                          {isTreeView ? (
+                            <SimpleTreeView
+                              expandedItems={expandedPaths ?? parentTreeNodePaths}
+                              onExpandedItemsChange={(event, itemIds) => setExpandedPaths(itemIds)}
+                              disableSelection
+                              // checkboxSelection
+                              // selectedItems={Object.keys(itemsDataSummary.itemMap)}
+                              // multiSelect={true}
+                              sx={{
+                                '.tree-item-more-section': { display: 'none' },
+                                [`.${treeItemClasses.content}:hover`]: {
+                                  '.tree-item-more-section': { display: 'flex' }
+                                },
+                                [`[data-is-item="false"] > .${treeItemClasses.content} > .${treeItemClasses.checkbox}`]:
+                                  {
+                                    display: 'none'
+                                  }
+                              }}
+                            >
+                              {trees.map((node) =>
+                                renderTreeNode(itemsAndDependenciesMap, node, dependencyData?.typeByPath)
+                              )}
+                            </SimpleTreeView>
+                          ) : (
+                            <List
+                              dense
+                              sx={{
+                                [`.${listItemSecondaryActionClasses.root}`]: { right: (theme) => theme.spacing(1) },
+                                [`.${listItemClasses.root} .item-menu-button`]: { display: 'none' },
+                                [`.${listItemClasses.root}:hover`]: { bgcolor: 'action.hover' },
+                                [`.${listItemClasses.root}:hover .item-menu-button`]: { display: 'flex' }
+                              }}
+                            >
+                              {itemsAndDependenciesPaths.map((path) => (
+                                <ListItem
+                                  key={path}
+                                  secondaryAction={
+                                    <Box display="flex" alignItems="center">
+                                      <IconButton className="item-menu-button" size="small">
+                                        <MoreVertRounded />
+                                      </IconButton>
+                                      {dependencyData?.typeByPath[path] && <Checkbox size="small" />}
+                                    </Box>
+                                  }
+                                >
+                                  <ListItemText
+                                    primary={
+                                      <Box display="flex">
+                                        <ItemDisplay
+                                          item={itemsAndDependenciesMap[path]}
+                                          showNavigableAsLinks={false}
+                                          sx={{ mr: 1 }}
+                                        />
+                                        <DependencyChip type={dependencyData?.typeByPath[path]} />
+                                      </Box>
+                                    }
+                                    secondary={path}
+                                  />
+                                </ListItem>
+                              ))}
+                            </List>
+                          )}
                         </Box>
                       </Paper>
                     </>

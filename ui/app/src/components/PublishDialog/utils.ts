@@ -20,11 +20,7 @@ import StandardAction from '../../models/StandardAction';
 import { GoLiveResponse } from '../../services/publishing';
 import { EnhancedDialogProps } from '../EnhancedDialog';
 import { EnhancedDialogState } from '../../hooks/useEnhancedDialogState';
-import React, { ReactNode } from 'react';
-import LookupTable from '../../models/LookupTable';
-import { DependencySelectionProps } from '../DependencySelection/DependencySelection';
-import { FetchDependenciesResponse } from '../../services/dependencies';
-import { PublishingTarget } from '../../models';
+import { PublishingTarget } from '../../models/Publishing';
 
 export interface ExtendedGoLiveResponse extends GoLiveResponse {
   schedule: 'now' | 'custom';
@@ -40,7 +36,7 @@ export interface PublishDialogBaseProps {
 }
 
 export interface PublishDialogProps extends PublishDialogBaseProps, EnhancedDialogProps {
-  onSuccess?(response?: ExtendedGoLiveResponse): any;
+  onSuccess?(response?: ExtendedGoLiveResponse): void;
 }
 
 export interface PublishDialogStateProps extends PublishDialogBaseProps, EnhancedDialogState {
@@ -56,53 +52,10 @@ export interface PublishDialogContainerProps
 export interface InternalDialogState {
   emailOnApprove: boolean;
   requestApproval: boolean;
-  publishingTarget: string;
+  publishingTarget: PublishingTarget['name'] | '';
   submissionComment: string;
   scheduling: 'now' | 'custom';
-  scheduledDateTime: any;
-  publishingChannel: string;
+  scheduledDateTime: Date;
   error: ApiResponse;
   fetchingDependencies: boolean;
 }
-
-export interface PublishDialogUIProps {
-  detailedItems: DetailedItem[];
-  publishingTargets: PublishingTarget[];
-  isFetchingItems: boolean;
-  error: ApiResponse;
-  published: boolean;
-  publishingTargetsStatus: string;
-  onPublishingChannelsFailRetry(): void;
-  onCloseButtonClick?(e: React.MouseEvent<HTMLButtonElement, MouseEvent>): void;
-  handleSubmit: any;
-  isSubmitting: boolean;
-  submitDisabled: boolean;
-  state: InternalDialogState;
-  selectedItems: LookupTable<boolean>;
-  onItemClicked: DependencySelectionProps['onItemClicked'];
-  dependencies: FetchDependenciesResponse;
-  onSelectAll(): void;
-  onSelectAllSoftDependencies(): void;
-  onClickShowAllDeps?: any;
-  isRequestPublish?: boolean;
-  showRequestApproval: boolean;
-  classes?: any;
-  submitLabel: ReactNode;
-  mixedPublishingDates?: boolean;
-  mixedPublishingTargets?: boolean;
-  submissionCommentRequired: boolean;
-  onPublishingArgumentChange(e: React.ChangeEvent<HTMLInputElement>): void;
-}
-
-export const updateCheckedList = (path: string[], isChecked: boolean, checked: any) => {
-  const nextChecked = { ...checked };
-  (Array.isArray(path) ? path : [path]).forEach((u) => {
-    nextChecked[u] = isChecked;
-  });
-  return nextChecked;
-};
-
-export const paths = (checked: any) =>
-  Object.entries({ ...checked })
-    .filter(([, value]) => value === true)
-    .map(([key]) => key);

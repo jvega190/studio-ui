@@ -75,7 +75,7 @@ export interface PublishFormData {
 export type PublishOnDemandMode = 'studio' | 'git' | 'everything';
 
 export interface PublishingTarget {
-  name: string;
+  name: 'live' | 'staging';
   order: number;
 }
 
