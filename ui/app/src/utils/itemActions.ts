@@ -130,7 +130,6 @@ import SystemType from '../models/SystemType';
 import { fetchItemVersions } from '../state/actions/versions';
 import StandardAction from '../models/StandardAction';
 import { fetchDependant } from '../services/dependencies';
-import { parseLegacyItemToSandBoxItem } from '../utils/content';
 
 export type ContextMenuOptionDescriptor<ID extends string = string> = {
   id: ID;

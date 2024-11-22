@@ -88,6 +88,22 @@ export interface PublishingParams {
   sendEmailNotifications?: boolean;
 }
 
+// TODO: check which params are optional in API
+export interface PublishParams {
+  publishingTarget: string;
+  paths: {
+    path: string;
+    includeChildren: boolean;
+    includeSoftDeps: boolean;
+  }[];
+  commitIds: string[];
+  schedule?: string;
+  requestApproval: boolean;
+  publishAll?: boolean;
+  title?: string; // TODO: validate, this is still not in the API definition
+  comment?: string;
+}
+
 export interface PublishingStats {
   numberOfPublishes: number;
   numberOfNewAndPublishedItems: number;

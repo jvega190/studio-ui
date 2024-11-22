@@ -440,3 +440,19 @@ export function setStoredWidgetsAccordion(
 export function removeStoredWidgetsAccordion(siteIdentifier: string, user: string, id: string): void {
   window.localStorage.removeItem(`craftercms.${user}.widgetsAccordion.${siteIdentifier}.${id}`);
 }
+
+export function setPublishDialogIsTreeView(username: string, value: boolean) {
+  window.localStorage.setItem(`craftercms.${username}.publishDialogTreeView`, value.toString());
+}
+
+export function getPublishDialogIsTreeView(username: string): boolean {
+  // We want the default value to be true, so if the value doesn't exist yet we return 'undefined' to let the component
+  // decide on the default value.
+  return window.localStorage.getItem(`craftercms.${username}.publishDialogTreeView`)
+    ? window.localStorage.getItem(`craftercms.${username}.publishDialogTreeView`) === 'true'
+    : undefined;
+}
+
+export function removePublishDialogIsTreeView(username: string) {
+  window.localStorage.removeItem(`craftercms.${username}.publishDialogTreeView`);
+}

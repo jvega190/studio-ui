@@ -16,7 +16,7 @@
 
 import { useSpreadState } from '../../hooks/useSpreadState';
 import React, { SyntheticEvent, useCallback, useEffect, useMemo, useState } from 'react';
-import { PublishingTarget } from '../../models/Publishing';
+import { PublishingTarget, PublishParams } from '../../models/Publishing';
 import LookupTable from '../../models/LookupTable';
 import { InternalDialogState, PublishDialogContainerProps } from './utils';
 import { useActiveSiteId } from '../../hooks/useActiveSiteId';
@@ -29,7 +29,7 @@ import useStyles from './styles';
 import { useSelection } from '../../hooks/useSelection';
 import { capitalize, isBlank } from '../../utils/string';
 import { updatePublishDialog } from '../../state/actions/dialogs';
-import { approve, publish, requestPublish } from '../../services/workflow';
+import { approve } from '../../services/workflow';
 import { fetchDetailedItems } from '../../services/content';
 import { DetailedItem } from '../../models';
 import { fetchDetailedItemsComplete } from '../../state/actions/content';
@@ -81,6 +81,12 @@ import TreeOutlined from '../../icons/TreeOutlined';
 import { HelpOutlineOutlined } from '@mui/icons-material';
 import Tooltip from '@mui/material/Tooltip';
 import ErrorOutlineRounded from '@mui/icons-material/ErrorOutlineRounded';
+import { getPublishDialogIsTreeView, setPublishDialogIsTreeView } from '../../utils/state';
+import useActiveUser from '../../hooks/useActiveUser';
+import { publish } from '../../services/publish';
+import { generateSingleItemOptions } from '../../utils/itemActions';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 
 const messages = defineMessages({
   emailLabel: {
@@ -166,7 +172,8 @@ function renderTreeNode(
   node: PathTreeNode,
   dependencyTypeMap: DependencyMap = {},
   onMenuClick: (e: React.MouseEvent<HTMLButtonElement>, path: string) => void,
-  onCheckboxChange: (e: React.ChangeEvent<HTMLInputElement>, checked: boolean, path: string) => void
+  onCheckboxChange: (e: React.ChangeEvent<HTMLInputElement>, checked: boolean, path: string) => void,
+  selectedDependencies: string[]
 ) {
   const isItem = Boolean(itemMap[node.path]);
   const isDependency = Boolean(dependencyTypeMap?.[node.path]);
@@ -206,6 +213,7 @@ function renderTreeNode(
               {isSoft && (
                 <Checkbox
                   size="small"
+                  checked={selectedDependencies?.includes(node.path)}
                   onClick={(e) => e.stopPropagation()}
                   onChange={(e, checked) => {
                     onCheckboxChange?.(e, checked, node.path);
@@ -221,7 +229,9 @@ function renderTreeNode(
       children={
         node.children?.length === 0
           ? undefined
-          : node.children.map((child) => renderTreeNode(itemMap, child, dependencyTypeMap))
+          : node.children.map((child) =>
+              renderTreeNode(itemMap, child, dependencyTypeMap, onMenuClick, onCheckboxChange, selectedDependencies)
+            )
       }
     />
   );
@@ -234,6 +244,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
   const [detailedItems, setDetailedItems] = useState<DetailedItem[]>();
   const [isFetchingItems, setIsFetchingItems] = useState(false);
   const [state, setState] = useSpreadState<InternalDialogState>({
+    packageTitle: '',
     emailOnApprove: false,
     requestApproval: false,
     publishingTarget: null,
@@ -246,9 +257,14 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
   const [published, setPublished] = useState<boolean>(null);
   const [publishingTargets, setPublishingTargets] = useState<PublishingTarget[]>(null);
   const [publishingTargetsStatus, setPublishingTargetsStatus] = useState('Loading');
-  const [isTreeView, setIsTreeView] = useState(true); // TODO: Add preference storage
+  const { username } = useActiveUser();
+  const [isTreeView, setIsTreeView] = useState(getPublishDialogIsTreeView(username) ?? true);
   const [selectedItems, setSelectedItems] = useState<LookupTable<boolean>>({});
   const [dependencyData, setDependencyData] = useState<DependencyDataState>(null);
+  const [selectedDependenciesMap, setSelectedDependenciesMap] = useSpreadState<LookupTable<boolean>>({});
+  const selectedDependenciesPaths = Object.keys(selectedDependenciesMap).filter(
+    (path) => selectedDependenciesMap[path]
+  );
   const submissionCommentRequired = useSelection((state) => state.uiConfig.publishing.publishCommentRequired);
   const effectRefs = useUpdateRefs({ items, state });
   const itemsDataSummary = useMemo(() => {
@@ -287,8 +303,8 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
   );
   const hasPublishPermission = itemsDataSummary.allItemsHavePublishPermission;
   const isApprove = hasPublishPermission && itemsDataSummary.allItemsInSubmittedState;
-  const submitServiceFn =
-    !hasPublishPermission || state.requestApproval ? requestPublish : isApprove ? approve : publish;
+  // const submitServiceFn =
+  //   !hasPublishPermission || state.requestApproval ? requestPublish : isApprove ? approve : publish;
   const { mixedPublishingTargets, mixedPublishingDates, dateScheduled, publishingTarget } = useMemo(() => {
     const state = {
       mixedPublishingTargets: false,
@@ -355,6 +371,10 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 
     return state;
   }, [publishingTargets, detailedItems]);
+  const [contextMenu, setContextMenu] = useState({
+    el: null,
+    options: null
+  });
 
   const fetchPublishingTargetsFn = useCallback(
     (
@@ -377,6 +397,11 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     },
     [siteId]
   );
+
+  const onSetIsTreeView = (isTreeView: boolean) => {
+    setIsTreeView(isTreeView);
+    setPublishDialogIsTreeView(username, isTreeView);
+  };
 
   // Submit button should be disabled when:
   const submitDisabled =
@@ -429,13 +454,20 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
             itemsByPath: depLookup,
             items: detailedItemsList
           });
+          const softDependenciesMap: LookupTable<boolean> = {};
+          Object.entries(depMap).forEach(([path, type]) => {
+            if (type === 'soft') {
+              softDependenciesMap[path] = true;
+            }
+          });
+          setSelectedDependenciesMap(softDependenciesMap);
         },
         error() {
           setState({ fetchingDependencies: false });
           setDependencyData(null);
         }
       });
-  }, [itemsDataSummary.itemPaths, setState, siteId]);
+  }, [itemsDataSummary.itemPaths, setState, siteId, setSelectedDependenciesMap]);
 
   useEffect(() => {
     const subscription = fetchPublishingTargetsFn();
@@ -485,39 +517,47 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 
     const { publishingTarget, scheduling: schedule } = state;
 
-    const items = Object.entries(selectedItems)
-      .filter(([, isChecked]) => isChecked)
-      .map(([path]) => path);
-
-    const data = {
-      items,
-      publishingTarget,
-      sendEmailNotifications: state.emailOnApprove,
-      comment: state.submissionComment,
-      ...(schedule === 'custom' && { schedule: state.scheduledDateTime.toISOString() })
+    const { itemPaths, itemMap } = itemsDataSummary;
+    const { requestApproval, packageTitle, submissionComment, scheduling, scheduledDateTime } = state;
+    const data: PublishParams = {
+      publishingTarget: state.publishingTarget,
+      paths: [...itemPaths, ...selectedDependenciesPaths].map((path: string) => ({
+        path,
+        includeChildren: false,
+        includeSoftDeps: false
+      })),
+      commitIds: [], // TODO: where do I get this from?
+      schedule: scheduling === 'custom' ? scheduledDateTime.toISOString() : null,
+      requestApproval,
+      title: packageTitle,
+      comment: submissionComment
     };
 
     dispatch(updatePublishDialog({ isSubmitting: true }));
 
-    submitServiceFn(siteId, data).subscribe({
-      next() {
-        dispatch(updatePublishDialog({ isSubmitting: false, hasPendingChanges: false }));
-        onSuccess?.({
-          schedule: schedule,
-          publishingTarget,
-          // @ts-expect-error: TODO: Not quite sure if users of this dialog are making use of the `environment` prop name. Should remove (keep publishingTarget only).
-          environment: publishingTarget,
-          type: !hasPublishPermission || state.requestApproval ? 'submit' : 'publish',
-          // TODO: Should send all items that were submitted. Check usages.
-          items: items.map((path) => props.items.find((item) => item.path === path))
-        });
-      },
-      error({ response }) {
-        dispatch(
-          batchActions([updatePublishDialog({ isSubmitting: false }), showErrorDialog({ error: response.response })])
-        );
-      }
-    });
+    if (isApprove) {
+      // TODO: implement (consider API updates)
+    } else {
+      publish(siteId, data).subscribe({
+        next() {
+          dispatch(updatePublishDialog({ isSubmitting: false, hasPendingChanges: false }));
+          onSuccess?.({
+            schedule: schedule,
+            publishingTarget,
+            // @ts-expect-error: TODO: Not quite sure if users of this dialog are making use of the `environment` prop name. Should remove (keep publishingTarget only).
+            environment: publishingTarget,
+            type: !hasPublishPermission || state.requestApproval ? 'submit' : 'publish',
+            // TODO: Should send all items that were submitted. Check usages.
+            items: itemPaths.map((path) => itemMap[path])
+          });
+        },
+        error({ response }) {
+          dispatch(
+            batchActions([updatePublishDialog({ isSubmitting: false }), showErrorDialog({ error: response.response })])
+          );
+        }
+      });
+    }
   };
 
   const onPublishingArgumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -526,6 +566,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
       case 'checkbox':
         value = e.target.checked;
         break;
+      case 'text':
       case 'textarea':
         value = e.target.value;
         dispatch(updatePublishDialog({ hasPendingChanges: true }));
@@ -545,6 +586,28 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
   };
 
   const onCloseButtonClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => onClose(e, null);
+
+  const onDependencyCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>, checked: boolean, path: string) => {
+    // TODO: when updating dependencies, we should calculate the new set of dependencies.
+    setSelectedDependenciesMap({ [path]: checked });
+  };
+
+  const onContextMenuOpen = (e: React.MouseEvent<HTMLButtonElement>, path: string) => {
+    const { itemMap } = itemsDataSummary;
+    const { itemsByPath } = dependencyData;
+    const item = itemMap[path] ?? itemsByPath[path];
+    const itemMenuOptions = generateSingleItemOptions(item, formatMessage, {
+      includeOnly: ['view', 'dependencies']
+    });
+    setContextMenu({ el: e.currentTarget, options: itemMenuOptions.flat() });
+  };
+
+  const onContextMenuClose = () => {
+    setContextMenu({
+      el: null,
+      options: null
+    });
+  };
 
   const { formatMessage } = useIntl();
   const { classes } = useStyles();
@@ -589,6 +652,9 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                       autoFocus
                       fullWidth
                       sx={{ mb: 1 }}
+                      name="packageTitle"
+                      value={state.packageTitle}
+                      onChange={onPublishingArgumentChange}
                       label={<FormattedMessage defaultMessage="Package Title" />}
                       helperText={
                         <FormattedMessage defaultMessage="Dashboard and other places will use this title to display this package." />
@@ -789,8 +855,9 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                               size="small"
                               startIcon={isTreeView ? <ListRoundedIcon /> : <TreeOutlined />}
                               sx={{ [`.${buttonClasses.startIcon}`]: { mr: 0.5 } }}
-                              onClick={() => setIsTreeView(!isTreeView)}
+                              onClick={() => onSetIsTreeView(!isTreeView)}
                             >
+                              {/* TODO: should the message be 'Switch to...'? */}
                               {isTreeView ? (
                                 <FormattedMessage defaultMessage="List View" />
                               ) : (
@@ -835,7 +902,14 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                               }}
                             >
                               {trees.map((node) =>
-                                renderTreeNode(itemsAndDependenciesMap, node, dependencyData?.typeByPath)
+                                renderTreeNode(
+                                  itemsAndDependenciesMap,
+                                  node,
+                                  dependencyData?.typeByPath,
+                                  onContextMenuOpen,
+                                  onDependencyCheckboxChange,
+                                  selectedDependenciesPaths
+                                )
                               )}
                             </SimpleTreeView>
                           ) : (
@@ -856,7 +930,13 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                                       <IconButton className="item-menu-button" size="small">
                                         <MoreVertRounded />
                                       </IconButton>
-                                      {dependencyData?.typeByPath[path] && <Checkbox size="small" />}
+                                      {dependencyData?.typeByPath[path] === 'soft' && (
+                                        <Checkbox
+                                          size="small"
+                                          checked={selectedDependenciesPaths?.includes(path)}
+                                          onChange={(e, checked) => onDependencyCheckboxChange(e, checked, path)}
+                                        />
+                                      )}
                                     </Box>
                                   }
                                 >
@@ -912,6 +992,9 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
           {submitLabel}
         </PrimaryButton>
       </DialogFooter>
+      <Menu anchorEl={contextMenu.el} keepMounted open={Boolean(contextMenu.el)} onClose={onContextMenuClose}>
+        {contextMenu.options?.map((option) => <MenuItem key={option.id}>{option.label}</MenuItem>)}
+      </Menu>
     </>
   );
 }

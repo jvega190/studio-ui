@@ -50,6 +50,7 @@ export interface PublishDialogContainerProps
     Pick<PublishDialogProps, 'isSubmitting' | 'onSuccess' | 'onClose'> {}
 
 export interface InternalDialogState {
+  packageTitle: string;
   emailOnApprove: boolean;
   requestApproval: boolean;
   publishingTarget: PublishingTarget['name'] | '';
