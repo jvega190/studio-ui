@@ -22,3 +22,23 @@ import { map } from 'rxjs/operators';
 export function publish(siteId: string, data: PublishParams): Observable<boolean> {
   return postJSON(`/studio/api/2/publish/${siteId}`, data).pipe(map(() => true));
 }
+
+export interface DependenciesResponse {
+  hardDependencies: string[];
+  softDependencies: string[];
+  deletedItems: string[];
+  items: string[];
+}
+
+export function dependencies(
+  siteId: string,
+  data: {
+    publishingTarget: string;
+    paths?: PublishParams['paths'];
+    commitIds?: PublishParams['commitIds'];
+  }
+): Observable<DependenciesResponse> {
+  return postJSON(`/studio/api/2/publish/${siteId}/dependencies`, data).pipe(
+    map((response) => response?.response?.package)
+  );
+}

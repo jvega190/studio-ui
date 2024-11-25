@@ -24,7 +24,6 @@ import { useDispatch } from 'react-redux';
 import { fetchPublishingTargets, FetchPublishingTargetsResponse } from '../../services/publishing';
 import { getComputedPublishingTarget, getDateScheduled } from '../../utils/content';
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
-import { fetchDependencies } from '../../services/dependencies';
 import useStyles from './styles';
 import { useSelection } from '../../hooks/useSelection';
 import { capitalize, isBlank } from '../../utils/string';
@@ -83,7 +82,7 @@ import Tooltip from '@mui/material/Tooltip';
 import ErrorOutlineRounded from '@mui/icons-material/ErrorOutlineRounded';
 import { getPublishDialogIsTreeView, setPublishDialogIsTreeView } from '../../utils/state';
 import useActiveUser from '../../hooks/useActiveUser';
-import { publish } from '../../services/publish';
+import { dependencies, publish } from '../../services/publish';
 import { generateSingleItemOptions } from '../../utils/itemActions';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
@@ -423,46 +422,52 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     // TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     // TODO: This is not scalable (bulk fetch of countless DetailedItems). We must review and discuss how to adjust.
     // TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    fetchDependencies(siteId, itemsDataSummary.itemPaths)
-      .pipe(
-        switchMap((dependenciesByType) =>
-          fetchDetailedItems(siteId, [
-            ...dependenciesByType.hardDependencies,
-            ...dependenciesByType.softDependencies
-          ]).pipe(map((detailedItemsList) => ({ dependenciesByType, detailedItemsList })))
+    if (publishingTarget) {
+      dependencies(siteId, {
+        publishingTarget,
+        paths: itemsDataSummary.itemPaths.map((path) => ({ path, includeChildren: false, includeSoftDeps: false })),
+        commitIds: [] // TODO: there's a bug where the API fails if commitsIds is not provided. Needs to be fixed.
+      })
+        .pipe(
+          switchMap((dependenciesByType) =>
+            fetchDetailedItems(siteId, [
+              ...dependenciesByType.hardDependencies,
+              ...dependenciesByType.softDependencies
+            ]).pipe(map((detailedItemsList) => ({ dependenciesByType, detailedItemsList })))
+          )
         )
-      )
-      .subscribe({
-        next({ dependenciesByType, detailedItemsList }) {
-          const depMap: DependencyMap = {};
-          const depLookup: LookupTable<DetailedItem> = createLookupTable(detailedItemsList, 'path');
-          dependenciesByType.hardDependencies.forEach((path) => {
-            depMap[path] = 'hard';
-          });
-          dependenciesByType.softDependencies.forEach((path) => {
-            depMap[path] = 'soft';
-          });
-          setState({ fetchingDependencies: false });
-          setDependencyData({
-            typeByPath: depMap,
-            paths: Object.keys(depMap),
-            itemsByPath: depLookup,
-            items: detailedItemsList
-          });
-          const softDependenciesMap: LookupTable<boolean> = {};
-          Object.entries(depMap).forEach(([path, type]) => {
-            if (type === 'soft') {
-              softDependenciesMap[path] = true;
-            }
-          });
-          setSelectedDependenciesMap(softDependenciesMap);
-        },
-        error() {
-          setState({ fetchingDependencies: false });
-          setDependencyData(null);
-        }
-      });
-  }, [itemsDataSummary.itemPaths, setState, siteId, setSelectedDependenciesMap]);
+        .subscribe({
+          next({ dependenciesByType, detailedItemsList }) {
+            const depMap: DependencyMap = {};
+            const depLookup: LookupTable<DetailedItem> = createLookupTable(detailedItemsList, 'path');
+            dependenciesByType.hardDependencies.forEach((path) => {
+              depMap[path] = 'hard';
+            });
+            dependenciesByType.softDependencies.forEach((path) => {
+              depMap[path] = 'soft';
+            });
+            setState({ fetchingDependencies: false });
+            setDependencyData({
+              typeByPath: depMap,
+              paths: Object.keys(depMap),
+              itemsByPath: depLookup,
+              items: detailedItemsList
+            });
+            const softDependenciesMap: LookupTable<boolean> = {};
+            Object.entries(depMap).forEach(([path, type]) => {
+              if (type === 'soft') {
+                softDependenciesMap[path] = true;
+              }
+            });
+            setSelectedDependenciesMap(softDependenciesMap);
+          },
+          error() {
+            setState({ fetchingDependencies: false });
+            setDependencyData(null);
+          }
+        });
+    }
+  }, [itemsDataSummary.itemPaths, setState, siteId, setSelectedDependenciesMap, publishingTarget]);
 
   useEffect(() => {
     const subscription = fetchPublishingTargetsFn();

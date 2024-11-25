@@ -96,7 +96,7 @@ export interface PublishParams {
     includeChildren: boolean;
     includeSoftDeps: boolean;
   }[];
-  commitIds: string[];
+  commitIds?: string[];
   schedule?: string;
   requestApproval: boolean;
   publishAll?: boolean;
