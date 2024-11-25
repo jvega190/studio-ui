@@ -838,6 +838,34 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                       )}
                     </FormControl>
                   </form>
+                  <Divider />
+                  <Box my={2}>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      <FormattedMessage defaultMessage="LEGEND" />
+                    </Typography>
+                    <Box display="flex" sx={{ display: 'flex', mb: 1, gap: 1 }}>
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        color="warning"
+                        label={<FormattedMessage defaultMessage="Required" />}
+                      />
+                      <Typography variant="body2" color="textSecondary">
+                        <FormattedMessage defaultMessage="References of mandatory submission" />
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        color="info"
+                        label={<FormattedMessage defaultMessage="Optional" />}
+                      />
+                      <Typography variant="body2" color="textSecondary">
+                        <FormattedMessage defaultMessage="References of optional submission" />
+                      </Typography>
+                    </Box>
+                  </Box>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 7 }}>
                   {published ? (
