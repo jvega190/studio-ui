@@ -51,7 +51,6 @@ export interface PublishDialogContainerProps
 
 export interface InternalDialogState {
   packageTitle: string;
-  emailOnApprove: boolean;
   requestApproval: boolean;
   publishingTarget: PublishingTarget['name'] | '';
   submissionComment: string;

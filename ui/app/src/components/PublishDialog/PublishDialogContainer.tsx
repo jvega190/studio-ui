@@ -89,10 +89,6 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 
 const messages = defineMessages({
-  emailLabel: {
-    id: 'publishForm.emailLabel',
-    defaultMessage: "Email me the reviewer's feedback"
-  },
   scheduling: {
     id: 'publishForm.scheduling',
     defaultMessage: 'Scheduling'
@@ -245,7 +241,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
   const [isFetchingItems, setIsFetchingItems] = useState(false);
   const [state, setState] = useSpreadState<InternalDialogState>({
     packageTitle: '',
-    emailOnApprove: false,
     requestApproval: false,
     publishingTarget: null,
     submissionComment: '',
@@ -711,23 +706,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                                 </IconButton>
                               </Tooltip>
                             </Box>
-                          }
-                        />
-                      )}
-                      {isRequestPublish && (
-                        <FormControlLabel
-                          sx={{ display: 'block' }}
-                          label={formatMessage(messages.emailLabel)}
-                          control={
-                            <Checkbox
-                              size="small"
-                              checked={state.emailOnApprove}
-                              onChange={onPublishingArgumentChange}
-                              value="emailOnApprove"
-                              color="primary"
-                              disabled={disabled}
-                              name="emailOnApprove"
-                            />
                           }
                         />
                       )}
