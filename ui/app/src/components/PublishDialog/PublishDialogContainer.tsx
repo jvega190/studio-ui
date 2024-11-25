@@ -253,7 +253,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
   const [publishingTargetsStatus, setPublishingTargetsStatus] = useState('Loading');
   const { username } = useActiveUser();
   const [isTreeView, setIsTreeView] = useState(getPublishDialogIsTreeView(username) ?? true);
-  const [selectedItems, setSelectedItems] = useState<LookupTable<boolean>>({});
   const [dependencyData, setDependencyData] = useState<DependencyDataState>(null);
   const [selectedDependenciesMap, setSelectedDependenciesMap] = useSpreadState<LookupTable<boolean>>({});
   const selectedDependenciesPaths = Object.keys(selectedDependenciesMap).filter(
@@ -404,6 +403,8 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     !detailedItems ||
     // While submitting
     isSubmitting ||
+    // If package title is blank
+    isBlank(state.packageTitle) ||
     // When there are no available/loaded publishing targets
     !publishingTargets?.length ||
     // When no publishing target is selected
@@ -413,9 +414,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     // When there's an error
     Boolean(state.error) ||
     // The scheduled date is in the past
-    state.scheduledDateTime < new Date() ||
-    // When no items are selected
-    !Object.values(selectedItems).filter(Boolean).length;
+    state.scheduledDateTime < new Date();
 
   useEffect(() => {
     setState({ fetchingDependencies: true });
@@ -516,7 +515,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     e?.preventDefault();
 
     const { publishingTarget, scheduling: schedule } = state;
-
     const { itemPaths, itemMap } = itemsDataSummary;
     const { requestApproval, packageTitle, submissionComment, scheduling, scheduledDateTime } = state;
     const data: PublishParams = {
@@ -526,7 +524,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
         includeChildren: false,
         includeSoftDeps: false
       })),
-      commitIds: [], // TODO: where do I get this from?
       schedule: scheduling === 'custom' ? scheduledDateTime.toISOString() : null,
       requestApproval,
       title: packageTitle,
@@ -534,29 +531,30 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     };
 
     dispatch(updatePublishDialog({ isSubmitting: true }));
+    const submitCallback = {
+      next() {
+        dispatch(updatePublishDialog({ isSubmitting: false, hasPendingChanges: false }));
+        onSuccess?.({
+          schedule: schedule,
+          publishingTarget,
+          // @ts-expect-error: TODO: Not quite sure if users of this dialog are making use of the `environment` prop name. Should remove (keep publishingTarget only).
+          environment: publishingTarget,
+          type: !hasPublishPermission || state.requestApproval ? 'submit' : 'publish',
+          // TODO: Should send all items that were submitted. Check usages.
+          items: itemPaths.map((path) => itemMap[path])
+        });
+      },
+      error({ response }) {
+        dispatch(
+          batchActions([updatePublishDialog({ isSubmitting: false }), showErrorDialog({ error: response.response })])
+        );
+      }
+    };
 
     if (isApprove) {
-      // TODO: implement (consider API updates)
+      // TODO: implement
     } else {
-      publish(siteId, data).subscribe({
-        next() {
-          dispatch(updatePublishDialog({ isSubmitting: false, hasPendingChanges: false }));
-          onSuccess?.({
-            schedule: schedule,
-            publishingTarget,
-            // @ts-expect-error: TODO: Not quite sure if users of this dialog are making use of the `environment` prop name. Should remove (keep publishingTarget only).
-            environment: publishingTarget,
-            type: !hasPublishPermission || state.requestApproval ? 'submit' : 'publish',
-            // TODO: Should send all items that were submitted. Check usages.
-            items: itemPaths.map((path) => itemMap[path])
-          });
-        },
-        error({ response }) {
-          dispatch(
-            batchActions([updatePublishDialog({ isSubmitting: false }), showErrorDialog({ error: response.response })])
-          );
-        }
-      });
+      publish(siteId, data).subscribe(submitCallback);
     }
   };
 
