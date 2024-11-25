@@ -84,7 +84,7 @@ type ValueRetriever<T = unknown> = (value: unknown, field: ContentTypeField) => 
 const arrayFieldExtractor: ValueRetriever<unknown[]> = (value) =>
   // Controls needn't worry about packaging as `items: { item: [] }`, but when it first gets deserialised, it will have that format.
   Array.isArray(value) ? value : ((value as Record<'item', unknown[]>)?.item ?? []);
-const textFieldExtractor: ValueRetriever<string> = (value) => String(value) ?? '';
+const textFieldExtractor: ValueRetriever<string> = (value) => (value && String(value)) ?? '';
 const booleanFieldExtractor: ValueRetriever<boolean> = (value) => (value === true || value === 'true') ?? false;
 
 export const valueRetrieverLookup: Record<BuiltInControlType, ValueRetriever> = {

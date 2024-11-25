@@ -34,8 +34,9 @@ export interface FormsEngineGlobalApiContextProps {
 }
 
 export interface FormsEngineFormApiContextProps {
-  rollbackValue(fieldId: string): void;
-  rollbackChanges(): void;
+  rollback(): void;
+  rollbackField(fieldId: string): void;
+  setValuesCheckpoint(values: LookupTable<unknown>): void;
 }
 
 export interface FormRequirementsResponse
@@ -89,7 +90,7 @@ export interface StableFormContextProps {
   fieldUpdates$: Subject<string>;
   initialized: boolean;
   itemMeta: FormsEngineItemMetaContextProps;
-  originalValuesJson: string;
+  originalValues: LookupTable<unknown>;
   props: FormsEngineProps;
   state: FormsEngineCachedStackedFormState;
 }

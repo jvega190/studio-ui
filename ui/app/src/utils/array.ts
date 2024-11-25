@@ -87,3 +87,6 @@ export function createPagedArray<T = any>(array: T[], response): PagedArray<T> {
     limit: response.limit
   });
 }
+
+export const areTuplesEqual: (tuples: [unknown, unknown][]) => boolean = (touples) =>
+  !touples.some(([a, b]) => a !== b);

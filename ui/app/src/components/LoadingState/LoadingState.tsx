@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, { ElementType, PropsWithChildren, ReactNode } from 'react';
+import React, { ElementType, PropsWithChildren, ReactNode, useEffect, useState } from 'react';
 import { makeStyles } from 'tss-react/mui';
 import Typography from '@mui/material/Typography';
 import Gears from '../Gears/Gears';
@@ -68,15 +68,26 @@ export interface LoadingStateProps {
   classes?: Partial<Record<LoadingStateClassKey, string>>;
   styles?: LoadingStateStyles;
   sx?: SxProps<Theme>;
+  revealTimeout?: number;
 }
 
 export type ConditionalLoadingStateProps = LoadingStateProps & PropsWithChildren<{ isLoading: boolean }>;
 
 export function LoadingState(props: LoadingStateProps) {
   const { classes, cx } = useStyles(props.styles);
-  const { graphic: Graphic = Gears, classes: propClasses } = props;
+  const { graphic: Graphic = Gears, classes: propClasses, revealTimeout = 300 } = props;
+  const [reveal, setReveal] = useState(revealTimeout === 0);
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setReveal(true);
+    }, revealTimeout);
+    return () => clearTimeout(timeout);
+  }, [revealTimeout]);
   return (
-    <Box sx={props.sx} className={cx(classes.root, propClasses?.root)}>
+    <Box
+      className={cx(classes.root, propClasses?.root)}
+      sx={{ ...props.sx, visibility: reveal ? undefined : 'hidden' }}
+    >
       {props.title && (
         <Typography variant="h6" component="h3" className={cx(classes.title, propClasses?.title)}>
           {props.title}

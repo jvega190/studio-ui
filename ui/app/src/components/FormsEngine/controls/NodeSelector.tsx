@@ -745,23 +745,11 @@ function NodeSelector(props: NodeSelectorProps) {
       );
     }
 
-    if (menuOptions.length === 0) {
-      menuOptions.push(
-        <EmptyState
-          key="emptyState"
-          title={<FormattedMessage defaultMessage="No options are available for this control" />}
-          subtitle={
-            <FormattedMessage defaultMessage="Update the content type definition to add options to this control" />
-          }
-        />
-      );
-    }
-
     return menuOptions;
   }, [memoRefs, dataSourceSummary, readonly]);
   const { allowedCreateTypes, allowedCreatePaths, allowedBrowsePaths, allowedSearchPaths } = dataSourceSummary;
   const maxLimitReached = value.length >= field.validations.maxCount?.value;
-  const isAddDisabled = readonly || maxLimitReached;
+  const isAddDisabled = readonly || maxLimitReached || !menuOptions.length;
   return (
     <>
       <Menu
@@ -858,7 +846,9 @@ function NodeSelector(props: NodeSelectorProps) {
             </span>
           </Tooltip>
         }
-        menuOptions={[{ id: 'reorder', text: <FormattedMessage defaultMessage="Reorder Items" /> }]}
+        menuOptions={
+          readonly ? undefined : [{ id: 'reorder', text: <FormattedMessage defaultMessage="Reorder Items" /> }]
+        }
         onMenuOptionClick={(_, __, closeMenu) => {
           onReorder();
           closeMenu();
@@ -936,7 +926,19 @@ function NodeSelector(props: NodeSelectorProps) {
             </List>
           ) : (
             <Box
-              children={menuOptions}
+              children={
+                menuOptions.length ? (
+                  menuOptions
+                ) : (
+                  <EmptyState
+                    key="emptyState"
+                    title={<FormattedMessage defaultMessage="No options are available for this control" />}
+                    subtitle={
+                      <FormattedMessage defaultMessage="Update the content type definition to add options to this control" />
+                    }
+                  />
+                )
+              }
               sx={{
                 p: 1,
                 gap: 1,

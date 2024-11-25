@@ -21,8 +21,8 @@ import { makeStyles } from 'tss-react/mui';
 import Typography from '@mui/material/Typography';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Fab from '@mui/material/Fab';
-import crack from '../../assets/warning.svg';
 import { nnou } from '../../utils/object';
+import ErrorOutlineRounded from '@mui/icons-material/ErrorOutlineRounded';
 
 type ErrorStateClassKey = 'root' | 'image' | 'title' | 'message' | 'button';
 
@@ -30,7 +30,7 @@ type ErrorStateStyles = Partial<Record<ErrorStateClassKey, CSSProperties>>;
 
 export type ErrorStateProps = React.PropsWithChildren<{
   title?: ReactNode;
-  message?: string;
+  message?: ReactNode;
   imageUrl?: string;
   buttonIcon?: ReactNode;
   buttonText?: string;
@@ -82,12 +82,16 @@ export function ErrorState(props: ErrorStateProps) {
     buttonText = 'Back',
     buttonIcon = <ArrowBackIcon />,
     onButtonClick,
-    imageUrl = crack,
+    imageUrl,
     children
   } = props;
   return (
     <section className={cx(classes.root, props.classes?.root)}>
-      <img className={cx(classes.image, props.classes?.image)} src={imageUrl} alt="" />
+      {imageUrl ? (
+        <img className={cx(classes.image, props.classes?.image)} src={imageUrl} alt="" />
+      ) : (
+        <ErrorOutlineRounded />
+      )}
       {nnou(title) && (
         <Typography
           variant="body1"

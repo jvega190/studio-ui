@@ -122,7 +122,7 @@ export const FormsEngineField = forwardRef<HTMLDivElement, FormsEngineFieldProps
   const value = useAtomValue(atoms.valueByFieldId[fieldId]);
   const isValid = props.isValid ?? validityData?.isValid;
   const handleCloseMenu = () => setOpenMenu(false);
-  const handleRollback = () => formApi.rollbackValue(field.id);
+  const handleRollback = () => formApi.rollbackField(field.id);
   useEffect(() => {
     // Offer controls the option to focus on the label when the field is rendered.
     if (autoFocus) {
