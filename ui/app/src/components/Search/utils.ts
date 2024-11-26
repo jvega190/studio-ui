@@ -337,7 +337,7 @@ export const useSearchState = ({
       let selectedItems: any[] = [];
       searchResults.items.forEach((item: any) => {
         const allowSelect = disableChangePreselected ? !preselectedPaths.includes(item.path) : true;
-        if (allowSelect && selected.indexOf(item.path) === -1) {
+        if (allowSelect && !selected.includes(item.path)) {
           selectedItems.push(item.path);
           onSelect?.(item.path, true);
         }
