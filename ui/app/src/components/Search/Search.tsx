@@ -27,6 +27,7 @@ import { reversePluckProps } from '../../utils/object';
 import LookupTable from '../../models/LookupTable';
 import { UNDEFINED } from '../../utils/constants';
 import useMount from '../../hooks/useMount';
+import { createPresenceTable } from '../../utils/array';
 
 export function Search(props: SearchProps) {
   const {
@@ -39,6 +40,7 @@ export function Search(props: SearchProps) {
     preselectedPaths = [],
     disableChangePreselected = true
   } = props;
+  const preselectedLookup = createPresenceTable(preselectedPaths);
 
   // region State
   const [filters, setFilters] = useSpreadState({
@@ -213,7 +215,7 @@ export function Search(props: SearchProps) {
       searchParameters={searchParameters}
       selected={selected}
       selectionOptions={selectionOptions}
-      preselectedPaths={preselectedPaths}
+      preselectedLookup={preselectedLookup}
       disableChangePreselected={disableChangePreselected}
     />
   );

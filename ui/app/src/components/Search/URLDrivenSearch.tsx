@@ -31,6 +31,7 @@ import {
 import SearchUI from '../SearchUI';
 import { UNDEFINED } from '../../utils/constants';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { createPresenceTable } from '../../utils/array';
 
 export function URLDrivenSearch(props: URLDrivenSearchProps) {
   const { mode = 'default', onSelect, embedded = false, onAcceptSelection, onClose } = props;
@@ -47,6 +48,7 @@ export function URLDrivenSearch(props: URLDrivenSearchProps) {
   // endregion
 
   const preselectedPaths = JSON.parse(queryParams.preselectedPaths as string);
+  const preselectedLookup = createPresenceTable(preselectedPaths);
   const disableChangePreselected = queryParams.disableChangePreselected
     ? queryParams.disableChangePreselected === 'true'
     : true;
@@ -251,7 +253,7 @@ export function URLDrivenSearch(props: URLDrivenSearchProps) {
       searchParameters={searchParameters}
       selected={selected}
       selectionOptions={selectionOptions}
-      preselectedPaths={preselectedPaths}
+      preselectedLookup={preselectedLookup}
       disableChangePreselected={disableChangePreselected}
     />
   );
