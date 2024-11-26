@@ -233,7 +233,7 @@ function renderTreeNode(
 }
 
 export function PublishDialogContainer(props: PublishDialogContainerProps) {
-  const { items, scheduling = 'now', onSuccess, onClose, isSubmitting } = props;
+  const { items: initialItems, scheduling = 'now', onSuccess, onClose, isSubmitting } = props;
   const siteId = useActiveSiteId();
   const dispatch = useDispatch();
   const [detailedItems, setDetailedItems] = useState<DetailedItem[]>();
@@ -248,25 +248,26 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     error: null,
     fetchingDependencies: false
   });
+  const [mainItems, setMainItems] = useState(initialItems);
   const [published, setPublished] = useState<boolean>(null);
   const [publishingTargets, setPublishingTargets] = useState<PublishingTarget[]>(null);
   const [publishingTargetsStatus, setPublishingTargetsStatus] = useState('Loading');
   const { username } = useActiveUser();
   const [isTreeView, setIsTreeView] = useState(getPublishDialogIsTreeView(username) ?? true);
   const [dependencyData, setDependencyData] = useState<DependencyDataState>(null);
-  const [selectedDependenciesMap, setSelectedDependenciesMap] = useSpreadState<LookupTable<boolean>>({});
+  const [selectedDependenciesMap, setSelectedDependenciesMap] = useState<LookupTable<boolean>>({});
   const selectedDependenciesPaths = Object.keys(selectedDependenciesMap).filter(
     (path) => selectedDependenciesMap[path]
   );
   const submissionCommentRequired = useSelection((state) => state.uiConfig.publishing.publishCommentRequired);
-  const effectRefs = useUpdateRefs({ items, state });
+  const effectRefs = useUpdateRefs({ initialItems, state });
   const itemsDataSummary = useMemo(() => {
     let allItemsInSubmittedState = true;
     let allItemsHavePublishPermission = true;
     const itemPaths = [];
     const itemMap: Record<string, DetailedItem> = {};
     const incompleteDetailedItemPaths = [];
-    items.forEach((item) => {
+    mainItems.forEach((item) => {
       itemMap[item.path] = item;
       itemPaths.push(item.path);
       allItemsHavePublishPermission = allItemsHavePublishPermission && item.availableActionsMap.publish;
@@ -282,7 +283,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
       allItemsHavePublishPermission,
       incompleteDetailedItemPaths
     };
-  }, [items]);
+  }, [mainItems]);
   const dependencyPaths = dependencyData?.paths;
   const [trees, parentTreeNodePaths, itemsAndDependenciesPaths] = useMemo(() => {
     const treeItemPaths = itemsDataSummary.itemPaths.concat(dependencyPaths ?? []);
@@ -296,8 +297,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
   );
   const hasPublishPermission = itemsDataSummary.allItemsHavePublishPermission;
   const isApprove = hasPublishPermission && itemsDataSummary.allItemsInSubmittedState;
-  // const submitServiceFn =
-  //   !hasPublishPermission || state.requestApproval ? requestPublish : isApprove ? approve : publish;
   const { mixedPublishingTargets, mixedPublishingDates, dateScheduled, publishingTarget } = useMemo(() => {
     const state = {
       mixedPublishingTargets: false,
@@ -407,6 +406,8 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     isBlank(state.packageTitle) ||
     // When there are no available/loaded publishing targets
     !publishingTargets?.length ||
+    // When there are selected dependencies not applied.
+    Boolean(selectedDependenciesPaths?.length) ||
     // When no publishing target is selected
     !state.publishingTarget ||
     // If submission comment is required (per config) and blank
@@ -458,7 +459,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                 softDependenciesMap[path] = true;
               }
             });
-            setSelectedDependenciesMap(softDependenciesMap);
           },
           error() {
             setState({ fetchingDependencies: false });
@@ -471,7 +471,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
   useEffect(() => {
     const subscription = fetchPublishingTargetsFn();
     return () => subscription.unsubscribe();
-  }, [fetchPublishingTargetsFn, items]);
+  }, [fetchPublishingTargetsFn, initialItems]);
 
   useEffect(() => {
     scheduling !== effectRefs.current.state.scheduling && setState({ scheduling });
@@ -491,7 +491,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
   useEffect(() => {
     // If `incompleteDetailedItemPaths` is empty, we have all the detailed items we need.
     if (itemsDataSummary.incompleteDetailedItemPaths.length === 0) {
-      setDetailedItems(effectRefs.current.items);
+      setDetailedItems(effectRefs.current.initialItems);
     } else {
       setIsFetchingItems(true);
       const subscription = fetchDetailedItems(siteId, itemsDataSummary.incompleteDetailedItemPaths).subscribe({
@@ -519,7 +519,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     const { requestApproval, packageTitle, submissionComment, scheduling, scheduledDateTime } = state;
     const data: PublishParams = {
       publishingTarget: state.publishingTarget,
-      paths: [...itemPaths, ...selectedDependenciesPaths].map((path: string) => ({
+      paths: itemPaths.map((path: string) => ({
         path,
         includeChildren: false,
         includeSoftDeps: false
@@ -585,11 +585,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 
   const onCloseButtonClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => onClose(e, null);
 
-  const onDependencyCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>, checked: boolean, path: string) => {
-    // TODO: when updating dependencies, we should calculate the new set of dependencies.
-    setSelectedDependenciesMap({ [path]: checked });
-  };
-
   const onContextMenuOpen = (e: React.MouseEvent<HTMLButtonElement>, path: string) => {
     const { itemMap } = itemsDataSummary;
     const { itemsByPath } = dependencyData;
@@ -605,6 +600,17 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
       el: null,
       options: null
     });
+  };
+
+  const onDependencyCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>, checked: boolean, path: string) => {
+    setSelectedDependenciesMap({ ...selectedDependenciesMap, [path]: checked });
+  };
+
+  const onApplyDependenciesChanges = () => {
+    // Update the list of mainItems for the dependencies to be re-calculated. Also clear the current set of selected
+    // dependencies.
+    setMainItems([...mainItems, ...selectedDependenciesPaths.map((path) => dependencyData.itemsByPath[path])]);
+    setSelectedDependenciesMap({});
   };
 
   const { formatMessage } = useIntl();
@@ -825,23 +831,13 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                       <FormattedMessage defaultMessage="LEGEND" />
                     </Typography>
                     <Box display="flex" sx={{ display: 'flex', mb: 1, gap: 1 }}>
-                      <Chip
-                        size="small"
-                        variant="outlined"
-                        color="warning"
-                        label={<FormattedMessage defaultMessage="Required" />}
-                      />
+                      <DependencyChip type="hard" />
                       <Typography variant="body2" color="textSecondary">
                         <FormattedMessage defaultMessage="References of mandatory submission" />
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Chip
-                        size="small"
-                        variant="outlined"
-                        color="info"
-                        label={<FormattedMessage defaultMessage="Optional" />}
-                      />
+                      <DependencyChip type="soft" />
                       <Typography variant="body2" color="textSecondary">
                         <FormattedMessage defaultMessage="References of optional submission" />
                       </Typography>
@@ -942,7 +938,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                                       {dependencyData?.typeByPath[path] === 'soft' && (
                                         <Checkbox
                                           size="small"
-                                          checked={selectedDependenciesPaths?.includes(path)}
+                                          checked={selectedDependenciesMap[path]}
                                           onChange={(e, checked) => onDependencyCheckboxChange(e, checked, path)}
                                         />
                                       )}
@@ -967,6 +963,22 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                             </List>
                           )}
                         </Box>
+                        <Alert
+                          severity="info"
+                          action={
+                            <Button
+                              color="inherit"
+                              size="small"
+                              onClick={onApplyDependenciesChanges}
+                              disabled={!selectedDependenciesPaths?.length}
+                            >
+                              <FormattedMessage defaultMessage="Apply" />
+                            </Button>
+                          }
+                          sx={{ borderTopRightRadius: 0, borderTopLeftRadius: 0 }}
+                        >
+                          <FormattedMessage defaultMessage="Changes in the item selection must be applied" />
+                        </Alert>
                       </Paper>
                     </>
                   ) : (
