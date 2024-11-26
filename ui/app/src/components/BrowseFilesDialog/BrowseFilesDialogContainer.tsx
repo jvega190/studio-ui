@@ -79,6 +79,8 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
   const [sortKeys, setSortKeys] = useState([]);
   const { username } = useActiveUser();
   const [viewMode, setViewMode] = useState<MediaCardViewModes>(getStoredBrowseDialogViewMode(username));
+  const [fetchingPreselectedItems, setFetchingPreselectedItems] = useState(false);
+  const disableSubmission = fetchingPreselectedItems || (!selectedArray.length && !selectedCard);
 
   const fetchItems = useCallback(() => {
     // Since lookahead regex is not supported by opensearch, we are excluding the current path from the search using a
@@ -97,18 +99,27 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
 
   useEffect(() => {
     const query = preselectedPaths?.map((path) => `localId:"${path}"`).join(' ');
-    search(site, { query }).subscribe(({ items }) => {
-      if (multiSelect) {
-        items.forEach((item) => {
-          setSelectedLookup({ [item.path]: item });
-        });
-      } else {
-        if (items.length) {
-          setSelectedCard(items[0]);
+    setFetchingPreselectedItems(true);
+    search(site, { query }).subscribe({
+      next: ({ items }) => {
+        if (multiSelect) {
+          items.forEach((item) => {
+            setSelectedLookup({ [item.path]: item });
+          });
+        } else {
+          if (items.length) {
+            setSelectedCard(items[0]);
+          }
         }
+        setFetchingPreselectedItems(false);
+      },
+      error: () => {
+        setFetchingPreselectedItems(false);
       }
     });
-  }, [site, preselectedPaths, multiSelect, setSelectedLookup]);
+    // Interested in renewing the effect when preselectedPaths change, not when the paths array instance changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [site, preselectedPaths.join(''), multiSelect, setSelectedLookup]);
 
   useEffect(() => {
     let subscription;
@@ -243,6 +254,7 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
       allowUpload={allowUpload}
       preselectedPaths={preselectedPaths}
       disableChangePreselected={disableChangePreselected}
+      disableSubmission={disableSubmission}
     />
   ) : (
     <EmptyState

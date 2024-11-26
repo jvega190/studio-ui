@@ -66,6 +66,7 @@ export interface BrowseFilesDialogUIProps {
   sortKeys: Array<string>;
   preselectedPaths?: BrowseFilesDialogBaseProps['preselectedPaths'];
   disableChangePreselected?: BrowseFilesDialogBaseProps['disableChangePreselected'];
+  disableSubmission?: boolean;
   onCardSelected(item: MediaItem): void;
   onPreviewImage?(item: MediaItem): void;
   onCheckboxChecked(path: string, selected: boolean): void;

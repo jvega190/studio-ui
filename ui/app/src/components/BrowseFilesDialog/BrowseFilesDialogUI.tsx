@@ -84,7 +84,8 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
     viewMode = 'card',
     onToggleViewMode,
     preselectedPaths = [],
-    disableChangePreselected
+    disableChangePreselected,
+    disableSubmission
   } = props;
   // endregion
   const { classes, cx: clsx } = useStyles();
@@ -299,7 +300,7 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
         <SecondaryButton onClick={onCloseButtonClick}>
           <FormattedMessage id="words.cancel" defaultMessage="Cancel" />
         </SecondaryButton>
-        <PrimaryButton disabled={!Boolean(selectedArray.length) && !selectedCard} onClick={onSelectButtonClick}>
+        <PrimaryButton disabled={disableSubmission} onClick={onSelectButtonClick}>
           <FormattedMessage id="words.select" defaultMessage="Select" />
         </PrimaryButton>
       </DialogFooter>
