@@ -260,8 +260,8 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
             >
               {items
                 ? items.map((item: SearchItem) => {
-                    const isPreSelected = preselectedPaths.includes(item.path);
-                    const onSelect = disableChangePreselected && isPreSelected ? () => null : onCheckboxChecked;
+                    const isPreselected = preselectedPaths.includes(item.path);
+                    const onSelect = disableChangePreselected && isPreselected ? () => null : onCheckboxChecked;
 
                     return (
                       <MediaCard
@@ -270,16 +270,16 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
                           root: item.path === selectedCard?.path && classes.selectedCard
                         }}
                         sxs={{
-                          root: { cursor: disableChangePreselected && isPreSelected ? 'not-allowed' : 'pointer' }
+                          root: { cursor: disableChangePreselected && isPreselected ? 'not-allowed' : 'pointer' }
                         }}
                         key={item.path}
                         item={item}
-                        disableSelection={disableChangePreselected && isPreSelected}
+                        disableSelection={disableChangePreselected && isPreselected}
                         selected={multiSelect ? [...selectedArray] : []}
                         onSelect={multiSelect ? onSelect : null}
                         onPreview={onPreviewImage ? () => onPreviewImage(item) : null}
                         previewAppBaseUri={guestBase}
-                        onClick={() => !(disableChangePreselected && isPreSelected) && onCardSelected(item)}
+                        onClick={() => !(disableChangePreselected && isPreselected) && onCardSelected(item)}
                         showPath={true}
                       />
                     );
