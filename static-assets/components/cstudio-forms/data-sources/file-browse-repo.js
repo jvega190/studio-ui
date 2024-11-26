@@ -51,7 +51,7 @@ YAHOO.extend(CStudioForms.Datasources.FileBrowseRepo, CStudioForms.CStudioFormDa
       // the actions for those paths.
       const preselectedPaths = craftercms.utils.array
         .asArray(control?.form.model[control.fieldDef.id])
-        .map((item) => item.key);
+        .flatMap((item) => item.key || []);
 
       CStudioAuthoring.Operations.openBrowseFilesDialog({
         path: _self.processPathsForMacros(_self.repoPath),
