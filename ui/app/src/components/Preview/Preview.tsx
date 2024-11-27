@@ -24,7 +24,7 @@ import Box from '@mui/material/Box';
 import { useDispatch } from 'react-redux';
 import queryString from 'query-string';
 import { useIntl } from 'react-intl';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import usePreviewNavigation from '../../hooks/usePreviewNavigation';
 import useSiteLookup from '../../hooks/useSiteLookup';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
@@ -149,9 +149,11 @@ function Preview() {
       // If nothing changed, skip...
       if (somethingDidChanged) {
         if ((siteChanged || urlChanged) && (currentUrlPath !== qs.page || site !== qs.site)) {
-          const page = currentUrlPath;
-          if (page !== previewLandingBase) {
-            navigate({ search: queryString.stringify({ site, page }, { encode: false }) });
+          if (currentUrlPath !== previewLandingBase) {
+            // Encoding the `site` & `page` is necessary to avoid ambiguity with the router arguments. For example:
+            // - `.../#?site=editorial&page=/products?id=1&variant=2`: without encoding, the router would consider variant as a query parameter rather than part of the `page` arg path.
+            // - `.../#?site=editorial&page=%2Fproducts%3Fid%3D1%26variant%3D2`: removes the ambiguity.
+            navigate({ search: queryString.stringify({ site, page: currentUrlPath }, { encode: true }) });
           }
         } else if (qsSiteChanged && qsUrlChanged) {
           dispatch(changeSite(qs.site, qs.page));

@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { useDispatch } from 'react-redux';
 import { useActiveSiteId } from '../../hooks/useActiveSiteId';
@@ -39,6 +39,7 @@ import { getEditorMode, isImage, isPdfDocument, isPreviewable, isVideo } from '.
 import {
   compareBothVersions,
   compareToPreviousVersion,
+  fetchItemVersions,
   revertContent,
   revertToPreviousVersion,
   versionsChangeItem,
@@ -60,9 +61,14 @@ import { LoadingState } from '../LoadingState';
 import Box from '@mui/material/Box';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
+import { showErrorDialog } from '../../state/reducers/dialogs/error';
+import { contentEvent } from '../../state/actions/system';
+import { getHostToHostBus } from '../../utils/subjects';
+import { filter } from 'rxjs/operators';
+import { getRootPath } from '../../utils/path';
 
 export function HistoryDialogContainer(props: HistoryDialogContainerProps) {
-  const { versionsBranch } = props;
+  const { versionsBranch, error } = props;
   const { count, page, limit, current, rootPath, isConfig } = versionsBranch;
   useFetchSandboxItems([versionsBranch.item.path]);
   // TODO: It'd be best for the dialog to directly receive a live item. Must change versions branch to only hold the path.
@@ -75,6 +81,8 @@ export function HistoryDialogContainer(props: HistoryDialogContainerProps) {
   const site = useActiveSiteId();
   const timeoutRef = useRef(null);
   const isItemPreviewable = isPreviewable(item);
+  // Item may be null for config items in config management.
+  const isDiffSupported = ['page', 'component', 'taxonomy'].includes(item?.systemType);
   const [compareMode, setCompareMode] = useState(false);
   const [selectedCompareVersions, setSelectedCompareVersions] = useState([]);
 
@@ -132,6 +140,12 @@ export function HistoryDialogContainer(props: HistoryDialogContainerProps) {
   );
   const hasMenuOptions = isItemPreviewable || count > 1;
 
+  useEffect(() => {
+    if (error) {
+      dispatch(showErrorDialog({ error }));
+    }
+  }, [error, dispatch]);
+
   const compareVersionDialogWithActions = () => {
     setCompareMode(false);
     setSelectedCompareVersions([]);
@@ -140,10 +154,9 @@ export function HistoryDialogContainer(props: HistoryDialogContainerProps) {
     });
   };
   const handleViewItem = (version: ItemHistoryEntry) => {
-    const supportsDiff = ['page', 'component', 'taxonomy'].includes(item.systemType);
     const versionPath = Boolean(version.path) && path !== version.path ? version.path : path;
 
-    if (supportsDiff) {
+    if (isDiffSupported) {
       dispatch(
         batchActions([
           fetchContentTypes(),
@@ -163,6 +176,8 @@ export function HistoryDialogContainer(props: HistoryDialogContainerProps) {
             [image || video || pdf ? 'url' : 'content']: content,
             mode: image || video || pdf ? UNDEFINED : getEditorMode(item),
             path: item.path,
+            url: item.path,
+            showEdit: current === version.versionNumber,
             subtitle: `v.${version.versionNumber}`,
             ...(video ? { mimeType: item.mimeType } : {})
           })
@@ -306,6 +321,26 @@ export function HistoryDialogContainer(props: HistoryDialogContainerProps) {
     }
   };
 
+  // region Item Updates Propagation
+  useEffect(() => {
+    const events = [contentEvent.type];
+    const hostToHost$ = getHostToHostBus();
+    const subscription = hostToHost$
+      .pipe(filter((e) => events.includes(e.type) && e.payload.targetPath === item.path))
+      .subscribe(() => {
+        dispatch(
+          fetchItemVersions({
+            item,
+            rootPath: getRootPath(item.path)
+          })
+        );
+      });
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [dispatch, item]);
+  // endregion
+
   return (
     <>
       <DialogBody className={classes.dialogBody} minHeight>
@@ -321,17 +356,20 @@ export function HistoryDialogContainer(props: HistoryDialogContainerProps) {
             onItemClicked={(item) => {
               setOpenSelector(false);
               dispatch(versionsChangeItem({ item }));
+              setSelectedCompareVersions([]);
+              setCompareMode(false);
             }}
           />
-          <FormControlLabel
-            value="start"
-            control={<Switch color="primary" checked={compareMode} />}
-            label={<FormattedMessage defaultMessage="Compare" />}
-            labelPlacement="start"
-            onChange={(e) => {
-              setCompareMode((e.currentTarget as HTMLInputElement).checked);
-            }}
-          />
+          {isDiffSupported && count > 1 && (
+            <FormControlLabel
+              control={<Switch color="primary" checked={compareMode} />}
+              label={<FormattedMessage defaultMessage="Compare" />}
+              labelPlacement="start"
+              onChange={(e) => {
+                setCompareMode((e.currentTarget as HTMLInputElement).checked);
+              }}
+            />
+          )}
         </Box>
         <ErrorBoundary>
           {versionsBranch.isFetching ? (

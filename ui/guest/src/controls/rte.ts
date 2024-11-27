@@ -112,10 +112,12 @@ export function initTinyMCE(
 
   record.element.classList.remove(emptyFieldClass);
 
+  const maxLength = validations?.maxLength ? parseInt(validations.maxLength.value) : null;
   window.tinymce.init({
     license_key: 'gpl',
     target: rteEl,
     promotion: false,
+    branding: false,
     // Templates plugin is deprecated but still available on v6, since it may be used, we'll keep it. Please
     // note that it will become premium on version 7.
     deprecation_warnings: false,
@@ -124,8 +126,24 @@ export function initTinyMCE(
     plugins: ['craftercms_paste editform', rteSetup?.tinymceOptions?.plugins].filter(Boolean).join(' '), // 'editform' plugin will always be loaded
     paste_as_text: type !== 'html',
     paste_data_images: type === 'html',
-    paste_preprocess(plugin, args) {
-      window.tinymce.activeEditor.plugins.craftercms_paste_extension?.paste_preprocess(plugin, args);
+    paste_preprocess(editor, args) {
+      const currentContent = editor.getContent({ format: 'text' });
+      const fullContent = currentContent + args.content;
+      const maxLengthExceeded = maxLength && fullContent.length > maxLength;
+      if (maxLengthExceeded) {
+        post(
+          snackGuestMessage({
+            id: 'maxLength',
+            level: 'required',
+            values: {
+              maxLength: args.content.length === maxLength ? fullContent.length : `${fullContent.length}/${maxLength}`
+            }
+          })
+        );
+        args.content = args.content.substring(0, maxLength - currentContent.length);
+      }
+
+      window.tinymce.activeEditor.plugins.craftercms_paste_extension?.paste_preprocess(editor, args);
     },
     paste_postprocess(plugin, args) {
       window.tinymce.activeEditor.plugins.craftercms_paste_extension?.paste_postprocess(plugin, args);
@@ -328,31 +346,18 @@ export function initTinyMCE(
       });
 
       editor.on('paste', (e) => {
-        const maxLength = validations?.maxLength ? parseInt(validations.maxLength.value) : null;
-        const text = (
-          e.clipboardData ||
-          // @ts-ignore
-          window.clipboardData
-        ).getData('text');
-        if (maxLength && text.length > maxLength) {
-          post(
-            snackGuestMessage({
-              id: 'maxLength',
-              level: 'required',
-              values: { maxLength: text.length === maxLength ? text.length : `${text.length}/${maxLength}` }
-            })
-          );
-        }
         if (type === 'textarea') {
           // Doing this immediately (without the timeout) causes the content to be duplicated.
           // TinyMCE seems to be doing something internally that causes this.
           setTimeout(() => {
-            replaceLineBreaksIfApplicable(text);
-            editor.selection.select(editor.getBody(), true);
-            editor.selection.collapse(false);
+            const newContent = getContent();
+            if (newContent.includes('\n')) {
+              replaceLineBreaksIfApplicable(newContent);
+              editor.selection.select(editor.getBody(), true);
+              editor.selection.collapse(false);
+            }
           }, 10);
         }
-        // TODO: It'd be great to be able to select the piece of the pasted content that falls out of the max-length.
       });
 
       editor.on('keyup', (e) => {
