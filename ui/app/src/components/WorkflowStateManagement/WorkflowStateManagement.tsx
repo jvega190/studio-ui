@@ -241,7 +241,7 @@ export function WorkflowStateManagement(props: WorkflowStateManagementProps) {
     } else if (option === 'clearSelected') {
       clearSelectedItems();
       setIsSelectedItemsOnAllPages(false);
-    } else if (option === 'selectAll') {
+    } else if ('selectAll') {
       clearSelectedItems();
       setIsSelectedItemsOnAllPages(true);
     }
