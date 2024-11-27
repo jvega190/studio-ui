@@ -76,7 +76,7 @@ import { MaxLengthCircularProgress } from '../MaxLengthCircularProgress';
 import useUnmount from '../../hooks/useUnmount';
 import useActiveUser from '../../hooks/useActiveUser';
 import { createCustomDocumentEventListener } from '../../utils/dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { ProjectToolsRoutes } from '../../env/routes';
 import ListItemButton from '@mui/material/ListItemButton';
 
