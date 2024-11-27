@@ -311,7 +311,7 @@ export function SearchUI(props: SearchUIProps) {
     onClose,
     onAcceptSelection,
     preselectedLookup = {},
-    disableChangePreselected
+    disableChangePreselected = true
   } = props;
   // endregion
 
