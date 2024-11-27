@@ -37,6 +37,7 @@ import useActiveUser from '../../hooks/useActiveUser';
 import { withIndex, withoutIndex } from '../../utils/path';
 import { MediaCardViewModes } from '../MediaCard';
 import { createPresenceTable } from '../../utils/array';
+import { createLookupTable } from '../../utils/object';
 
 const viewModes: MediaCardViewModes[] = ['card', 'compact', 'row'];
 const defaultPreselectedPaths = [];
@@ -106,9 +107,7 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
     search(site, { query }).subscribe({
       next: ({ items }) => {
         if (multiSelect) {
-          items.forEach((item) => {
-            setSelectedLookup({ [item.path]: item });
-          });
+          setSelectedLookup(createLookupTable(items, 'path'));
         } else if (items.length) {
           setSelectedCard(items[0]);
         }
