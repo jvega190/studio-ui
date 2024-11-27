@@ -28,7 +28,6 @@ import useStyles from './styles';
 import { useSelection } from '../../hooks/useSelection';
 import { capitalize, isBlank } from '../../utils/string';
 import { updatePublishDialog } from '../../state/actions/dialogs';
-import { approve } from '../../services/workflow';
 import { fetchDetailedItems } from '../../services/content';
 import { DetailedItem } from '../../models';
 import { fetchDetailedItemsComplete } from '../../state/actions/content';
@@ -82,32 +81,12 @@ import Tooltip from '@mui/material/Tooltip';
 import ErrorOutlineRounded from '@mui/icons-material/ErrorOutlineRounded';
 import { getPublishDialogIsTreeView, setPublishDialogIsTreeView } from '../../utils/state';
 import useActiveUser from '../../hooks/useActiveUser';
-import { dependencies, publish } from '../../services/publish';
+import { fetchPublishingPackage, publish } from '../../services/publishing';
 import { generateSingleItemOptions } from '../../utils/itemActions';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 
 const messages = defineMessages({
-  scheduling: {
-    id: 'publishForm.scheduling',
-    defaultMessage: 'Scheduling'
-  },
-  schedulingNow: {
-    id: 'publishForm.schedulingNow',
-    defaultMessage: 'Now'
-  },
-  schedulingLater: {
-    id: 'publishForm.schedulingLater',
-    defaultMessage: 'Later'
-  },
-  schedulingLaterDisabled: {
-    id: 'publishForm.schedulingLaterDisabled',
-    defaultMessage: 'Later (disabled on first publish)'
-  },
-  publishingTarget: {
-    id: 'common.publishingTarget',
-    defaultMessage: 'Publishing Target'
-  },
   publishingTargetLoading: {
     id: 'publishForm.publishingTargetLoading',
     defaultMessage: 'Loading...'
@@ -116,17 +95,9 @@ const messages = defineMessages({
     id: 'publishForm.publishingTargetError',
     defaultMessage: 'Publishing targets load failed.'
   },
-  publishingTargetRetry: {
-    id: 'publishForm.publishingTargetRetry',
-    defaultMessage: 'retry'
-  },
   publishingTargetSuccess: {
     id: 'publishForm.publishingTargetSuccess',
     defaultMessage: 'Success'
-  },
-  submissionComment: {
-    id: 'publishForm.submissionComment',
-    defaultMessage: 'Submission Comment'
   },
   live: {
     id: 'words.live',
@@ -296,7 +267,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     [itemsDataSummary.itemMap, dependencyItemMap]
   );
   const hasPublishPermission = itemsDataSummary.allItemsHavePublishPermission;
-  const isApprove = hasPublishPermission && itemsDataSummary.allItemsInSubmittedState;
   const { mixedPublishingTargets, mixedPublishingDates, dateScheduled, publishingTarget } = useMemo(() => {
     const state = {
       mixedPublishingTargets: false,
@@ -390,11 +360,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     [siteId]
   );
 
-  const onSetIsTreeView = (isTreeView: boolean) => {
-    setIsTreeView(isTreeView);
-    setPublishDialogIsTreeView(username, isTreeView);
-  };
-
   // Submit button should be disabled when:
   const submitDisabled =
     // Detailed items haven't loaded
@@ -416,14 +381,13 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     Boolean(state.error) ||
     // The scheduled date is in the past
     state.scheduledDateTime < new Date();
-
   useEffect(() => {
     setState({ fetchingDependencies: true });
     // TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     // TODO: This is not scalable (bulk fetch of countless DetailedItems). We must review and discuss how to adjust.
     // TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if (publishingTarget) {
-      dependencies(siteId, {
+      fetchPublishingPackage(siteId, {
         publishingTarget,
         paths: itemsDataSummary.itemPaths.map((path) => ({ path, includeChildren: false, includeSoftDeps: false })),
         commitIds: [] // TODO: there's a bug where the API fails if commitsIds is not provided. Needs to be fixed.
@@ -511,6 +475,11 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     }
   }, [effectRefs, itemsDataSummary, siteId, setState, dispatch]);
 
+  const onSetIsTreeView = (isTreeView: boolean) => {
+    setIsTreeView(isTreeView);
+    setPublishDialogIsTreeView(username, isTreeView);
+  };
+
   const handleSubmit = (e?: SyntheticEvent) => {
     e?.preventDefault();
 
@@ -531,7 +500,8 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     };
 
     dispatch(updatePublishDialog({ isSubmitting: true }));
-    const submitCallback = {
+
+    publish(siteId, data).subscribe({
       next() {
         dispatch(updatePublishDialog({ isSubmitting: false, hasPendingChanges: false }));
         onSuccess?.({
@@ -540,7 +510,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
           // @ts-expect-error: TODO: Not quite sure if users of this dialog are making use of the `environment` prop name. Should remove (keep publishingTarget only).
           environment: publishingTarget,
           type: !hasPublishPermission || state.requestApproval ? 'submit' : 'publish',
-          // TODO: Should send all items that were submitted. Check usages.
           items: itemPaths.map((path) => itemMap[path])
         });
       },
@@ -549,13 +518,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
           batchActions([updatePublishDialog({ isSubmitting: false }), showErrorDialog({ error: response.response })])
         );
       }
-    };
-
-    if (isApprove) {
-      // TODO: implement
-    } else {
-      publish(siteId, data).subscribe(submitCallback);
-    }
+    });
   };
 
   const onPublishingArgumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -720,7 +683,9 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                       )}
                     </Box>
                     <FormControl fullWidth className={classes.formSection}>
-                      <FormLabel component="legend">{formatMessage(messages.scheduling)}</FormLabel>
+                      <FormLabel component="legend">
+                        <FormattedMessage defaultMessage="Scheduling" />
+                      </FormLabel>
                       <RadioGroup
                         className={classes.radioGroup}
                         value={state.scheduling}
@@ -738,7 +703,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                         <FormControlLabel
                           value="now"
                           control={<Radio color="primary" className={classes.radioInput} />}
-                          label={formatMessage(messages.schedulingNow)}
+                          label={<FormattedMessage defaultMessage="Now" />}
                           classes={{ label: classes.formInputs }}
                           disabled={disabled}
                         />
@@ -746,9 +711,11 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                           value="custom"
                           control={<Radio color="primary" className={classes.radioInput} />}
                           label={
-                            published
-                              ? formatMessage(messages.schedulingLater)
-                              : formatMessage(messages.schedulingLaterDisabled)
+                            published ? (
+                              <FormattedMessage defaultMessage="Later" />
+                            ) : (
+                              <FormattedMessage defaultMessage="Later (disabled on first publish)" />
+                            )
                           }
                           classes={{ label: classes.formInputs }}
                           disabled={!published || disabled}
@@ -769,7 +736,9 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                       </Collapse>
                     </FormControl>
                     <FormControl fullWidth className={classes.formSection}>
-                      <FormLabel component="legend">{formatMessage(messages.publishingTarget)}</FormLabel>
+                      <FormLabel component="legend">
+                        <FormattedMessage defaultMessage="Publishing Target" />
+                      </FormLabel>
                       {publishingTargets ? (
                         publishingTargets.length ? (
                           <RadioGroup
@@ -809,7 +778,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                             {formatMessage(messages[`publishingTarget${publishingTargetsStatus}`])}
                             {publishingTargetsStatus === 'Error' && (
                               <Link href="#" onClick={() => fetchPublishingTargetsFn()}>
-                                ({formatMessage(messages.publishingTargetRetry)})
+                                <FormattedMessage defaultMessage="retry" />
                               </Link>
                             )}
                           </Typography>
@@ -881,9 +850,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                               </>
                             )}
                           </Box>
-                          <Button size="small">
-                            <FormattedMessage defaultMessage="Exclude optional references" />
-                          </Button>
                         </Box>
                         <Divider />
                         <Box sx={{ p: 1 }}>

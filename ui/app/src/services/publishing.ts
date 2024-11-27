@@ -19,7 +19,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { LegacyItem } from '../models/Item';
 import { pluckProps, toQueryString } from '../utils/object';
-import { PublishingStatus, PublishingTarget, PublishingTargets } from '../models/Publishing';
+import { PublishingStatus, PublishingTarget, PublishingTargets, PublishParams } from '../models/Publishing';
 import { Api2BulkResponseFormat, Api2ResponseFormat } from '../models/ApiResponse';
 import { PagedArray } from '../models/PagedArray';
 
@@ -88,9 +88,7 @@ export interface GoLiveResponse {
 }
 
 export function fetchStatus(siteId: string): Observable<PublishingStatus> {
-  return get<Api2ResponseFormat<{ publishingStatus: PublishingStatus }>>(
-    `/studio/api/2/publish/status?siteId=${siteId}`
-  ).pipe(
+  return get<Api2ResponseFormat<{ publishingStatus: PublishingStatus }>>(`/studio/api/2/publish/${siteId}/status`).pipe(
     map((response) => response?.response?.publishingStatus),
     map((status) => {
       if (status.status) {
@@ -149,4 +147,29 @@ export function publishAll(siteId: string, publishingTarget: string, submissionC
 
 export function clearLock(siteId: string): Observable<boolean> {
   return postJSON('/studio/api/2/publish/clear_lock', { siteId }).pipe(map(() => true));
+}
+
+export function publish(siteId: string, data: PublishParams): Observable<boolean> {
+  return postJSON(`/studio/api/2/publish/${siteId}`, data).pipe(map(() => true));
+}
+
+export interface PackageResponse {
+  hardDependencies: string[];
+  softDependencies: string[];
+  deletedItems: string[];
+  items: string[];
+}
+
+// Calculates the publishing package given an item set
+export function fetchPublishingPackage(
+  siteId: string,
+  data: {
+    publishingTarget: string;
+    paths?: PublishParams['paths'];
+    commitIds?: PublishParams['commitIds'];
+  }
+): Observable<PackageResponse> {
+  return postJSON(`/studio/api/2/publish/${siteId}/calculate`, data).pipe(
+    map((response) => response?.response?.package)
+  );
 }
