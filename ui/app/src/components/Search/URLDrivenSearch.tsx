@@ -31,6 +31,7 @@ import {
 import SearchUI from '../SearchUI';
 import { UNDEFINED } from '../../utils/constants';
 import { useLocation, useNavigate } from 'react-router';
+import { createPresenceTable } from '../../utils/array';
 
 export function URLDrivenSearch(props: URLDrivenSearchProps) {
   const { mode = 'default', onSelect, embedded = false, onAcceptSelection, onClose } = props;
@@ -45,6 +46,12 @@ export function URLDrivenSearch(props: URLDrivenSearchProps) {
   const theme = useTheme();
   const desktopScreen = useMediaQuery(theme.breakpoints.up('md'));
   // endregion
+
+  const preselectedPaths = JSON.parse(queryParams.preselectedPaths as string);
+  const preselectedLookup = createPresenceTable(preselectedPaths);
+  const disableChangePreselected = queryParams.disableChangePreselected
+    ? queryParams.disableChangePreselected === 'true'
+    : true;
 
   // region state
   const [keyword, setKeyword] = useState(queryParams['keywords'] || '');
@@ -75,6 +82,8 @@ export function URLDrivenSearch(props: URLDrivenSearchProps) {
     handleChangeView
   } = useSearchState({
     searchParameters,
+    preselectedPaths,
+    disableChangePreselected,
     onSelect
   });
   // endregion
@@ -244,6 +253,8 @@ export function URLDrivenSearch(props: URLDrivenSearchProps) {
       searchParameters={searchParameters}
       selected={selected}
       selectionOptions={selectionOptions}
+      preselectedLookup={preselectedLookup}
+      disableChangePreselected={disableChangePreselected}
     />
   );
 }

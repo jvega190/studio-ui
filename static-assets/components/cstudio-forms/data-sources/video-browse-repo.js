@@ -38,6 +38,8 @@ CStudioForms.Datasources.VideoBrowseRepo =
 YAHOO.extend(CStudioForms.Datasources.VideoBrowseRepo, CStudioForms.CStudioFormDatasource, {
   insertVideoAction: function (callback) {
     var _self = this;
+    const control = callback.videoPicker;
+    const currentValue = control?.form.model[control.fieldDef.id] ?? '';
 
     if (this.useSearch) {
       const searchContext = {
@@ -48,7 +50,8 @@ YAHOO.extend(CStudioForms.Datasources.VideoBrowseRepo, CStudioForms.CStudioFormD
         },
         sortBy: 'internalName',
         sortOrder: 'asc',
-        mode: 'select' // open search not in default but in select mode
+        mode: 'select', // open search not in default but in select mode
+        preselectedPaths: [currentValue].filter(Boolean)
       };
 
       if (this.repoPath) {
@@ -60,7 +63,8 @@ YAHOO.extend(CStudioForms.Datasources.VideoBrowseRepo, CStudioForms.CStudioFormD
         true,
         {
           success(searchId, selectedTOs) {
-            const path = selectedTOs[0].path;
+            const filteredSelected = selectedTOs.filter((media) => media.path !== currentValue);
+            const path = filteredSelected[0].path;
             const url = this.context.createPreviewUrl(path);
             const videoData = {
               previewUrl: url,
@@ -79,16 +83,19 @@ YAHOO.extend(CStudioForms.Datasources.VideoBrowseRepo, CStudioForms.CStudioFormD
       CStudioAuthoring.Operations.openBrowseFilesDialog({
         path: _self.processPathsForMacros(_self.repoPath),
         multiSelect,
+        preselectedPaths: [currentValue],
         onSuccess: (result) => {
           const items = Array.isArray(result) ? result : [result];
           items.forEach(({ path }) => {
-            const url = CStudioAuthoringContext.previewAppBaseUri + path;
-            const videoData = {
-              previewUrl: url,
-              relativeUrl: path,
-              fileExtension: url.substring(url.lastIndexOf('.') + 1)
-            };
-            callback.success(videoData);
+            if (path !== currentValue) {
+              const url = CStudioAuthoringContext.previewAppBaseUri + path;
+              const videoData = {
+                previewUrl: url,
+                relativeUrl: path,
+                fileExtension: url.substring(url.lastIndexOf('.') + 1)
+              };
+              callback.success(videoData);
+            }
           });
         }
       });

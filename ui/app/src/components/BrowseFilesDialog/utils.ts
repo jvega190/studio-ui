@@ -19,6 +19,7 @@ import StandardAction from '../../models/StandardAction';
 import { EnhancedDialogProps } from '../EnhancedDialog';
 import React from 'react';
 import { MediaCardViewModes } from '../MediaCard';
+import { LookupTable } from '../../models';
 
 export interface BrowseFilesDialogBaseProps {
   path: string;
@@ -28,6 +29,8 @@ export interface BrowseFilesDialogBaseProps {
   numOfLoaderItems?: number;
   allowUpload?: boolean;
   initialParameters?: Partial<ElasticParams>;
+  preselectedPaths?: string[];
+  disableChangePreselected?: boolean;
 }
 
 export interface BrowseFilesDialogProps extends BrowseFilesDialogBaseProps, EnhancedDialogProps {
@@ -62,6 +65,10 @@ export interface BrowseFilesDialogUIProps {
   numOfLoaderItems?: number;
   allowUpload?: boolean;
   sortKeys: Array<string>;
+  preselectedPaths?: BrowseFilesDialogBaseProps['preselectedPaths'];
+  preselectedLookup?: LookupTable<boolean>;
+  disableChangePreselected?: BrowseFilesDialogBaseProps['disableChangePreselected'];
+  disableSubmission?: boolean;
   onCardSelected(item: MediaItem): void;
   onPreviewImage?(item: MediaItem): void;
   onCheckboxChecked(path: string, selected: boolean): void;

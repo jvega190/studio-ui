@@ -82,7 +82,10 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
     onUpload,
     allowUpload = true,
     viewMode = 'card',
-    onToggleViewMode
+    onToggleViewMode,
+    preselectedLookup = {},
+    disableChangePreselected = true,
+    disableSubmission
   } = props;
   // endregion
   const { classes, cx: clsx } = useStyles();
@@ -254,25 +257,34 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
             </Paper>
             <Box
               className={classes.cardsContainer}
-              sx={viewMode === 'row' && { display: 'flex !important', flexFlow: 'wrap' }}
+              sx={[viewMode === 'row' && { display: 'flex !important', flexFlow: 'wrap' }]}
             >
               {items
-                ? items.map((item: SearchItem) => (
-                    <MediaCard
-                      viewMode={viewMode}
-                      classes={{
-                        root: clsx(classes.mediaCardRoot, item.path === selectedCard?.path && classes.selectedCard)
-                      }}
-                      key={item.path}
-                      item={item}
-                      selected={multiSelect ? selectedArray : null}
-                      onSelect={multiSelect ? onCheckboxChecked : null}
-                      onPreview={onPreviewImage ? () => onPreviewImage(item) : null}
-                      previewAppBaseUri={guestBase}
-                      onClick={() => onCardSelected(item)}
-                      showPath={true}
-                    />
-                  ))
+                ? items.map((item: SearchItem) => {
+                    const isPreselected = preselectedLookup[item.path];
+                    const onSelect = disableChangePreselected && isPreselected ? () => null : onCheckboxChecked;
+
+                    return (
+                      <MediaCard
+                        viewMode={viewMode}
+                        classes={{
+                          root: item.path === selectedCard?.path && classes.selectedCard
+                        }}
+                        sxs={{
+                          root: { cursor: disableChangePreselected && isPreselected ? 'not-allowed' : 'pointer' }
+                        }}
+                        key={item.path}
+                        item={item}
+                        disableSelection={disableChangePreselected && isPreselected}
+                        selected={multiSelect ? [...selectedArray] : []}
+                        onSelect={multiSelect ? onSelect : null}
+                        onPreview={onPreviewImage ? () => onPreviewImage(item) : null}
+                        previewAppBaseUri={guestBase}
+                        onClick={() => !(disableChangePreselected && isPreselected) && onCardSelected(item)}
+                        showPath={true}
+                      />
+                    );
+                  })
                 : new Array(numOfLoaderItems).fill(null).map((x, i) => <MediaSkeletonCard key={i} />)}
             </Box>
             {items && items.length === 0 && (
@@ -288,7 +300,7 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
         <SecondaryButton onClick={onCloseButtonClick}>
           <FormattedMessage id="words.cancel" defaultMessage="Cancel" />
         </SecondaryButton>
-        <PrimaryButton disabled={!Boolean(selectedArray.length) && !selectedCard} onClick={onSelectButtonClick}>
+        <PrimaryButton disabled={disableSubmission} onClick={onSelectButtonClick}>
           <FormattedMessage id="words.select" defaultMessage="Select" />
         </PrimaryButton>
       </DialogFooter>

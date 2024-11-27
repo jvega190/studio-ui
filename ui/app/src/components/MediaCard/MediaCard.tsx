@@ -16,7 +16,7 @@
 
 import React from 'react';
 import Card from '@mui/material/Card';
-import CardHeader, { CardHeaderProps, cardHeaderClasses } from '@mui/material/CardHeader';
+import CardHeader, { cardHeaderClasses, CardHeaderProps } from '@mui/material/CardHeader';
 import CardMedia, { cardMediaClasses } from '@mui/material/CardMedia';
 import CardActionArea, { CardActionAreaProps } from '@mui/material/CardActionArea';
 import { makeStyles } from 'tss-react/mui';
@@ -27,6 +27,8 @@ import cardTitleStyles, { cardSubtitleStyles } from '../../styles/card';
 import palette from '../../styles/palette';
 import SystemIcon from '../SystemIcon';
 import Box from '@mui/material/Box';
+import { PartialSxRecord } from '../../models/CustomRecord';
+import { CSSSelectorObjectOrCssVariables } from '@mui/system/styleFunctionSx/styleFunctionSx';
 
 const useStyles = makeStyles()(() => ({
   card: {
@@ -74,7 +76,9 @@ const useStyles = makeStyles()(() => ({
 
 export type MediaCardViewModes = 'card' | 'compact' | 'row';
 
-interface MediaCardProps {
+type MediaCardClassKey = 'root' | 'checkbox' | 'media' | 'mediaIcon' | 'cardActionArea' | 'cardHeader';
+
+export interface MediaCardProps {
   item: MediaItem;
   showPath?: boolean;
   selected?: Array<string>;
@@ -82,7 +86,9 @@ interface MediaCardProps {
   viewMode?: MediaCardViewModes;
   action?: CardHeaderProps['action'];
   avatar?: CardHeaderProps['avatar'];
-  classes?: Partial<Record<'root' | 'checkbox' | 'media' | 'mediaIcon' | 'cardActionArea' | 'cardHeader', string>>;
+  classes?: Partial<Record<MediaCardClassKey, string>>;
+  disableSelection?: boolean;
+  sxs?: PartialSxRecord<MediaCardClassKey>;
   onClick?(e): void;
   onPreview?(e): any;
   onSelect?(path: string, selected: boolean): any;
@@ -106,7 +112,9 @@ function MediaCard(props: MediaCardProps) {
     avatar,
     onDragStart,
     onDragEnd,
-    viewMode = 'card'
+    viewMode = 'card',
+    disableSelection,
+    sxs
   } = props;
   // endregion
   let { name, path, type } = item;
@@ -130,6 +138,7 @@ function MediaCard(props: MediaCardProps) {
   const cardActionAreaOrFragmentProps: CardActionAreaProps = onPreview
     ? {
         className: props.classes?.cardActionArea,
+        sx: sxs?.cardActionArea,
         disableRipple: Boolean(onDragStart || onDragEnd),
         onClick(e) {
           e.preventDefault();
@@ -146,23 +155,26 @@ function MediaCard(props: MediaCardProps) {
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onClick={onClick}
-      sx={
+      sx={[
         viewMode === 'row' && {
           display: 'flex',
           width: '100%',
           [`& .${cardHeaderClasses.root}`]: { flexGrow: 1 },
           [`& .${cardMediaClasses.root}`]: { paddingTop: '0 !important', height: '80px !important', width: '80px' }
-        }
-      }
+        },
+        sxs?.root as CSSSelectorObjectOrCssVariables
+      ]}
     >
       <CardHeader
         classes={{ action: classes.cardHeader, root: props.classes?.cardHeader }}
+        sx={sxs?.cardHeader}
         avatar={
           onSelect ? (
-            <FormGroup className={props.classes?.checkbox}>
+            <FormGroup className={props.classes?.checkbox} sx={sxs?.checkbox}>
               <Checkbox
                 checked={selected.includes(path)}
-                onClick={(e: any) => onSelect(path, e.target.checked)}
+                disabled={disableSelection}
+                onClick={(e: any) => !disableSelection && onSelect(path, e.target.checked)}
                 color="primary"
                 size="small"
               />
@@ -195,11 +207,15 @@ function MediaCard(props: MediaCardProps) {
               className={cx(classes.media, props.classes?.media)}
               image={`${previewAppBaseUri}${path}`}
               title={name}
+              sx={sxs?.media}
             />
           ) : (
             <Box
               className={cx(classes.mediaIcon, props.classes?.mediaIcon)}
-              sx={viewMode === 'row' && { paddingTop: '0 !important', height: '80px', width: '80px' }}
+              sx={[
+                viewMode === 'row' && { paddingTop: '0 !important', height: '80px', width: '80px' },
+                sxs?.mediaIcon as CSSSelectorObjectOrCssVariables
+              ]}
             >
               {type === 'Video' ? (
                 <video className={classes.videoThumbnail}>
