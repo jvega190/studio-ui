@@ -14,21 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { Resource } from '../models/Resource';
-import { useEffect, useState } from 'react';
-import { nnou } from '../utils/object';
-import { createResourceBundle } from '../utils/resource';
+import { createSvgIcon } from '@mui/material/utils';
+import React from 'react';
 
-export function useResolveWhenNotNullResource<ResultType = unknown>(source: ResultType): Resource<ResultType> {
-  const [[resource, resolve], setBundle] = useState(() => createResourceBundle<ResultType>());
-  useEffect(() => {
-    if (resource.complete) {
-      setBundle(createResourceBundle);
-    } else if (nnou(source)) {
-      resolve(source);
-    }
-  }, [source, resource, resolve]);
-  return resource;
-}
-
-export default useResolveWhenNotNullResource;
+export default createSvgIcon(
+  <path d="M18 8H17V4.5C17 1.74 14.76 1 12 1C9.24 1 7 1.74 7 4.5H9C9 2.84 10.34 3 12 3C13.66 3 15 2.84 15 4.5V8H6C4.9 8 4 8.9 4 10V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V10C20 8.9 19.1 8 18 8ZM18 20H6V10H18V20Z" />,
+  'Unlock'
+);

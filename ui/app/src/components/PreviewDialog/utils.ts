@@ -28,6 +28,7 @@ export interface PreviewDialogBaseProps {
   content?: string;
   mimeType?: string;
   backgroundModeIndex?: number;
+  showEdit?: boolean;
 }
 
 export interface PreviewDialogProps extends PreviewDialogBaseProps, Omit<EnhancedDialogProps, 'title' | 'subtitle'> {}

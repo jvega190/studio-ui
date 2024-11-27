@@ -30,7 +30,7 @@ import {
 } from './utils';
 import SearchUI from '../SearchUI';
 import { UNDEFINED } from '../../utils/constants';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { createPresenceTable } from '../../utils/array';
 
 export function URLDrivenSearch(props: URLDrivenSearchProps) {
