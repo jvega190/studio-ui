@@ -17,7 +17,7 @@
 import { get, post, postJSON } from '../utils/ajax';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { LegacyItem } from '../models/Item';
+import { DetailedItem, LegacyItem } from '../models/Item';
 import { pluckProps, toQueryString } from '../utils/object';
 import { PublishingStatus, PublishingTarget, PublishingTargets, PublishParams } from '../models/Publishing';
 import { Api2BulkResponseFormat, Api2ResponseFormat } from '../models/ApiResponse';
@@ -27,40 +27,65 @@ interface FetchPackagesResponse extends Omit<PublishingPackage, 'items'> {}
 
 export function fetchPackages(
   siteId: string,
-  filters: Partial<{ environment: string; path: string; states: string; offset: number; limit: number }>
+  filters?: Partial<{
+    target: string;
+    states: number;
+    approvalStates: string[];
+    submitter: string;
+    reviewer: string;
+    isScheduled: boolean;
+    sort: string;
+    offset: number;
+    limit: number;
+  }>
 ): Observable<PagedArray<FetchPackagesResponse>> {
-  let qs = toQueryString({
-    siteId,
-    ...filters
-  });
-  return get<Api2BulkResponseFormat<{ packages: FetchPackagesResponse[] }>>(`/studio/api/2/publish/packages${qs}`).pipe(
-    map(({ response }) => Object.assign(response.packages, pluckProps(response, 'limit', 'offset', 'total')))
-  );
+  const qs = toQueryString(filters);
+  return get<Api2BulkResponseFormat<{ packages: FetchPackagesResponse[] }>>(
+    `/studio/api/2/publish/${siteId}/packages${qs}`
+  ).pipe(map(({ response }) => Object.assign(response.packages, pluckProps(response, 'limit', 'offset', 'total'))));
 }
 
 export interface PublishingPackage {
-  approver: string;
-  comment: string;
-  environment: PublishingTargets;
-  id: string;
-  items: Array<{
-    contentTypeClass: string;
-    mimeType: string;
-    path: string;
-  }>;
+  id: number;
+  submittedOn: string;
+  submitterComment: string;
+  reviewerComment: string;
+  reviewedOn: string;
+  target: string;
+  approvalState: string;
+  packageState: number;
   schedule: string;
+  submitter: {
+    id: number;
+    username: string;
+    firstName: string;
+    lastName: string;
+    avatar: string;
+  };
+  reviewer: {
+    id: number;
+    username: string;
+    firstName: string;
+    lastName: string;
+    avatar: string;
+  };
   siteId: string;
-  state: string;
+  liveError: number;
+  stagingError: number;
+  publishedOn: string;
+  packageType: string;
+  commitId: string;
+  publishedStagingCommitId: string;
+  publishedLiveCommitId: string;
+  items: DetailedItem[];
 }
 
-export function fetchPackage(siteId: string, packageId: string): Observable<PublishingPackage> {
+export function fetchPackage(siteId: string, packageId: number): Observable<PublishingPackage> {
   return get<
     Api2ResponseFormat<{
       package: PublishingPackage;
     }>
-  >(`/studio/api/2/publish/package?siteId=${siteId}&packageId=${packageId}`).pipe(
-    map((response) => response?.response?.package)
-  );
+  >(`/studio/api/2/publish/${siteId}/package/${packageId}`).pipe(map((response) => response?.response?.package));
 }
 
 export function cancelPackage(siteId: string, packageIds: any) {
@@ -153,22 +178,21 @@ export function publish(siteId: string, data: PublishParams): Observable<boolean
   return postJSON(`/studio/api/2/publish/${siteId}`, data).pipe(map(() => true));
 }
 
-export interface PackageResponse {
+export interface CalculatedPackageResponse {
   hardDependencies: string[];
   softDependencies: string[];
   deletedItems: string[];
   items: string[];
 }
 
-// Calculates the publishing package given an item set
-export function fetchPublishingPackage(
+export function calculatePackage(
   siteId: string,
   data: {
     publishingTarget: string;
     paths?: PublishParams['paths'];
     commitIds?: PublishParams['commitIds'];
   }
-): Observable<PackageResponse> {
+): Observable<CalculatedPackageResponse> {
   return postJSON(`/studio/api/2/publish/${siteId}/calculate`, data).pipe(
     map((response) => response?.response?.package)
   );

@@ -81,7 +81,7 @@ import Tooltip from '@mui/material/Tooltip';
 import ErrorOutlineRounded from '@mui/icons-material/ErrorOutlineRounded';
 import { getPublishDialogIsTreeView, setPublishDialogIsTreeView } from '../../utils/state';
 import useActiveUser from '../../hooks/useActiveUser';
-import { fetchPublishingPackage, publish } from '../../services/publishing';
+import { calculatePackage, publish } from '../../services/publishing';
 import { generateSingleItemOptions } from '../../utils/itemActions';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
@@ -219,7 +219,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     error: null,
     fetchingDependencies: false
   });
-  const [mainItems, setMainItems] = useState(initialItems);
+  const [mainItems, setMainItems] = useState<DetailedItem[]>(initialItems);
   const [published, setPublished] = useState<boolean>(null);
   const [publishingTargets, setPublishingTargets] = useState<PublishingTarget[]>(null);
   const [publishingTargetsStatus, setPublishingTargetsStatus] = useState('Loading');
@@ -275,10 +275,8 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
       publishingTarget: '' as InternalDialogState['publishingTarget']
     };
 
-    if (detailedItems) {
-      // TODO: This should be based on the items that will be submitted. Main, hard and *selected* softs.
-      // const itemsIncludedForPublish = detailedItems.flatMap((item) => (selectedItems[item.path] ? [item] : []));
-      const itemsIncludedForPublish = detailedItems;
+    if (mainItems) {
+      const itemsIncludedForPublish = mainItems;
       if (itemsIncludedForPublish.length === 0) {
         return state;
       }
@@ -387,7 +385,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     // TODO: This is not scalable (bulk fetch of countless DetailedItems). We must review and discuss how to adjust.
     // TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if (publishingTarget) {
-      fetchPublishingPackage(siteId, {
+      calculatePackage(siteId, {
         publishingTarget,
         paths: itemsDataSummary.itemPaths.map((path) => ({ path, includeChildren: false, includeSoftDeps: false })),
         commitIds: [] // TODO: there's a bug where the API fails if commitsIds is not provided. Needs to be fixed.
