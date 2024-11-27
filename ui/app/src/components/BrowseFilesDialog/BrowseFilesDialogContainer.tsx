@@ -36,6 +36,7 @@ import { getStoredBrowseDialogViewMode, setStoredBrowseDialogViewMode } from '..
 import useActiveUser from '../../hooks/useActiveUser';
 import { withIndex, withoutIndex } from '../../utils/path';
 import { MediaCardViewModes } from '../MediaCard';
+import { createPresenceTable } from '../../utils/array';
 
 const viewModes: MediaCardViewModes[] = ['card', 'compact', 'row'];
 
@@ -81,6 +82,7 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
   const [viewMode, setViewMode] = useState<MediaCardViewModes>(getStoredBrowseDialogViewMode(username));
   const [fetchingPreselectedItems, setFetchingPreselectedItems] = useState(false);
   const disableSubmission = fetchingPreselectedItems || (!selectedArray.length && !selectedCard);
+  const preselectedLookup = createPresenceTable(preselectedPaths);
 
   const fetchItems = useCallback(() => {
     // Since lookahead regex is not supported by opensearch, we are excluding the current path from the search using a
@@ -252,7 +254,7 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
       onRefresh={onRefresh}
       onUpload={onUpload}
       allowUpload={allowUpload}
-      preselectedPaths={preselectedPaths}
+      preselectedLookup={preselectedLookup}
       disableChangePreselected={disableChangePreselected}
       disableSubmission={disableSubmission}
     />

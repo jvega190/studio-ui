@@ -83,7 +83,7 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
     allowUpload = true,
     viewMode = 'card',
     onToggleViewMode,
-    preselectedPaths = [],
+    preselectedLookup = {},
     disableChangePreselected,
     disableSubmission
   } = props;
@@ -261,7 +261,7 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
             >
               {items
                 ? items.map((item: SearchItem) => {
-                    const isPreselected = preselectedPaths.includes(item.path);
+                    const isPreselected = preselectedLookup[item.path];
                     const onSelect = disableChangePreselected && isPreselected ? () => null : onCheckboxChecked;
 
                     return (
