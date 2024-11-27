@@ -86,9 +86,8 @@ YAHOO.extend(CStudioForms.Datasources.VideoBrowseRepo, CStudioForms.CStudioFormD
         preselectedPaths: [currentValue],
         onSuccess: (result) => {
           const items = Array.isArray(result) ? result : [result];
-          items
-            .filter((item) => item.path !== currentValue)
-            .forEach(({ path }) => {
+          items.forEach(({ path }) => {
+            if (path !== currentValue) {
               const url = CStudioAuthoringContext.previewAppBaseUri + path;
               const videoData = {
                 previewUrl: url,
@@ -96,7 +95,8 @@ YAHOO.extend(CStudioForms.Datasources.VideoBrowseRepo, CStudioForms.CStudioFormD
                 fileExtension: url.substring(url.lastIndexOf('.') + 1)
               };
               callback.success(videoData);
-            });
+            }
+          });
         }
       });
     }
