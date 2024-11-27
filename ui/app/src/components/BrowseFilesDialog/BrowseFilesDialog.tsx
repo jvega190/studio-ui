@@ -32,7 +32,7 @@ export function BrowseFilesDialog(props: BrowseFilesDialogProps) {
     allowUpload,
     initialParameters,
     preselectedPaths,
-    disableChangePreselected,
+    disableChangePreselected = true,
     ...rest
   } = props;
   return (

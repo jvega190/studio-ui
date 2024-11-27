@@ -84,7 +84,7 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
     viewMode = 'card',
     onToggleViewMode,
     preselectedLookup = {},
-    disableChangePreselected,
+    disableChangePreselected = true,
     disableSubmission
   } = props;
   // endregion
