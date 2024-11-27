@@ -39,6 +39,7 @@ import { MediaCardViewModes } from '../MediaCard';
 import { createPresenceTable } from '../../utils/array';
 
 const viewModes: MediaCardViewModes[] = ['card', 'compact', 'row'];
+const defaultPreselectedPaths = [];
 
 export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProps) {
   const {
@@ -51,7 +52,7 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
     numOfLoaderItems,
     allowUpload = true,
     initialParameters: initialParametersProp,
-    preselectedPaths = [],
+    preselectedPaths = defaultPreselectedPaths,
     disableChangePreselected = true
   } = props;
   const [items, setItems] = useState<SearchItem[]>();
@@ -108,10 +109,8 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
           items.forEach((item) => {
             setSelectedLookup({ [item.path]: item });
           });
-        } else {
-          if (items.length) {
-            setSelectedCard(items[0]);
-          }
+        } else if (items.length) {
+          setSelectedCard(items[0]);
         }
         setFetchingPreselectedItems(false);
       },
@@ -119,9 +118,7 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
         setFetchingPreselectedItems(false);
       }
     });
-    // Interested in renewing the effect when preselectedPaths change, not when the paths array instance changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [site, preselectedPaths.join(''), multiSelect, setSelectedLookup]);
+  }, [site, preselectedPaths, multiSelect, setSelectedLookup]);
 
   useEffect(() => {
     let subscription;
