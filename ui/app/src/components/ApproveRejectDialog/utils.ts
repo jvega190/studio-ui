@@ -27,3 +27,12 @@ export interface ApproveRejectDialogProps extends ApproveRejectDialogBaseProps, 
 export interface ApproveRejectDialogContainerProps
   extends ApproveRejectDialogBaseProps,
     Pick<ApproveRejectDialogProps, 'isSubmitting' | 'onSuccess' | 'onClose'> {}
+
+export interface InternalDialogState {
+  action: 'approve' | 'reject';
+  scheduling: 'keep' | 'now' | 'custom';
+  schedule: Date;
+  approverComment: string;
+  rejectReason: string;
+  rejectComment: string;
+}

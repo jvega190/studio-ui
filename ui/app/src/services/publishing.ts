@@ -45,6 +45,18 @@ export function fetchPackages(
   ).pipe(map(({ response }) => Object.assign(response.packages, pluckProps(response, 'limit', 'offset', 'total'))));
 }
 
+export interface PublishingItem {
+  action: string;
+  id: number;
+  liveError: number;
+  livePreviousPath: string;
+  path: string;
+  publishState: number;
+  stagingError: number;
+  stagingPreviousPath: string;
+  userRequested: boolean;
+}
+
 export interface PublishingPackage {
   id: number;
   submittedOn: string;
@@ -77,7 +89,7 @@ export interface PublishingPackage {
   commitId: string;
   publishedStagingCommitId: string;
   publishedLiveCommitId: string;
-  items: DetailedItem[];
+  items: PublishingItem[];
 }
 
 export function fetchPackage(siteId: string, packageId: number): Observable<PublishingPackage> {

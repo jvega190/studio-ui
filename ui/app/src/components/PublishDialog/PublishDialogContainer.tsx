@@ -41,7 +41,7 @@ import { ApiResponseErrorState } from '../ApiResponseErrorState';
 import { LoadingState } from '../LoadingState';
 import Grid from '@mui/material/Grid2';
 import Alert from '@mui/material/Alert';
-import { buttonClasses, listItemSecondaryActionClasses, Typography } from '@mui/material';
+import { buttonClasses, Fade, listItemSecondaryActionClasses, Typography } from '@mui/material';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import FormControl from '@mui/material/FormControl';
@@ -120,7 +120,8 @@ type DependencyDataState = {
   items: DetailedItem[];
 };
 
-function DependencyChip({ type }: { type: DependencyType }) {
+// TODO: move to separate file?
+export function DependencyChip({ type }: { type: DependencyType }) {
   if (!type) return null;
   const isSoft = type === 'soft';
   return (
@@ -133,14 +134,15 @@ function DependencyChip({ type }: { type: DependencyType }) {
   );
 }
 
-function renderTreeNode(
-  itemMap: LookupTable<DetailedItem>,
-  node: PathTreeNode,
-  dependencyTypeMap: DependencyMap = {},
-  onMenuClick: (e: React.MouseEvent<HTMLButtonElement>, path: string) => void,
-  onCheckboxChange: (e: React.ChangeEvent<HTMLInputElement>, checked: boolean, path: string) => void,
-  selectedDependencies: string[]
-) {
+export function renderTreeNode(props: {
+  itemMap: LookupTable<DetailedItem>;
+  node: PathTreeNode;
+  onMenuClick: (e: React.MouseEvent<HTMLButtonElement>, path: string) => void;
+  dependencyTypeMap?: DependencyMap;
+  onCheckboxChange?: (e: React.ChangeEvent<HTMLInputElement>, checked: boolean, path: string) => void;
+  selectedDependencies?: string[];
+}) {
+  const { itemMap, node, onMenuClick, dependencyTypeMap, onCheckboxChange, selectedDependencies } = props;
   const isItem = Boolean(itemMap[node.path]);
   const isDependency = Boolean(dependencyTypeMap?.[node.path]);
   const isSoft = dependencyTypeMap?.[node.path] === 'soft';
@@ -189,6 +191,7 @@ function renderTreeNode(
             </Box>
           </Box>
         ) : (
+          // TODO: Add folder icon
           <span title={node.path}>{node.label}</span>
         )
       }
@@ -196,7 +199,14 @@ function renderTreeNode(
         node.children?.length === 0
           ? undefined
           : node.children.map((child) =>
-              renderTreeNode(itemMap, child, dependencyTypeMap, onMenuClick, onCheckboxChange, selectedDependencies)
+              renderTreeNode({
+                itemMap,
+                node: child,
+                dependencyTypeMap,
+                onMenuClick,
+                onCheckboxChange,
+                selectedDependencies
+              })
             )
       }
     />
@@ -330,7 +340,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     }
 
     return state;
-  }, [publishingTargets, detailedItems]);
+  }, [publishingTargets, mainItems]);
   const [contextMenu, setContextMenu] = useState({
     el: null,
     options: null
@@ -609,333 +619,324 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
           <LoadingState sx={{ flexGrow: 1 }} />
         ) : detailedItems && publishingTargets ? (
           detailedItems.length ? (
-            <>
-              <Grid container spacing={2}>
-                <Grid size={{ xs: 12, sm: 5 }}>
-                  <form className={classes.root} onSubmit={handleSubmit}>
-                    <TextField
-                      autoFocus
-                      fullWidth
-                      sx={{ mb: 1 }}
-                      name="packageTitle"
-                      value={state.packageTitle}
-                      onChange={onPublishingArgumentChange}
-                      label={<FormattedMessage defaultMessage="Package Title" />}
-                      helperText={
-                        <FormattedMessage defaultMessage="Dashboard and other places will use this title to display this package." />
-                      }
-                    />
-                    <TextFieldWithMax
-                      id="publishDialogFormSubmissionComment"
-                      name="submissionComment"
-                      label={
-                        <FormattedMessage id="publishForm.submissionComment" defaultMessage="Submission Comment" />
-                      }
-                      fullWidth
-                      onChange={onPublishingArgumentChange}
-                      value={state.submissionComment}
-                      multiline
-                      disabled={disabled}
-                      required={submissionCommentRequired}
-                    />
-                    <Box sx={{ mb: 1.25 }}>
-                      {showRequestApproval && (
-                        <FormControlLabel
-                          sx={{ display: 'block' }}
-                          control={
-                            <Checkbox
-                              size="small"
-                              checked={state.requestApproval}
-                              onChange={onPublishingArgumentChange}
-                              disabled={disabled}
-                              name="requestApproval"
-                            />
-                          }
-                          label={
-                            <Box display="inline-flex" alignItems="center">
-                              <FormattedMessage id="publishForm.requestApproval" defaultMessage="Request approval" />
-                              <Tooltip
-                                title={
-                                  <FormattedMessage
-                                    id="publishDialog.requestPublishHint"
-                                    defaultMessage="Items will be submitted for review and published upon approval"
-                                  />
-                                }
-                              >
-                                <IconButton
-                                  aria-label="help"
-                                  size="small"
-                                  sx={{ ml: 1 }}
-                                  color={isRequestPublish ? 'warning' : undefined}
-                                >
-                                  {isRequestPublish ? (
-                                    <ErrorOutlineRounded fontSize="small" />
-                                  ) : (
-                                    <HelpOutlineOutlined fontSize="small" />
-                                  )}
-                                </IconButton>
-                              </Tooltip>
-                            </Box>
-                          }
-                        />
-                      )}
-                    </Box>
-                    <FormControl fullWidth className={classes.formSection}>
-                      <FormLabel component="legend">
-                        <FormattedMessage defaultMessage="Scheduling" />
-                      </FormLabel>
-                      <RadioGroup
-                        className={classes.radioGroup}
-                        value={state.scheduling}
-                        onChange={onPublishingArgumentChange}
-                        name="scheduling"
-                      >
-                        {mixedPublishingDates && (
-                          <Alert severity="warning" className={classes.mixedDatesWarningMessage}>
-                            <FormattedMessage
-                              id="publishForm.mixedPublishingDates"
-                              defaultMessage="Items have mixed publishing date/time schedules."
-                            />
-                          </Alert>
-                        )}
-                        <FormControlLabel
-                          value="now"
-                          control={<Radio color="primary" className={classes.radioInput} />}
-                          label={<FormattedMessage defaultMessage="Now" />}
-                          classes={{ label: classes.formInputs }}
-                          disabled={disabled}
-                        />
-                        <FormControlLabel
-                          value="custom"
-                          control={<Radio color="primary" className={classes.radioInput} />}
-                          label={
-                            published ? (
-                              <FormattedMessage defaultMessage="Later" />
-                            ) : (
-                              <FormattedMessage defaultMessage="Later (disabled on first publish)" />
-                            )
-                          }
-                          classes={{ label: classes.formInputs }}
-                          disabled={!published || disabled}
-                        />
-                      </RadioGroup>
-                      <Collapse
-                        mountOnEnter
-                        in={state.scheduling === 'custom'}
-                        timeout={300}
-                        className={state.scheduling === 'custom' ? classes.datePicker : ''}
-                      >
-                        <DateTimeTimezonePicker
-                          onChange={handleDateTimePickerChange}
-                          value={state.scheduledDateTime}
-                          disablePast
-                          disabled={disabled}
-                        />
-                      </Collapse>
-                    </FormControl>
-                    <FormControl fullWidth className={classes.formSection}>
-                      <FormLabel component="legend">
-                        <FormattedMessage defaultMessage="Publishing Target" />
-                      </FormLabel>
-                      {publishingTargets ? (
-                        publishingTargets.length ? (
-                          <RadioGroup
-                            className={classes.radioGroup}
-                            value={state.publishingTarget}
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 5 }}>
+                {/* TODO: get rid of classes */}
+                <form className={classes.root} onSubmit={handleSubmit}>
+                  <TextField
+                    autoFocus
+                    fullWidth
+                    sx={{ mb: 1 }}
+                    name="packageTitle"
+                    value={state.packageTitle}
+                    onChange={onPublishingArgumentChange}
+                    label={<FormattedMessage defaultMessage="Package Title" />}
+                    helperText={
+                      <FormattedMessage defaultMessage="Dashboard and other places will use this title to display this package." />
+                    }
+                    required
+                  />
+                  <TextFieldWithMax
+                    id="publishDialogFormSubmissionComment"
+                    name="submissionComment"
+                    label={<FormattedMessage id="publishForm.submissionComment" defaultMessage="Submission Comment" />}
+                    fullWidth
+                    onChange={onPublishingArgumentChange}
+                    value={state.submissionComment}
+                    multiline
+                    disabled={disabled}
+                    required={submissionCommentRequired}
+                  />
+                  <Box sx={{ mb: 1.25 }}>
+                    {showRequestApproval && (
+                      <FormControlLabel
+                        sx={{ display: 'block' }}
+                        control={
+                          <Checkbox
+                            size="small"
+                            checked={state.requestApproval}
                             onChange={onPublishingArgumentChange}
-                            name="publishingTarget"
-                          >
-                            {publishingTargets.map((target) => (
-                              <FormControlLabel
-                                key={target.name}
-                                disabled={disabled}
-                                value={target.name}
-                                control={<Radio color="primary" className={classes.radioInput} />}
-                                label={
-                                  messages[target.name] ? formatMessage(messages[target.name]) : capitalize(target.name)
-                                }
-                                classes={{ label: classes.formInputs }}
-                              />
-                            ))}
-                          </RadioGroup>
-                        ) : (
-                          <div className={classes.publishingTargetLoaderContainer}>
-                            <Typography variant="body1" className={classes.publishingTargetEmpty}>
-                              No publishing channels are available.
-                            </Typography>
-                          </div>
-                        )
-                      ) : (
-                        <div className={classes.publishingTargetLoaderContainer}>
-                          <Typography
-                            variant="body1"
-                            component="span"
-                            className={`${classes.publishingTargetLoader} ${classes.formInputs}`}
-                            color={publishingTargetsStatus === 'Error' ? 'error' : 'initial'}
-                          >
-                            {formatMessage(messages[`publishingTarget${publishingTargetsStatus}`])}
-                            {publishingTargetsStatus === 'Error' && (
-                              <Link href="#" onClick={() => fetchPublishingTargetsFn()}>
-                                <FormattedMessage defaultMessage="retry" />
-                              </Link>
-                            )}
-                          </Typography>
-                        </div>
-                      )}
-                      {mixedPublishingTargets && (
-                        <Alert severity="warning" className={classes.mixedTargetsWarningMessage}>
+                            disabled={disabled}
+                            name="requestApproval"
+                          />
+                        }
+                        label={
+                          <Box display="inline-flex" alignItems="center">
+                            <FormattedMessage id="publishForm.requestApproval" defaultMessage="Request approval" />
+                            <Tooltip
+                              title={
+                                <FormattedMessage
+                                  id="publishDialog.requestPublishHint"
+                                  defaultMessage="Items will be submitted for review and published upon approval"
+                                />
+                              }
+                            >
+                              <IconButton
+                                aria-label="help"
+                                size="small"
+                                sx={{ ml: 1 }}
+                                color={isRequestPublish ? 'warning' : undefined}
+                              >
+                                {isRequestPublish ? (
+                                  <ErrorOutlineRounded fontSize="small" />
+                                ) : (
+                                  <HelpOutlineOutlined fontSize="small" />
+                                )}
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        }
+                      />
+                    )}
+                  </Box>
+                  <FormControl fullWidth className={classes.formSection}>
+                    <FormLabel component="legend">
+                      <FormattedMessage defaultMessage="Scheduling" />
+                    </FormLabel>
+                    <RadioGroup
+                      className={classes.radioGroup}
+                      value={state.scheduling}
+                      onChange={onPublishingArgumentChange}
+                      name="scheduling"
+                    >
+                      {mixedPublishingDates && (
+                        <Alert severity="warning" className={classes.mixedDatesWarningMessage}>
                           <FormattedMessage
-                            id="publishForm.mixedPublishingTargets"
-                            defaultMessage="Items have mixed publishing targets."
+                            id="publishForm.mixedPublishingDates"
+                            defaultMessage="Items have mixed publishing date/time schedules."
                           />
                         </Alert>
                       )}
-                    </FormControl>
-                  </form>
-                  <Divider />
-                  <Box my={2}>
-                    <Typography variant="body2" sx={{ mb: 1 }}>
-                      <FormattedMessage defaultMessage="LEGEND" />
-                    </Typography>
-                    <Box display="flex" sx={{ display: 'flex', mb: 1, gap: 1 }}>
-                      <DependencyChip type="hard" />
-                      <Typography variant="body2" color="textSecondary">
-                        <FormattedMessage defaultMessage="References of mandatory submission" />
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <DependencyChip type="soft" />
-                      <Typography variant="body2" color="textSecondary">
-                        <FormattedMessage defaultMessage="References of optional submission" />
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 7 }}>
-                  {published ? (
-                    <>
-                      <Paper
-                        elevation={1}
-                        sx={{
-                          bgcolor: (theme) =>
-                            theme.palette.mode === 'dark' ? theme.palette.background.default : 'background.paper'
-                        }}
-                      >
-                        <Box display="flex" justifyContent="space-between" alignItems="center" mr={1} ml={1}>
-                          <Box display="flex" py={0.5}>
-                            <Button
-                              size="small"
-                              startIcon={isTreeView ? <ListRoundedIcon /> : <TreeOutlined />}
-                              sx={{ [`.${buttonClasses.startIcon}`]: { mr: 0.5 } }}
-                              onClick={() => onSetIsTreeView(!isTreeView)}
-                            >
-                              {/* TODO: should the message be 'Switch to...'? */}
-                              {isTreeView ? (
-                                <FormattedMessage defaultMessage="List View" />
-                              ) : (
-                                <FormattedMessage defaultMessage="Tree View" />
-                              )}
-                            </Button>
-                            {isTreeView && (
-                              <>
-                                <Divider flexItem orientation="vertical" sx={{ mx: 0.5 }} />
-                                <IconButton size="small" color="primary" onClick={() => setExpandedPaths(undefined)}>
-                                  <UnfoldMoreRoundedIcon fontSize="small" />
-                                </IconButton>
-                                <IconButton size="small" color="primary" onClick={() => setExpandedPaths([])}>
-                                  <UnfoldLessRoundedIcon fontSize="small" />
-                                </IconButton>
-                              </>
-                            )}
-                          </Box>
-                        </Box>
-                        <Divider />
-                        <Box sx={{ p: 1 }}>
-                          {isTreeView ? (
-                            <SimpleTreeView
-                              expandedItems={expandedPaths ?? parentTreeNodePaths}
-                              onExpandedItemsChange={(event, itemIds) => setExpandedPaths(itemIds)}
-                              disableSelection
-                              // checkboxSelection
-                              // selectedItems={Object.keys(itemsDataSummary.itemMap)}
-                              // multiSelect={true}
-                              sx={{
-                                '.tree-item-more-section': { display: 'none' },
-                                [`.${treeItemClasses.content}:hover`]: {
-                                  '.tree-item-more-section': { display: 'flex' }
-                                },
-                                [`[data-is-item="false"] > .${treeItemClasses.content} > .${treeItemClasses.checkbox}`]:
-                                  {
-                                    display: 'none'
-                                  }
-                              }}
-                            >
-                              {trees.map((node) =>
-                                renderTreeNode(
-                                  itemsAndDependenciesMap,
-                                  node,
-                                  dependencyData?.typeByPath,
-                                  onContextMenuOpen,
-                                  onDependencyCheckboxChange,
-                                  selectedDependenciesPaths
-                                )
-                              )}
-                            </SimpleTreeView>
+                      <FormControlLabel
+                        value="now"
+                        control={<Radio color="primary" className={classes.radioInput} />}
+                        label={<FormattedMessage defaultMessage="Now" />}
+                        classes={{ label: classes.formInputs }}
+                        disabled={disabled}
+                      />
+                      <FormControlLabel
+                        value="custom"
+                        control={<Radio color="primary" className={classes.radioInput} />}
+                        label={
+                          published ? (
+                            <FormattedMessage defaultMessage="Later" />
                           ) : (
-                            <List
-                              dense
-                              sx={{
-                                [`.${listItemSecondaryActionClasses.root}`]: { right: (theme) => theme.spacing(1) },
-                                [`.${listItemClasses.root} .item-menu-button`]: { display: 'none' },
-                                [`.${listItemClasses.root}:hover`]: { bgcolor: 'action.hover' },
-                                [`.${listItemClasses.root}:hover .item-menu-button`]: { display: 'flex' }
-                              }}
-                            >
-                              {itemsAndDependenciesPaths.map((path) => (
-                                <ListItem
-                                  key={path}
-                                  secondaryAction={
-                                    <Box display="flex" alignItems="center">
-                                      <IconButton className="item-menu-button" size="small">
-                                        <MoreVertRounded />
-                                      </IconButton>
-                                      {dependencyData?.typeByPath[path] === 'soft' && (
-                                        <Checkbox
-                                          size="small"
-                                          checked={selectedDependenciesMap[path]}
-                                          onChange={(e, checked) => onDependencyCheckboxChange(e, checked, path)}
-                                        />
-                                      )}
-                                    </Box>
-                                  }
-                                >
-                                  <ListItemText
-                                    primary={
-                                      <Box display="flex">
-                                        <ItemDisplay
-                                          item={itemsAndDependenciesMap[path]}
-                                          showNavigableAsLinks={false}
-                                          sx={{ mr: 1 }}
-                                        />
-                                        <DependencyChip type={dependencyData?.typeByPath[path]} />
-                                      </Box>
-                                    }
-                                    secondary={path}
-                                  />
-                                </ListItem>
-                              ))}
-                            </List>
+                            <FormattedMessage defaultMessage="Later (disabled on first publish)" />
+                          )
+                        }
+                        classes={{ label: classes.formInputs }}
+                        disabled={!published || disabled}
+                      />
+                    </RadioGroup>
+                    <Collapse
+                      mountOnEnter
+                      in={state.scheduling === 'custom'}
+                      timeout={300}
+                      className={state.scheduling === 'custom' ? classes.datePicker : ''}
+                    >
+                      <DateTimeTimezonePicker
+                        onChange={handleDateTimePickerChange}
+                        value={state.scheduledDateTime}
+                        disablePast
+                        disabled={disabled}
+                      />
+                    </Collapse>
+                  </FormControl>
+                  <FormControl fullWidth className={classes.formSection}>
+                    <FormLabel component="legend">
+                      <FormattedMessage defaultMessage="Publishing Target" />
+                    </FormLabel>
+                    {publishingTargets ? (
+                      publishingTargets.length ? (
+                        <RadioGroup
+                          className={classes.radioGroup}
+                          value={state.publishingTarget}
+                          onChange={onPublishingArgumentChange}
+                          name="publishingTarget"
+                        >
+                          {publishingTargets.map((target) => (
+                            <FormControlLabel
+                              key={target.name}
+                              disabled={disabled}
+                              value={target.name}
+                              control={<Radio color="primary" className={classes.radioInput} />}
+                              label={
+                                messages[target.name] ? formatMessage(messages[target.name]) : capitalize(target.name)
+                              }
+                              classes={{ label: classes.formInputs }}
+                            />
+                          ))}
+                        </RadioGroup>
+                      ) : (
+                        <div className={classes.publishingTargetLoaderContainer}>
+                          <Typography variant="body1" className={classes.publishingTargetEmpty}>
+                            No publishing channels are available.
+                          </Typography>
+                        </div>
+                      )
+                    ) : (
+                      <div className={classes.publishingTargetLoaderContainer}>
+                        <Typography
+                          variant="body1"
+                          component="span"
+                          className={`${classes.publishingTargetLoader} ${classes.formInputs}`}
+                          color={publishingTargetsStatus === 'Error' ? 'error' : 'initial'}
+                        >
+                          {formatMessage(messages[`publishingTarget${publishingTargetsStatus}`])}
+                          {publishingTargetsStatus === 'Error' && (
+                            <Link href="#" onClick={() => fetchPublishingTargetsFn()}>
+                              <FormattedMessage defaultMessage="retry" />
+                            </Link>
+                          )}
+                        </Typography>
+                      </div>
+                    )}
+                    {mixedPublishingTargets && (
+                      <Alert severity="warning" className={classes.mixedTargetsWarningMessage}>
+                        <FormattedMessage
+                          id="publishForm.mixedPublishingTargets"
+                          defaultMessage="Items have mixed publishing targets."
+                        />
+                      </Alert>
+                    )}
+                  </FormControl>
+                </form>
+                <Divider />
+                <Box my={2}>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    <FormattedMessage defaultMessage="LEGEND" />
+                  </Typography>
+                  <Box display="flex" sx={{ display: 'flex', mb: 1, gap: 1 }}>
+                    <DependencyChip type="hard" />
+                    <Typography variant="body2" color="textSecondary">
+                      <FormattedMessage defaultMessage="References of mandatory submission" />
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <DependencyChip type="soft" />
+                    <Typography variant="body2" color="textSecondary">
+                      <FormattedMessage defaultMessage="References of optional submission" />
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 7 }}>
+                {published ? (
+                  <>
+                    <Paper
+                      elevation={1}
+                      sx={{
+                        bgcolor: (theme) =>
+                          theme.palette.mode === 'dark' ? theme.palette.background.default : 'background.paper'
+                      }}
+                    >
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mr={1} ml={1}>
+                        <Box display="flex" py={0.5}>
+                          <Button
+                            size="small"
+                            startIcon={isTreeView ? <ListRoundedIcon /> : <TreeOutlined />}
+                            sx={{ [`.${buttonClasses.startIcon}`]: { mr: 0.5 } }}
+                            onClick={() => onSetIsTreeView(!isTreeView)}
+                          >
+                            {/* TODO: should the message be 'Switch to...'? */}
+                            {isTreeView ? (
+                              <FormattedMessage defaultMessage="List View" />
+                            ) : (
+                              <FormattedMessage defaultMessage="Tree View" />
+                            )}
+                          </Button>
+                          {isTreeView && (
+                            <>
+                              <Divider flexItem orientation="vertical" sx={{ mx: 0.5 }} />
+                              <IconButton size="small" color="primary" onClick={() => setExpandedPaths(undefined)}>
+                                <UnfoldMoreRoundedIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton size="small" color="primary" onClick={() => setExpandedPaths([])}>
+                                <UnfoldLessRoundedIcon fontSize="small" />
+                              </IconButton>
+                            </>
                           )}
                         </Box>
+                      </Box>
+                      <Divider />
+                      <Box sx={{ p: 1, flexGrow: 1, overflowY: 'auto' }}>
+                        {isTreeView ? (
+                          <SimpleTreeView
+                            expandedItems={expandedPaths ?? parentTreeNodePaths}
+                            onExpandedItemsChange={(event, itemIds) => setExpandedPaths(itemIds)}
+                            disableSelection
+                            sx={{
+                              '.tree-item-more-section': { display: 'none' },
+                              [`.${treeItemClasses.content}:hover`]: {
+                                '.tree-item-more-section': { display: 'flex' }
+                              },
+                              [`[data-is-item="false"] > .${treeItemClasses.content} > .${treeItemClasses.checkbox}`]: {
+                                display: 'none'
+                              }
+                            }}
+                          >
+                            {trees.map((node) =>
+                              renderTreeNode({
+                                itemMap: itemsAndDependenciesMap,
+                                node,
+                                dependencyTypeMap: dependencyData?.typeByPath,
+                                onMenuClick: onContextMenuOpen,
+                                onCheckboxChange: onDependencyCheckboxChange,
+                                selectedDependencies: selectedDependenciesPaths
+                              })
+                            )}
+                          </SimpleTreeView>
+                        ) : (
+                          <List
+                            dense
+                            sx={{
+                              [`.${listItemSecondaryActionClasses.root}`]: { right: (theme) => theme.spacing(1) },
+                              [`.${listItemClasses.root} .item-menu-button`]: { display: 'none' },
+                              [`.${listItemClasses.root}:hover`]: { bgcolor: 'action.hover' },
+                              [`.${listItemClasses.root}:hover .item-menu-button`]: { display: 'flex' }
+                            }}
+                          >
+                            {itemsAndDependenciesPaths.map((path) => (
+                              <ListItem
+                                key={path}
+                                secondaryAction={
+                                  <Box display="flex" alignItems="center">
+                                    <IconButton className="item-menu-button" size="small">
+                                      <MoreVertRounded />
+                                    </IconButton>
+                                    {dependencyData?.typeByPath[path] === 'soft' && (
+                                      <Checkbox
+                                        size="small"
+                                        checked={selectedDependenciesMap[path]}
+                                        onChange={(e, checked) => onDependencyCheckboxChange(e, checked, path)}
+                                      />
+                                    )}
+                                  </Box>
+                                }
+                              >
+                                <ListItemText
+                                  primary={
+                                    <Box display="flex">
+                                      <ItemDisplay
+                                        item={itemsAndDependenciesMap[path]}
+                                        showNavigableAsLinks={false}
+                                        sx={{ mr: 1 }}
+                                      />
+                                      <DependencyChip type={dependencyData?.typeByPath[path]} />
+                                    </Box>
+                                  }
+                                  secondary={path}
+                                />
+                              </ListItem>
+                            ))}
+                          </List>
+                        )}
+                      </Box>
+                      <Fade in={Boolean(selectedDependenciesPaths?.length)}>
                         <Alert
                           severity="info"
                           action={
-                            <Button
-                              color="inherit"
-                              size="small"
-                              onClick={onApplyDependenciesChanges}
-                              disabled={!selectedDependenciesPaths?.length}
-                            >
+                            <Button color="inherit" size="small" onClick={onApplyDependenciesChanges}>
                               <FormattedMessage defaultMessage="Apply" />
                             </Button>
                           }
@@ -943,19 +944,19 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                         >
                           <FormattedMessage defaultMessage="Changes in the item selection must be applied" />
                         </Alert>
-                      </Paper>
-                    </>
-                  ) : (
-                    <Alert severity="warning">
-                      <FormattedMessage
-                        id="publishDialog.firstPublish"
-                        defaultMessage="The entire project will be published since this is the first publish request"
-                      />
-                    </Alert>
-                  )}
-                </Grid>
+                      </Fade>
+                    </Paper>
+                  </>
+                ) : (
+                  <Alert severity="warning">
+                    <FormattedMessage
+                      id="publishDialog.firstPublish"
+                      defaultMessage="The entire project will be published since this is the first publish request"
+                    />
+                  </Alert>
+                )}
               </Grid>
-            </>
+            </Grid>
           ) : (
             <EmptyState
               title={

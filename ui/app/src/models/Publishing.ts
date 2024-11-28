@@ -100,7 +100,7 @@ export interface PublishParams {
   schedule?: string;
   requestApproval: boolean;
   publishAll?: boolean;
-  title?: string; // TODO: validate, this is still not in the API definition
+  title: string; // TODO: validate, this is still not in the API definition
   comment?: string;
 }
 
@@ -108,4 +108,10 @@ export interface PublishingStats {
   numberOfPublishes: number;
   numberOfNewAndPublishedItems: number;
   numberOfEditedAndPublishedItems: number;
+}
+
+export interface ApproveParams {
+  comment: string;
+  schedule: string;
+  updateSchedule: boolean;
 }
