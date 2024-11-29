@@ -47,6 +47,7 @@ import widget from './widget';
 import uiBlocker from './uiBlocker';
 import renameAsset from './renameAsset';
 import brokenReferences from './brokenReferences';
+import approveReject from './approveReject';
 
 export default combineReducers({
   confirm,
@@ -57,6 +58,7 @@ export default combineReducers({
   viewVersion,
   compareVersions,
   publish,
+  approveReject,
   dependencies,
   delete: deleteDialog,
   edit,

@@ -70,6 +70,7 @@ const UnlockPublisherDialog = lazy(() => import('../UnlockPublisherDialog'));
 const WidgetDialog = lazy(() => import('../WidgetDialog'));
 const CodeEditorDialog = lazy(() => import('../CodeEditorDialog'));
 const BrokenReferencesDialog = lazy(() => import('../BrokenReferencesDialog'));
+const ApproveRejectDialog = lazy(() => import('../ApproveRejectDialog'));
 // endregion
 
 // @formatter:off
@@ -299,6 +300,18 @@ function GlobalDialogManager() {
         onSuccess={createCallback(state.publish.onSuccess, dispatch)}
         onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
           createCallback(state.publish.onClose, dispatch)
+        )}
+      />
+      {/* endregion */}
+
+      {/* region ApproveReject */}
+      <ApproveRejectDialog
+        {...state.approveReject}
+        onClose={createCallback(state.approveReject.onClose, dispatch)}
+        onClosed={createCallback(state.approveReject.onClosed, dispatch)}
+        onSuccess={createCallback(state.approveReject.onSuccess, dispatch)}
+        onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
+          createCallback(state.approveReject.onClose, dispatch)
         )}
       />
       {/* endregion */}

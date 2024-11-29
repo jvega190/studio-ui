@@ -21,7 +21,12 @@ import LookupTable from '../../models/LookupTable';
 import { InternalDialogState, PublishDialogContainerProps } from './utils';
 import { useActiveSiteId } from '../../hooks/useActiveSiteId';
 import { useDispatch } from 'react-redux';
-import { fetchPublishingTargets, FetchPublishingTargetsResponse } from '../../services/publishing';
+import {
+  calculatePackage,
+  fetchPublishingTargets,
+  FetchPublishingTargetsResponse,
+  publish
+} from '../../services/publishing';
 import { getComputedPublishingTarget, getDateScheduled } from '../../utils/content';
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
 import useStyles from './styles';
@@ -41,7 +46,7 @@ import { ApiResponseErrorState } from '../ApiResponseErrorState';
 import { LoadingState } from '../LoadingState';
 import Grid from '@mui/material/Grid2';
 import Alert from '@mui/material/Alert';
-import { buttonClasses, Fade, listItemSecondaryActionClasses, Typography } from '@mui/material';
+import { Fade, Typography } from '@mui/material';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import FormControl from '@mui/material/FormControl';
@@ -62,29 +67,18 @@ import Paper from '@mui/material/Paper';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
-import UnfoldMoreRoundedIcon from '@mui/icons-material/UnfoldMoreRounded';
-import UnfoldLessRoundedIcon from '@mui/icons-material/UnfoldLessRounded';
-import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView';
-import { TreeItem, treeItemClasses } from '@mui/x-tree-view/TreeItem';
-import ItemDisplay from '../ItemDisplay';
-import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
-import ListRoundedIcon from '@mui/icons-material/ListRounded';
 import Chip from '@mui/material/Chip';
-import List from '@mui/material/List';
-import ListItem, { listItemClasses } from '@mui/material/ListItem';
-import ListItemText from '@mui/material/ListItemText';
 import { map, switchMap } from 'rxjs/operators';
 import { createLookupTable } from '../../utils/object';
-import TreeOutlined from '../../icons/TreeOutlined';
 import { HelpOutlineOutlined } from '@mui/icons-material';
 import Tooltip from '@mui/material/Tooltip';
 import ErrorOutlineRounded from '@mui/icons-material/ErrorOutlineRounded';
 import { getPublishDialogIsTreeView, setPublishDialogIsTreeView } from '../../utils/state';
 import useActiveUser from '../../hooks/useActiveUser';
-import { calculatePackage, publish } from '../../services/publishing';
 import { generateSingleItemOptions } from '../../utils/itemActions';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+import PublishItemsView from './PublishItemsView';
 
 const messages = defineMessages({
   publishingTargetLoading: {
@@ -109,18 +103,17 @@ const messages = defineMessages({
   }
 });
 
-// More button: dependencies, diff
+// TODO: More button: dependencies, diff
 
-type DependencyType = 'soft' | 'hard';
-type DependencyMap = Record<string, DependencyType>;
-type DependencyDataState = {
+export type DependencyType = 'soft' | 'hard';
+export type DependencyMap = Record<string, DependencyType>;
+export type DependencyDataState = {
   paths: string[];
   typeByPath: DependencyMap;
   itemsByPath: LookupTable<DetailedItem>;
   items: DetailedItem[];
 };
 
-// TODO: move to separate file?
 export function DependencyChip({ type }: { type: DependencyType }) {
   if (!type) return null;
   const isSoft = type === 'soft';
@@ -130,85 +123,6 @@ export function DependencyChip({ type }: { type: DependencyType }) {
       variant="outlined"
       color={isSoft ? 'info' : 'warning'}
       label={isSoft ? <FormattedMessage defaultMessage="Optional" /> : <FormattedMessage defaultMessage="Required" />}
-    />
-  );
-}
-
-export function renderTreeNode(props: {
-  itemMap: LookupTable<DetailedItem>;
-  node: PathTreeNode;
-  onMenuClick: (e: React.MouseEvent<HTMLButtonElement>, path: string) => void;
-  dependencyTypeMap?: DependencyMap;
-  onCheckboxChange?: (e: React.ChangeEvent<HTMLInputElement>, checked: boolean, path: string) => void;
-  selectedDependencies?: string[];
-}) {
-  const { itemMap, node, onMenuClick, dependencyTypeMap, onCheckboxChange, selectedDependencies } = props;
-  const isItem = Boolean(itemMap[node.path]);
-  const isDependency = Boolean(dependencyTypeMap?.[node.path]);
-  const isSoft = dependencyTypeMap?.[node.path] === 'soft';
-  return (
-    <TreeItem
-      key={node.path}
-      itemId={node.path}
-      data-is-item={isItem}
-      label={
-        isItem ? (
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <div>
-              <Box display="flex">
-                <ItemDisplay item={itemMap[node.path]} showNavigableAsLinks={false} sx={{ mr: 1 }} />
-                {isDependency && <DependencyChip type={dependencyTypeMap[node.path]} />}
-              </Box>
-              <Typography
-                component="div"
-                variant="body2"
-                color="text.secondary"
-                children={node.path}
-                title={node.path}
-                noWrap
-              />
-            </div>
-            <Box display="flex">
-              <IconButton
-                className="tree-item-more-section"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onMenuClick?.(e, node.path);
-                }}
-              >
-                <MoreVertRounded />
-              </IconButton>
-              {isSoft && (
-                <Checkbox
-                  size="small"
-                  checked={selectedDependencies?.includes(node.path)}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e, checked) => {
-                    onCheckboxChange?.(e, checked, node.path);
-                  }}
-                />
-              )}
-            </Box>
-          </Box>
-        ) : (
-          // TODO: Add folder icon
-          <span title={node.path}>{node.label}</span>
-        )
-      }
-      children={
-        node.children?.length === 0
-          ? undefined
-          : node.children.map((child) =>
-              renderTreeNode({
-                itemMap,
-                node: child,
-                dependencyTypeMap,
-                onMenuClick,
-                onCheckboxChange,
-                selectedDependencies
-              })
-            )
-      }
     />
   );
 }
@@ -503,7 +417,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
       })),
       schedule: scheduling === 'custom' ? scheduledDateTime.toISOString() : null,
       requestApproval,
-      title: packageTitle,
+      title: packageTitle, // TODO: this is not in the API yet
       comment: submissionComment
     };
 
@@ -827,111 +741,26 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                       elevation={1}
                       sx={{
                         bgcolor: (theme) =>
-                          theme.palette.mode === 'dark' ? theme.palette.background.default : 'background.paper'
+                          theme.palette.mode === 'dark' ? theme.palette.background.default : 'background.paper',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        height: '100%'
                       }}
                     >
-                      <Box display="flex" justifyContent="space-between" alignItems="center" mr={1} ml={1}>
-                        <Box display="flex" py={0.5}>
-                          <Button
-                            size="small"
-                            startIcon={isTreeView ? <ListRoundedIcon /> : <TreeOutlined />}
-                            sx={{ [`.${buttonClasses.startIcon}`]: { mr: 0.5 } }}
-                            onClick={() => onSetIsTreeView(!isTreeView)}
-                          >
-                            {/* TODO: should the message be 'Switch to...'? */}
-                            {isTreeView ? (
-                              <FormattedMessage defaultMessage="List View" />
-                            ) : (
-                              <FormattedMessage defaultMessage="Tree View" />
-                            )}
-                          </Button>
-                          {isTreeView && (
-                            <>
-                              <Divider flexItem orientation="vertical" sx={{ mx: 0.5 }} />
-                              <IconButton size="small" color="primary" onClick={() => setExpandedPaths(undefined)}>
-                                <UnfoldMoreRoundedIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton size="small" color="primary" onClick={() => setExpandedPaths([])}>
-                                <UnfoldLessRoundedIcon fontSize="small" />
-                              </IconButton>
-                            </>
-                          )}
-                        </Box>
-                      </Box>
-                      <Divider />
-                      <Box sx={{ p: 1, flexGrow: 1, overflowY: 'auto' }}>
-                        {isTreeView ? (
-                          <SimpleTreeView
-                            expandedItems={expandedPaths ?? parentTreeNodePaths}
-                            onExpandedItemsChange={(event, itemIds) => setExpandedPaths(itemIds)}
-                            disableSelection
-                            sx={{
-                              '.tree-item-more-section': { display: 'none' },
-                              [`.${treeItemClasses.content}:hover`]: {
-                                '.tree-item-more-section': { display: 'flex' }
-                              },
-                              [`[data-is-item="false"] > .${treeItemClasses.content} > .${treeItemClasses.checkbox}`]: {
-                                display: 'none'
-                              }
-                            }}
-                          >
-                            {trees.map((node) =>
-                              renderTreeNode({
-                                itemMap: itemsAndDependenciesMap,
-                                node,
-                                dependencyTypeMap: dependencyData?.typeByPath,
-                                onMenuClick: onContextMenuOpen,
-                                onCheckboxChange: onDependencyCheckboxChange,
-                                selectedDependencies: selectedDependenciesPaths
-                              })
-                            )}
-                          </SimpleTreeView>
-                        ) : (
-                          <List
-                            dense
-                            sx={{
-                              [`.${listItemSecondaryActionClasses.root}`]: { right: (theme) => theme.spacing(1) },
-                              [`.${listItemClasses.root} .item-menu-button`]: { display: 'none' },
-                              [`.${listItemClasses.root}:hover`]: { bgcolor: 'action.hover' },
-                              [`.${listItemClasses.root}:hover .item-menu-button`]: { display: 'flex' }
-                            }}
-                          >
-                            {itemsAndDependenciesPaths.map((path) => (
-                              <ListItem
-                                key={path}
-                                secondaryAction={
-                                  <Box display="flex" alignItems="center">
-                                    <IconButton className="item-menu-button" size="small">
-                                      <MoreVertRounded />
-                                    </IconButton>
-                                    {dependencyData?.typeByPath[path] === 'soft' && (
-                                      <Checkbox
-                                        size="small"
-                                        checked={selectedDependenciesMap[path]}
-                                        onChange={(e, checked) => onDependencyCheckboxChange(e, checked, path)}
-                                      />
-                                    )}
-                                  </Box>
-                                }
-                              >
-                                <ListItemText
-                                  primary={
-                                    <Box display="flex">
-                                      <ItemDisplay
-                                        item={itemsAndDependenciesMap[path]}
-                                        showNavigableAsLinks={false}
-                                        sx={{ mr: 1 }}
-                                      />
-                                      <DependencyChip type={dependencyData?.typeByPath[path]} />
-                                    </Box>
-                                  }
-                                  secondary={path}
-                                />
-                              </ListItem>
-                            ))}
-                          </List>
-                        )}
-                      </Box>
+                      <PublishItemsView
+                        itemMap={itemsAndDependenciesMap}
+                        isTreeView={isTreeView}
+                        setIsTreeView={onSetIsTreeView}
+                        expandedPaths={expandedPaths ?? parentTreeNodePaths}
+                        itemsAndDependenciesPaths={itemsAndDependenciesPaths}
+                        dependencyTypeMap={dependencyData?.typeByPath}
+                        selectedDependenciesPaths={selectedDependenciesPaths}
+                        selectedDependenciesMap={selectedDependenciesMap}
+                        trees={trees}
+                        setExpandedPaths={setExpandedPaths}
+                        onMenuClick={onContextMenuOpen}
+                        onCheckboxChange={onDependencyCheckboxChange}
+                      />
                       <Fade in={Boolean(selectedDependenciesPaths?.length)}>
                         <Alert
                           severity="info"

@@ -50,6 +50,7 @@ import { ContentTypeFieldValidation, DetailedItem } from '../../models';
 import { RenameAssetStateProps } from '../../components/RenameAssetDialog';
 import { AjaxError } from 'rxjs/ajax';
 import { BrokenReferencesDialogStateProps } from '../../components/BrokenReferencesDialog/types';
+import { ApproveRejectDialogStateProps } from '../../components/ApproveRejectDialog/utils';
 
 // region History
 export const showHistoryDialog = /*#__PURE__*/ createAction<Partial<HistoryDialogStateProps>>('SHOW_HISTORY_DIALOG');
@@ -91,6 +92,15 @@ export const updatePublishDialog =
   /*#__PURE__*/ createAction<Partial<PublishDialogStateProps>>('UPDATE_PUBLISH_DIALOG');
 export const closePublishDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_PUBLISH_DIALOG');
 export const publishDialogClosed = /*#__PURE__*/ createAction('PUBLISH_DIALOG_CLOSED');
+// endregion
+
+// region ApproveReject
+export const showApproveRejectDialog =
+  /*#__PURE__*/ createAction<Partial<ApproveRejectDialogStateProps>>('SHOW_APPROVE_REJECT_DIALOG');
+export const updateApproveRejectDialog =
+  /*#__PURE__*/ createAction<Partial<PublishDialogStateProps>>('UPDATE_APPROVE_REJECT_DIALOG');
+export const closeApproveRejectDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_APPROVE_REJECT_DIALOG');
+export const approveRejectDialogClosed = /*#__PURE__*/ createAction('APPROVE_REJECT_DIALOG_CLOSED');
 // endregion
 
 // region Delete

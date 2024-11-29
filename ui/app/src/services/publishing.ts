@@ -59,6 +59,7 @@ export interface PublishingItem {
 
 export interface PublishingPackage {
   id: number;
+  title: string;
   submittedOn: string;
   submitterComment: string;
   reviewerComment: string;

@@ -15,6 +15,8 @@
  */
 
 import { EnhancedDialogProps } from '../EnhancedDialog';
+import { EnhancedDialogState } from '../../hooks/useEnhancedDialogState';
+import { StandardAction } from '../../models';
 
 export interface ApproveRejectDialogBaseProps {
   packageId: number;
@@ -22,6 +24,12 @@ export interface ApproveRejectDialogBaseProps {
 
 export interface ApproveRejectDialogProps extends ApproveRejectDialogBaseProps, EnhancedDialogProps {
   onSuccess?(): void;
+}
+
+export interface ApproveRejectDialogStateProps extends ApproveRejectDialogBaseProps, EnhancedDialogState {
+  onClose?: StandardAction;
+  onClosed?: StandardAction;
+  onSuccess?: StandardAction;
 }
 
 export interface ApproveRejectDialogContainerProps

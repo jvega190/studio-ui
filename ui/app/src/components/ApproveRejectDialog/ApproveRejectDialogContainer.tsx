@@ -23,41 +23,28 @@ import { ApiResponse, ApproveParams, DetailedItem, SandboxItem } from '../../mod
 import { ApiResponseErrorState } from '../ApiResponseErrorState';
 import { LoadingState } from '../LoadingState';
 import Grid from '@mui/material/Grid2';
-import { buttonClasses, listItemSecondaryActionClasses, Typography } from '@mui/material';
+import { Typography } from '@mui/material';
 import { FormattedMessage } from 'react-intl';
 import Box from '@mui/material/Box';
-import { DependencyChip, renderTreeNode } from '../PublishDialog';
+import { DependencyChip } from '../PublishDialog';
 import Divider from '@mui/material/Divider';
-import { PersonAvatar } from '../DashletCard/dashletCommons'; // TODO: move this to a common place
+import { PersonAvatar } from '../DashletCard/dashletCommons';
 import { getPersonFullName } from '../SiteDashboard';
 import ItemPublishingTargetIcon from '../ItemPublishingTargetIcon';
-import { getItemPublishingTargetText } from '../ItemDisplay/utils';
 import Paper from '@mui/material/Paper';
 import RadioGroup from '@mui/material/RadioGroup';
 import Radio from '@mui/material/Radio';
-import FormControlLabel from '@mui/material/FormControlLabel'; // TODO: move this to a common place
+import FormControlLabel from '@mui/material/FormControlLabel';
 import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
 import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined';
 import TextFieldWithMax from '../TextFieldWithMax';
 import { DialogFooter } from '../DialogFooter';
 import SecondaryButton from '../SecondaryButton';
 import PrimaryButton from '../PrimaryButton';
-import Button from '@mui/material/Button';
-import ListRoundedIcon from '@mui/icons-material/ListRounded';
-import TreeOutlined from '../../icons/TreeOutlined';
-import IconButton from '@mui/material/IconButton';
-import UnfoldMoreRoundedIcon from '@mui/icons-material/UnfoldMoreRounded';
-import UnfoldLessRoundedIcon from '@mui/icons-material/UnfoldLessRounded';
-import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView';
-import { treeItemClasses } from '@mui/x-tree-view/TreeItem';
 import { buildPathTrees, PathTreeNode } from '../PublishDialog/buildPathTrees';
 import { switchMap } from 'rxjs';
 import { fetchDetailedItems } from '../../services/content';
 import { map } from 'rxjs/operators';
-import ListItem, { listItemClasses } from '@mui/material/ListItem';
-import List from '@mui/material/List';
-import ListItemText from '@mui/material/ListItemText';
-import ItemDisplay from '../ItemDisplay';
 import useSpreadState from '../../hooks/useSpreadState';
 import { CannedMessage, fetchCannedMessages } from '../../services/configuration';
 import useEnv from '../../hooks/useEnv';
@@ -72,6 +59,16 @@ import { approve, reject } from '../../services/workflow';
 import { batchActions } from '../../state/actions/misc';
 import { useDispatch } from 'react-redux';
 import { showErrorDialog } from '../../state/reducers/dialogs/error';
+import { getApproveRejectDialogIsTreeView, setApproveRejectDialogIsTreeView } from '../../utils/state';
+import useActiveUser from '../../hooks/useActiveUser';
+import { updateApproveRejectDialog } from '../../state/actions/dialogs';
+import { AsDayMonthDateTime } from '../VersionList';
+import PublishItemsView from '../PublishDialog/PublishItemsView';
+
+const statusItems = {
+  staging: { stateMap: { staged: true } },
+  live: { stateMap: { live: true } }
+};
 
 export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainerProps) {
   const { packageId } = props;
@@ -113,15 +110,10 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
     ) : (
       <FormattedMessage defaultMessage="Approve" />
     );
-  // TODO: add to localStorage
-  const [isTreeView, setIsTreeView] = useState(true);
+  const { username } = useActiveUser();
+  const [isTreeView, setIsTreeView] = useState(getApproveRejectDialogIsTreeView(username) ?? true);
   const [expandedPaths, setExpandedPaths] = useState<string[]>();
   const dispatch = useDispatch();
-
-  const statusItems = {
-    staging: { stateMap: { staged: true } },
-    live: { stateMap: { live: true } }
-  };
 
   // Submit button should be disabled when:
   const submitDisabled =
@@ -133,7 +125,7 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
     // No action has been selected
     !state.action ||
     // If the action is approve and the approver comment is empty
-    (state.action === 'approve' && !state.approverComment) ||
+    // (state.action === 'approve' && !state.approverComment) ||
     // If the action is reject and the reject comment is empty
     (state.action === 'reject' && !state.rejectComment);
 
@@ -150,7 +142,6 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
       )
       .subscribe({
         next: ({ publishingPackage, detailedItemsList }) => {
-          console.log('publishingPackage', publishingPackage);
           setPublishingPackage(publishingPackage);
           setDetailedItems(detailedItemsList);
           setIsFetchingPackage(false);
@@ -223,8 +214,7 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
   };
 
   const handleSubmit = () => {
-    // TODO: add dialog to redux
-    // dispatch(updateApproveRejectDialog({ isSubmitting: true }));
+    dispatch(updateApproveRejectDialog({ isSubmitting: true }));
     if (state.action === 'approve') {
       const data: ApproveParams = {
         comment: state.approverComment,
@@ -234,12 +224,13 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
 
       approve(siteId, packageId, data).subscribe({
         next() {
-          // dispatch(updateApproveRejectDialog({ isSubmitting: false, hasPendingChanges: false }));
+          dispatch(updateApproveRejectDialog({ isSubmitting: false, hasPendingChanges: false }));
         },
         error({ response }) {
           dispatch(
             batchActions([
-              /* updateApproveRejectDialog({ isSubmitting: false }),*/ showErrorDialog({ error: response.response })
+              updateApproveRejectDialog({ isSubmitting: false }),
+              showErrorDialog({ error: response.response })
             ])
           );
         }
@@ -247,17 +238,23 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
     } else {
       reject(siteId, packageId, state.rejectComment).subscribe({
         next() {
-          // dispatch(updateApproveRejectDialog({ isSubmitting: false, hasPendingChanges: false }));
+          dispatch(updateApproveRejectDialog({ isSubmitting: false, hasPendingChanges: false }));
         },
         error({ response }) {
           dispatch(
             batchActions([
-              /* updateApproveRejectDialog({ isSubmitting: false }),*/ showErrorDialog({ error: response.response })
+              updateApproveRejectDialog({ isSubmitting: false }),
+              showErrorDialog({ error: response.response })
             ])
           );
         }
       });
     }
+  };
+
+  const onSetIsTreeView = (isTreeView: boolean) => {
+    setIsTreeView(isTreeView);
+    setApproveRejectDialogIsTreeView(username, isTreeView);
   };
 
   return (
@@ -285,8 +282,7 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
                   <FormattedMessage defaultMessage="Package Title" />
                 </Typography>
                 <Typography variant="body1" sx={{ mb: 2 }}>
-                  {/* TODO: title doesn't exist yet in package */}
-                  {/* {publishingPackage.title}*/}
+                  {publishingPackage.title}
                 </Typography>
                 <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
                   <FormattedMessage defaultMessage="Submission Comment" />
@@ -302,7 +298,11 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
                   <ItemPublishingTargetIcon item={statusItems[publishingPackage.target] as SandboxItem} />
                   <Typography variant="body2" component="span">
-                    {getItemPublishingTargetText(statusItems[publishingPackage.target].stateMap)}
+                    {publishingPackage.target === 'live' ? (
+                      <FormattedMessage defaultMessage="Live" />
+                    ) : (
+                      <FormattedMessage defaultMessage="Staging" />
+                    )}
                   </Typography>
                 </Box>
               </Box>
@@ -344,8 +344,14 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
                     <FormControlLabel
                       value="keep"
                       control={<Radio color="primary" />}
-                      // TODO: format date
-                      label={<FormattedMessage defaultMessage="Keep" />}
+                      label={
+                        <FormattedMessage
+                          defaultMessage="Keep “{date}”"
+                          values={{
+                            date: <AsDayMonthDateTime date={publishingPackage.schedule} />
+                          }}
+                        />
+                      }
                     />
                   )}
                   <FormControlLabel
@@ -446,89 +452,16 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
                   height: '100%'
                 }}
               >
-                {/* TODO: same as in PublishDialog */}
-                <Box display="flex" justifyContent="space-between" alignItems="center" mr={1} ml={1}>
-                  <Box display="flex" py={0.5}>
-                    <Button
-                      size="small"
-                      startIcon={isTreeView ? <ListRoundedIcon /> : <TreeOutlined />}
-                      sx={{ [`.${buttonClasses.startIcon}`]: { mr: 0.5 } }}
-                      onClick={() => setIsTreeView(!isTreeView)}
-                    >
-                      {/* TODO: should the message be 'Switch to...'? */}
-                      {isTreeView ? (
-                        <FormattedMessage defaultMessage="List View" />
-                      ) : (
-                        <FormattedMessage defaultMessage="Tree View" />
-                      )}
-                    </Button>
-                    {isTreeView && (
-                      <>
-                        <Divider flexItem orientation="vertical" sx={{ mx: 0.5 }} />
-                        <IconButton size="small" color="primary" onClick={() => setExpandedPaths(undefined)}>
-                          <UnfoldMoreRoundedIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton size="small" color="primary" onClick={() => setExpandedPaths([])}>
-                          <UnfoldLessRoundedIcon fontSize="small" />
-                        </IconButton>
-                      </>
-                    )}
-                  </Box>
-                </Box>
-                <Divider />
-                <Box sx={{ p: 1, flexGrow: 1, overflowY: 'auto' }}>
-                  {isTreeView ? (
-                    <SimpleTreeView
-                      expandedItems={expandedPaths ?? parentTreeNodePaths}
-                      onExpandedItemsChange={(event, itemIds) => setExpandedPaths(itemIds)}
-                      disableSelection
-                      sx={{
-                        '.tree-item-more-section': { display: 'none' },
-                        [`.${treeItemClasses.content}:hover`]: {
-                          '.tree-item-more-section': { display: 'flex' }
-                        },
-                        [`[data-is-item="false"] > .${treeItemClasses.content} > .${treeItemClasses.checkbox}`]: {
-                          display: 'none'
-                        }
-                      }}
-                    >
-                      {trees.map((node) =>
-                        renderTreeNode({
-                          itemMap: itemsDataSummary.itemMap,
-                          node,
-                          onMenuClick: () => {}
-                        })
-                      )}
-                    </SimpleTreeView>
-                  ) : (
-                    <List
-                      dense
-                      sx={{
-                        [`.${listItemSecondaryActionClasses.root}`]: { right: (theme) => theme.spacing(1) },
-                        [`.${listItemClasses.root} .item-menu-button`]: { display: 'none' },
-                        [`.${listItemClasses.root}:hover`]: { bgcolor: 'action.hover' },
-                        [`.${listItemClasses.root}:hover .item-menu-button`]: { display: 'flex' }
-                      }}
-                    >
-                      {itemsDataSummary.itemPaths.map((path) => (
-                        <ListItem key={path}>
-                          <ListItemText
-                            primary={
-                              <Box display="flex">
-                                <ItemDisplay
-                                  item={itemsDataSummary.itemMap[path]}
-                                  showNavigableAsLinks={false}
-                                  sx={{ mr: 1 }}
-                                />
-                              </Box>
-                            }
-                            secondary={path}
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  )}
-                </Box>
+                <PublishItemsView
+                  itemMap={itemsDataSummary.itemMap}
+                  itemsAndDependenciesPaths={itemsDataSummary.itemPaths}
+                  isTreeView={isTreeView}
+                  setIsTreeView={onSetIsTreeView}
+                  expandedPaths={expandedPaths ?? parentTreeNodePaths}
+                  trees={trees}
+                  setExpandedPaths={setExpandedPaths}
+                  onMenuClick={() => {}}
+                />
               </Paper>
             </Grid>
           </Grid>

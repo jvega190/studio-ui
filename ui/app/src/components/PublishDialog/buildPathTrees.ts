@@ -11,7 +11,7 @@ export interface PathTreeNode {
 }
 
 /** Tuple containing the array of root trees and a Set of all valid folder paths */
-type TreeBuilderResult = [PathTreeNode[], Array<string>];
+export type TreeBuilderResult = [PathTreeNode[], Array<string>];
 
 /**
  * Builds a tree structure from a list of file paths, grouping them by root directories

@@ -456,3 +456,19 @@ export function getPublishDialogIsTreeView(username: string): boolean {
 export function removePublishDialogIsTreeView(username: string) {
   window.localStorage.removeItem(`craftercms.${username}.publishDialogTreeView`);
 }
+
+export function setApproveRejectDialogIsTreeView(username: string, value: boolean) {
+  window.localStorage.setItem(`craftercms.${username}.approveRejectDialogTreeView`, value.toString());
+}
+
+export function getApproveRejectDialogIsTreeView(username: string): boolean {
+  // We want the default value to be true, so if the value doesn't exist yet we return 'undefined' to let the component
+  // decide on the default value.
+  return window.localStorage.getItem(`craftercms.${username}.approveRejectDialogTreeView`)
+    ? window.localStorage.getItem(`craftercms.${username}.approveRejectDialogTreeView`) === 'true'
+    : undefined;
+}
+
+export function removeApproveRejectDialogIsTreeView(username: string) {
+  window.localStorage.removeItem(`craftercms.${username}.approveRejectDialogTreeView`);
+}
