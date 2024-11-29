@@ -19,12 +19,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { fetchPackage, PublishingPackage } from '../../services/publishing';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
 import { DialogBody } from '../DialogBody';
-import { ApiResponse, ApproveParams, DetailedItem, SandboxItem } from '../../models';
+import { AllItemActions, ApiResponse, ApproveParams, DetailedItem, SandboxItem } from '../../models';
 import { ApiResponseErrorState } from '../ApiResponseErrorState';
 import { LoadingState } from '../LoadingState';
 import Grid from '@mui/material/Grid2';
 import { Typography } from '@mui/material';
-import { FormattedMessage } from 'react-intl';
+import { FormattedMessage, useIntl } from 'react-intl';
 import Box from '@mui/material/Box';
 import { DependencyChip } from '../PublishDialog';
 import Divider from '@mui/material/Divider';
@@ -64,6 +64,8 @@ import useActiveUser from '../../hooks/useActiveUser';
 import { updateApproveRejectDialog } from '../../state/actions/dialogs';
 import { AsDayMonthDateTime } from '../VersionList';
 import PublishItemsView from '../PublishDialog/PublishItemsView';
+import Menu from '@mui/material/Menu';
+import { generateSingleItemOptions, itemActionDispatcher } from '../../utils/itemActions';
 
 const statusItems = {
   staging: { stateMap: { staged: true } },
@@ -71,8 +73,9 @@ const statusItems = {
 };
 
 export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainerProps) {
-  const { packageId } = props;
-  const { activeEnvironment } = useEnv();
+  const { packageId, isSubmitting } = props;
+  const { activeEnvironment, authoringBase } = useEnv();
+  const { formatMessage } = useIntl();
   const [publishingPackage, setPublishingPackage] = useState<PublishingPackage>();
   const [detailedItems, setDetailedItems] = useState<DetailedItem[]>([]);
   const [cannedMessages, setCannedMessages] = useState<CannedMessage[]>([]);
@@ -114,6 +117,11 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
   const [isTreeView, setIsTreeView] = useState(getApproveRejectDialogIsTreeView(username) ?? true);
   const [expandedPaths, setExpandedPaths] = useState<string[]>();
   const dispatch = useDispatch();
+  const [contextMenu, setContextMenu] = useState({
+    el: null,
+    options: null,
+    item: null
+  });
 
   // Submit button should be disabled when:
   const submitDisabled =
@@ -121,7 +129,7 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
     isFetchingPackage ||
     !detailedItems ||
     // While submitting
-    // isSubmitting ||
+    isSubmitting ||
     // No action has been selected
     !state.action ||
     // If the action is approve and the approver comment is empty
@@ -173,21 +181,15 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
     }
   }, [siteId, activeEnvironment]);
 
-  // TODO: simplify switch
   const onArgumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value: unknown;
+    dispatch(updateApproveRejectDialog({ hasPendingChanges: true }));
     switch (e.target.type) {
       case 'textarea':
-        value = e.target.value;
-        // dispatch(updatePublishDialog({ hasPendingChanges: true }));
-        break;
       case 'radio':
+      case 'dateTimePicker':
         value = e.target.value;
         break;
-      case 'dateTimePicker': {
-        value = e.target.value;
-        break;
-      }
       case 'select': {
         value = e.target.value;
         if (e.target.name === 'rejectReason') {
@@ -257,6 +259,35 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
     setApproveRejectDialogIsTreeView(username, isTreeView);
   };
 
+  const onContextMenuOpen = (e: React.MouseEvent<HTMLButtonElement>, path: string) => {
+    const { itemMap } = itemsDataSummary;
+    const item = itemMap[path];
+    const itemMenuOptions = generateSingleItemOptions(item, formatMessage, {
+      includeOnly: ['view', 'dependencies', 'history']
+    });
+    setContextMenu({ el: e.currentTarget, options: itemMenuOptions.flat(), item });
+  };
+
+  const onContextMenuClose = () => {
+    setContextMenu({
+      el: null,
+      options: null,
+      item: null
+    });
+  };
+
+  const onMenuItemClicked = (option: string) => {
+    itemActionDispatcher({
+      site: siteId,
+      item: contextMenu.item,
+      option: option as AllItemActions,
+      authoringBase,
+      dispatch,
+      formatMessage
+    });
+    onContextMenuClose();
+  };
+
   return (
     <>
       <DialogBody sx={{ px: 4, minHeight: 'calc(100vh * 0.5)' }}>
@@ -297,7 +328,7 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
                   <ItemPublishingTargetIcon item={statusItems[publishingPackage.target] as SandboxItem} />
-                  <Typography variant="body2" component="span">
+                  <Typography variant="body1" component="span">
                     {publishingPackage.target === 'live' ? (
                       <FormattedMessage defaultMessage="Live" />
                     ) : (
@@ -460,7 +491,7 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
                   expandedPaths={expandedPaths ?? parentTreeNodePaths}
                   trees={trees}
                   setExpandedPaths={setExpandedPaths}
-                  onMenuClick={() => {}}
+                  onMenuClick={onContextMenuOpen}
                 />
               </Paper>
             </Grid>
@@ -477,6 +508,13 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
           {submitLabel}
         </PrimaryButton>
       </DialogFooter>
+      <Menu anchorEl={contextMenu.el} keepMounted open={Boolean(contextMenu.el)} onClose={onContextMenuClose}>
+        {contextMenu.options?.map((option) => (
+          <MenuItem key={option.id} onClick={() => onMenuItemClicked(option.id)}>
+            {option.label}
+          </MenuItem>
+        ))}
+      </Menu>
     </>
   );
 }

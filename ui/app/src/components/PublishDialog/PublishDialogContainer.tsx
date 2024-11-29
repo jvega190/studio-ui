@@ -29,12 +29,11 @@ import {
 } from '../../services/publishing';
 import { getComputedPublishingTarget, getDateScheduled } from '../../utils/content';
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
-import useStyles from './styles';
 import { useSelection } from '../../hooks/useSelection';
 import { capitalize, isBlank } from '../../utils/string';
 import { updatePublishDialog } from '../../state/actions/dialogs';
 import { fetchDetailedItems } from '../../services/content';
-import { DetailedItem } from '../../models';
+import { AllItemActions, DetailedItem } from '../../models';
 import { fetchDetailedItemsComplete } from '../../state/actions/content';
 import { createAtLeastHalfHourInFutureDate } from '../../utils/datetime';
 import { batchActions } from '../../state/actions/misc';
@@ -75,10 +74,11 @@ import Tooltip from '@mui/material/Tooltip';
 import ErrorOutlineRounded from '@mui/icons-material/ErrorOutlineRounded';
 import { getPublishDialogIsTreeView, setPublishDialogIsTreeView } from '../../utils/state';
 import useActiveUser from '../../hooks/useActiveUser';
-import { generateSingleItemOptions } from '../../utils/itemActions';
+import { generateSingleItemOptions, itemActionDispatcher } from '../../utils/itemActions';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import PublishItemsView from './PublishItemsView';
+import useEnv from '../../hooks/useEnv';
 
 const messages = defineMessages({
   publishingTargetLoading: {
@@ -102,8 +102,6 @@ const messages = defineMessages({
     defaultMessage: 'Staging'
   }
 });
-
-// TODO: More button: dependencies, diff
 
 export type DependencyType = 'soft' | 'hard';
 export type DependencyMap = Record<string, DependencyType>;
@@ -130,6 +128,7 @@ export function DependencyChip({ type }: { type: DependencyType }) {
 export function PublishDialogContainer(props: PublishDialogContainerProps) {
   const { items: initialItems, scheduling = 'now', onSuccess, onClose, isSubmitting } = props;
   const siteId = useActiveSiteId();
+  const { authoringBase } = useEnv();
   const dispatch = useDispatch();
   const [detailedItems, setDetailedItems] = useState<DetailedItem[]>();
   const [isFetchingItems, setIsFetchingItems] = useState(false);
@@ -257,9 +256,9 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
   }, [publishingTargets, mainItems]);
   const [contextMenu, setContextMenu] = useState({
     el: null,
-    options: null
+    options: null,
+    item: null
   });
-
   const fetchPublishingTargetsFn = useCallback(
     (
       success?: (channels: FetchPublishingTargetsResponse['publishingTargets']) => void,
@@ -281,6 +280,19 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     },
     [siteId]
   );
+  const { formatMessage } = useIntl();
+  const isRequestPublish = !hasPublishPermission || state.requestApproval;
+  const showRequestApproval = hasPublishPermission && !itemsDataSummary.allItemsInSubmittedState;
+  const submitLabel =
+    state.scheduling === 'custom' ? (
+      <FormattedMessage id="words.schedule" defaultMessage="Schedule" />
+    ) : !hasPublishPermission || state.requestApproval ? (
+      <FormattedMessage id="publishDialog.requestPublish" defaultMessage="Request Publish" />
+    ) : (
+      <FormattedMessage id="words.publish" defaultMessage="Publish" />
+    );
+  const disabled = isSubmitting;
+  const [expandedPaths, setExpandedPaths] = useState<string[]>();
 
   // Submit button should be disabled when:
   const submitDisabled =
@@ -303,6 +315,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     Boolean(state.error) ||
     // The scheduled date is in the past
     state.scheduledDateTime < new Date();
+
   useEffect(() => {
     setState({ fetchingDependencies: true });
     // TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -475,15 +488,16 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     const { itemsByPath } = dependencyData;
     const item = itemMap[path] ?? itemsByPath[path];
     const itemMenuOptions = generateSingleItemOptions(item, formatMessage, {
-      includeOnly: ['view', 'dependencies']
+      includeOnly: ['view', 'dependencies', 'history']
     });
-    setContextMenu({ el: e.currentTarget, options: itemMenuOptions.flat() });
+    setContextMenu({ el: e.currentTarget, options: itemMenuOptions.flat(), item });
   };
 
   const onContextMenuClose = () => {
     setContextMenu({
       el: null,
-      options: null
+      options: null,
+      item: null
     });
   };
 
@@ -498,19 +512,18 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     setSelectedDependenciesMap({});
   };
 
-  const { formatMessage } = useIntl();
-  const { classes } = useStyles();
-  const isRequestPublish = !hasPublishPermission || state.requestApproval;
-  const showRequestApproval = hasPublishPermission && !itemsDataSummary.allItemsInSubmittedState;
-  const submitLabel =
-    state.scheduling === 'custom' ? (
-      <FormattedMessage id="words.schedule" defaultMessage="Schedule" />
-    ) : !hasPublishPermission || state.requestApproval ? (
-      <FormattedMessage id="publishDialog.requestPublish" defaultMessage="Request Publish" />
-    ) : (
-      <FormattedMessage id="words.publish" defaultMessage="Publish" />
-    );
-  const disabled = isSubmitting;
+  const onMenuItemClicked = (option: string) => {
+    itemActionDispatcher({
+      site: siteId,
+      item: contextMenu.item,
+      option: option as AllItemActions,
+      authoringBase,
+      dispatch,
+      formatMessage
+    });
+    onContextMenuClose();
+  };
+
   const handleDateTimePickerChange: DateTimeTimezonePickerProps['onChange'] = (date) => {
     onPublishingArgumentChange({
       target: {
@@ -521,8 +534,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
       }
     });
   };
-
-  const [expandedPaths, setExpandedPaths] = useState<string[]>();
 
   return (
     <>
@@ -535,8 +546,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
           detailedItems.length ? (
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 5 }}>
-                {/* TODO: get rid of classes */}
-                <form className={classes.root} onSubmit={handleSubmit}>
+                <Box component="form" sx={{ width: 'auto' }} onSubmit={handleSubmit}>
                   <TextField
                     autoFocus
                     fullWidth
@@ -603,18 +613,18 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                       />
                     )}
                   </Box>
-                  <FormControl fullWidth className={classes.formSection}>
+                  <FormControl fullWidth sx={{ width: '100%', marginBottom: '20px' }}>
                     <FormLabel component="legend">
                       <FormattedMessage defaultMessage="Scheduling" />
                     </FormLabel>
                     <RadioGroup
-                      className={classes.radioGroup}
                       value={state.scheduling}
                       onChange={onPublishingArgumentChange}
                       name="scheduling"
+                      sx={{ paddingTop: '10px', fontSize: '14px' }}
                     >
                       {mixedPublishingDates && (
-                        <Alert severity="warning" className={classes.mixedDatesWarningMessage}>
+                        <Alert severity="warning" sx={{ marginBottom: '10px' }}>
                           <FormattedMessage
                             id="publishForm.mixedPublishingDates"
                             defaultMessage="Items have mixed publishing date/time schedules."
@@ -623,14 +633,22 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                       )}
                       <FormControlLabel
                         value="now"
-                        control={<Radio color="primary" className={classes.radioInput} />}
+                        control={
+                          <Radio color="primary" sx={{ padding: '4px', marginLeft: '5px', marginRight: '5px' }} />
+                        }
                         label={<FormattedMessage defaultMessage="Now" />}
-                        classes={{ label: classes.formInputs }}
+                        slotProps={{
+                          typography: {
+                            sx: { fontSize: '14px' }
+                          }
+                        }}
                         disabled={disabled}
                       />
                       <FormControlLabel
                         value="custom"
-                        control={<Radio color="primary" className={classes.radioInput} />}
+                        control={
+                          <Radio color="primary" sx={{ padding: '4px', marginLeft: '5px', marginRight: '5px' }} />
+                        }
                         label={
                           published ? (
                             <FormattedMessage defaultMessage="Later" />
@@ -638,7 +656,11 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                             <FormattedMessage defaultMessage="Later (disabled on first publish)" />
                           )
                         }
-                        classes={{ label: classes.formInputs }}
+                        slotProps={{
+                          typography: {
+                            sx: { fontSize: '14px' }
+                          }
+                        }}
                         disabled={!published || disabled}
                       />
                     </RadioGroup>
@@ -646,7 +668,24 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                       mountOnEnter
                       in={state.scheduling === 'custom'}
                       timeout={300}
-                      className={state.scheduling === 'custom' ? classes.datePicker : ''}
+                      sx={
+                        state.scheduling === 'custom'
+                          ? {
+                              position: 'relative',
+                              paddingLeft: '30px',
+                              '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                width: '5px',
+                                height: '100%',
+                                top: '0',
+                                left: '7px',
+                                backgroundColor: (theme) => theme.palette.background.paper,
+                                borderRadius: '5px'
+                              }
+                            }
+                          : {}
+                      }
                     >
                       <DateTimeTimezonePicker
                         onChange={handleDateTimePickerChange}
@@ -656,44 +695,50 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                       />
                     </Collapse>
                   </FormControl>
-                  <FormControl fullWidth className={classes.formSection}>
+                  <FormControl fullWidth sx={{ width: '100%', marginBottom: '20px' }}>
                     <FormLabel component="legend">
                       <FormattedMessage defaultMessage="Publishing Target" />
                     </FormLabel>
                     {publishingTargets ? (
                       publishingTargets.length ? (
                         <RadioGroup
-                          className={classes.radioGroup}
                           value={state.publishingTarget}
                           onChange={onPublishingArgumentChange}
                           name="publishingTarget"
+                          sx={{ paddingTop: '10px', fontSize: '14px' }}
                         >
                           {publishingTargets.map((target) => (
                             <FormControlLabel
                               key={target.name}
                               disabled={disabled}
                               value={target.name}
-                              control={<Radio color="primary" className={classes.radioInput} />}
+                              control={
+                                <Radio color="primary" sx={{ padding: '4px', marginLeft: '5px', marginRight: '5px' }} />
+                              }
                               label={
                                 messages[target.name] ? formatMessage(messages[target.name]) : capitalize(target.name)
                               }
-                              classes={{ label: classes.formInputs }}
+                              slotProps={{
+                                typography: {
+                                  sx: { fontSize: '14px' }
+                                }
+                              }}
                             />
                           ))}
                         </RadioGroup>
                       ) : (
-                        <div className={classes.publishingTargetLoaderContainer}>
-                          <Typography variant="body1" className={classes.publishingTargetEmpty}>
+                        <Box sx={{ paddingTop: '24px', display: 'inline-flex' }}>
+                          <Typography variant="body1" sx={{ padding: '10px 12px', borderRadius: '4px', width: '100%' }}>
                             No publishing channels are available.
                           </Typography>
-                        </div>
+                        </Box>
                       )
                     ) : (
-                      <div className={classes.publishingTargetLoaderContainer}>
+                      <Box sx={{ paddingTop: '24px', display: 'inline-flex' }}>
                         <Typography
                           variant="body1"
                           component="span"
-                          className={`${classes.publishingTargetLoader} ${classes.formInputs}`}
+                          sx={{ fontSize: '14px' }}
                           color={publishingTargetsStatus === 'Error' ? 'error' : 'initial'}
                         >
                           {formatMessage(messages[`publishingTarget${publishingTargetsStatus}`])}
@@ -703,10 +748,10 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                             </Link>
                           )}
                         </Typography>
-                      </div>
+                      </Box>
                     )}
                     {mixedPublishingTargets && (
-                      <Alert severity="warning" className={classes.mixedTargetsWarningMessage}>
+                      <Alert severity="warning" sx={{ marginTop: '10px' }}>
                         <FormattedMessage
                           id="publishForm.mixedPublishingTargets"
                           defaultMessage="Items have mixed publishing targets."
@@ -714,7 +759,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                       </Alert>
                     )}
                   </FormControl>
-                </form>
+                </Box>
                 <Divider />
                 <Box my={2}>
                   <Typography variant="body2" sx={{ mb: 1 }}>
@@ -808,7 +853,11 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
         </PrimaryButton>
       </DialogFooter>
       <Menu anchorEl={contextMenu.el} keepMounted open={Boolean(contextMenu.el)} onClose={onContextMenuClose}>
-        {contextMenu.options?.map((option) => <MenuItem key={option.id}>{option.label}</MenuItem>)}
+        {contextMenu.options?.map((option) => (
+          <MenuItem key={option.id} onClick={() => onMenuItemClicked(option.id)}>
+            {option.label}
+          </MenuItem>
+        ))}
       </Menu>
     </>
   );

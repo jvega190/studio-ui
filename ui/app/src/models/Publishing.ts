@@ -79,6 +79,7 @@ export interface PublishingTarget {
   order: number;
 }
 
+// TODO: this is still used in workflow services
 export interface PublishingParams {
   items: string[];
   publishingTarget: string;
