@@ -70,7 +70,7 @@ const UnlockPublisherDialog = lazy(() => import('../UnlockPublisherDialog'));
 const WidgetDialog = lazy(() => import('../WidgetDialog'));
 const CodeEditorDialog = lazy(() => import('../CodeEditorDialog'));
 const BrokenReferencesDialog = lazy(() => import('../BrokenReferencesDialog'));
-const ApproveRejectDialog = lazy(() => import('../ApproveRejectDialog/PublishingPackageApprovalDialog'));
+const PublishingPackageApprovalDialog = lazy(() => import('../ApproveRejectDialog/PublishingPackageApprovalDialog'));
 // endregion
 
 // @formatter:off
@@ -305,13 +305,13 @@ function GlobalDialogManager() {
       {/* endregion */}
 
       {/* region ApproveReject */}
-      <ApproveRejectDialog
-        {...state.approveReject}
-        onClose={createCallback(state.approveReject.onClose, dispatch)}
-        onClosed={createCallback(state.approveReject.onClosed, dispatch)}
-        onSuccess={createCallback(state.approveReject.onSuccess, dispatch)}
+      <PublishingPackageApprovalDialog
+        {...state.publishingPackageApproval}
+        onClose={createCallback(state.publishingPackageApproval.onClose, dispatch)}
+        onClosed={createCallback(state.publishingPackageApproval.onClosed, dispatch)}
+        onSuccess={createCallback(state.publishingPackageApproval.onSuccess, dispatch)}
         onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
-          createCallback(state.approveReject.onClose, dispatch)
+          createCallback(state.publishingPackageApproval.onClose, dispatch)
         )}
       />
       {/* endregion */}
