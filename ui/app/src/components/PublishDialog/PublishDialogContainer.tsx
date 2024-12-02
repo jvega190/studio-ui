@@ -77,7 +77,7 @@ import useActiveUser from '../../hooks/useActiveUser';
 import { generateSingleItemOptions, itemActionDispatcher } from '../../utils/itemActions';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import PublishItemsView from './PublishItemsView';
+import PublishPackageItemsView from './PublishPackageItemsView';
 import useEnv from '../../hooks/useEnv';
 
 const messages = defineMessages({
@@ -146,9 +146,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
   const [published, setPublished] = useState<boolean>(null);
   const [publishingTargets, setPublishingTargets] = useState<PublishingTarget[]>(null);
   const [publishingTargetsStatus, setPublishingTargetsStatus] = useState('Loading');
-  const { username } = useActiveUser();
-  const storedPreferredView = getPublishingPackagePreferredView(username);
-  const [isTreeView, setIsTreeView] = useState(nnou(storedPreferredView) ? storedPreferredView === 'tree' : true);
   const [dependencyData, setDependencyData] = useState<DependencyDataState>(null);
   const [selectedDependenciesMap, setSelectedDependenciesMap] = useState<LookupTable<boolean>>({});
   const selectedDependenciesPaths = Object.keys(selectedDependenciesMap).filter(
@@ -293,7 +290,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
       <FormattedMessage id="words.publish" defaultMessage="Publish" />
     );
   const disabled = isSubmitting;
-  const [expandedPaths, setExpandedPaths] = useState<string[]>();
 
   // Submit button should be disabled when:
   const submitDisabled =
@@ -410,11 +406,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
       };
     }
   }, [effectRefs, itemsDataSummary, siteId, setState, dispatch]);
-
-  const onSetIsTreeView = (isTreeView: boolean) => {
-    setIsTreeView(isTreeView);
-    setPublishingPackagePreferredView(username, isTreeView ? 'tree' : 'list');
-  };
 
   const handleSubmit = (e?: SyntheticEvent) => {
     e?.preventDefault();
@@ -793,17 +784,14 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                         height: '100%'
                       }}
                     >
-                      <PublishItemsView
+                      <PublishPackageItemsView
                         itemMap={itemsAndDependenciesMap}
-                        isTreeView={isTreeView}
-                        setIsTreeView={onSetIsTreeView}
-                        expandedPaths={expandedPaths ?? parentTreeNodePaths}
+                        defaultExpandedPaths={parentTreeNodePaths}
                         itemsAndDependenciesPaths={itemsAndDependenciesPaths}
                         dependencyTypeMap={dependencyData?.typeByPath}
                         selectedDependenciesPaths={selectedDependenciesPaths}
                         selectedDependenciesMap={selectedDependenciesMap}
                         trees={trees}
-                        setExpandedPaths={setExpandedPaths}
                         onMenuClick={onContextMenuOpen}
                         onCheckboxChange={onDependencyCheckboxChange}
                       />

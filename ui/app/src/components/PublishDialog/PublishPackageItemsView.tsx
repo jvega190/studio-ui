@@ -14,8 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// TODO: move the renderTreeNode fn here?
-
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import ListRoundedIcon from '@mui/icons-material/ListRounded';
@@ -34,24 +32,24 @@ import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
 import Checkbox from '@mui/material/Checkbox';
 import ListItemText from '@mui/material/ListItemText';
 import ItemDisplay from '../ItemDisplay';
-import React from 'react';
+import React, { useState } from 'react';
 import { DependencyChip, DependencyDataState, DependencyMap } from './PublishDialogContainer';
 import { DetailedItem } from '../../models';
 import { PathTreeNode } from './buildPathTrees';
 import LookupTable from '../../models/LookupTable';
+import { getPublishingPackagePreferredView, setPublishingPackagePreferredView } from '../../utils/state';
+import { nnou } from '../../utils/object';
+import useActiveUser from '../../hooks/useActiveUser';
 
 // TODO: add sxs
 export interface PublishItemsProps {
   itemMap: Record<string, DetailedItem>;
-  isTreeView: boolean;
-  setIsTreeView: (isTreeView: boolean) => void;
-  expandedPaths: string[];
+  defaultExpandedPaths?: string[];
   itemsAndDependenciesPaths: string[];
   dependencyTypeMap?: DependencyDataState['typeByPath'];
   selectedDependenciesPaths?: string[];
   selectedDependenciesMap?: Record<string, boolean>;
   trees: PathTreeNode[];
-  setExpandedPaths: (expandedPaths: string[]) => void;
   onMenuClick: (event: React.MouseEvent<HTMLButtonElement>, path: string) => void;
   onCheckboxChange?: (event: React.ChangeEvent<HTMLInputElement>, checked: boolean, path: string) => void;
 }
@@ -140,21 +138,28 @@ function renderTreeNode(props: {
   );
 }
 
-export function PublishItemsView(props: PublishItemsProps) {
+export function PublishPackageItemsView(props: PublishItemsProps) {
   const {
     itemMap,
-    isTreeView,
-    setIsTreeView,
-    expandedPaths,
+    defaultExpandedPaths = [],
     itemsAndDependenciesPaths,
     dependencyTypeMap = {},
     selectedDependenciesPaths = [],
     selectedDependenciesMap = {},
     trees,
-    setExpandedPaths,
     onMenuClick,
     onCheckboxChange
   } = props;
+  const { username } = useActiveUser();
+  const storedPreferredView = getPublishingPackagePreferredView(username);
+  const [isTreeView, setIsTreeView] = useState(nnou(storedPreferredView) ? storedPreferredView === 'tree' : true);
+  const [expandedPaths, setExpandedPaths] = useState<string[]>();
+
+  const onSetIsTreeView = (isTreeView: boolean) => {
+    setIsTreeView(isTreeView);
+    setPublishingPackagePreferredView(username, isTreeView ? 'tree' : 'list');
+  };
+
   return (
     <>
       <Box display="flex" justifyContent="space-between" alignItems="center" mr={1} ml={1}>
@@ -163,7 +168,7 @@ export function PublishItemsView(props: PublishItemsProps) {
             size="small"
             startIcon={isTreeView ? <ListRoundedIcon /> : <TreeOutlined />}
             sx={{ [`.${buttonClasses.startIcon}`]: { mr: 0.5 } }}
-            onClick={() => setIsTreeView(!isTreeView)}
+            onClick={() => onSetIsTreeView(!isTreeView)}
           >
             {isTreeView ? (
               <FormattedMessage defaultMessage="List View" />
@@ -188,7 +193,7 @@ export function PublishItemsView(props: PublishItemsProps) {
       <Box sx={{ p: 1, flexGrow: 1, overflowY: 'auto' }}>
         {isTreeView ? (
           <SimpleTreeView
-            expandedItems={expandedPaths}
+            expandedItems={expandedPaths ?? defaultExpandedPaths}
             onExpandedItemsChange={(event, itemIds) => setExpandedPaths(itemIds)}
             disableSelection
             sx={{
@@ -263,4 +268,4 @@ export function PublishItemsView(props: PublishItemsProps) {
   );
 }
 
-export default PublishItemsView;
+export default PublishPackageItemsView;
