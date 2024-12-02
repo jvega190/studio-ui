@@ -15,13 +15,13 @@
  */
 
 import { createReducer } from '@reduxjs/toolkit';
-import { PublishingPackageApprovalDialogStateProps } from '../../../components/ApproveRejectDialog/types';
+import { PublishingPackageApprovalDialogStateProps } from '../../../components/PublishPackageApprovalDialog/types';
 import { GlobalState } from '../../../models';
 import {
-  approveRejectDialogClosed,
-  closeApproveRejectDialog,
-  showApproveRejectDialog,
-  updateApproveRejectDialog
+  publishPackageApprovalDialogClosed,
+  closePublishPackageApprovalDialog,
+  showPublishPackageApprovalDialog,
+  updatePublishPackageApprovalDialog
 } from '../../actions/dialogs';
 
 const initialState: PublishingPackageApprovalDialogStateProps = {
@@ -32,19 +32,19 @@ const initialState: PublishingPackageApprovalDialogStateProps = {
   hasPendingChanges: null
 };
 
-export default createReducer<GlobalState['dialogs']['approveReject']>(initialState, (builder) => {
+export default createReducer<GlobalState['dialogs']['publishingPackageApproval']>(initialState, (builder) => {
   builder
-    .addCase(showApproveRejectDialog, (state, { payload }) => ({
+    .addCase(showPublishPackageApprovalDialog, (state, { payload }) => ({
       ...state,
-      onClose: closeApproveRejectDialog(),
-      onClosed: approveRejectDialogClosed(),
+      onClose: closePublishPackageApprovalDialog(),
+      onClosed: publishPackageApprovalDialogClosed(),
       ...(payload as Partial<PublishingPackageApprovalDialogStateProps>),
       open: true
     }))
-    .addCase(updateApproveRejectDialog, (state, { payload }) => ({
+    .addCase(updatePublishPackageApprovalDialog, (state, { payload }) => ({
       ...state,
       ...(payload as Partial<PublishingPackageApprovalDialogStateProps>)
     }))
-    .addCase(closeApproveRejectDialog, (state) => ({ ...state, open: false }))
-    .addCase(approveRejectDialogClosed, () => initialState);
+    .addCase(closePublishPackageApprovalDialog, (state) => ({ ...state, open: false }))
+    .addCase(publishPackageApprovalDialogClosed, () => initialState);
 });

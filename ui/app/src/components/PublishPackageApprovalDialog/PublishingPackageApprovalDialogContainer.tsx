@@ -58,7 +58,7 @@ import { approve, reject } from '../../services/workflow';
 import { batchActions } from '../../state/actions/misc';
 import { useDispatch } from 'react-redux';
 import { showErrorDialog } from '../../state/reducers/dialogs/error';
-import { updateApproveRejectDialog } from '../../state/actions/dialogs';
+import { updatePublishPackageApprovalDialog } from '../../state/actions/dialogs';
 import { AsDayMonthDateTime } from '../VersionList';
 import PublishPackageItemsView from '../PublishDialog/PublishPackageItemsView';
 import PublishReferencesLegend from '../PublishDialog/PublishReferencesLegend';
@@ -179,7 +179,7 @@ export function PublishingPackageApprovalDialogContainer(props: PublishingPackag
 
   const onArgumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value: unknown;
-    dispatch(updateApproveRejectDialog({ hasPendingChanges: true }));
+    dispatch(updatePublishPackageApprovalDialog({ hasPendingChanges: true }));
     switch (e.target.type) {
       case 'textarea':
       case 'radio':
@@ -212,7 +212,7 @@ export function PublishingPackageApprovalDialogContainer(props: PublishingPackag
   };
 
   const handleSubmit = () => {
-    dispatch(updateApproveRejectDialog({ isSubmitting: true }));
+    dispatch(updatePublishPackageApprovalDialog({ isSubmitting: true }));
     if (state.action === 'approve') {
       const data: PublishingPackageApproveParams = {
         comment: state.approverComment,
@@ -222,12 +222,12 @@ export function PublishingPackageApprovalDialogContainer(props: PublishingPackag
 
       approve(siteId, packageId, data).subscribe({
         next() {
-          dispatch(updateApproveRejectDialog({ isSubmitting: false, hasPendingChanges: false }));
+          dispatch(updatePublishPackageApprovalDialog({ isSubmitting: false, hasPendingChanges: false }));
         },
         error({ response }) {
           dispatch(
             batchActions([
-              updateApproveRejectDialog({ isSubmitting: false }),
+              updatePublishPackageApprovalDialog({ isSubmitting: false }),
               showErrorDialog({ error: response.response })
             ])
           );
@@ -236,12 +236,12 @@ export function PublishingPackageApprovalDialogContainer(props: PublishingPackag
     } else {
       reject(siteId, packageId, state.rejectComment).subscribe({
         next() {
-          dispatch(updateApproveRejectDialog({ isSubmitting: false, hasPendingChanges: false }));
+          dispatch(updatePublishPackageApprovalDialog({ isSubmitting: false, hasPendingChanges: false }));
         },
         error({ response }) {
           dispatch(
             batchActions([
-              updateApproveRejectDialog({ isSubmitting: false }),
+              updatePublishPackageApprovalDialog({ isSubmitting: false }),
               showErrorDialog({ error: response.response })
             ])
           );
