@@ -22,7 +22,7 @@ import { SandboxItem } from '../models/Item';
 import { PagedArray } from '../models/PagedArray';
 import { createItemActionMap, createItemStateMap } from '../utils/content';
 import PaginationOptions from '../models/PaginationOptions';
-import { ApproveParams, PublishingParams } from '../models/Publishing';
+import { PublishingPackageApproveParams, PublishingParams } from '../models/Publishing';
 
 export function fetchItemStates(
   siteId: string,
@@ -90,7 +90,7 @@ export function requestPublish(siteId: string, data: PublishingParams): Observab
   }).pipe(map(() => true));
 }
 
-export function approve(siteId: string, packageId: number, data: ApproveParams): Observable<boolean> {
+export function approve(siteId: string, packageId: number, data: PublishingPackageApproveParams): Observable<boolean> {
   return postJSON(`/studio/api/2/workflow/${siteId}/package/${packageId}/approve`, {
     ...data
   }).pipe(map(() => true));

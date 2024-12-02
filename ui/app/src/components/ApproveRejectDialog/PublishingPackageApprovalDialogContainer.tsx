@@ -19,7 +19,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { fetchPackage, PublishingPackage } from '../../services/publishing';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
 import { DialogBody } from '../DialogBody';
-import { AllItemActions, ApiResponse, ApproveParams, DetailedItem, SandboxItem } from '../../models';
+import { AllItemActions, ApiResponse, PublishingPackageApproveParams, DetailedItem, SandboxItem } from '../../models';
 import { ApiResponseErrorState } from '../ApiResponseErrorState';
 import { LoadingState } from '../LoadingState';
 import Grid from '@mui/material/Grid2';
@@ -229,7 +229,7 @@ export function PublishingPackageApprovalDialogContainer(props: PublishingPackag
   const handleSubmit = () => {
     dispatch(updateApproveRejectDialog({ isSubmitting: true }));
     if (state.action === 'approve') {
-      const data: ApproveParams = {
+      const data: PublishingPackageApproveParams = {
         comment: state.approverComment,
         schedule: state.scheduling === 'custom' ? state.schedule.toISOString() : null,
         updateSchedule: true

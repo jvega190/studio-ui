@@ -111,7 +111,7 @@ export interface PublishingStats {
   numberOfEditedAndPublishedItems: number;
 }
 
-export interface ApproveParams {
+export interface PublishingPackageApproveParams {
   comment: string;
   schedule: string;
   updateSchedule: boolean;
