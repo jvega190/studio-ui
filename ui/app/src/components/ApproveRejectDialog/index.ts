@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-export { default } from './ApproveRejectDialog';
+export { default } from './PublishingPackageApprovalDialog';
 
-export * from './ApproveRejectDialog';
+export * from './PublishingPackageApprovalDialog';
 
-export * from './ApproveRejectDialogContainer';
+export * from './PublishingPackageApprovalDialogContainer';

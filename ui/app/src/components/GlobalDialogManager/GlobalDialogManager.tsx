@@ -70,7 +70,7 @@ const UnlockPublisherDialog = lazy(() => import('../UnlockPublisherDialog'));
 const WidgetDialog = lazy(() => import('../WidgetDialog'));
 const CodeEditorDialog = lazy(() => import('../CodeEditorDialog'));
 const BrokenReferencesDialog = lazy(() => import('../BrokenReferencesDialog'));
-const ApproveRejectDialog = lazy(() => import('../ApproveRejectDialog'));
+const ApproveRejectDialog = lazy(() => import('../ApproveRejectDialog/PublishingPackageApprovalDialog'));
 // endregion
 
 // @formatter:off

@@ -15,12 +15,12 @@
  */
 
 import React from 'react';
-import { ApproveRejectDialogProps } from './utils';
+import { PublishingPackageApprovalDialogProps } from './types';
 import { EnhancedDialog } from '../EnhancedDialog';
 import { FormattedMessage } from 'react-intl';
-import ApproveRejectDialogContainer from './ApproveRejectDialogContainer';
+import PublishingPackageApprovalDialogContainer from './PublishingPackageApprovalDialogContainer';
 
-export function ApproveRejectDialog(props: ApproveRejectDialogProps) {
+export function PublishingPackageApprovalDialog(props: PublishingPackageApprovalDialogProps) {
   const { packageId, isSubmitting, ...rest } = props;
   return (
     <EnhancedDialog
@@ -29,9 +29,9 @@ export function ApproveRejectDialog(props: ApproveRejectDialogProps) {
       {...rest}
       isSubmitting={isSubmitting}
     >
-      <ApproveRejectDialogContainer packageId={packageId} isSubmitting={isSubmitting} />
+      <PublishingPackageApprovalDialogContainer packageId={packageId} isSubmitting={isSubmitting} />
     </EnhancedDialog>
   );
 }
 
-export default ApproveRejectDialog;
+export default PublishingPackageApprovalDialog;

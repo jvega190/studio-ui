@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { ApproveRejectDialogContainerProps, InternalDialogState } from './utils';
+import { PublishingPackageApprovaDialogContainerProps } from './types';
 import React, { useEffect, useMemo, useState } from 'react';
 import { fetchPackage, PublishingPackage } from '../../services/publishing';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
@@ -72,8 +72,17 @@ const statusItems = {
   live: { stateMap: { live: true } }
 };
 
-export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainerProps) {
-  const { packageId, isSubmitting } = props;
+interface InternalDialogState {
+  action: 'approve' | 'reject';
+  scheduling: 'keep' | 'now' | 'custom';
+  schedule: Date;
+  approverComment: string;
+  rejectReason: string;
+  rejectComment: string;
+}
+
+export function PublishingPackageApprovalDialogContainer(props: PublishingPackageApprovaDialogContainerProps) {
+  const { packageId, isSubmitting, onClose } = props;
   const { activeEnvironment, authoringBase } = useEnv();
   const { formatMessage } = useIntl();
   const [publishingPackage, setPublishingPackage] = useState<PublishingPackage>();
@@ -288,6 +297,8 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
     onContextMenuClose();
   };
 
+  const onCloseButtonClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => onClose(e, null);
+
   return (
     <>
       <DialogBody sx={{ px: 4, minHeight: 'calc(100vh * 0.5)' }}>
@@ -501,7 +512,7 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
         )}
       </DialogBody>
       <DialogFooter>
-        <SecondaryButton>
+        <SecondaryButton onClick={onCloseButtonClick} disabled={isSubmitting}>
           <FormattedMessage defaultMessage="Cancel" />
         </SecondaryButton>
         <PrimaryButton disabled={submitDisabled} onClick={handleSubmit}>
@@ -519,4 +530,4 @@ export function ApproveRejectDialogContainer(props: ApproveRejectDialogContainer
   );
 }
 
-export default ApproveRejectDialogContainer;
+export default PublishingPackageApprovalDialogContainer;

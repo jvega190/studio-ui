@@ -18,29 +18,24 @@ import { EnhancedDialogProps } from '../EnhancedDialog';
 import { EnhancedDialogState } from '../../hooks/useEnhancedDialogState';
 import { StandardAction } from '../../models';
 
-export interface ApproveRejectDialogBaseProps {
+export interface PublishingPackageApprovalDialogBaseProps {
   packageId: number;
 }
 
-export interface ApproveRejectDialogProps extends ApproveRejectDialogBaseProps, EnhancedDialogProps {
+export interface PublishingPackageApprovalDialogProps
+  extends PublishingPackageApprovalDialogBaseProps,
+    EnhancedDialogProps {
   onSuccess?(): void;
 }
 
-export interface ApproveRejectDialogStateProps extends ApproveRejectDialogBaseProps, EnhancedDialogState {
+export interface PublishingPackageApprovalDialogStateProps
+  extends PublishingPackageApprovalDialogBaseProps,
+    EnhancedDialogState {
   onClose?: StandardAction;
   onClosed?: StandardAction;
   onSuccess?: StandardAction;
 }
 
-export interface ApproveRejectDialogContainerProps
-  extends ApproveRejectDialogBaseProps,
-    Pick<ApproveRejectDialogProps, 'isSubmitting' | 'onSuccess' | 'onClose'> {}
-
-export interface InternalDialogState {
-  action: 'approve' | 'reject';
-  scheduling: 'keep' | 'now' | 'custom';
-  schedule: Date;
-  approverComment: string;
-  rejectReason: string;
-  rejectComment: string;
-}
+export interface PublishingPackageApprovaDialogContainerProps
+  extends PublishingPackageApprovalDialogBaseProps,
+    Pick<PublishingPackageApprovalDialogProps, 'isSubmitting' | 'onSuccess' | 'onClose'> {}

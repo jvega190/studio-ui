@@ -15,7 +15,7 @@
  */
 
 import { createReducer } from '@reduxjs/toolkit';
-import { ApproveRejectDialogStateProps } from '../../../components/ApproveRejectDialog/utils';
+import { PublishingPackageApprovalDialogStateProps } from '../../../components/ApproveRejectDialog/types';
 import { GlobalState } from '../../../models';
 import {
   approveRejectDialogClosed,
@@ -24,7 +24,7 @@ import {
   updateApproveRejectDialog
 } from '../../actions/dialogs';
 
-const initialState: ApproveRejectDialogStateProps = {
+const initialState: PublishingPackageApprovalDialogStateProps = {
   open: false,
   packageId: null,
   isSubmitting: null,
@@ -38,12 +38,12 @@ export default createReducer<GlobalState['dialogs']['approveReject']>(initialSta
       ...state,
       onClose: closeApproveRejectDialog(),
       onClosed: approveRejectDialogClosed(),
-      ...(payload as Partial<ApproveRejectDialogStateProps>),
+      ...(payload as Partial<PublishingPackageApprovalDialogStateProps>),
       open: true
     }))
     .addCase(updateApproveRejectDialog, (state, { payload }) => ({
       ...state,
-      ...(payload as Partial<ApproveRejectDialogStateProps>)
+      ...(payload as Partial<PublishingPackageApprovalDialogStateProps>)
     }))
     .addCase(closeApproveRejectDialog, (state) => ({ ...state, open: false }))
     .addCase(approveRejectDialogClosed, () => initialState);

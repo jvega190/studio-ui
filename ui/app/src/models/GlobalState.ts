@@ -67,7 +67,7 @@ import { RenameAssetStateProps } from '../components/RenameAssetDialog';
 import Person from './Person';
 import { BrokenReferencesDialogStateProps } from '../components/BrokenReferencesDialog/types';
 import AllowedContentTypesData from './AllowedContentTypesData';
-import { ApproveRejectDialogStateProps } from '../components/ApproveRejectDialog/utils';
+import { PublishingPackageApprovalDialogStateProps } from '../components/ApproveRejectDialog/types';
 
 export type HighlightMode = 'all' | 'move';
 
@@ -225,7 +225,7 @@ export interface GlobalState {
     viewVersion: ViewVersionDialogStateProps;
     compareVersions: CompareVersionsDialogStateProps;
     publish: PublishDialogStateProps;
-    approveReject: ApproveRejectDialogStateProps;
+    publishingPackageApproval: PublishingPackageApprovalDialogStateProps;
     dependencies: DependenciesDialogStateProps;
     delete: DeleteDialogStateProps;
     edit: LegacyFormDialogStateProps;
