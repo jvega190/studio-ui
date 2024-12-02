@@ -19,7 +19,7 @@ import Button from '@mui/material/Button';
 import ListRoundedIcon from '@mui/icons-material/ListRounded';
 import TreeOutlined from '../../icons/TreeOutlined';
 import { buttonClasses, listItemSecondaryActionClasses, Typography } from '@mui/material';
-import { FormattedMessage } from 'react-intl';
+import { FormattedMessage, useIntl } from 'react-intl';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import UnfoldMoreRoundedIcon from '@mui/icons-material/UnfoldMoreRounded';
@@ -34,12 +34,18 @@ import ListItemText from '@mui/material/ListItemText';
 import ItemDisplay from '../ItemDisplay';
 import React, { useState } from 'react';
 import { DependencyChip, DependencyDataState, DependencyMap } from './PublishDialogContainer';
-import { DetailedItem } from '../../models';
+import { AllItemActions, DetailedItem } from '../../models';
 import { PathTreeNode } from './buildPathTrees';
 import LookupTable from '../../models/LookupTable';
 import { getPublishingPackagePreferredView, setPublishingPackagePreferredView } from '../../utils/state';
 import { nnou } from '../../utils/object';
 import useActiveUser from '../../hooks/useActiveUser';
+import MenuItem from '@mui/material/MenuItem';
+import Menu from '@mui/material/Menu';
+import { generateSingleItemOptions, itemActionDispatcher } from '../../utils/itemActions';
+import useEnv from '../../hooks/useEnv';
+import useActiveSiteId from '../../hooks/useActiveSiteId';
+import { useDispatch } from 'react-redux';
 
 // TODO: add sxs
 export interface PublishItemsProps {
@@ -50,7 +56,6 @@ export interface PublishItemsProps {
   selectedDependenciesPaths?: string[];
   selectedDependenciesMap?: Record<string, boolean>;
   trees: PathTreeNode[];
-  onMenuClick: (event: React.MouseEvent<HTMLButtonElement>, path: string) => void;
   onCheckboxChange?: (event: React.ChangeEvent<HTMLInputElement>, checked: boolean, path: string) => void;
 }
 
@@ -147,17 +152,53 @@ export function PublishPackageItemsView(props: PublishItemsProps) {
     selectedDependenciesPaths = [],
     selectedDependenciesMap = {},
     trees,
-    onMenuClick,
     onCheckboxChange
   } = props;
   const { username } = useActiveUser();
   const storedPreferredView = getPublishingPackagePreferredView(username);
   const [isTreeView, setIsTreeView] = useState(nnou(storedPreferredView) ? storedPreferredView === 'tree' : true);
   const [expandedPaths, setExpandedPaths] = useState<string[]>();
+  const siteId = useActiveSiteId();
+  const { authoringBase } = useEnv();
+  const dispatch = useDispatch();
+  const { formatMessage } = useIntl();
+  const [contextMenu, setContextMenu] = useState({
+    el: null,
+    options: null,
+    item: null
+  });
+
+  const onContextMenuClose = () => {
+    setContextMenu({
+      el: null,
+      options: null,
+      item: null
+    });
+  };
 
   const onSetIsTreeView = (isTreeView: boolean) => {
     setIsTreeView(isTreeView);
     setPublishingPackagePreferredView(username, isTreeView ? 'tree' : 'list');
+  };
+
+  const onMenuItemClicked = (option: string) => {
+    itemActionDispatcher({
+      site: siteId,
+      item: contextMenu.item,
+      option: option as AllItemActions,
+      authoringBase,
+      dispatch,
+      formatMessage
+    });
+    onContextMenuClose();
+  };
+
+  const onContextMenuOpen = (e: React.MouseEvent<HTMLButtonElement>, path: string) => {
+    const item = itemMap[path];
+    const itemMenuOptions = generateSingleItemOptions(item, formatMessage, {
+      includeOnly: ['view', 'dependencies', 'history']
+    });
+    setContextMenu({ el: e.currentTarget, options: itemMenuOptions.flat(), item });
   };
 
   return (
@@ -211,7 +252,7 @@ export function PublishPackageItemsView(props: PublishItemsProps) {
                 itemMap,
                 node,
                 dependencyTypeMap,
-                onMenuClick,
+                onMenuClick: onContextMenuOpen,
                 onCheckboxChange,
                 selectedDependencies: selectedDependenciesPaths
               })
@@ -264,6 +305,13 @@ export function PublishPackageItemsView(props: PublishItemsProps) {
           </List>
         )}
       </Box>
+      <Menu anchorEl={contextMenu.el} keepMounted open={Boolean(contextMenu.el)} onClose={onContextMenuClose}>
+        {contextMenu.options?.map((option) => (
+          <MenuItem key={option.id} onClick={() => onMenuItemClicked(option.id)}>
+            {option.label}
+          </MenuItem>
+        ))}
+      </Menu>
     </>
   );
 }

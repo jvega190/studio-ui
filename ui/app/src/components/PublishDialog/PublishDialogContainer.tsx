@@ -33,7 +33,7 @@ import { useSelection } from '../../hooks/useSelection';
 import { capitalize, isBlank } from '../../utils/string';
 import { updatePublishDialog } from '../../state/actions/dialogs';
 import { fetchDetailedItems } from '../../services/content';
-import { AllItemActions, DetailedItem } from '../../models';
+import { DetailedItem } from '../../models';
 import { fetchDetailedItemsComplete } from '../../state/actions/content';
 import { createAtLeastHalfHourInFutureDate } from '../../utils/datetime';
 import { batchActions } from '../../state/actions/misc';
@@ -68,17 +68,12 @@ import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import { map, switchMap } from 'rxjs/operators';
-import { createLookupTable, nnou } from '../../utils/object';
+import { createLookupTable } from '../../utils/object';
 import { HelpOutlineOutlined } from '@mui/icons-material';
 import Tooltip from '@mui/material/Tooltip';
 import ErrorOutlineRounded from '@mui/icons-material/ErrorOutlineRounded';
-import { getPublishingPackagePreferredView, setPublishingPackagePreferredView } from '../../utils/state';
-import useActiveUser from '../../hooks/useActiveUser';
-import { generateSingleItemOptions, itemActionDispatcher } from '../../utils/itemActions';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
 import PublishPackageItemsView from './PublishPackageItemsView';
-import useEnv from '../../hooks/useEnv';
+import PublishReferencesLegend from './PublishReferencesLegend';
 
 const messages = defineMessages({
   publishingTargetLoading: {
@@ -128,7 +123,6 @@ export function DependencyChip({ type }: { type: DependencyType }) {
 export function PublishDialogContainer(props: PublishDialogContainerProps) {
   const { items: initialItems, scheduling = 'now', onSuccess, onClose, isSubmitting } = props;
   const siteId = useActiveSiteId();
-  const { authoringBase } = useEnv();
   const dispatch = useDispatch();
   const [detailedItems, setDetailedItems] = useState<DetailedItem[]>();
   const [isFetchingItems, setIsFetchingItems] = useState(false);
@@ -252,11 +246,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 
     return state;
   }, [publishingTargets, mainItems]);
-  const [contextMenu, setContextMenu] = useState({
-    el: null,
-    options: null,
-    item: null
-  });
   const fetchPublishingTargetsFn = useCallback(
     (
       success?: (channels: FetchPublishingTargetsResponse['publishingTargets']) => void,
@@ -450,22 +439,17 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 
   const onPublishingArgumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value: unknown;
+    dispatch(updatePublishDialog({ hasPendingChanges: true }));
     switch (e.target.type) {
       case 'checkbox':
         value = e.target.checked;
         break;
       case 'text':
       case 'textarea':
-        value = e.target.value;
-        dispatch(updatePublishDialog({ hasPendingChanges: true }));
-        break;
       case 'radio':
+      case 'dateTimePicker':
         value = e.target.value;
         break;
-      case 'dateTimePicker': {
-        value = e.target.value;
-        break;
-      }
       default:
         console.error('Publishing argument change event ignored.');
         return;
@@ -474,24 +458,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
   };
 
   const onCloseButtonClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => onClose(e, null);
-
-  const onContextMenuOpen = (e: React.MouseEvent<HTMLButtonElement>, path: string) => {
-    const { itemMap } = itemsDataSummary;
-    const { itemsByPath } = dependencyData;
-    const item = itemMap[path] ?? itemsByPath[path];
-    const itemMenuOptions = generateSingleItemOptions(item, formatMessage, {
-      includeOnly: ['view', 'dependencies', 'history']
-    });
-    setContextMenu({ el: e.currentTarget, options: itemMenuOptions.flat(), item });
-  };
-
-  const onContextMenuClose = () => {
-    setContextMenu({
-      el: null,
-      options: null,
-      item: null
-    });
-  };
 
   const onDependencyCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>, checked: boolean, path: string) => {
     setSelectedDependenciesMap({ ...selectedDependenciesMap, [path]: checked });
@@ -502,18 +468,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     // dependencies.
     setMainItems([...mainItems, ...selectedDependenciesPaths.map((path) => dependencyData.itemsByPath[path])]);
     setSelectedDependenciesMap({});
-  };
-
-  const onMenuItemClicked = (option: string) => {
-    itemActionDispatcher({
-      site: siteId,
-      item: contextMenu.item,
-      option: option as AllItemActions,
-      authoringBase,
-      dispatch,
-      formatMessage
-    });
-    onContextMenuClose();
   };
 
   const handleDateTimePickerChange: DateTimeTimezonePickerProps['onChange'] = (date) => {
@@ -753,23 +707,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                   </FormControl>
                 </Box>
                 <Divider />
-                <Box my={2}>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    <FormattedMessage defaultMessage="LEGEND" />
-                  </Typography>
-                  <Box display="flex" sx={{ display: 'flex', mb: 1, gap: 1 }}>
-                    <DependencyChip type="hard" />
-                    <Typography variant="body2" color="textSecondary">
-                      <FormattedMessage defaultMessage="References of mandatory submission" />
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <DependencyChip type="soft" />
-                    <Typography variant="body2" color="textSecondary">
-                      <FormattedMessage defaultMessage="References of optional submission" />
-                    </Typography>
-                  </Box>
-                </Box>
+                <PublishReferencesLegend />
               </Grid>
               <Grid size={{ xs: 12, sm: 7 }}>
                 {published ? (
@@ -792,7 +730,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                         selectedDependenciesPaths={selectedDependenciesPaths}
                         selectedDependenciesMap={selectedDependenciesMap}
                         trees={trees}
-                        onMenuClick={onContextMenuOpen}
                         onCheckboxChange={onDependencyCheckboxChange}
                       />
                       <Fade in={Boolean(selectedDependenciesPaths?.length)}>
@@ -841,13 +778,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
           {submitLabel}
         </PrimaryButton>
       </DialogFooter>
-      <Menu anchorEl={contextMenu.el} keepMounted open={Boolean(contextMenu.el)} onClose={onContextMenuClose}>
-        {contextMenu.options?.map((option) => (
-          <MenuItem key={option.id} onClick={() => onMenuItemClicked(option.id)}>
-            {option.label}
-          </MenuItem>
-        ))}
-      </Menu>
     </>
   );
 }

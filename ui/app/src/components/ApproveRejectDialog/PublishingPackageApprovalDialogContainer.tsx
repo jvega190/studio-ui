@@ -19,14 +19,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { fetchPackage, PublishingPackage } from '../../services/publishing';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
 import { DialogBody } from '../DialogBody';
-import { AllItemActions, ApiResponse, DetailedItem, PublishingPackageApproveParams, SandboxItem } from '../../models';
+import { ApiResponse, DetailedItem, PublishingPackageApproveParams, SandboxItem } from '../../models';
 import { ApiResponseErrorState } from '../ApiResponseErrorState';
 import { LoadingState } from '../LoadingState';
 import Grid from '@mui/material/Grid2';
 import { Typography } from '@mui/material';
-import { FormattedMessage, useIntl } from 'react-intl';
+import { FormattedMessage } from 'react-intl';
 import Box from '@mui/material/Box';
-import { DependencyChip } from '../PublishDialog';
 import Divider from '@mui/material/Divider';
 import { PersonAvatar } from '../DashletCard/dashletCommons';
 import { getPersonFullName } from '../SiteDashboard';
@@ -62,8 +61,7 @@ import { showErrorDialog } from '../../state/reducers/dialogs/error';
 import { updateApproveRejectDialog } from '../../state/actions/dialogs';
 import { AsDayMonthDateTime } from '../VersionList';
 import PublishPackageItemsView from '../PublishDialog/PublishPackageItemsView';
-import Menu from '@mui/material/Menu';
-import { generateSingleItemOptions, itemActionDispatcher } from '../../utils/itemActions';
+import PublishReferencesLegend from '../PublishDialog/PublishReferencesLegend';
 
 const statusItems = {
   staging: { stateMap: { staged: true } },
@@ -81,8 +79,7 @@ interface InternalDialogState {
 
 export function PublishingPackageApprovalDialogContainer(props: PublishingPackageApprovaDialogContainerProps) {
   const { packageId, isSubmitting, onClose } = props;
-  const { activeEnvironment, authoringBase } = useEnv();
-  const { formatMessage } = useIntl();
+  const { activeEnvironment } = useEnv();
   const [publishingPackage, setPublishingPackage] = useState<PublishingPackage>();
   const [detailedItems, setDetailedItems] = useState<DetailedItem[]>([]);
   const [cannedMessages, setCannedMessages] = useState<CannedMessage[]>([]);
@@ -121,11 +118,6 @@ export function PublishingPackageApprovalDialogContainer(props: PublishingPackag
       <FormattedMessage defaultMessage="Approve" />
     );
   const dispatch = useDispatch();
-  const [contextMenu, setContextMenu] = useState({
-    el: null,
-    options: null,
-    item: null
-  });
 
   // Submit button should be disabled when:
   const submitDisabled =
@@ -256,35 +248,6 @@ export function PublishingPackageApprovalDialogContainer(props: PublishingPackag
         }
       });
     }
-  };
-
-  const onContextMenuOpen = (e: React.MouseEvent<HTMLButtonElement>, path: string) => {
-    const { itemMap } = itemsDataSummary;
-    const item = itemMap[path];
-    const itemMenuOptions = generateSingleItemOptions(item, formatMessage, {
-      includeOnly: ['view', 'dependencies', 'history']
-    });
-    setContextMenu({ el: e.currentTarget, options: itemMenuOptions.flat(), item });
-  };
-
-  const onContextMenuClose = () => {
-    setContextMenu({
-      el: null,
-      options: null,
-      item: null
-    });
-  };
-
-  const onMenuItemClicked = (option: string) => {
-    itemActionDispatcher({
-      site: siteId,
-      item: contextMenu.item,
-      option: option as AllItemActions,
-      authoringBase,
-      dispatch,
-      formatMessage
-    });
-    onContextMenuClose();
   };
 
   const onCloseButtonClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => onClose(e, null);
@@ -454,23 +417,7 @@ export function PublishingPackageApprovalDialogContainer(props: PublishingPackag
               {/* endregion */}
               <Divider />
               {/* region legend */}
-              <Box my={2}>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  <FormattedMessage defaultMessage="LEGEND" />
-                </Typography>
-                <Box display="flex" sx={{ display: 'flex', mb: 1, gap: 1 }}>
-                  <DependencyChip type="hard" />
-                  <Typography variant="body2" color="textSecondary">
-                    <FormattedMessage defaultMessage="References of mandatory submission" />
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <DependencyChip type="soft" />
-                  <Typography variant="body2" color="textSecondary">
-                    <FormattedMessage defaultMessage="References of optional submission" />
-                  </Typography>
-                </Box>
-              </Box>
+              <PublishReferencesLegend />
               {/* endregion */}
             </Grid>
             <Grid size={{ xs: 12, sm: 7 }}>
@@ -489,7 +436,6 @@ export function PublishingPackageApprovalDialogContainer(props: PublishingPackag
                   itemsAndDependenciesPaths={itemsDataSummary.itemPaths}
                   defaultExpandedPaths={parentTreeNodePaths}
                   trees={trees}
-                  onMenuClick={onContextMenuOpen}
                 />
               </Paper>
             </Grid>
@@ -506,13 +452,6 @@ export function PublishingPackageApprovalDialogContainer(props: PublishingPackag
           {submitLabel}
         </PrimaryButton>
       </DialogFooter>
-      <Menu anchorEl={contextMenu.el} keepMounted open={Boolean(contextMenu.el)} onClose={onContextMenuClose}>
-        {contextMenu.options?.map((option) => (
-          <MenuItem key={option.id} onClick={() => onMenuItemClicked(option.id)}>
-            {option.label}
-          </MenuItem>
-        ))}
-      </Menu>
     </>
   );
 }
