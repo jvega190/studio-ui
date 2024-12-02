@@ -441,34 +441,14 @@ export function removeStoredWidgetsAccordion(siteIdentifier: string, user: strin
   window.localStorage.removeItem(`craftercms.${user}.widgetsAccordion.${siteIdentifier}.${id}`);
 }
 
-export function setPublishDialogIsTreeView(username: string, value: boolean) {
-  window.localStorage.setItem(`craftercms.${username}.publishDialogTreeView`, value.toString());
+export function setPublishingPackagePreferredView(username: string, value: 'tree' | 'list') {
+  window.localStorage.setItem(`craftercms.${username}.publishingPackagePreferredView`, value);
 }
 
-export function getPublishDialogIsTreeView(username: string): boolean {
-  // We want the default value to be true, so if the value doesn't exist yet we return 'undefined' to let the component
-  // decide on the default value.
-  return window.localStorage.getItem(`craftercms.${username}.publishDialogTreeView`)
-    ? window.localStorage.getItem(`craftercms.${username}.publishDialogTreeView`) === 'true'
-    : undefined;
+export function getPublishingPackagePreferredView(username: string): 'tree' | 'list' {
+  return window.localStorage.getItem(`craftercms.${username}.publishingPackagePreferredView`) as 'tree' | 'list';
 }
 
-export function removePublishDialogIsTreeView(username: string) {
-  window.localStorage.removeItem(`craftercms.${username}.publishDialogTreeView`);
-}
-
-export function setApproveRejectDialogIsTreeView(username: string, value: boolean) {
-  window.localStorage.setItem(`craftercms.${username}.approveRejectDialogTreeView`, value.toString());
-}
-
-export function getApproveRejectDialogIsTreeView(username: string): boolean {
-  // We want the default value to be true, so if the value doesn't exist yet we return 'undefined' to let the component
-  // decide on the default value.
-  return window.localStorage.getItem(`craftercms.${username}.approveRejectDialogTreeView`)
-    ? window.localStorage.getItem(`craftercms.${username}.approveRejectDialogTreeView`) === 'true'
-    : undefined;
-}
-
-export function removeApproveRejectDialogIsTreeView(username: string) {
-  window.localStorage.removeItem(`craftercms.${username}.approveRejectDialogTreeView`);
+export function removePublishingPackagePreferredView(username: string) {
+  window.localStorage.removeItem(`craftercms.${username}.publishingPackagePreferredView`);
 }

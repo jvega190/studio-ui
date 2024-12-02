@@ -68,11 +68,11 @@ import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import { map, switchMap } from 'rxjs/operators';
-import { createLookupTable } from '../../utils/object';
+import { createLookupTable, nnou } from '../../utils/object';
 import { HelpOutlineOutlined } from '@mui/icons-material';
 import Tooltip from '@mui/material/Tooltip';
 import ErrorOutlineRounded from '@mui/icons-material/ErrorOutlineRounded';
-import { getPublishDialogIsTreeView, setPublishDialogIsTreeView } from '../../utils/state';
+import { getPublishingPackagePreferredView, setPublishingPackagePreferredView } from '../../utils/state';
 import useActiveUser from '../../hooks/useActiveUser';
 import { generateSingleItemOptions, itemActionDispatcher } from '../../utils/itemActions';
 import Menu from '@mui/material/Menu';
@@ -147,7 +147,8 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
   const [publishingTargets, setPublishingTargets] = useState<PublishingTarget[]>(null);
   const [publishingTargetsStatus, setPublishingTargetsStatus] = useState('Loading');
   const { username } = useActiveUser();
-  const [isTreeView, setIsTreeView] = useState(getPublishDialogIsTreeView(username) ?? true);
+  const storedPreferredView = getPublishingPackagePreferredView(username);
+  const [isTreeView, setIsTreeView] = useState(nnou(storedPreferredView) ? storedPreferredView === 'tree' : true);
   const [dependencyData, setDependencyData] = useState<DependencyDataState>(null);
   const [selectedDependenciesMap, setSelectedDependenciesMap] = useState<LookupTable<boolean>>({});
   const selectedDependenciesPaths = Object.keys(selectedDependenciesMap).filter(
@@ -412,7 +413,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 
   const onSetIsTreeView = (isTreeView: boolean) => {
     setIsTreeView(isTreeView);
-    setPublishDialogIsTreeView(username, isTreeView);
+    setPublishingPackagePreferredView(username, isTreeView ? 'tree' : 'list');
   };
 
   const handleSubmit = (e?: SyntheticEvent) => {

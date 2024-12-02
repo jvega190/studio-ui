@@ -59,13 +59,14 @@ import { approve, reject } from '../../services/workflow';
 import { batchActions } from '../../state/actions/misc';
 import { useDispatch } from 'react-redux';
 import { showErrorDialog } from '../../state/reducers/dialogs/error';
-import { getApproveRejectDialogIsTreeView, setApproveRejectDialogIsTreeView } from '../../utils/state';
+import { getPublishingPackagePreferredView, setPublishingPackagePreferredView } from '../../utils/state';
 import useActiveUser from '../../hooks/useActiveUser';
 import { updateApproveRejectDialog } from '../../state/actions/dialogs';
 import { AsDayMonthDateTime } from '../VersionList';
 import PublishItemsView from '../PublishDialog/PublishItemsView';
 import Menu from '@mui/material/Menu';
 import { generateSingleItemOptions, itemActionDispatcher } from '../../utils/itemActions';
+import { nnou } from '../../utils/object';
 
 const statusItems = {
   staging: { stateMap: { staged: true } },
@@ -123,7 +124,8 @@ export function PublishingPackageApprovalDialogContainer(props: PublishingPackag
       <FormattedMessage defaultMessage="Approve" />
     );
   const { username } = useActiveUser();
-  const [isTreeView, setIsTreeView] = useState(getApproveRejectDialogIsTreeView(username) ?? true);
+  const storedPreferredView = getPublishingPackagePreferredView(username);
+  const [isTreeView, setIsTreeView] = useState(nnou(storedPreferredView) ? storedPreferredView === 'tree' : true);
   const [expandedPaths, setExpandedPaths] = useState<string[]>();
   const dispatch = useDispatch();
   const [contextMenu, setContextMenu] = useState({
@@ -265,7 +267,7 @@ export function PublishingPackageApprovalDialogContainer(props: PublishingPackag
 
   const onSetIsTreeView = (isTreeView: boolean) => {
     setIsTreeView(isTreeView);
-    setApproveRejectDialogIsTreeView(username, isTreeView);
+    setPublishingPackagePreferredView(username, isTreeView ? 'tree' : 'list');
   };
 
   const onContextMenuOpen = (e: React.MouseEvent<HTMLButtonElement>, path: string) => {
