@@ -6,6 +6,9 @@
   * Removed `pages/QuickCreateMenu` component.
   * Removed `SuspenseWithEmptyState` and `WithEmptyState` components.
   * Removed `resource` prop from StoreProvider
+  * Removed `RejectDialog` component. Now handled by `PublishingPackageApprovalDialog`.
+  * Removed `emailOnApprove` option from `PublishDialog` form.
+  * Removed `PublishDialog/styles.ts` file.
 * [hooks]
   * Removed `useLogicResource` hook.
   * Removed `useSelectorResource` hook.
@@ -19,6 +22,19 @@
   * @mui/x-data-grid
   * @mui/x-date-pickers
   * @mui/x-tree-view
+* [services]
+  * `publishing/fetchPackages` filters param updated to be a Partial of `target`, `states`, `approvalStates`, `submitter`, `reviewer`, `isScheduled`, `sort`, `offset` and `limit`.
+  `environment` is now `target` and `path` was removed from filters param.
+  * `publishing/fetchPackage`: `packageId` is now of type `number`.
+  * Updated `workflow/approve`: Now it receives `packageId` as a parameter.
+  * Updated `workflow/reject`: Now it receives `packageId` as a parameter instead of `items`.
+* `PublishingItem` interface changes: 
+  * `approver` is now `reviewer`, of type Person.
+  * `comment` is removed, and now there's `reviewerComment` and `submitterComment`.
+  * `environment` is now `target`.
+  * `items` is now of type `PublishingItem[]`.
+  * `state` is now `approvalState`.
+  * Added `title`, `submittedOn`, `reviewedOn`,`packageState`, `reviewer`, `liveError`, `stagingError`, `publishedOn`, `packageType`, `commitId`, `publishedStagingCommitId` and `publishedLiveCommitId` props.
 
 ## 4.2.0
 
