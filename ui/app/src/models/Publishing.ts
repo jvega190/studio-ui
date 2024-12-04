@@ -19,7 +19,7 @@ import LookupTable from './LookupTable';
 export type PublishingTargets = 'live' | 'staging';
 
 export interface Package {
-  id: string;
+  id: number;
   siteId: string;
   schedule: string;
   approver: string;

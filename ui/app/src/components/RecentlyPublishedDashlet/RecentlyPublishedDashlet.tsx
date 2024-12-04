@@ -24,38 +24,39 @@ import {
   getItemSkeleton,
   List,
   ListItem,
-  ListItemAvatar,
   Pager,
   PersonAvatar
 } from '../DashletCard/dashletCommons';
 import ListItemText from '@mui/material/ListItemText';
-import Typography from '@mui/material/Typography';
 import { LIVE_COLOUR, STAGING_COLOUR } from '../ItemPublishingTargetIcon/styles';
 import useSpreadState from '../../hooks/useSpreadState';
 import useLocale from '../../hooks/useLocale';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
-import { fetchPublishingHistory } from '../../services/dashboard';
-import { DashboardPublishingPackage } from '../../models';
+import { PagedArray } from '../../models';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
-import Link from '@mui/material/Link';
 import { PackageDetailsDialog } from '../PackageDetailsDialog';
-import { renderActivityTimestamp } from '../ActivityDashlet';
 import { publishEvent } from '../../state/actions/system';
 import { getHostToHostBus } from '../../utils/subjects';
 import { filter } from 'rxjs/operators';
 import LoadingIconButton from '../LoadingIconButton';
+import { fetchPackages, FetchPackagesResponse } from '../../services/publishing';
+import { COMPLETED_MASK } from '../PublishingQueue/constants';
+import Box from '@mui/material/Box';
+import { asLocalizedDateTime } from '../../utils/datetime';
+import { nnou, reversePluckProps } from '../../utils/object';
+import IconButton from '@mui/material/IconButton';
+import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 
 interface RecentlyPublishedDashletProps extends CommonDashletProps {}
 
 interface RecentlyPublishedDashletState {
-  items: DashboardPublishingPackage[];
+  publishingPackages: PagedArray<FetchPackagesResponse>;
   loading: boolean;
   loadingSkeleton: boolean;
   total: number;
   limit: number;
   offset: number;
-  openPackageDetailsDialog: boolean;
-  selectedPackageId: string;
+  packageDetailsDialogId: number;
 }
 
 const messages = defineMessages({
@@ -65,19 +66,16 @@ const messages = defineMessages({
 
 export function RecentlyPublishedDashlet(props: RecentlyPublishedDashletProps) {
   const { borderLeftColor = palette.blue.tint } = props;
-  const [
-    { items, total, loading, loadingSkeleton, limit, offset, openPackageDetailsDialog, selectedPackageId },
-    setState
-  ] = useSpreadState<RecentlyPublishedDashletState>({
-    items: null,
-    total: null,
-    loading: false,
-    loadingSkeleton: true,
-    limit: 50,
-    offset: 0,
-    openPackageDetailsDialog: false,
-    selectedPackageId: null
-  });
+  const [{ publishingPackages, total, loading, loadingSkeleton, limit, offset, packageDetailsDialogId }, setState] =
+    useSpreadState<RecentlyPublishedDashletState>({
+      publishingPackages: null,
+      total: null,
+      loading: false,
+      loadingSkeleton: true,
+      limit: 50,
+      offset: 0,
+      packageDetailsDialogId: null
+    });
   const currentPage = offset / limit;
   const totalPages = total ? Math.ceil(total / limit) : 0;
   const locale = useLocale();
@@ -91,12 +89,13 @@ export function RecentlyPublishedDashlet(props: RecentlyPublishedDashletProps) {
         loading: true,
         loadingSkeleton: !backgroundRefresh
       });
-      fetchPublishingHistory(site, {
+      fetchPackages(site, {
         limit,
-        offset: newOffset
+        offset: newOffset,
+        states: COMPLETED_MASK
       }).subscribe((packages) => {
         setState({
-          items: packages,
+          publishingPackages: packages,
           total: packages.total,
           offset: newOffset,
           loading: false
@@ -106,12 +105,12 @@ export function RecentlyPublishedDashlet(props: RecentlyPublishedDashletProps) {
     [limit, setState, site]
   );
 
-  const onPackageClick = (pkg) => {
-    setState({ openPackageDetailsDialog: true, selectedPackageId: pkg.id });
-  };
-
   const onRefresh = () => {
     loadPage(getCurrentPage(offset, limit), true);
+  };
+
+  const onPackageDetailsClick = (packageId: number) => {
+    setState({ packageDetailsDialogId: packageId });
   };
 
   useEffect(() => {
@@ -142,7 +141,7 @@ export function RecentlyPublishedDashlet(props: RecentlyPublishedDashletProps) {
         </LoadingIconButton>
       }
       footer={
-        Boolean(items?.length) && (
+        Boolean(publishingPackages?.length) && (
           <Pager
             totalPages={totalPages}
             totalItems={total}
@@ -178,56 +177,66 @@ export function RecentlyPublishedDashlet(props: RecentlyPublishedDashletProps) {
       </Stack>
       */}
       {loading && loadingSkeleton && getItemSkeleton({ numOfItems: 3, showAvatar: true })}
-      {items && (
+      {Boolean(publishingPackages?.length) && (
         <List sx={{ pb: 0 }}>
-          {items.map((item) => (
-            <ListItem key={item.id}>
-              <ListItemAvatar>
-                <PersonAvatar person={item.submitter} />
-              </ListItemAvatar>
+          {publishingPackages.map((pkg, index) => (
+            <ListItem key={index}>
+              {pkg.submitter && (
+                <PersonAvatar
+                  person={pkg.submitter}
+                  sx={{
+                    display: 'inline-flex',
+                    mr: 1,
+                    width: 30,
+                    height: 30,
+                    fontSize: '1.1rem'
+                  }}
+                />
+              )}
               <ListItemText
                 primary={
                   <FormattedMessage
-                    id="recentlyPublishedDashlet.entryPrimaryText"
-                    defaultMessage="{name} published <render_package_link>{count} {count, plural, one {item} other {items}}</render_package_link> to <render_target>{publishingTarget}</render_target> <render_date>{date}</render_date>"
+                    defaultMessage="<bold>{title}</bold> ({total} items)"
                     values={{
-                      count: item.size,
-                      name: item.submitter.firstName,
-                      publishingTarget: item.publishingTarget,
-                      date: item.schedule,
-                      render_target(target: ReactNode[]) {
-                        return (
-                          <Typography component="span" color={target[0] === 'live' ? LIVE_COLOUR : STAGING_COLOUR}>
-                            {messages[target[0] as string]
-                              ? formatMessage(messages[target[0] as string]).toLowerCase()
-                              : target[0]}
-                          </Typography>
-                        );
-                      },
-                      render_date(date: ReactNode[]) {
-                        return renderActivityTimestamp(date[0] as string, locale);
-                      },
-                      render_package_link(message) {
-                        return (
-                          <Link sx={{ cursor: 'pointer' }} onClick={() => onPackageClick(item)}>
-                            {message}
-                          </Link>
-                        );
-                      }
+                      title: pkg.title,
+                      total: 0,
+                      bold: (chunks: React.ReactNode) => <strong>{chunks}</strong>
                     }}
                   />
                 }
                 secondary={
-                  <Typography color="text.secondary" variant="body2">
-                    {item.comment || (
-                      <FormattedMessage
-                        id="recentlyPublishedDashlet.noSubmissionCommentAvailable"
-                        defaultMessage="Submission comment not provided"
-                      />
-                    )}
-                  </Typography>
+                  <FormattedMessage
+                    defaultMessage="Approved by {name} to go {publishingTarget, select, live { <render_target>live</render_target>} other {<render_target>staging</render_target>}} on {submittedDate}"
+                    values={{
+                      name: pkg.submitter?.username,
+                      publishingTarget: pkg.target,
+                      render_target(target: ReactNode[]) {
+                        return (
+                          <Box component="span" color={target[0] === 'live' ? LIVE_COLOUR : STAGING_COLOUR}>
+                            {messages[target[0] as string]
+                              ? formatMessage(messages[target[0] as string]).toLowerCase()
+                              : target[0]}
+                          </Box>
+                        );
+                      },
+                      // TODO: format so if is close show as 'X hours/minutes ago'
+                      submittedDate: asLocalizedDateTime(
+                        pkg.submittedOn,
+                        locale.localeCode,
+                        reversePluckProps(locale.dateTimeFormatOptions, 'hour', 'minute', 'second')
+                      )
+                    }}
+                  />
                 }
               />
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPackageDetailsClick(pkg.id);
+                }}
+              >
+                <ChevronRightRoundedIcon />
+              </IconButton>
             </ListItem>
           ))}
         </List>
@@ -241,10 +250,9 @@ export function RecentlyPublishedDashlet(props: RecentlyPublishedDashletProps) {
         </DashletEmptyMessage>
       )}
       <PackageDetailsDialog
-        open={openPackageDetailsDialog}
-        onClose={() => setState({ openPackageDetailsDialog: false })}
-        onClosed={() => setState({ selectedPackageId: null })}
-        packageId={selectedPackageId}
+        open={nnou(packageDetailsDialogId)}
+        onClose={() => setState({ packageDetailsDialogId: null })}
+        packageId={packageDetailsDialogId}
       />
     </DashletCard>
   );

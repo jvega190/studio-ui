@@ -136,36 +136,20 @@ export function renderActivity(
           values={{ item: [item.label, item.systemType, item.previewUrl, item.path], anchor, systemType }}
         />
       );
-    case 'PUBLISH':
-      return item.label === null ? (
+    case 'APPROVE':
+      return (
         <FormattedMessage
-          id="activityDashlet.deletedItemApproveActivityMessage"
-          defaultMessage="Approved an item that no longer exists as part of <render_package_link>a package</render_package_link>"
+          id="activityDashlet.publishedActivityMessage"
+          defaultMessage="Approved <render_package_link>a package</render_package_link>"
           values={{ render_package_link }}
         />
-      ) : (
-        <FormattedMessage
-          id="activityDashlet.approveActivityMessage"
-          defaultMessage="Approved <anchor>{item}</anchor> {systemType} as part of <render_package_link>a package</render_package_link>"
-          values={{
-            item: [item.label, item.systemType, item.previewUrl, item.path],
-            anchor,
-            render_package_link,
-            systemType
-          }}
-        />
       );
-    case 'REJECT':
-      return item.label === null ? (
+    case 'REJECT_PUBLISH_PACKAGE':
+      return (
         <FormattedMessage
-          id="activityDashlet.deletedItemRejectActivityMessage"
-          defaultMessage="Rejected an item that no longer exists"
-        />
-      ) : (
-        <FormattedMessage
-          id="activityDashlet.rejectActivityMessage"
-          defaultMessage="Rejected <anchor>{item}</anchor> {systemType}"
-          values={{ item: [item.label, item.systemType, item.previewUrl, item.path], anchor, systemType }}
+          id="activityDashlet.publishedActivityMessage"
+          defaultMessage="Rejected <render_package_link>a package</render_package_link>"
+          values={{ render_package_link }}
         />
       );
     case 'REVERT':
@@ -218,9 +202,9 @@ export const activityNameLookup: Record<Activities | 'ALL', any> = {
   DELETE: <FormattedMessage id="words.delete" defaultMessage="Delete" />,
   INITIAL_PUBLISH: <FormattedMessage id="operations.initialPublish" defaultMessage="Initial Publish" />,
   MOVE: <FormattedMessage id="words.move" defaultMessage="Move" />,
-  PUBLISH: <FormattedMessage id="words.approve" defaultMessage="Approve" />,
+  APPROVE: <FormattedMessage id="words.approve" defaultMessage="Approve" />,
   PUBLISHED: <FormattedMessage id="words.publish" defaultMessage="Publish" />,
-  REJECT: <FormattedMessage id="words.reject" defaultMessage="Reject" />,
+  REJECT_PUBLISH_PACKAGE: <FormattedMessage id="words.reject" defaultMessage="Reject" />,
   REQUEST_PUBLISH: <FormattedMessage id="operations.requestPublish" defaultMessage="Request Publish" />,
   REVERT: <FormattedMessage id="words.revert" defaultMessage="Revert" />,
   UPDATE: <FormattedMessage id="words.update" defaultMessage="Update" />,

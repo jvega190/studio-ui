@@ -183,7 +183,7 @@ const translations = defineMessages({
 
 interface PublishingPackageProps {
   siteId: string;
-  id: string;
+  id: number;
   schedule: string;
   approver: string;
   state: string;
@@ -237,7 +237,7 @@ export function PublishingPackage(props: PublishingPackageProps) {
     getPackages(siteId);
   };
 
-  function onSelect(event: ChangeEvent, id: string, checked: boolean) {
+  function onSelect(event: ChangeEvent, id: number, checked: boolean) {
     if (checked) {
       setSelected({ ...selected, [id]: false });
     } else {
@@ -245,7 +245,7 @@ export function PublishingPackage(props: PublishingPackageProps) {
     }
   }
 
-  function handleCancel(packageId: string) {
+  function handleCancel(packageId: number) {
     setPending({ ...pending, [packageId]: true });
 
     cancelPackage(siteId, [packageId]).subscribe(
@@ -258,7 +258,7 @@ export function PublishingPackage(props: PublishingPackageProps) {
     );
   }
 
-  function onFetchPackages(packageId: string) {
+  function onFetchPackages(packageId: number) {
     setLoading(true);
     fetchPackage(siteId, packageId).subscribe({
       next: (pkg) => {

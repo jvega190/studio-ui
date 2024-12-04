@@ -17,20 +17,22 @@
 import { get, post, postJSON } from '../utils/ajax';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { DetailedItem, LegacyItem } from '../models/Item';
+import { LegacyItem } from '../models/Item';
 import { pluckProps, toQueryString } from '../utils/object';
 import { PublishingStatus, PublishingTarget, PublishingTargets, PublishParams } from '../models/Publishing';
 import { Api2BulkResponseFormat, Api2ResponseFormat } from '../models/ApiResponse';
 import { PagedArray } from '../models/PagedArray';
 
-interface FetchPackagesResponse extends Omit<PublishingPackage, 'items'> {}
+export interface FetchPackagesResponse extends Omit<PublishingPackage, 'items'> {}
+
+export type PackageApprovalState = 'SUBMITTED' | 'APPROVED' | 'REJECTED';
 
 export function fetchPackages(
   siteId: string,
   filters?: Partial<{
     target: string;
     states: number;
-    approvalStates: string[];
+    approvalStates: Array<PackageApprovalState>;
     submitter: string;
     reviewer: string;
     isScheduled: boolean;
@@ -64,7 +66,7 @@ export interface PublishingPackage {
   submitterComment: string;
   reviewerComment: string;
   reviewedOn: string;
-  target: string;
+  target: PublishingTargets;
   approvalState: string;
   packageState: number;
   schedule: string;
@@ -93,12 +95,21 @@ export interface PublishingPackage {
   items: PublishingItem[];
 }
 
-export function fetchPackage(siteId: string, packageId: number): Observable<PublishingPackage> {
+export function fetchPackage(
+  siteId: string,
+  packageId: number,
+  data?: {
+    path?: string;
+    systemType?: string;
+    internalName?: string;
+  }
+): Observable<PublishingPackage> {
+  const qs = toQueryString(data);
   return get<
     Api2ResponseFormat<{
       package: PublishingPackage;
     }>
-  >(`/studio/api/2/publish/${siteId}/package/${packageId}`).pipe(map((response) => response?.response?.package));
+  >(`/studio/api/2/publish/${siteId}/package/${packageId}${qs}`).pipe(map((response) => response?.response?.package));
 }
 
 export function cancelPackage(siteId: string, packageIds: any) {
@@ -187,8 +198,8 @@ export function clearLock(siteId: string): Observable<boolean> {
   return postJSON('/studio/api/2/publish/clear_lock', { siteId }).pipe(map(() => true));
 }
 
-export function publish(siteId: string, data: PublishParams): Observable<boolean> {
-  return postJSON(`/studio/api/2/publish/${siteId}`, data).pipe(map(() => true));
+export function publish(siteId: string, data: PublishParams): Observable<string> {
+  return postJSON(`/studio/api/2/publish/${siteId}`, data).pipe(map(({ response }) => response?.packageId));
 }
 
 export interface CalculatedPackageResponse {

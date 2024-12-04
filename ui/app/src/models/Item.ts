@@ -61,9 +61,8 @@ export type ItemActions =
   | 'deleteController'
   | 'deleteTemplate'
   | 'publish'
-  | 'approvePublish'
   | 'schedulePublish'
-  | 'rejectPublish';
+  | 'review';
 // endregion
 
 export type VirtualItemActions = 'preview' | 'copyWithChildren';

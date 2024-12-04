@@ -17,7 +17,7 @@
 import {
   CommonDashletProps,
   getItemViewOption,
-  getValidatedSelectionState,
+  getItemsValidatedSelectionState,
   isPage,
   previewPage,
   useSelectionOptions,
@@ -136,7 +136,7 @@ export function UnpublishedDashlet(props: UnpublishedDashletProps) {
         offset: 0,
         itemType: refs.current.filterState.selectedTypes
       }).subscribe((unpublishedItems) => {
-        const validatedState = getValidatedSelectionState(unpublishedItems, selected, limit);
+        const validatedState = getItemsValidatedSelectionState(unpublishedItems, selected, limit);
         setItemsById(validatedState.itemsById);
         setState(validatedState.state);
       });

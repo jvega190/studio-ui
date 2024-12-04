@@ -47,7 +47,6 @@ import useEnv from '../../hooks/useEnv';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
 import { useDispatch } from 'react-redux';
 
-// TODO: add sxs
 export interface PublishItemsProps {
   itemMap: Record<string, DetailedItem>;
   defaultExpandedPaths?: string[];

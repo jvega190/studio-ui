@@ -67,7 +67,7 @@ interface MyRecentActivityDashletState {
   limit: number;
   offset: number;
   openPackageDetailsDialog: boolean;
-  selectedPackageId: string;
+  selectedPackageId: number;
 }
 
 export function MyRecentActivityDashlet(props: MyRecentActivityDashletProps) {

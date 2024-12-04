@@ -74,7 +74,7 @@ export interface ActivityDashletProps extends Partial<DashletCardProps> {}
 interface ActivityDashletState {
   openRangePicker: boolean;
   openPackageDetailsDialog: boolean;
-  selectedPackageId: string;
+  selectedPackageId: number;
   feed: Activity[];
   usernames: string[];
   feedType: FeedTypes;

@@ -54,7 +54,6 @@ export const actionsToBeShown: AllItemActions[] = [
   'edit',
   'delete',
   'publish',
-  'rejectPublish',
   'duplicate',
   'duplicateAsset',
   'dependencies',

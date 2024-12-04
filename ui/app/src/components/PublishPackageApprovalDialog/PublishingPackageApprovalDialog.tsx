@@ -21,15 +21,19 @@ import { FormattedMessage } from 'react-intl';
 import PublishingPackageApprovalDialogContainer from './PublishingPackageApprovalDialogContainer';
 
 export function PublishingPackageApprovalDialog(props: PublishingPackageApprovalDialogProps) {
-  const { packageId, isSubmitting, ...rest } = props;
+  const { packageId, isSubmitting, onSuccess, ...rest } = props;
   return (
     <EnhancedDialog
-      title={<FormattedMessage defaultMessage="Approve Publishing Package" />}
+      title={<FormattedMessage defaultMessage="Review Publishing Package" />}
       maxWidth="lg"
       {...rest}
       isSubmitting={isSubmitting}
     >
-      <PublishingPackageApprovalDialogContainer packageId={packageId} isSubmitting={isSubmitting} />
+      <PublishingPackageApprovalDialogContainer
+        packageId={packageId}
+        onSuccess={onSuccess}
+        isSubmitting={isSubmitting}
+      />
     </EnhancedDialog>
   );
 }

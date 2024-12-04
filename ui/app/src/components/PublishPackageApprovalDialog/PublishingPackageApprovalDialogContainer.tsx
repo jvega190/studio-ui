@@ -78,7 +78,7 @@ interface InternalDialogState {
 }
 
 export function PublishingPackageApprovalDialogContainer(props: PublishingPackageApprovaDialogContainerProps) {
-  const { packageId, isSubmitting, onClose } = props;
+  const { packageId, isSubmitting, onSuccess, onClose } = props;
   const { activeEnvironment } = useEnv();
   const [publishingPackage, setPublishingPackage] = useState<PublishingPackage>();
   const [detailedItems, setDetailedItems] = useState<DetailedItem[]>([]);
@@ -129,7 +129,7 @@ export function PublishingPackageApprovalDialogContainer(props: PublishingPackag
     // No action has been selected
     !state.action ||
     // If the action is approve and the approver comment is empty
-    // (state.action === 'approve' && !state.approverComment) ||
+    (state.action === 'approve' && !state.approverComment) ||
     // If the action is reject and the reject comment is empty
     (state.action === 'reject' && !state.rejectComment);
 
@@ -223,6 +223,7 @@ export function PublishingPackageApprovalDialogContainer(props: PublishingPackag
       approve(siteId, packageId, data).subscribe({
         next() {
           dispatch(updatePublishPackageApprovalDialog({ isSubmitting: false, hasPendingChanges: false }));
+          onSuccess?.();
         },
         error({ response }) {
           dispatch(
@@ -331,47 +332,53 @@ export function PublishingPackageApprovalDialogContainer(props: PublishingPackag
                   />
                 </RadioGroup>
 
-                <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                  <FormattedMessage defaultMessage="Scheduling" />
-                </Typography>
-                <RadioGroup sx={{ mb: 1 }} onChange={onArgumentChange} name="scheduling">
-                  {publishingPackage?.schedule && (
-                    <FormControlLabel
-                      value="keep"
-                      control={<Radio color="primary" />}
-                      label={
-                        <FormattedMessage
-                          defaultMessage="Keep “{date}”"
-                          values={{
-                            date: <AsDayMonthDateTime date={publishingPackage.schedule} />
-                          }}
-                        />
-                      }
-                    />
-                  )}
-                  <FormControlLabel
-                    value="now"
-                    control={<Radio color="primary" />}
-                    label={<FormattedMessage defaultMessage="Now" />}
-                  />
-                  <FormControlLabel
-                    value="custom"
-                    control={<Radio color="primary" />}
-                    label={<FormattedMessage defaultMessage="Later" />}
-                  />
-                </RadioGroup>
-                <Collapse mountOnEnter in={state.scheduling === 'custom'} sx={{ mb: 2 }}>
-                  <DateTimeTimezonePicker onChange={handleDateTimePickerChange} value={state.schedule} disablePast />
-                </Collapse>
                 {state.action === 'approve' ? (
-                  <TextFieldWithMax
-                    value={state.approverComment}
-                    label={<FormattedMessage defaultMessage="Approver Comment" />}
-                    fullWidth
-                    onChange={onArgumentChange}
-                    multiline
-                    name="approverComment"
-                  />
+                  <>
+                    <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                      <FormattedMessage defaultMessage="Scheduling" />
+                    </Typography>
+                    <RadioGroup sx={{ mb: 1 }} onChange={onArgumentChange} name="scheduling">
+                      {publishingPackage?.schedule && (
+                        <FormControlLabel
+                          value="keep"
+                          control={<Radio color="primary" />}
+                          label={
+                            <FormattedMessage
+                              defaultMessage="Keep “{date}”"
+                              values={{
+                                date: <AsDayMonthDateTime date={publishingPackage.schedule} />
+                              }}
+                            />
+                          }
+                        />
+                      )}
+                      <FormControlLabel
+                        value="now"
+                        control={<Radio color="primary" />}
+                        label={<FormattedMessage defaultMessage="Now" />}
+                      />
+                      <FormControlLabel
+                        value="custom"
+                        control={<Radio color="primary" />}
+                        label={<FormattedMessage defaultMessage="Later" />}
+                      />
+                    </RadioGroup>
+                    <Collapse mountOnEnter in={state.scheduling === 'custom'} sx={{ mb: 2 }}>
+                      <DateTimeTimezonePicker
+                        onChange={handleDateTimePickerChange}
+                        value={state.schedule}
+                        disablePast
+                      />
+                    </Collapse>
+                    <TextFieldWithMax
+                      value={state.approverComment}
+                      label={<FormattedMessage defaultMessage="Approver Comment" />}
+                      fullWidth
+                      onChange={onArgumentChange}
+                      multiline
+                      name="approverComment"
+                    />
+                  </>
                 ) : (
                   state.action === 'reject' && (
                     <FormControl fullWidth>
