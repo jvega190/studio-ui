@@ -19,11 +19,11 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { LegacyItem } from '../models/Item';
 import { pluckProps, toQueryString } from '../utils/object';
-import { PublishingPackage, PublishingStatus, PublishingTarget, PublishParams } from '../models/Publishing';
+import { PublishPackage, PublishingStatus, PublishingTarget, PublishParams } from '../models/Publishing';
 import { Api2BulkResponseFormat, Api2ResponseFormat } from '../models/ApiResponse';
 import { PagedArray } from '../models/PagedArray';
 
-export interface FetchPackagesResponse extends Omit<PublishingPackage, 'items'> {}
+export interface FetchPackagesResponse extends Omit<PublishPackage, 'items'> {}
 
 export type PackageApprovalState = 'SUBMITTED' | 'APPROVED' | 'REJECTED';
 
@@ -55,11 +55,11 @@ export function fetchPackage(
     systemType?: string;
     internalName?: string;
   }
-): Observable<PublishingPackage> {
+): Observable<PublishPackage> {
   const qs = toQueryString(data);
   return get<
     Api2ResponseFormat<{
-      package: PublishingPackage;
+      package: PublishPackage;
     }>
   >(`/studio/api/2/publish/${siteId}/package/${packageId}${qs}`).pipe(map((response) => response?.response?.package));
 }

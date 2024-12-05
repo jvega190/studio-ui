@@ -18,7 +18,7 @@ import { PREVIEW_URL_PATH, UNDEFINED } from '../../utils/constants';
 import Person from '../../models/Person';
 import { Dispatch, SetStateAction, useMemo } from 'react';
 import useSpreadState from '../../hooks/useSpreadState';
-import { DetailedItem, PagedArray } from '../../models';
+import { DetailedItem, PagedArray, PublishPackage } from '../../models';
 import { AnyAction } from '@reduxjs/toolkit';
 import { changeCurrentUrl } from '../../state/actions/preview';
 import { getSystemLink } from '../../utils/system';
@@ -27,7 +27,7 @@ import { generateMultipleItemOptions, generateSingleItemOptions } from '../../ut
 import { actionsToBeShown } from '../DashletCard/dashletCommons';
 import { ActionsBarAction } from '../ActionsBar';
 import { isImage, isPdfDocument, isPreviewable, isVideo } from '../PathNavigator/utils';
-import { FetchPackagesResponse, PublishingPackage } from '../../services/publishing';
+import { FetchPackagesResponse } from '../../services/publishing';
 
 export interface CommonDashletProps {
   contentHeight?: number | string;
@@ -49,6 +49,7 @@ export interface WithSelectedStateItem {
 
 export interface WithSelectedState<ItemType extends WithSelectedStateItem = { id: string | number }> {
   items: ItemType[];
+  publishingPackages?: Omit<PublishPackage, 'items'>[];
   isAllSelected: boolean;
   hasSelected: boolean;
   selected: Record<string | number, boolean>;

@@ -51,7 +51,7 @@ import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import IconButton from '@mui/material/IconButton';
 import PackageDetailsDialog from '../PackageDetailsDialog';
 import { generatePackageOptions, packageActionDispatcher } from '../../utils/packageActions';
-import { PublishingPackage } from '../../models';
+import { PublishPackage } from '../../models';
 
 interface PendingApprovalDashletProps extends CommonDashletProps {}
 
@@ -62,7 +62,7 @@ interface PendingApprovalDashletState {
   loadingSkeleton: boolean;
   limit: number;
   offset: number;
-  selectedPackage: PublishingPackage;
+  selectedPackage: PublishPackage;
   packageDetailsDialogId: number;
 }
 
@@ -73,6 +73,7 @@ const messages = defineMessages({
 
 const pendingApprovalState: PackageApprovalState[] = ['SUBMITTED'];
 
+// TODO: use radiobuttons instead of checkboxes, leave clear
 export function PendingApprovalDashlet(props: PendingApprovalDashletProps) {
   const { borderLeftColor = palette.purple.tint, onMinimize } = props;
   const [
@@ -173,7 +174,7 @@ export function PendingApprovalDashlet(props: PendingApprovalDashletProps) {
     }
   };
 
-  const setSelectedPackage = (pkg: PublishingPackage) => {
+  const setSelectedPackage = (pkg: PublishPackage) => {
     setState({
       selectedPackage: selectedPackage?.id === pkg.id ? null : pkg
     });
@@ -275,16 +276,12 @@ export function PendingApprovalDashlet(props: PendingApprovalDashletProps) {
       {Boolean(publishingPackages?.length) && (
         <List sx={{ pb: 0 }}>
           {publishingPackages.map((pkg, index) => (
-            <ListItemButton
-              key={index}
-              onClick={() => setSelectedPackage(pkg as PublishingPackage)}
-              sx={{ pt: 0, pb: 0 }}
-            >
+            <ListItemButton key={index} onClick={() => setSelectedPackage(pkg as PublishPackage)} sx={{ pt: 0, pb: 0 }}>
               <ListItemIcon>
                 <Checkbox
                   edge="start"
                   checked={isSelected(pkg.id)}
-                  onClick={() => setSelectedPackage(pkg as PublishingPackage)}
+                  onClick={() => setSelectedPackage(pkg as PublishPackage)}
                 />
               </ListItemIcon>
               {pkg.submitter && (

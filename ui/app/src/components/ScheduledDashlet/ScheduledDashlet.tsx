@@ -53,7 +53,7 @@ import IconButton from '@mui/material/IconButton';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import PackageDetailsDialog from '../PackageDetailsDialog';
 import { generatePackageOptions, packageActionDispatcher } from '../../utils/packageActions';
-import { PublishingPackage } from '../../models';
+import { PublishPackage } from '../../models';
 
 export interface ScheduledDashletProps extends CommonDashletProps {}
 
@@ -65,7 +65,7 @@ interface ScheduledDashletState {
   limit: number;
   offset: number;
   sort: string;
-  selectedPackage: PublishingPackage;
+  selectedPackage: PublishPackage;
   packageDetailsDialogId: number;
 }
 
@@ -204,7 +204,7 @@ export function ScheduledDashlet(props: ScheduledDashletProps) {
   }, [currentPage, loadPagesUntil, filterState?.selectedTypes]);
   // endregion
 
-  const setSelectedPackage = (pkg: PublishingPackage) => {
+  const setSelectedPackage = (pkg: PublishPackage) => {
     setState({
       selectedPackage: selectedPackage?.id === pkg.id ? null : pkg
     });
@@ -282,16 +282,12 @@ export function ScheduledDashlet(props: ScheduledDashletProps) {
       {Boolean(publishingPackages?.length) && (
         <List sx={{ pb: 0 }}>
           {publishingPackages.map((pkg, index) => (
-            <ListItemButton
-              key={index}
-              onClick={() => setSelectedPackage(pkg as PublishingPackage)}
-              sx={{ pt: 0, pb: 0 }}
-            >
+            <ListItemButton key={index} onClick={() => setSelectedPackage(pkg as PublishPackage)} sx={{ pt: 0, pb: 0 }}>
               <ListItemIcon>
                 <Checkbox
                   edge="start"
                   checked={isSelected(pkg.id)}
-                  onClick={() => setSelectedPackage(pkg as PublishingPackage)}
+                  onClick={() => setSelectedPackage(pkg as PublishPackage)}
                 />
               </ListItemIcon>
               {pkg.submitter && (

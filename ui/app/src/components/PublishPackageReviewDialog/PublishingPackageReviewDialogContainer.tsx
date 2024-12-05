@@ -19,13 +19,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { fetchPackage } from '../../services/publishing';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
 import { DialogBody } from '../DialogBody';
-import {
-  ApiResponse,
-  DetailedItem,
-  PublishingPackage,
-  PublishingPackageApproveParams,
-  SandboxItem
-} from '../../models';
+import { ApiResponse, DetailedItem, PublishPackage, PublishingPackageApproveParams, SandboxItem } from '../../models';
 import { ApiResponseErrorState } from '../ApiResponseErrorState';
 import { LoadingState } from '../LoadingState';
 import Grid from '@mui/material/Grid2';
@@ -85,7 +79,7 @@ interface InternalDialogState {
 export function PublishingPackageReviewDialogContainer(props: PublishingPackageApprovaDialogContainerProps) {
   const { packageId, isSubmitting, onSuccess, onClose } = props;
   const { activeEnvironment } = useEnv();
-  const [publishingPackage, setPublishingPackage] = useState<PublishingPackage>();
+  const [publishingPackage, setPublishingPackage] = useState<PublishPackage>();
   const [detailedItems, setDetailedItems] = useState<DetailedItem[]>([]);
   const [cannedMessages, setCannedMessages] = useState<CannedMessage[]>([]);
   const [isFetchingPackage, setIsFetchingPackage] = useState(false);

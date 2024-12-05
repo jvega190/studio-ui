@@ -131,7 +131,7 @@ export interface PublishingItem {
   userRequested: boolean;
 }
 
-export interface PublishingPackage {
+export interface PublishPackage {
   id: number;
   title: string;
   submittedOn: string;
