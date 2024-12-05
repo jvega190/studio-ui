@@ -19,7 +19,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { LegacyItem } from '../models/Item';
 import { pluckProps, toQueryString } from '../utils/object';
-import { PublishingStatus, PublishingTarget, PublishingTargets, PublishParams } from '../models/Publishing';
+import { PublishingPackage, PublishingStatus, PublishingTarget, PublishParams } from '../models/Publishing';
 import { Api2BulkResponseFormat, Api2ResponseFormat } from '../models/ApiResponse';
 import { PagedArray } from '../models/PagedArray';
 
@@ -45,54 +45,6 @@ export function fetchPackages(
   return get<Api2BulkResponseFormat<{ packages: FetchPackagesResponse[] }>>(
     `/studio/api/2/publish/${siteId}/packages${qs}`
   ).pipe(map(({ response }) => Object.assign(response.packages, pluckProps(response, 'limit', 'offset', 'total'))));
-}
-
-export interface PublishingItem {
-  action: string;
-  id: number;
-  liveError: number;
-  livePreviousPath: string;
-  path: string;
-  publishState: number;
-  stagingError: number;
-  stagingPreviousPath: string;
-  userRequested: boolean;
-}
-
-export interface PublishingPackage {
-  id: number;
-  title: string;
-  submittedOn: string;
-  submitterComment: string;
-  reviewerComment: string;
-  reviewedOn: string;
-  target: PublishingTargets;
-  approvalState: string;
-  packageState: number;
-  schedule: string;
-  submitter: {
-    id: number;
-    username: string;
-    firstName: string;
-    lastName: string;
-    avatar: string;
-  };
-  reviewer: {
-    id: number;
-    username: string;
-    firstName: string;
-    lastName: string;
-    avatar: string;
-  };
-  siteId: string;
-  liveError: number;
-  stagingError: number;
-  publishedOn: string;
-  packageType: string;
-  commitId: string;
-  publishedStagingCommitId: string;
-  publishedLiveCommitId: string;
-  items: PublishingItem[];
 }
 
 export function fetchPackage(

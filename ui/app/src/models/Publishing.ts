@@ -116,3 +116,53 @@ export interface PublishingPackageApproveParams {
   schedule: string;
   updateSchedule: boolean;
 }
+
+export type PackageActions = 'review' | 'cancel' | 'clone';
+
+export interface PublishingItem {
+  action: string;
+  id: number;
+  liveError: number;
+  livePreviousPath: string;
+  path: string;
+  publishState: number;
+  stagingError: number;
+  stagingPreviousPath: string;
+  userRequested: boolean;
+}
+
+export interface PublishingPackage {
+  id: number;
+  title: string;
+  submittedOn: string;
+  submitterComment: string;
+  reviewerComment: string;
+  reviewedOn: string;
+  target: PublishingTargets;
+  approvalState: string;
+  packageState: number;
+  schedule: string;
+  submitter: {
+    id: number;
+    username: string;
+    firstName: string;
+    lastName: string;
+    avatar: string;
+  };
+  reviewer: {
+    id: number;
+    username: string;
+    firstName: string;
+    lastName: string;
+    avatar: string;
+  };
+  siteId: string;
+  liveError: number;
+  stagingError: number;
+  publishedOn: string;
+  packageType: string;
+  commitId: string;
+  publishedStagingCommitId: string;
+  publishedLiveCommitId: string;
+  items: PublishingItem[];
+}

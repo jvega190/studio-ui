@@ -35,7 +35,7 @@ import { LIVE_COLOUR, STAGING_COLOUR } from '../ItemPublishingTargetIcon/styles'
 import ListItemButton from '@mui/material/ListItemButton';
 import { asLocalizedDateTime } from '../../utils/datetime';
 import useLocale from '../../hooks/useLocale';
-import { ActionsBar } from '../ActionsBar';
+import { ActionsBar, ActionsBarAction } from '../ActionsBar';
 import { UNDEFINED } from '../../utils/constants';
 import { useDispatch } from 'react-redux';
 import { deleteContentEvent, publishEvent, workflowEvent } from '../../state/actions/system';
@@ -52,6 +52,8 @@ import { nnou, reversePluckProps } from '../../utils/object';
 import IconButton from '@mui/material/IconButton';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import PackageDetailsDialog from '../PackageDetailsDialog';
+import { generatePackageOptions, packageActionDispatcher } from '../../utils/packageActions';
+import { PublishingPackage } from '../../models';
 
 export interface ScheduledDashletProps extends CommonDashletProps {}
 
@@ -63,7 +65,7 @@ interface ScheduledDashletState {
   limit: number;
   offset: number;
   sort: string;
-  selectedPackageId: number;
+  selectedPackage: PublishingPackage;
   packageDetailsDialogId: number;
 }
 
@@ -87,7 +89,7 @@ export function ScheduledDashlet(props: ScheduledDashletProps) {
       limit,
       offset,
       sort,
-      selectedPackageId,
+      selectedPackage,
       packageDetailsDialogId
     },
     setState
@@ -99,23 +101,13 @@ export function ScheduledDashlet(props: ScheduledDashletProps) {
     limit: 50,
     offset: 0,
     sort: 'schedule ASC',
-    selectedPackageId: null,
+    selectedPackage: null,
     packageDetailsDialogId: null
   });
 
   const currentPage = offset / limit;
   const totalPages = total ? Math.ceil(total / limit) : 0;
-  // TODO: should this be a common for all dashlets with packages (like generateSingleItemActions)?
-  // TODO: what should the action be for this dashlet packages?
-  // TODO: OPTIONS: cancel (ask, is there an API?), clone
-  const selectionOptions = [
-    // {
-    //   id: 'review',
-    //   label: formatMessage({
-    //     defaultMessage: 'Review'
-    //   })
-    // }
-  ];
+  const selectionOptions = selectedPackage ? (generatePackageOptions(selectedPackage) as ActionsBarAction[]) : [];
   const filterState = useDashletFilterState('scheduledDashlet');
   const refs = useUpdateRefs({
     publishingPackages,
@@ -151,9 +143,13 @@ export function ScheduledDashlet(props: ScheduledDashletProps) {
 
   const onOptionClicked = (option) => {
     // Clear selection
-    if (option === 'review') {
-      setState({ selectedPackageId: null });
-      dispatch(showPublishPackageApprovalDialog({ packageId: selectedPackageId }));
+    setState({ selectedPackage: null });
+    if (option !== 'clear') {
+      return packageActionDispatcher({
+        pkg: selectedPackage,
+        option,
+        dispatch
+      });
     }
   };
 
@@ -208,14 +204,14 @@ export function ScheduledDashlet(props: ScheduledDashletProps) {
   }, [currentPage, loadPagesUntil, filterState?.selectedTypes]);
   // endregion
 
-  const setSelectedPackage = (packageId: number) => {
+  const setSelectedPackage = (pkg: PublishingPackage) => {
     setState({
-      selectedPackageId: selectedPackageId === packageId ? null : packageId
+      selectedPackage: selectedPackage?.id === pkg.id ? null : pkg
     });
   };
 
   const isSelected = (packageId: number) => {
-    return selectedPackageId === packageId;
+    return selectedPackage?.id === packageId;
   };
 
   const onPackageDetailsClick = (packageId: number) => {
@@ -239,12 +235,23 @@ export function ScheduledDashlet(props: ScheduledDashletProps) {
           isIndeterminate={false}
           onCheckboxChange={null}
           onOptionClicked={onOptionClicked}
-          options={selectedPackageId ? selectionOptions : null}
+          options={selectionOptions?.concat([
+            ...(selectedPackage
+              ? [
+                  {
+                    id: 'clear',
+                    label: formatMessage({
+                      defaultMessage: 'Clear selection'
+                    })
+                  }
+                ]
+              : [])
+          ])}
           buttonProps={{ size: 'small' }}
           showCheckbox={false}
           sxs={{
             root: { flexGrow: 1 },
-            container: { bgcolor: selectedPackageId ? 'action.selected' : UNDEFINED },
+            container: { bgcolor: selectedPackage ? 'action.selected' : UNDEFINED },
             checkbox: { padding: '5px', borderRadius: 0 },
             button: { minWidth: 50 }
           }}
@@ -275,9 +282,17 @@ export function ScheduledDashlet(props: ScheduledDashletProps) {
       {Boolean(publishingPackages?.length) && (
         <List sx={{ pb: 0 }}>
           {publishingPackages.map((pkg, index) => (
-            <ListItemButton key={index} onClick={() => setSelectedPackage(pkg.id)} sx={{ pt: 0, pb: 0 }}>
+            <ListItemButton
+              key={index}
+              onClick={() => setSelectedPackage(pkg as PublishingPackage)}
+              sx={{ pt: 0, pb: 0 }}
+            >
               <ListItemIcon>
-                <Checkbox edge="start" checked={isSelected(pkg.id)} onClick={() => setSelectedPackage(pkg.id)} />
+                <Checkbox
+                  edge="start"
+                  checked={isSelected(pkg.id)}
+                  onClick={() => setSelectedPackage(pkg as PublishingPackage)}
+                />
               </ListItemIcon>
               {pkg.submitter && (
                 <PersonAvatar
