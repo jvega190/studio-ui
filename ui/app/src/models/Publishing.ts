@@ -89,7 +89,6 @@ export interface PublishingParams {
   sendEmailNotifications?: boolean;
 }
 
-// TODO: check which params are optional in API
 export interface PublishParams {
   publishingTarget: string;
   paths: {
@@ -101,7 +100,7 @@ export interface PublishParams {
   schedule?: string;
   requestApproval: boolean;
   publishAll?: boolean;
-  title: string; // TODO: validate, this is still not in the API definition
+  title: string;
   comment?: string;
 }
 
