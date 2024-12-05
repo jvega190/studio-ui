@@ -46,6 +46,7 @@ import { generateSingleItemOptions, itemActionDispatcher } from '../../utils/ite
 import useEnv from '../../hooks/useEnv';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
 import { useDispatch } from 'react-redux';
+import FolderOpenRoundedIcon from '@mui/icons-material/FolderOpenRounded';
 
 export interface PublishItemsProps {
   itemMap: Record<string, DetailedItem>;
@@ -120,8 +121,10 @@ function renderTreeNode(props: {
             </Box>
           </Box>
         ) : (
-          // TODO: Add folder icon
-          <span title={node.path}>{node.label}</span>
+          <Box display="flex" alignItems="center">
+            <FolderOpenRoundedIcon sx={{ fontSize: '1.1rem', mr: '5px' }} />
+            <span title={node.path}>{node.label}</span>
+          </Box>
         )
       }
       children={
@@ -272,7 +275,14 @@ export function PublishPackageItemsView(props: PublishItemsProps) {
                 key={path}
                 secondaryAction={
                   <Box display="flex" alignItems="center">
-                    <IconButton className="item-menu-button" size="small">
+                    <IconButton
+                      className="item-menu-button"
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onContextMenuOpen?.(e, path);
+                      }}
+                    >
                       <MoreVertRounded />
                     </IconButton>
                     {dependencyTypeMap?.[path] === 'soft' && (
