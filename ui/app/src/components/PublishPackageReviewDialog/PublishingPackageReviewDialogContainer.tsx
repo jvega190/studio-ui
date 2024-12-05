@@ -16,10 +16,16 @@
 
 import { PublishingPackageApprovaDialogContainerProps } from './types';
 import React, { useEffect, useMemo, useState } from 'react';
-import { fetchPackage, PublishingPackage } from '../../services/publishing';
+import { fetchPackage } from '../../services/publishing';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
 import { DialogBody } from '../DialogBody';
-import { ApiResponse, DetailedItem, PublishingPackageApproveParams, SandboxItem } from '../../models';
+import {
+  ApiResponse,
+  DetailedItem,
+  PublishingPackage,
+  PublishingPackageApproveParams,
+  SandboxItem
+} from '../../models';
 import { ApiResponseErrorState } from '../ApiResponseErrorState';
 import { LoadingState } from '../LoadingState';
 import Grid from '@mui/material/Grid2';
@@ -61,7 +67,6 @@ import { showErrorDialog } from '../../state/reducers/dialogs/error';
 import { updatePublishPackageApprovalDialog } from '../../state/actions/dialogs';
 import { AsDayMonthDateTime } from '../VersionList';
 import PublishPackageItemsView from '../PublishDialog/PublishPackageItemsView';
-import PublishReferencesLegend from '../PublishDialog/PublishReferencesLegend';
 
 const statusItems = {
   staging: { stateMap: { staged: true } },
@@ -421,10 +426,6 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
                   )
                 )}
               </Box>
-              {/* endregion */}
-              <Divider />
-              {/* region legend */}
-              <PublishReferencesLegend />
               {/* endregion */}
             </Grid>
             <Grid size={{ xs: 12, sm: 7 }}>
