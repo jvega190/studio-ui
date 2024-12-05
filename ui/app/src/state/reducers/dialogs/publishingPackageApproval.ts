@@ -15,7 +15,7 @@
  */
 
 import { createReducer } from '@reduxjs/toolkit';
-import { PublishingPackageApprovalDialogStateProps } from '../../../components/PublishPackageApprovalDialog/types';
+import { PublishingPackageApprovalDialogStateProps } from '../../../components/PublishPackageReviewDialog/types';
 import { GlobalState } from '../../../models';
 import {
   publishPackageApprovalDialogClosed,

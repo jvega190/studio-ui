@@ -6,7 +6,7 @@
   * Removed `pages/QuickCreateMenu` component.
   * Removed `SuspenseWithEmptyState` and `WithEmptyState` components.
   * Removed `resource` prop from StoreProvider
-  * Removed `RejectDialog` component. Now handled by `PublishingPackageApprovalDialog`.
+  * Removed `RejectDialog` component. Now handled by `PublishingPackageReviewDialog`.
   * Removed `emailOnApprove` option from `PublishDialog` form.
   * Removed `PublishDialog/styles.ts` file.
 * [hooks]

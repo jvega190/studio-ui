@@ -50,7 +50,7 @@ import { ContentTypeFieldValidation, DetailedItem } from '../../models';
 import { RenameAssetStateProps } from '../../components/RenameAssetDialog';
 import { AjaxError } from 'rxjs/ajax';
 import { BrokenReferencesDialogStateProps } from '../../components/BrokenReferencesDialog/types';
-import { PublishingPackageApprovalDialogStateProps } from '../../components/PublishPackageApprovalDialog/types';
+import { PublishingPackageApprovalDialogStateProps } from '../../components/PublishPackageReviewDialog/types';
 
 // region History
 export const showHistoryDialog = /*#__PURE__*/ createAction<Partial<HistoryDialogStateProps>>('SHOW_HISTORY_DIALOG');

@@ -67,7 +67,7 @@ import { RenameAssetStateProps } from '../components/RenameAssetDialog';
 import Person from './Person';
 import { BrokenReferencesDialogStateProps } from '../components/BrokenReferencesDialog/types';
 import AllowedContentTypesData from './AllowedContentTypesData';
-import { PublishingPackageApprovalDialogStateProps } from '../components/PublishPackageApprovalDialog/types';
+import { PublishingPackageApprovalDialogStateProps } from '../components/PublishPackageReviewDialog/types';
 
 export type HighlightMode = 'all' | 'move';
 

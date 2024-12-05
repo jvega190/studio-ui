@@ -70,9 +70,7 @@ const UnlockPublisherDialog = lazy(() => import('../UnlockPublisherDialog'));
 const WidgetDialog = lazy(() => import('../WidgetDialog'));
 const CodeEditorDialog = lazy(() => import('../CodeEditorDialog'));
 const BrokenReferencesDialog = lazy(() => import('../BrokenReferencesDialog'));
-const PublishingPackageApprovalDialog = lazy(
-  () => import('../PublishPackageApprovalDialog/PublishingPackageApprovalDialog')
-);
+const PublishingPackageReviewDialog = lazy(() => import('../PublishPackageReviewDialog/PublishingPackageReviewDialog'));
 // endregion
 
 // @formatter:off
@@ -307,7 +305,7 @@ function GlobalDialogManager() {
       {/* endregion */}
 
       {/* region ApproveReject */}
-      <PublishingPackageApprovalDialog
+      <PublishingPackageReviewDialog
         {...state.publishingPackageApproval}
         onClose={createCallback(state.publishingPackageApproval.onClose, dispatch)}
         onClosed={createCallback(state.publishingPackageApproval.onClosed, dispatch)}

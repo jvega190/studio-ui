@@ -77,7 +77,7 @@ interface InternalDialogState {
   rejectComment: string;
 }
 
-export function PublishingPackageApprovalDialogContainer(props: PublishingPackageApprovaDialogContainerProps) {
+export function PublishingPackageReviewDialogContainer(props: PublishingPackageApprovaDialogContainerProps) {
   const { packageId, isSubmitting, onSuccess, onClose } = props;
   const { activeEnvironment } = useEnv();
   const [publishingPackage, setPublishingPackage] = useState<PublishingPackage>();
@@ -463,4 +463,4 @@ export function PublishingPackageApprovalDialogContainer(props: PublishingPackag
   );
 }
 
-export default PublishingPackageApprovalDialogContainer;
+export default PublishingPackageReviewDialogContainer;

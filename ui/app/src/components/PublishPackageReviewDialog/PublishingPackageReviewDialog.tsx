@@ -18,9 +18,9 @@ import React from 'react';
 import { PublishingPackageApprovalDialogProps } from './types';
 import { EnhancedDialog } from '../EnhancedDialog';
 import { FormattedMessage } from 'react-intl';
-import PublishingPackageApprovalDialogContainer from './PublishingPackageApprovalDialogContainer';
+import PublishingPackageReviewDialogContainer from './PublishingPackageReviewDialogContainer';
 
-export function PublishingPackageApprovalDialog(props: PublishingPackageApprovalDialogProps) {
+export function PublishingPackageReviewDialog(props: PublishingPackageApprovalDialogProps) {
   const { packageId, isSubmitting, onSuccess, ...rest } = props;
   return (
     <EnhancedDialog
@@ -29,13 +29,9 @@ export function PublishingPackageApprovalDialog(props: PublishingPackageApproval
       {...rest}
       isSubmitting={isSubmitting}
     >
-      <PublishingPackageApprovalDialogContainer
-        packageId={packageId}
-        onSuccess={onSuccess}
-        isSubmitting={isSubmitting}
-      />
+      <PublishingPackageReviewDialogContainer packageId={packageId} onSuccess={onSuccess} isSubmitting={isSubmitting} />
     </EnhancedDialog>
   );
 }
 
-export default PublishingPackageApprovalDialog;
+export default PublishingPackageReviewDialog;
