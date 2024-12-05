@@ -25,7 +25,6 @@ import {
   closeCreateFolderDialog,
   closeDeleteDialog,
   closePublishDialog,
-  closeRejectDialog,
   closeUploadDialog,
   showBrokenReferencesDialog,
   showChangeContentTypeDialog,
@@ -40,7 +39,6 @@ import {
   showNewContentDialog,
   showPreviewDialog,
   showPublishDialog,
-  showRejectDialog,
   showRenameAssetDialog,
   showUploadDialog,
   showWorkflowCancellationDialog
@@ -70,7 +68,6 @@ import {
   showDeleteItemSuccessNotification,
   showEditItemSuccessNotification,
   showPublishItemSuccessNotification,
-  showRejectItemSuccessNotification,
   unblockUI
 } from '../state/actions/system';
 import {
@@ -103,7 +100,6 @@ import {
   hasGetDependenciesAction,
   hasPasteAction,
   hasPublishAction,
-  hasPublishRejectAction,
   hasPublishRequestAction,
   hasReadAction,
   hasReadHistoryAction,
@@ -114,9 +110,9 @@ import {
 } from './content';
 import {
   getEditorMode,
-  isPdfDocument,
   isImage,
   isNavigable,
+  isPdfDocument,
   isPreviewable,
   isVideo
 } from '../components/PathNavigator/utils';
@@ -214,14 +210,6 @@ const unparsedMenuOptions: Record<AllItemActions, ContextMenuOptionDescriptor<Al
   requestPublish: {
     id: 'requestPublish',
     label: translations.publish
-  },
-  approvePublish: {
-    id: 'approvePublish',
-    label: translations.publish
-  },
-  rejectPublish: {
-    id: 'rejectPublish',
-    label: translations.reject
   },
   history: {
     id: 'history',
@@ -410,17 +398,9 @@ export function generateSingleItemOptions(
   if (
     (hasPublishAction(item.availableActions) && actionsToInclude.publish) ||
     (hasPublishRequestAction(item.availableActions) && actionsToInclude.requestPublish) ||
-    (hasApprovePublishAction(item.availableActions) && actionsToInclude.approvePublish) ||
     (hasSchedulePublishAction(item.availableActions) && actionsToInclude.schedulePublish)
   ) {
-    if (hasApprovePublishAction(item.availableActions) && actionsToInclude.approvePublish) {
-      sectionC.push(menuOptions.approvePublish);
-    } else {
-      sectionC.push(menuOptions.publish);
-    }
-  }
-  if (hasPublishRejectAction(item.availableActions) && actionsToInclude.rejectPublish) {
-    sectionC.push(menuOptions.rejectPublish);
+    sectionC.push(menuOptions.publish);
   }
   // endregion
 
@@ -473,7 +453,6 @@ export function generateMultipleItemOptions(
   let approvePublish = true;
   let schedulePublish = true;
   let deleteItem = true;
-  let reject = true;
   let sections = [];
   const menuOptions = toContextMenuOptionsLookup(unparsedMenuOptions, formatMessage);
 
@@ -488,22 +467,13 @@ export function generateMultipleItemOptions(
     approvePublish = approvePublish && hasApprovePublishAction(item.availableActions);
     schedulePublish = schedulePublish && hasSchedulePublishAction(item.availableActions);
     deleteItem = deleteItem && hasContentDeleteAction(item.availableActions);
-    reject = reject && hasPublishRejectAction(item.availableActions);
   });
 
-  if (
-    (publish && actionsToInclude.publish) ||
-    (schedulePublish && actionsToInclude.schedulePublish) ||
-    (requestPublish && actionsToInclude.rejectPublish) ||
-    (approvePublish && actionsToInclude.approvePublish)
-  ) {
+  if ((publish && actionsToInclude.publish) || (schedulePublish && actionsToInclude.schedulePublish)) {
     sections.push(menuOptions.publish);
   }
   if (deleteItem && actionsToInclude.delete) {
     sections.push(menuOptions.delete);
-  }
-  if (reject && actionsToInclude.rejectPublish) {
-    sections.push(menuOptions.rejectPublish);
   }
 
   return sections;
@@ -952,7 +922,6 @@ export const itemActionDispatcher = ({
       dispatch(deleteTemplate({ item, onSuccess: onActionSuccess }));
       break;
     }
-    case 'approvePublish':
     case 'publish':
     case 'schedulePublish':
     case 'requestPublish': {
@@ -971,21 +940,6 @@ export const itemActionDispatcher = ({
             ...items.map((item) => reloadDetailedItem({ path: item.path })),
             closePublishDialog(),
             fetchPublishingStatus(),
-            ...(onActionSuccess ? [onActionSuccess] : [])
-          ])
-        })
-      );
-      break;
-    }
-    case 'rejectPublish': {
-      dispatch(
-        showRejectDialog({
-          items,
-          onRejectSuccess: batchActions([
-            showRejectItemSuccessNotification({
-              count: items.length
-            }),
-            closeRejectDialog(),
             ...(onActionSuccess ? [onActionSuccess] : [])
           ])
         })

@@ -54,7 +54,6 @@ import { CompareVersionsDialogStateProps } from '../components/CompareVersionsDi
 import { ConfirmDialogStateProps } from '../components/ConfirmDialog/utils';
 import { ChangeContentTypeDialogStateProps } from '../components/ChangeContentTypeDialog/utils';
 import { WorkflowCancellationDialogStateProps } from '../components/WorkflowCancellationDialog/utils';
-import { RejectDialogStateProps } from '../components/RejectDialog/utils';
 import { CreateFileStateProps } from '../components/CreateFileDialog/utils';
 import { UploadDialogStateProps } from '../components/UploadDialog/util';
 import { PreviewDialogStateProps } from '../components/PreviewDialog/utils';
@@ -231,7 +230,6 @@ export interface GlobalState {
     edit: LegacyFormDialogStateProps;
     codeEditor: CodeEditorDialogStateProps;
     workflowCancellation: WorkflowCancellationDialogStateProps;
-    reject: RejectDialogStateProps;
     createFolder: CreateFolderStateProps;
     createFile: CreateFileStateProps;
     renameAsset: RenameAssetStateProps;

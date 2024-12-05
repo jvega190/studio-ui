@@ -956,9 +956,7 @@ export const createItemActionMap: (availableActions: number) => ItemActionsMap =
   deleteController: hasDeleteControllerAction(value),
   deleteTemplate: hasDeleteTemplateAction(value),
   publish: hasPublishAction(value),
-  approvePublish: hasApprovePublishAction(value),
-  schedulePublish: hasSchedulePublishAction(value),
-  rejectPublish: hasPublishRejectAction(value)
+  schedulePublish: hasSchedulePublishAction(value)
 });
 
 /**

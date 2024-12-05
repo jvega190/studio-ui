@@ -28,7 +28,6 @@ import deleteDialog from './delete';
 import edit from './edit';
 import codeEditor from './codeEditor';
 import workflowCancellation from './workflowCancellation';
-import reject from './reject';
 import createFolder from './createFolder';
 import createFile from './createFile';
 import copy from './copy';
@@ -64,7 +63,6 @@ export default combineReducers({
   edit,
   codeEditor,
   workflowCancellation,
-  reject,
   editSite,
   createFolder,
   createFile,

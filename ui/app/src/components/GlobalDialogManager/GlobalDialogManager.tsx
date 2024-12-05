@@ -42,7 +42,6 @@ import useActiveSiteId from '../../hooks/useActiveSiteId';
 // region const ... = lazy(() => import('...'));
 const ViewVersionDialog = lazy(() => import('../ViewVersionDialog'));
 const CompareVersionsDialog = lazy(() => import('../CompareVersionsDialog'));
-const RejectDialog = lazy(() => import('../RejectDialog'));
 const EditSiteDialog = lazy(() => import('../EditSiteDialog'));
 const ConfirmDialog = lazy(() => import('../ConfirmDialog'));
 const ErrorDialog = lazy(() => import('../ErrorDialog'));
@@ -419,18 +418,6 @@ function GlobalDialogManager() {
         onClose={createCallback(state.brokenReferences.onClose, dispatch)}
         onClosed={createCallback(state.brokenReferences.onClosed, dispatch)}
         onContinue={createCallback(state.brokenReferences.onContinue, dispatch)}
-      />
-      {/* endregion */}
-
-      {/* region Reject */}
-      <RejectDialog
-        {...state.reject}
-        onClose={createCallback(state.reject.onClose, dispatch)}
-        onClosed={createCallback(state.reject.onClosed, dispatch)}
-        onRejectSuccess={createCallback(state.reject.onRejectSuccess, dispatch)}
-        onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
-          createCallback(state.reject.onClose, dispatch)
-        )}
       />
       {/* endregion */}
 

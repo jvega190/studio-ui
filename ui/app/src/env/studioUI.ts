@@ -259,7 +259,6 @@ export const components = {
   PublishingStatusWidget: lazy(() => import('../components/PublishingStatusWidget')),
   QuickCreate: lazy(() => import('../components/QuickCreate')),
   RecentlyPublishedDashlet: lazy(() => import('../components/RecentlyPublishedDashlet')),
-  RejectDialog: lazy(() => import('../components/RejectDialog')),
   RenameAssetDialog: lazy(() => import('../components/RenameAssetDialog')),
   RenameContentDialog: lazy(() => import('../components/RenameContentDialog')),
   RenameDialogBody: lazy(() => import('../components/RenameDialogBody')),

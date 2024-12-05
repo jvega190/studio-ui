@@ -15,7 +15,7 @@
  */
 
 import { defineMessages } from 'react-intl';
-import { PackageActions, PublishingPackage } from '../models';
+import { PackageActions, PublishPackage } from '../models';
 import { ContextMenuOptionDescriptor } from './itemActions';
 import { ContextMenuOption } from '../components';
 import { createPresenceTable } from './array';
@@ -54,7 +54,7 @@ export const allPackageActions = Object.keys(unparsedOptions);
 
 // TODO: packages will include AA, we need to consider that
 export const generatePackageOptions = (
-  pkg: PublishingPackage,
+  pkg: PublishPackage,
   options?: {
     includeOnly?: PackageActions[];
   }
@@ -82,7 +82,7 @@ export const packageActionDispatcher = ({
   dispatch,
   onActionSuccess
 }: {
-  pkg: PublishingPackage;
+  pkg: PublishPackage;
   option: PackageActions;
   dispatch: Dispatch;
   onActionSuccess?: Action;

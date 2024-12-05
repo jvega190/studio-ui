@@ -38,7 +38,6 @@ import { CompareVersionsDialogStateProps } from '../../components/CompareVersion
 import { ConfirmDialogStateProps } from '../../components/ConfirmDialog';
 import { ChangeContentTypeDialogStateProps } from '../../components/ChangeContentTypeDialog';
 import { WorkflowCancellationDialogStateProps } from '../../components/WorkflowCancellationDialog/utils';
-import { RejectDialogStateProps } from '../../components/RejectDialog/utils';
 import { CreateFileStateProps } from '../../components/CreateFileDialog';
 import { UploadDialogStateProps } from '../../components/UploadDialog/util';
 import { PreviewDialogStateProps } from '../../components/PreviewDialog/utils';
@@ -155,13 +154,6 @@ export const closeWorkflowCancellationDialog = /*#__PURE__*/ createAction<Standa
 
 export const workflowCancellationDialogClosed = /*#__PURE__*/ createAction('WORKFLOW_CANCELLATION_DIALOG_CLOSED');
 
-// endregion
-
-// region Reject
-export const showRejectDialog = /*#__PURE__*/ createAction<Partial<RejectDialogStateProps>>('SHOW_REJECT_DIALOG');
-export const closeRejectDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_REJECT_DIALOG');
-export const rejectDialogClosed = /*#__PURE__*/ createAction('REJECT_DIALOG_CLOSED');
-export const updateRejectDialog = /*#__PURE__*/ createAction<Partial<RejectDialogStateProps>>('UPDATE_REJECT_DIALOG');
 // endregion
 
 // region Legacy Form
