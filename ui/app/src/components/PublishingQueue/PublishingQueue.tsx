@@ -22,7 +22,7 @@ import Checkbox from '@mui/material/Checkbox';
 import { defineMessages, useIntl } from 'react-intl';
 import PublishingPackage from './PublishingPackage';
 import { cancelPackage, fetchPackages, fetchPublishingTargets } from '../../services/publishing';
-import { CurrentFilters, Package, Selected } from '../../models/Publishing';
+import { CurrentFilters, Package, PublishPackage, Selected } from '../../models/Publishing';
 import FilterDropdown from './FilterDropdown';
 import { setRequestForgeryToken } from '../../utils/auth';
 import TablePagination from '@mui/material/TablePagination';
@@ -32,7 +32,6 @@ import HighlightOffIcon from '@mui/icons-material/HighlightOffRounded';
 import RefreshIcon from '@mui/icons-material/RefreshRounded';
 import Button from '@mui/material/Button';
 import { alpha } from '@mui/material/styles';
-import { BLOCKED, CANCELLED, COMPLETED, PROCESSING, READY_FOR_LIVE } from './constants';
 import palette from '../../styles/palette';
 import ApiResponseErrorState from '../ApiResponseErrorState';
 import { useSpreadState } from '../../hooks/useSpreadState';
@@ -41,6 +40,19 @@ import { publishEvent, workflowEvent } from '../../state/actions/system';
 import { getHostToHostBus } from '../../utils/subjects';
 import { filter } from 'rxjs/operators';
 import { LoadingState } from '../LoadingState';
+import { nnou } from '../../utils/object';
+import {
+  CANCELLED_MASK,
+  COMPLETED_MASK,
+  LIVE_FAILED_MASK,
+  LIVE_SUCCESS_MASK,
+  PROCESSING_MASK,
+  READY_MASK,
+  STAGING_COMPLETED_WITH_ERRORS_MASK,
+  STAGING_FAILED_MASK,
+  STAGING_SUCCESS_MASK
+} from '../../utils/constants';
+import { isReady } from '../PublishPackageReviewDialog/utils';
 
 const messages = defineMessages({
   selectAll: {
@@ -156,12 +168,38 @@ const useStyles = makeStyles()((theme) => ({
   }
 }));
 
+const filterStates = {
+  ready: READY_MASK,
+  processing: PROCESSING_MASK,
+  completed: COMPLETED_MASK,
+  cancelled: CANCELLED_MASK
+  // blocked: ?
+};
+
+// TODO: there's a problem right now because the mixing of states end up in an AND operation, not an OR
+// const initialStates =
+//   READY_MASK +
+//   PROCESSING_MASK +
+//   LIVE_SUCCESS_MASK +
+//   LIVE_FAILED_MASK +
+//   STAGING_SUCCESS_MASK +
+//   STAGING_COMPLETED_WITH_ERRORS_MASK +
+//   STAGING_FAILED_MASK +
+//   COMPLETED_MASK +
+//   CANCELLED_MASK;
+
 const currentFiltersInitialState: CurrentFilters = {
-  environment: '',
-  path: '',
-  state: [READY_FOR_LIVE, PROCESSING, COMPLETED, CANCELLED, BLOCKED],
-  limit: 5,
-  page: 0
+  target: null, // used to be 'environment',
+  // states: initialStates,
+  states: READY_MASK, // TODO: null for all states (?)
+  // state: [READY_FOR_LIVE, PROCESSING, COMPLETED, CANCELLED, BLOCKED], // TODO: what's blocked now?
+  approvalStates: [],
+  submitter: '',
+  reviewer: '',
+  isScheduled: null,
+  sort: 'publishedOn ASC', // Example: field1 ASC, field2 DESC. Accepted fields 'schedule', 'publishedOn', 'reviewedOn'
+  offset: 0,
+  limit: 5
 };
 
 export interface PublishingQueueProps {
@@ -170,12 +208,16 @@ export interface PublishingQueueProps {
 }
 
 function getFilters(currentFilters: CurrentFilters) {
-  let filters: any = {};
-  if (currentFilters.environment) filters['environment'] = currentFilters.environment;
-  if (currentFilters.path) filters['path'] = currentFilters.path;
-  if (currentFilters.state.length) filters['states'] = currentFilters.state;
+  const filters: Partial<CurrentFilters> = {};
+  if (currentFilters.target) filters['target'] = currentFilters.target;
+  if (currentFilters.states) filters['states'] = currentFilters.states;
+  if (currentFilters.approvalStates.length) filters['approvalStates'] = currentFilters.approvalStates;
+  if (currentFilters.submitter) filters['submitter'] = currentFilters.submitter;
+  if (currentFilters.reviewer) filters['reviewer'] = currentFilters.reviewer;
+  if (nnou(currentFilters.isScheduled)) filters['isScheduled'] = currentFilters.isScheduled;
+  if (currentFilters.sort) filters['sort'] = currentFilters.sort;
   if (currentFilters.limit) filters['limit'] = currentFilters.limit;
-  if (currentFilters.page) filters['offset'] = currentFilters.page * currentFilters.limit;
+  if (currentFilters.offset) filters['offset'] = currentFilters.offset;
   return filters;
 }
 
@@ -200,24 +242,29 @@ function PublishingQueue(props: PublishingQueueProps) {
   const [total, setTotal] = useState(0);
   const [filters, setFilters] = useSpreadState({
     environments: null,
-    states: currentFiltersInitialState.state
+    states: currentFiltersInitialState.states
   });
   const [apiState, setApiState] = useSpreadState({
     error: false,
     errorResponse: null
   });
   const [currentFilters, setCurrentFilters] = useState(currentFiltersInitialState);
+  const page = currentFilters.offset / currentFilters.limit;
   const { formatMessage } = useIntl();
   const { siteId, readOnly } = props;
-  const hasReadyForLivePackages = (packages || []).filter((item: Package) => item.state === READY_FOR_LIVE).length > 0;
+  const hasReadyForLivePackages =
+    (packages || []).filter((item: PublishPackage) => isReady(item.packageState)).length > 0;
 
   const getPackages = useCallback(
     (siteId: string) => {
       setIsFetchingPackages(true);
-      if (currentFilters.state.length) {
+      // TODO: is this validation correct?
+      if (currentFilters.states !== 0) {
+        console.log('filters', getFilters(currentFilters));
         fetchPackages(siteId, getFilters(currentFilters)).subscribe({
           next: (packages) => {
             setIsFetchingPackages(false);
+            console.log('packages', packages);
             setTotal(packages.total);
             setPackages(packages);
           },
@@ -268,30 +315,6 @@ function PublishingQueue(props: PublishingQueueProps) {
     };
   }, [siteId, getPackages]);
 
-  function renderPackages() {
-    return packages.map((item: Package, index: number) => (
-      <PublishingPackage
-        id={item.id}
-        approver={item.approver}
-        schedule={item.schedule}
-        state={item.state}
-        comment={item.comment}
-        environment={item.environment}
-        key={index}
-        siteId={siteId}
-        selected={selected}
-        pending={pending}
-        setPending={setPending}
-        getPackages={getPackages}
-        setApiState={setApiState}
-        setSelected={setSelected}
-        filesPerPackage={filesPerPackage}
-        setFilesPerPackage={setFilesPerPackage}
-        readOnly={readOnly}
-      />
-    ));
-  }
-
   function handleCancelAll() {
     if (count === 0) return false;
     let _pending: Selected = {};
@@ -301,6 +324,7 @@ function PublishingQueue(props: PublishingQueueProps) {
       }
     });
     setPending(_pending);
+    // TODO: migrate this API `/api/2/workflow/{site}/package/{package}/cancel`
     cancelPackage(siteId, Object.keys(_pending)).subscribe({
       next() {
         Object.keys(selected).forEach((key: string) => {
@@ -324,8 +348,8 @@ function PublishingQueue(props: PublishingQueueProps) {
     if (!packages || packages.length === 0) return false;
     let _selected: Selected = {};
     if (event.target.checked) {
-      packages.forEach((item: Package) => {
-        _selected[item.id] = item.state === READY_FOR_LIVE;
+      packages.forEach((item: PublishPackage) => {
+        _selected[item.id] = isReady(item.packageState);
         setSelected({ ...selected, ..._selected });
       });
     } else {
@@ -341,14 +365,15 @@ function PublishingQueue(props: PublishingQueueProps) {
       return false;
     } else {
       return !packages.some(
-        (item: Package) =>
+        (item: PublishPackage) =>
           // There is at least one that is not selected
-          item.state === READY_FOR_LIVE && !selected[item.id]
+          isReady(item.packageState) && !selected[item.id]
       );
     }
   }
 
   function handleFilterChange(event: any) {
+    // TODO: use 'switch' instead of 'if'
     if (event.target.type === 'radio') {
       clearSelected();
       setCurrentFilters({ ...currentFilters, [event.target.name]: event.target.value, page: 0 });
@@ -371,22 +396,18 @@ function PublishingQueue(props: PublishingQueueProps) {
     }
   }
 
-  function handleEnterKey(path: string) {
-    setCurrentFilters({ ...currentFilters, path: path, page: 0 });
-  }
-
   function handleChangePage(event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, newPage: number) {
-    setCurrentFilters({ ...currentFilters, page: newPage });
+    setCurrentFilters({ ...currentFilters, offset: newPage * currentFilters.limit });
   }
 
   function handleChangeRowsPerPage(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
-    setCurrentFilters({ ...currentFilters, page: 0, limit: parseInt(event.target.value, 10) });
+    setCurrentFilters({ ...currentFilters, offset: 0, limit: parseInt(event.target.value, 10) });
   }
 
   return (
     <div className={classes.publishingQueue}>
       <div className={classes.topBar}>
-        {currentFilters.state.includes(READY_FOR_LIVE) && (
+        {isReady(currentFilters.states) && (
           <FormGroup className={classes.selectAll}>
             <FormControlLabel
               control={
@@ -401,7 +422,7 @@ function PublishingQueue(props: PublishingQueueProps) {
             />
           </FormGroup>
         )}
-        {count > 0 && currentFilters.state.includes(READY_FOR_LIVE) && (
+        {count > 0 && isReady(currentFilters.states) && (
           <Typography variant="body2" className={classes.packagesSelected} color="textSecondary">
             {formatMessage(messages.packagesSelected, { count: count })}
             <HighlightOffIcon className={classes.clearSelected} onClick={clearSelected} />
@@ -410,7 +431,7 @@ function PublishingQueue(props: PublishingQueueProps) {
         <Button variant="outlined" className={classes.button} onClick={() => getPackages(siteId)}>
           <RefreshIcon />
         </Button>
-        {currentFilters.state.includes(READY_FOR_LIVE) && (
+        {isReady(currentFilters.states) && (
           <ConfirmDropdown
             classes={{ button: classes.cancelButton }}
             text={formatMessage(messages.cancelSelected)}
@@ -426,11 +447,11 @@ function PublishingQueue(props: PublishingQueueProps) {
           text={formatMessage(messages.filters)}
           handleFilterChange={handleFilterChange}
           currentFilters={currentFilters}
-          handleEnterKey={handleEnterKey}
           filters={filters}
+          filterStates={filterStates}
         />
       </div>
-      {(currentFilters.state.length || currentFilters.path || currentFilters.environment) && (
+      {/*      {(currentFilters.state.length || currentFilters.path || currentFilters.environment) && (
         <div className={classes.secondBar}>
           <Typography variant="body2">
             {formatMessage(messages.filteredBy, {
@@ -444,13 +465,29 @@ function PublishingQueue(props: PublishingQueueProps) {
             })}
           </Typography>
         </div>
-      )}
+      )}*/}
       {apiState.error && apiState.errorResponse ? (
         <ApiResponseErrorState error={apiState.errorResponse} />
       ) : (
         <div className={classes.queueList}>
           {packages === null && isFetchingPackages && <LoadingState />}
-          {packages && renderPackages()}
+          {packages &&
+            packages.map((item: PublishPackage, index: number) => (
+              <PublishingPackage
+                pkg={item}
+                key={index}
+                siteId={siteId}
+                selected={selected}
+                pending={pending}
+                setPending={setPending}
+                getPackages={getPackages}
+                setApiState={setApiState}
+                setSelected={setSelected}
+                filesPerPackage={filesPerPackage}
+                setFilesPerPackage={setFilesPerPackage}
+                readOnly={readOnly}
+              />
+            ))}
           {packages !== null && packages.length === 0 && (
             <div className={classes.empty}>
               <EmptyState
@@ -466,7 +503,7 @@ function PublishingQueue(props: PublishingQueueProps) {
         component="div"
         count={total}
         rowsPerPage={currentFilters.limit}
-        page={currentFilters.page}
+        page={page}
         backIconButtonProps={{
           'aria-label': formatMessage(messages.previous)
         }}

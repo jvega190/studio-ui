@@ -113,17 +113,14 @@ interface FilterDropdownProps {
   className: any;
   currentFilters: CurrentFilters;
   filters: any;
-
+  filterStates: Record<string, string>;
   handleFilterChange(event: any): any;
-
-  handleEnterKey(path: string): any;
 }
 
 export function FilterDropdown(props: FilterDropdownProps) {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const { classes } = useStyles();
-  const { text, className, handleFilterChange, handleEnterKey, currentFilters, filters } = props;
-  const [path, setPath] = useState('');
+  const { text, className, handleFilterChange, currentFilters, filters, filterStates } = props;
   const { formatMessage } = useIntl();
 
   const handleClick = (event: any) => {
@@ -132,12 +129,6 @@ export function FilterDropdown(props: FilterDropdownProps) {
 
   const handleClose = () => {
     setAnchorEl(null);
-  };
-
-  const onKeyPress = (event: React.KeyboardEvent, path: string) => {
-    if (event.charCode === 13) {
-      handleEnterKey(path);
-    }
   };
 
   return (
@@ -164,39 +155,14 @@ export function FilterDropdown(props: FilterDropdownProps) {
         <section>
           <header className={classes.header}>
             <Typography variant="body1">
-              <strong>{formatMessage(messages.pathExpression)}</strong>
-            </Typography>
-          </header>
-          <Box className={classes.body} display="flex" alignItems="center">
-            <div className={classes.searchIcon}>
-              <SearchIcon />
-            </div>
-            <TextField
-              id="path"
-              name="path"
-              className={classes.searchTextField}
-              slotProps={{
-                inputLabel: { shrink: true }
-              }}
-              fullWidth
-              placeholder="e.g. /SOME/PATH/*"
-              onChange={(event) => setPath(event.target.value)}
-              onKeyPress={(event) => onKeyPress(event, path)}
-              value={path}
-            />
-          </Box>
-        </section>
-        <section>
-          <header className={classes.header}>
-            <Typography variant="body1">
               <strong>{formatMessage(messages.environment)}</strong>
             </Typography>
           </header>
           <div className={classes.formControl}>
             <RadioGroup
               aria-label={formatMessage(messages.environment)}
-              name="environment"
-              value={currentFilters.environment}
+              name="target"
+              value={currentFilters.target}
               onChange={handleFilterChange}
             >
               <FormControlLabel value="" control={<Radio color="primary" />} label={formatMessage(messages.all)} />
@@ -210,7 +176,7 @@ export function FilterDropdown(props: FilterDropdownProps) {
         <section>
           <header className={classes.header}>
             <Typography variant="body1" sx={{ ml: '5px' }}>
-              <FormControlLabel
+              {/* <FormControlLabel
                 value=""
                 label={<strong>{formatMessage(messages.state)}</strong>}
                 control={
@@ -224,11 +190,11 @@ export function FilterDropdown(props: FilterDropdownProps) {
                     onChange={handleFilterChange}
                   />
                 }
-              />
+              />*/}
             </Typography>
           </header>
           <div className={classes.formControl}>
-            <FormGroup>
+            {/* <FormGroup>
               {filters.states.map((filter: string, index: number) => (
                 <FormControlLabel
                   key={index}
@@ -244,7 +210,7 @@ export function FilterDropdown(props: FilterDropdownProps) {
                   label={formatMessage(messages[filter])}
                 />
               ))}
-            </FormGroup>
+            </FormGroup>*/}
           </div>
         </section>
       </Popover>

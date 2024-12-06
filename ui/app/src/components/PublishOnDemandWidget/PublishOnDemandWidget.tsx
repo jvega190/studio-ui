@@ -14,8 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, { ReactNode } from 'react';
-import { useEffect, useId, useState } from 'react';
+import React, { ReactNode, useEffect, useId, useState } from 'react';
 import Paper from '@mui/material/Paper';
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
 import DialogHeader from '../DialogHeader/DialogHeader';
@@ -31,7 +30,7 @@ import PublishOnDemandForm from '../PublishOnDemandForm';
 import { PublishFormData, PublishOnDemandMode } from '../../models/Publishing';
 import { nnou, nou } from '../../utils/object';
 import Typography from '@mui/material/Typography';
-import { bulkGoLive, fetchPublishingTargets, publishAll, publishByCommits } from '../../services/publishing';
+import { fetchPublishingTargets, publish } from '../../services/publishing';
 import { showSystemNotification } from '../../state/actions/system';
 import { useDispatch } from 'react-redux';
 import {
@@ -294,7 +293,13 @@ export function PublishOnDemandWidget(props: PublishOnDemandWidgetProps) {
     setIsSubmitting(true);
     const { commitIds, publishingTarget, comment } = publishGitFormData;
     const ids = commitIds.replace(/\s/g, '').split(',');
-    publishByCommits(siteId, ids, publishingTarget, comment).subscribe({
+
+    publish(siteId, {
+      publishingTarget,
+      commitIds: ids,
+      title: 'Publish by tags or commit ids', // TODO: discuss title
+      comment
+    }).subscribe({
       next() {
         setIsSubmitting(false);
         dispatch(
@@ -335,7 +340,13 @@ export function PublishOnDemandWidget(props: PublishOnDemandWidgetProps) {
       if (button === 'ok') {
         setIsSubmitting(true);
         const { path, publishingTarget, comment } = publishStudioFormData;
-        bulkGoLive(siteId, path, publishingTarget, comment).subscribe({
+
+        publish(siteId, {
+          publishingTarget,
+          paths: [{ path, includeChildren: false, includeSoftDeps: false }],
+          title: `Publish by path: "${path}"`, // TODO: discuss title
+          comment
+        }).subscribe({
           next() {
             setIsSubmitting(false);
             setPublishStudioFormData({ ...initialPublishStudioFormData, publishingTarget });
@@ -364,7 +375,12 @@ export function PublishOnDemandWidget(props: PublishOnDemandWidgetProps) {
   const onSubmitPublishEverything = () => {
     setIsSubmitting(true);
     const { publishingTarget, comment } = publishEverythingFormData;
-    publishAll(siteId, publishingTarget, comment).subscribe({
+    publish(siteId, {
+      publishingTarget,
+      publishAll: true,
+      title: 'Publish all', // TODO: discuss title
+      comment
+    }).subscribe({
       next() {
         setIsSubmitting(false);
         dispatch(

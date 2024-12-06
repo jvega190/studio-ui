@@ -40,12 +40,12 @@ import { getHostToHostBus } from '../../utils/subjects';
 import { filter } from 'rxjs/operators';
 import LoadingIconButton from '../LoadingIconButton';
 import { fetchPackages, FetchPackagesResponse } from '../../services/publishing';
-import { COMPLETED_MASK } from '../PublishingQueue/constants';
 import Box from '@mui/material/Box';
 import { asLocalizedDateTime } from '../../utils/datetime';
 import { nnou, reversePluckProps } from '../../utils/object';
 import IconButton from '@mui/material/IconButton';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
+import { COMPLETED_MASK } from '../../utils/constants';
 
 interface RecentlyPublishedDashletProps extends CommonDashletProps {}
 

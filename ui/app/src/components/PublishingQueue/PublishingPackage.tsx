@@ -31,6 +31,8 @@ import { READY_FOR_LIVE } from './constants';
 import { alpha } from '@mui/material/styles';
 import palette from '../../styles/palette';
 import PrimaryButton from '../PrimaryButton';
+import { PublishPackage } from '../../models';
+import { isReady } from '../PublishPackageReviewDialog/utils';
 
 const useStyles = makeStyles()((theme) => ({
   package: {
@@ -183,12 +185,7 @@ const translations = defineMessages({
 
 interface PublishingPackageProps {
   siteId: string;
-  id: number;
-  schedule: string;
-  approver: string;
-  state: string;
-  environment: string;
-  comment: string;
+  pkg: PublishPackage;
   selected: any;
   pending: any;
   filesPerPackage: {
@@ -211,12 +208,7 @@ export function PublishingPackage(props: PublishingPackageProps) {
   const { classes, cx } = useStyles();
   const { formatMessage } = useIntl();
   const {
-    id,
-    approver,
-    schedule,
-    state,
-    comment,
-    environment,
+    pkg,
     siteId,
     selected,
     setSelected,
@@ -228,6 +220,8 @@ export function PublishingPackage(props: PublishingPackageProps) {
     setFilesPerPackage,
     readOnly
   } = props;
+  const { id, title, schedule, packageState: state, target: environment, submitterComment: comment } = pkg;
+
   const [loading, setLoading] = useState(null);
 
   const { current: ref } = useRef<any>({});
@@ -297,7 +291,7 @@ export function PublishingPackage(props: PublishingPackageProps) {
               <strong>{id}</strong>
             </Typography>
           </header>
-        ) : state === READY_FOR_LIVE ? (
+        ) : isReady(state) ? (
           <FormGroup className={classes.checkbox}>
             <FormControlLabel
               control={
@@ -308,15 +302,21 @@ export function PublishingPackage(props: PublishingPackageProps) {
                   disabled={readOnly}
                 />
               }
-              label={<strong>{id}</strong>}
+              label={
+                <strong>
+                  {id} - {title}
+                </strong>
+              }
             />
           </FormGroup>
         ) : (
           <Typography variant="body1">
-            <strong>{id}</strong>
+            <strong>
+              {id} - {title}
+            </strong>
           </Typography>
         )}
-        {state === READY_FOR_LIVE && (
+        {isReady(state) && (
           <SelectButton
             classes={{ button: classes.cancelButton }}
             text={formatMessage(translations.cancelText)}
@@ -344,12 +344,13 @@ export function PublishingPackage(props: PublishingPackageProps) {
             }}
           />
         </Typography>
-        <Typography variant="body2">
+        {/* TODO: I need a way of displaying the state from the states bitmap */}
+        {/* <Typography variant="body2">
           {formatMessage(translations.status, {
             state: <strong key={state}>{state}</strong>,
             environment: <strong key={environment}>{environment}</strong>
           })}
-        </Typography>
+        </Typography>*/}
       </div>
       <div className="comment">
         <Typography variant="body2">{formatMessage(translations.comment)}</Typography>

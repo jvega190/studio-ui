@@ -37,11 +37,15 @@ export interface File {
 }
 
 export interface CurrentFilters {
-  environment: string;
-  path: string;
-  state: Array<string>;
+  target: string;
+  states?: number;
+  approvalStates: Array<'SUBMITTED' | 'APPROVED' | 'REJECTED'>;
+  submitter: string;
+  reviewer: string;
+  isScheduled: boolean;
+  sort: string;
+  offset: number;
   limit: number;
-  page: number;
 }
 
 export type PublishingStatusCodes =
@@ -91,14 +95,14 @@ export interface PublishingParams {
 
 export interface PublishParams {
   publishingTarget: string;
-  paths: {
+  paths?: {
     path: string;
     includeChildren: boolean;
     includeSoftDeps: boolean;
   }[];
   commitIds?: string[];
   schedule?: string;
-  requestApproval: boolean;
+  requestApproval?: boolean;
   publishAll?: boolean;
   title: string;
   comment?: string;
