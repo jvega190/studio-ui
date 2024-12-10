@@ -17,7 +17,7 @@
 import * as React from 'react';
 import Paper from '@mui/material/Paper';
 import { PublishingStatusDialogContainer } from '../PublishingStatusDialog';
-import { clearLock, start, stop } from '../../services/publishing';
+import { clearLock, enable } from '../../services/publishing';
 import { fetchPublishingStatus } from '../../state/actions/publishingStatus';
 import { useDispatch } from 'react-redux';
 import { useSelection } from '../../hooks/useSelection';
@@ -45,9 +45,7 @@ export function PublishingStatusWidget(props: PublishingStatusWidgetProps) {
   const { formatMessage } = useIntl();
 
   const onStartStop = () => {
-    const action = state.enabled ? stop : start;
-
-    action(siteId).subscribe(() => {
+    enable(siteId, !state.enabled).subscribe(() => {
       dispatch(fetchPublishingStatus());
     });
   };
