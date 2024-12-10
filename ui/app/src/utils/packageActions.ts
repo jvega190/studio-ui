@@ -27,8 +27,8 @@ const translations = defineMessages({
   review: {
     defaultMessage: 'Review'
   },
-  clone: {
-    defaultMessage: 'Clone'
+  resubmit: {
+    defaultMessage: 'Resubmit'
   },
   cancel: {
     defaultMessage: 'Cancel'
@@ -40,9 +40,9 @@ const unparsedOptions: Record<PackageActions, ContextMenuOptionDescriptor<Packag
     id: 'review',
     label: translations.review
   },
-  clone: {
-    id: 'clone',
-    label: translations.clone
+  resubmit: {
+    id: 'resubmit',
+    label: translations.resubmit
   },
   cancel: {
     id: 'cancel',
@@ -67,8 +67,8 @@ export const generatePackageOptions = (
   if (pkg.approvalState === 'SUBMITTED' && actionsToInclude.review) {
     packageOptions.push(unparsedOptions.review);
   }
-  if (actionsToInclude.clone) {
-    packageOptions.push(unparsedOptions.clone);
+  if (actionsToInclude.resubmit) {
+    packageOptions.push(unparsedOptions.resubmit);
   }
   if (actionsToInclude.cancel) {
     packageOptions.push(unparsedOptions.cancel);
@@ -96,8 +96,8 @@ export const packageActionDispatcher = ({
         })
       );
       break;
-    case 'clone':
-      console.log('clone');
+    case 'resubmit':
+      console.log('resubmit');
       break;
     case 'cancel':
       console.log('cancel');

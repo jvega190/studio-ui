@@ -120,7 +120,7 @@ export interface PublishingPackageApproveParams {
   updateSchedule: boolean;
 }
 
-export type PackageActions = 'review' | 'cancel' | 'clone';
+export type PackageActions = 'review' | 'cancel' | 'resubmit';
 
 export interface PublishingItem {
   action: string;
