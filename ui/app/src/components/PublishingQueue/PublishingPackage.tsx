@@ -22,17 +22,17 @@ import { makeStyles } from 'tss-react/mui';
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
 import SelectButton from '../ConfirmDropdown';
 import Typography from '@mui/material/Typography';
-import { cancelPackage, fetchPackage } from '../../services/publishing';
+import { fetchPackage } from '../../services/publishing';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import CircularProgress from '@mui/material/CircularProgress';
 import '../../styles/animations.scss';
-import { READY_FOR_LIVE } from './constants';
 import { alpha } from '@mui/material/styles';
 import palette from '../../styles/palette';
 import PrimaryButton from '../PrimaryButton';
 import { PublishPackage } from '../../models';
-import { isReady } from '../PublishPackageReviewDialog/utils';
+import { getPackageStateLabel, isReady } from '../PublishPackageReviewDialog/utils';
+import { cancel } from '../../services/workflow';
 
 const useStyles = makeStyles()((theme) => ({
   package: {
@@ -220,7 +220,10 @@ export function PublishingPackage(props: PublishingPackageProps) {
     setFilesPerPackage,
     readOnly
   } = props;
-  const { id, title, schedule, packageState: state, target: environment, submitterComment: comment } = pkg;
+  const { id, title, packageState: state, target, submitter, submittedOn, submitterComment } = pkg;
+  const username = submitter.username;
+  const comment = submitterComment;
+  const schedule = submittedOn;
 
   const [loading, setLoading] = useState(null);
 
@@ -242,14 +245,15 @@ export function PublishingPackage(props: PublishingPackageProps) {
   function handleCancel(packageId: number) {
     setPending({ ...pending, [packageId]: true });
 
-    cancelPackage(siteId, [packageId]).subscribe(
-      () => {
+    // TODO: comment is required - need to discuss generation of comment
+    cancel(siteId, packageId, `cancelling package ${packageId}`).subscribe({
+      next() {
         ref.cancelComplete(packageId);
       },
-      ({ response }) => {
+      error({ response }) {
         setApiState({ error: true, errorResponse: response });
       }
-    );
+    });
   }
 
   function onFetchPackages(packageId: number) {
@@ -271,8 +275,8 @@ export function PublishingPackage(props: PublishingPackageProps) {
         <ListItem key={index} divider>
           <Typography variant="body2">{file.path}</Typography>
           <Typography variant="body2" color="textSecondary">
-            {file.contentTypeClass in translations
-              ? formatMessage(translations[file.contentTypeClass])
+            {file.itemMetadata.systemType in translations
+              ? formatMessage(translations[file.itemMetadata.systemType])
               : file.contentTypeClass}
           </Typography>
         </ListItem>
@@ -332,10 +336,10 @@ export function PublishingPackage(props: PublishingPackageProps) {
         <Typography variant="body2">
           <FormattedMessage
             id="publishingDashboard.scheduled"
-            defaultMessage="Scheduled for <b>{schedule, date, medium} {schedule, time, short}</b> by <b>{approver}</b>"
+            defaultMessage="Scheduled for <b>{schedule, date, medium} {schedule, time, short}</b> by <b>{username}</b>"
             values={{
               schedule: new Date(schedule),
-              approver: approver,
+              username,
               b: (content: ReactNode[]) => (
                 <strong key={content[0] as string} className={classes.username}>
                   {content[0]}
@@ -344,13 +348,12 @@ export function PublishingPackage(props: PublishingPackageProps) {
             }}
           />
         </Typography>
-        {/* TODO: I need a way of displaying the state from the states bitmap */}
-        {/* <Typography variant="body2">
+        <Typography variant="body2">
           {formatMessage(translations.status, {
-            state: <strong key={state}>{state}</strong>,
-            environment: <strong key={environment}>{environment}</strong>
+            state: <strong>{getPackageStateLabel(state)}</strong>,
+            environment: <strong key={target}>{target}</strong>
           })}
-        </Typography>*/}
+        </Typography>
       </div>
       <div className="comment">
         <Typography variant="body2">{formatMessage(translations.comment)}</Typography>

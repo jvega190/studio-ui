@@ -22,7 +22,8 @@ import { SandboxItem } from '../models/Item';
 import { PagedArray } from '../models/PagedArray';
 import { createItemActionMap, createItemStateMap } from '../utils/content';
 import PaginationOptions from '../models/PaginationOptions';
-import { PublishingPackageApproveParams, PublishingParams } from '../models/Publishing';
+import { PublishingPackageApproveParams } from '../models/Publishing';
+import { ApiResponse } from '../models';
 
 export function fetchItemStates(
   siteId: string,
@@ -76,28 +77,24 @@ export function setItemStatesByQuery(siteId: string, states: number, update: Sta
   }).pipe(map(() => true));
 }
 
-export function publish(siteId: string, data: PublishingParams): Observable<boolean> {
-  return postJSON('/studio/api/2/workflow/publish', {
-    siteId,
-    ...data
-  }).pipe(map(() => true));
-}
-
-export function requestPublish(siteId: string, data: PublishingParams): Observable<boolean> {
-  return postJSON('/studio/api/2/workflow/request_publish', {
-    siteId,
-    ...data
-  }).pipe(map(() => true));
-}
-
-export function approve(siteId: string, packageId: number, data: PublishingPackageApproveParams): Observable<boolean> {
+export function approve(
+  siteId: string,
+  packageId: number,
+  data: PublishingPackageApproveParams
+): Observable<ApiResponse> {
   return postJSON(`/studio/api/2/workflow/${siteId}/package/${packageId}/approve`, {
     ...data
-  }).pipe(map(() => true));
+  }).pipe(map(({ response }) => response));
 }
 
-export function reject(siteId: string, packageId: number, comment: string): Observable<boolean> {
+export function reject(siteId: string, packageId: number, comment: string): Observable<ApiResponse> {
   return postJSON(`/studio/api/2/workflow/${siteId}/package/${packageId}/reject`, {
     comment
-  }).pipe(map(() => true));
+  }).pipe(map(({ response }) => response));
+}
+
+export function cancel(siteId: string, packageId: number, comment: string): Observable<ApiResponse> {
+  return postJSON(`/studio/api/2/workflow/${siteId}/package/${packageId}/cancel`, {
+    comment
+  }).pipe(map(({ response }) => response));
 }

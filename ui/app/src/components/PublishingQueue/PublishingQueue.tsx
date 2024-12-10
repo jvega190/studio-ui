@@ -21,7 +21,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import { defineMessages, useIntl } from 'react-intl';
 import PublishingPackage from './PublishingPackage';
-import { cancelPackage, fetchPackages, fetchPublishingTargets } from '../../services/publishing';
+import { fetchPackages, fetchPublishingTargets } from '../../services/publishing';
 import { CurrentFilters, Package, PublishPackage, Selected } from '../../models/Publishing';
 import FilterDropdown from './FilterDropdown';
 import { setRequestForgeryToken } from '../../utils/auth';
@@ -52,7 +52,7 @@ import {
   STAGING_FAILED_MASK,
   STAGING_SUCCESS_MASK
 } from '../../utils/constants';
-import { isReady } from '../PublishPackageReviewDialog/utils';
+import { getPackageStateLabel, isReady } from '../PublishPackageReviewDialog/utils';
 
 const messages = defineMessages({
   selectAll: {
@@ -90,7 +90,7 @@ const messages = defineMessages({
   filteredBy: {
     id: 'publishingDashboard.filteredBy',
     defaultMessage:
-      'Showing: {state, select, all {} other {Status: {state}.}} {environment, select, all {} other {{environment} target.}} {path, select, none {} other {Filtered by {path}}}'
+      'Showing: {state, select, all {} other {Status: {state}.}} {environment, select, all {} other {{environment} target.}}'
   },
   packagesSelected: {
     id: 'publishingDashboard.packagesSelected',
@@ -168,31 +168,20 @@ const useStyles = makeStyles()((theme) => ({
   }
 }));
 
-const filterStates = {
-  ready: READY_MASK,
-  processing: PROCESSING_MASK,
-  completed: COMPLETED_MASK,
-  cancelled: CANCELLED_MASK
-  // blocked: ?
-};
-
-// TODO: there's a problem right now because the mixing of states end up in an AND operation, not an OR
-// const initialStates =
-//   READY_MASK +
-//   PROCESSING_MASK +
-//   LIVE_SUCCESS_MASK +
-//   LIVE_FAILED_MASK +
-//   STAGING_SUCCESS_MASK +
-//   STAGING_COMPLETED_WITH_ERRORS_MASK +
-//   STAGING_FAILED_MASK +
-//   COMPLETED_MASK +
-//   CANCELLED_MASK;
+export const allFiltersState =
+  READY_MASK +
+  PROCESSING_MASK +
+  LIVE_SUCCESS_MASK +
+  LIVE_FAILED_MASK +
+  STAGING_SUCCESS_MASK +
+  STAGING_COMPLETED_WITH_ERRORS_MASK +
+  STAGING_FAILED_MASK +
+  COMPLETED_MASK +
+  CANCELLED_MASK;
 
 const currentFiltersInitialState: CurrentFilters = {
-  target: null, // used to be 'environment',
-  // states: initialStates,
-  states: READY_MASK, // TODO: null for all states (?)
-  // state: [READY_FOR_LIVE, PROCESSING, COMPLETED, CANCELLED, BLOCKED], // TODO: what's blocked now?
+  target: '',
+  states: null, // Null means any/all states
   approvalStates: [],
   submitter: '',
   reviewer: '',
@@ -222,7 +211,7 @@ function getFilters(currentFilters: CurrentFilters) {
 }
 
 function renderCount(selected: Selected) {
-  let _selected: any = [];
+  const _selected: string[] = [];
   Object.keys(selected).forEach((key) => {
     if (selected[key]) {
       _selected.push(key);
@@ -258,22 +247,17 @@ function PublishingQueue(props: PublishingQueueProps) {
   const getPackages = useCallback(
     (siteId: string) => {
       setIsFetchingPackages(true);
-      // TODO: is this validation correct?
-      if (currentFilters.states !== 0) {
-        console.log('filters', getFilters(currentFilters));
-        fetchPackages(siteId, getFilters(currentFilters)).subscribe({
-          next: (packages) => {
-            setIsFetchingPackages(false);
-            console.log('packages', packages);
-            setTotal(packages.total);
-            setPackages(packages);
-          },
-          error: ({ response }) => {
-            setIsFetchingPackages(false);
-            setApiState({ error: true, errorResponse: response.response });
-          }
-        });
-      }
+      fetchPackages(siteId, getFilters(currentFilters)).subscribe({
+        next: (packages) => {
+          setIsFetchingPackages(false);
+          setTotal(packages.total);
+          setPackages(packages);
+        },
+        error: ({ response }) => {
+          setIsFetchingPackages(false);
+          setApiState({ error: true, errorResponse: response.response });
+        }
+      });
     },
     [currentFilters, setApiState]
   );
@@ -306,7 +290,7 @@ function PublishingQueue(props: PublishingQueueProps) {
   useEffect(() => {
     const events: string[] = [workflowEvent.type, publishEvent.type];
     const hostToHost$ = getHostToHostBus();
-    const subscription = hostToHost$.pipe(filter((e) => events.includes(e.type))).subscribe(({ type, payload }) => {
+    const subscription = hostToHost$.pipe(filter((e) => events.includes(e.type))).subscribe(() => {
       getPackages(siteId);
     });
 
@@ -315,6 +299,7 @@ function PublishingQueue(props: PublishingQueueProps) {
     };
   }, [siteId, getPackages]);
 
+  // TODO: new API doesn't support bulk anymore
   function handleCancelAll() {
     if (count === 0) return false;
     let _pending: Selected = {};
@@ -324,26 +309,26 @@ function PublishingQueue(props: PublishingQueueProps) {
       }
     });
     setPending(_pending);
-    // TODO: migrate this API `/api/2/workflow/{site}/package/{package}/cancel`
-    cancelPackage(siteId, Object.keys(_pending)).subscribe({
-      next() {
-        Object.keys(selected).forEach((key: string) => {
-          _pending[key] = false;
-        });
-        setPending({ ...pending, ..._pending });
-        clearSelected();
-        getPackages(siteId);
-      },
-      error({ response }) {
-        setApiState({ error: true, errorResponse: response });
-      }
-    });
+    // cancelPackage(siteId, Object.keys(_pending)).subscribe({
+    //   next() {
+    //     Object.keys(selected).forEach((key: string) => {
+    //       _pending[key] = false;
+    //     });
+    //     setPending({ ...pending, ..._pending });
+    //     clearSelected();
+    //     getPackages(siteId);
+    //   },
+    //   error({ response }) {
+    //     setApiState({ error: true, errorResponse: response });
+    //   }
+    // });
   }
 
   function clearSelected() {
     setSelected({});
   }
 
+  // select all packages
   function handleSelectAll(event: any) {
     if (!packages || packages.length === 0) return false;
     let _selected: Selected = {};
@@ -373,26 +358,27 @@ function PublishingQueue(props: PublishingQueueProps) {
   }
 
   function handleFilterChange(event: any) {
-    // TODO: use 'switch' instead of 'if'
     if (event.target.type === 'radio') {
       clearSelected();
-      setCurrentFilters({ ...currentFilters, [event.target.name]: event.target.value, page: 0 });
+      setCurrentFilters({ ...currentFilters, [event.target.name]: event.target.value, offset: 0 });
     } else if (event.target.type === 'checkbox') {
-      let state = [...currentFilters.state];
+      let states = currentFilters.states;
       if (event.target.checked) {
+        // If target.value exists => specific state selected, else all states checked
         if (event.target.value) {
-          state.push(event.target.value);
+          states += parseInt(event.target.value);
         } else {
-          state = [...filters.states];
+          states = allFiltersState;
         }
       } else {
+        // If target.value exists => specific state unchecked, else all states unchecked
         if (event.target.value) {
-          state.splice(state.indexOf(event.target.value), 1);
+          states -= parseInt(event.target.value);
         } else {
-          state = [];
+          states = null;
         }
       }
-      setCurrentFilters({ ...currentFilters, state, page: 0 });
+      setCurrentFilters({ ...currentFilters, states, offset: 0 });
     }
   }
 
@@ -439,7 +425,9 @@ function PublishingQueue(props: PublishingQueueProps) {
             confirmText={formatMessage(messages.confirm)}
             confirmHelperText={formatMessage(messages.confirmAllHelper)}
             onConfirm={handleCancelAll}
-            disabled={!(hasReadyForLivePackages && Object.values(selected).length > 0) || readOnly}
+            disabled={
+              !(hasReadyForLivePackages && Object.values(selected).filter((value) => value).length > 0) || readOnly
+            }
           />
         )}
         <FilterDropdown
@@ -448,24 +436,22 @@ function PublishingQueue(props: PublishingQueueProps) {
           handleFilterChange={handleFilterChange}
           currentFilters={currentFilters}
           filters={filters}
-          filterStates={filterStates}
         />
       </div>
-      {/*      {(currentFilters.state.length || currentFilters.path || currentFilters.environment) && (
+      {(currentFilters.states || currentFilters.target) && (
         <div className={classes.secondBar}>
           <Typography variant="body2">
             {formatMessage(messages.filteredBy, {
-              state: currentFilters.state ? <strong key="state">{currentFilters.state.join(', ')}</strong> : 'all',
-              path: currentFilters.path ? <strong key="path">{currentFilters.path}</strong> : 'none',
-              environment: currentFilters.environment ? (
-                <strong key="environment">{currentFilters.environment}</strong>
+              state: currentFilters.states ? (
+                <strong key="state">{getPackageStateLabel(currentFilters.states)}</strong>
               ) : (
                 'all'
-              )
+              ),
+              environment: currentFilters.target ? <strong key="environment">{currentFilters.target}</strong> : 'all'
             })}
           </Typography>
         </div>
-      )}*/}
+      )}
       {apiState.error && apiState.errorResponse ? (
         <ApiResponseErrorState error={apiState.errorResponse} />
       ) : (

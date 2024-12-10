@@ -16,19 +16,19 @@
 
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import Button from '@mui/material/Button';
-import React, { useState } from 'react';
+import React from 'react';
 import Popover from '@mui/material/Popover';
 import { defineMessages, useIntl } from 'react-intl';
 import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Radio from '@mui/material/Radio';
 import { CurrentFilters } from '../../models/Publishing';
-import SearchIcon from '@mui/icons-material/SearchRounded';
 import { Checkbox, FormGroup, Theme } from '@mui/material';
 import { makeStyles } from 'tss-react/mui';
 import Box from '@mui/material/Box';
+import { packageStatesMap } from '../PublishPackageReviewDialog/utils';
+import { allFiltersState } from './PublishingQueue';
 
 const useStyles = makeStyles()((theme: Theme) => ({
   paper: {
@@ -86,25 +86,45 @@ const messages: any = defineMessages({
     id: 'publishingDashboard.all',
     defaultMessage: 'All'
   },
-  READY_FOR_LIVE: {
-    id: 'publishingDashboard.READY_FOR_LIVE',
+  ready: {
+    id: 'publishingDashboard.ready',
     defaultMessage: 'Ready for Live'
   },
-  PROCESSING: {
-    id: 'publishingDashboard.PROCESSING',
+  processing: {
+    id: 'publishingDashboard.processing',
     defaultMessage: 'Processing'
   },
-  COMPLETED: {
-    id: 'publishingDashboard.COMPLETED',
+  liveSuccess: {
+    id: 'publishingDashboard.liveSuccess',
+    defaultMessage: 'Live Success'
+  },
+  liveCompletedWithErrors: {
+    id: 'publishingDashboard.liveCompletedWithErrors',
+    defaultMessage: 'Live Completed with Errors'
+  },
+  liveFailed: {
+    id: 'publishingDashboard.liveFailed',
+    defaultMessage: 'Live Failed'
+  },
+  stagingSuccess: {
+    id: 'publishingDashboard.stagingSuccess',
+    defaultMessage: 'Staging Success'
+  },
+  stagingCompletedWithErrors: {
+    id: 'publishingDashboard.stagingCompletedWithErrors',
+    defaultMessage: 'Staging Completed with Errors'
+  },
+  stagingFailed: {
+    id: 'publishingDashboard.stagingFailed',
+    defaultMessage: 'Staging Failed'
+  },
+  completed: {
+    id: 'publishingDashboard.completed',
     defaultMessage: 'Completed'
   },
-  CANCELLED: {
-    id: 'publishingDashboard.CANCELLED',
+  cancelled: {
+    id: 'publishingDashboard.cancelled',
     defaultMessage: 'Cancelled'
-  },
-  BLOCKED: {
-    id: 'publishingDashboard.BLOCKED',
-    defaultMessage: 'Blocked'
   }
 });
 
@@ -113,14 +133,13 @@ interface FilterDropdownProps {
   className: any;
   currentFilters: CurrentFilters;
   filters: any;
-  filterStates: Record<string, string>;
   handleFilterChange(event: any): any;
 }
 
 export function FilterDropdown(props: FilterDropdownProps) {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const { classes } = useStyles();
-  const { text, className, handleFilterChange, currentFilters, filters, filterStates } = props;
+  const { text, className, handleFilterChange, currentFilters, filters } = props;
   const { formatMessage } = useIntl();
 
   const handleClick = (event: any) => {
@@ -176,7 +195,7 @@ export function FilterDropdown(props: FilterDropdownProps) {
         <section>
           <header className={classes.header}>
             <Typography variant="body1" sx={{ ml: '5px' }}>
-              {/* <FormControlLabel
+              <FormControlLabel
                 value=""
                 label={<strong>{formatMessage(messages.state)}</strong>}
                 control={
@@ -184,34 +203,38 @@ export function FilterDropdown(props: FilterDropdownProps) {
                     color="primary"
                     value=""
                     indeterminate={
-                      currentFilters.state.length > 0 && currentFilters.state.length !== filters.states.length
+                      currentFilters.states !== null &&
+                      currentFilters.states !== 0 &&
+                      currentFilters.states !== allFiltersState
                     }
-                    checked={currentFilters.state.length === filters.states.length}
+                    checked={currentFilters.states === allFiltersState}
                     onChange={handleFilterChange}
                   />
                 }
-              />*/}
+              />
             </Typography>
           </header>
-          <div className={classes.formControl}>
-            {/* <FormGroup>
-              {filters.states.map((filter: string, index: number) => (
-                <FormControlLabel
-                  key={index}
-                  value={filter}
-                  control={
-                    <Checkbox
-                      color="primary"
-                      value={filter}
-                      checked={currentFilters.state.includes(filter)}
-                      onChange={handleFilterChange}
-                    />
-                  }
-                  label={formatMessage(messages[filter])}
-                />
-              ))}
-            </FormGroup>*/}
-          </div>
+          <Box className={classes.formControl}>
+            <FormGroup>
+              {Object.entries(packageStatesMap).map(([key, { mask, validation }]) => {
+                return (
+                  <FormControlLabel
+                    key={key}
+                    value={mask}
+                    control={
+                      <Checkbox
+                        color="primary"
+                        value={mask}
+                        checked={validation(currentFilters.states)}
+                        onChange={handleFilterChange}
+                      />
+                    }
+                    label={formatMessage(messages[key])}
+                  />
+                );
+              })}
+            </FormGroup>
+          </Box>
         </section>
       </Popover>
     </div>
