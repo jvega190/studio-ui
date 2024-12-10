@@ -297,7 +297,7 @@ export function PublishOnDemandWidget(props: PublishOnDemandWidgetProps) {
     publish(siteId, {
       publishingTarget,
       commitIds: ids,
-      title: 'Publish by tags or commit ids', // TODO: discuss title
+      title: 'Publish by tags or commit ids', // TODO: title generation
       comment
     }).subscribe({
       next() {
