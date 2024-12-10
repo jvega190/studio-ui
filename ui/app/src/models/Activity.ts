@@ -28,6 +28,7 @@ export type Activities =
   | 'REVERT'
   | 'PUBLISHED'
   | 'INITIAL_PUBLISH'
+  | 'CANCEL_PUBLISH_PACKAGE'
   // TODO - Change when backend is updated
   //  PUBLISH is what the backend sends for APPROVE & APPROVE_SCHEDULED.
   //  The latter are never sent back currently.

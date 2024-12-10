@@ -132,6 +132,11 @@ export interface PublishingItem {
   stagingError: number;
   stagingPreviousPath: string;
   userRequested: boolean;
+  itemMetadata: {
+    label: string;
+    systemType: string;
+    mimeType: string;
+  };
 }
 
 export interface PublishPackage {

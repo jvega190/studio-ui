@@ -17,7 +17,6 @@
 import React, { useEffect, useState } from 'react';
 import useSpreadState from '../../hooks/useSpreadState';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
-import { fetchPublishingHistoryPackageItems } from '../../services/dashboard';
 import { FormattedMessage } from 'react-intl';
 import DialogContent from '@mui/material/DialogContent';
 import { LoadingState } from '../LoadingState';
@@ -26,7 +25,6 @@ import { EmptyState } from '../EmptyState';
 import List from '@mui/material/List';
 import ItemDisplay from '../ItemDisplay';
 import { EnhancedDialog, EnhancedDialogProps } from '../EnhancedDialog';
-import { Pager } from '../DashletCard/dashletCommons';
 import Box from '@mui/material/Box';
 import Tooltip from '@mui/material/Tooltip';
 import IconButton from '@mui/material/IconButton';
@@ -39,17 +37,20 @@ import { SandboxItem } from '../../models';
 import ListItemButton from '@mui/material/ListItemButton';
 import DialogFooter from '../DialogFooter';
 import ApiResponseErrorState from '../ApiResponseErrorState';
+import { fetchPackage } from '../../services/publishing';
+import ListItemText from '@mui/material/ListItemText';
 
 const dialogContentHeight = 420;
 
 export interface PackageDetailsDialogProps extends EnhancedDialogProps {
-  packageId: string;
+  packageId: number;
 }
 
 export function PackageDetailsDialog(props: PackageDetailsDialogProps) {
   const { packageId, ...enhancedDialogProps } = props;
   const site = useActiveSiteId();
   const [state, setState] = useSpreadState({
+    publishPackage: null,
     items: null,
     loading: false,
     error: null,
@@ -65,15 +66,15 @@ export function PackageDetailsDialog(props: PackageDetailsDialogProps) {
   useEffect(() => {
     if (packageId) {
       setState({ items: null, loading: true, error: null });
-      fetchPublishingHistoryPackageItems(site, packageId, {
-        limit: state.limit,
-        offset: 0
-      }).subscribe({
-        next: (items) => {
-          setState({ items, loading: false, offset: 0, total: items.total });
-        },
-        error({ response }) {
-          setState({ error: response.response, loading: false });
+      fetchPackage(site, packageId).subscribe({
+        next(publishPackage) {
+          setState({
+            publishPackage,
+            items: publishPackage.items.map((item) => ({ ...item.itemMetadata, path: item.path })),
+            loading: false,
+            offset: 0,
+            total: publishPackage.items.length
+          });
         }
       });
     }
@@ -93,18 +94,19 @@ export function PackageDetailsDialog(props: PackageDetailsDialogProps) {
     );
   };
 
-  const loadPage = (pageNumber: number) => {
-    const newOffset = pageNumber * state.limit;
-    setState({ items: null, loading: true, error: null });
-    fetchPublishingHistoryPackageItems(site, packageId, { limit: state.limit, offset: newOffset }).subscribe({
-      next: (items) => {
-        setState({ items, loading: false, offset: newOffset, total: items.total });
-      },
-      error({ response }) {
-        setState({ error: response.response, loading: false });
-      }
-    });
-  };
+  // TODO: no pagination in current API
+  // const loadPage = (pageNumber: number) => {
+  //   const newOffset = pageNumber * state.limit;
+  //   setState({ items: null, loading: true, error: null });
+  //   fetchPublishingHistoryPackageItems(site, packageId, { limit: state.limit, offset: newOffset }).subscribe({
+  //     next: (items) => {
+  //       setState({ items, loading: false, offset: newOffset, total: items.total });
+  //     },
+  //     error({ response }) {
+  //       setState({ error: response.response, loading: false });
+  //     }
+  //   });
+  // };
 
   function onRowsPerPageChange(rowsPerPage: number) {
     setState({
@@ -124,8 +126,17 @@ export function PackageDetailsDialog(props: PackageDetailsDialogProps) {
           defaultMessage="Publishing Package Details"
         />
       }
+      subtitle={
+        <FormattedMessage
+          defaultMessage="{title} ({itemCount} {itemCount, plural, one {item} other {items}})"
+          values={{
+            title: state.publishPackage?.title,
+            itemCount: state.total
+          }}
+        />
+      }
     >
-      <DialogContent>
+      <DialogContent sx={{ p: 1 }}>
         {state.loading && <LoadingState styles={{ root: { width: 100, height: dialogContentHeight } }} />}
         {state.error && <ApiResponseErrorState error={state.error} />}
         {!Boolean(packageId) && (
@@ -152,7 +163,7 @@ export function PackageDetailsDialog(props: PackageDetailsDialogProps) {
             />
           ) : (
             <>
-              <List sx={{ height: dialogContentHeight, overflowY: 'auto' }}>
+              <List sx={{ height: dialogContentHeight, overflowY: 'auto', p: 0 }}>
                 {state.items.map((item) => (
                   <ListItemButton
                     key={item.id}
@@ -163,7 +174,18 @@ export function PackageDetailsDialog(props: PackageDetailsDialogProps) {
                       justifyContent: 'space-between'
                     }}
                   >
-                    <ItemDisplay item={item} titleDisplayProp="path" showNavigableAsLinks={false} />
+                    <ListItemText
+                      primary={
+                        <ItemDisplay
+                          item={item}
+                          titleDisplayProp="path"
+                          showWorkflowState={false}
+                          showPublishingTarget={false}
+                          showNavigableAsLinks={false}
+                        />
+                      }
+                      secondary={item.path}
+                    />
 
                     {over === item.path && (
                       <Tooltip title={<FormattedMessage defaultMessage="Options" />}>
@@ -186,7 +208,7 @@ export function PackageDetailsDialog(props: PackageDetailsDialogProps) {
       </DialogContent>
       <DialogFooter>
         <Box display="flex" justifyContent="space-between">
-          <Pager
+          {/* <Pager
             totalPages={totalPages}
             totalItems={state.total}
             currentPage={currentPage}
@@ -194,7 +216,7 @@ export function PackageDetailsDialog(props: PackageDetailsDialogProps) {
             onPagePickerChange={(page) => loadPage(page)}
             onPageChange={(page) => loadPage(page)}
             onRowsPerPageChange={onRowsPerPageChange}
-          />
+          />*/}
         </Box>
       </DialogFooter>
     </EnhancedDialog>

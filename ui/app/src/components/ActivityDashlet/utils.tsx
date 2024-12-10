@@ -182,6 +182,13 @@ export function renderActivity(
       );
     case 'PUBLISH_ALL':
       return <FormattedMessage defaultMessage="Published entire project" />;
+    case 'CANCEL_PUBLISH_PACKAGE':
+      return (
+        <FormattedMessage
+          defaultMessage="Cancelled <render_package_link>a package</render_package_link>"
+          values={{ render_package_link }}
+        />
+      );
     default:
       console.log('[INFO] An unknown activity was received from the server.', activity);
       return <FormattedMessage defaultMessage="Unlabelled activity" />;
