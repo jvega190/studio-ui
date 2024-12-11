@@ -9,6 +9,8 @@
   * Removed `RejectDialog` component. Now handled by `PublishingPackageReviewDialog`.
   * Removed `emailOnApprove` option from `PublishDialog` form.
   * Removed `PublishDialog/styles.ts` file.
+  * `PackageDetailsDialog`: Updated `packageId` prop to be of type `number`.
+  * `PublishOnDemandForm`: Removed `bulkPublishCommentRequired` and `publishByCommitCommentRequired` props.
 * [hooks]
   * Removed `useLogicResource` hook.
   * Removed `useSelectorResource` hook.
@@ -28,6 +30,11 @@
   * `publishing/fetchPackage`: `packageId` is now of type `number`.
   * Updated `workflow/approve`: Now it receives `packageId` as a parameter.
   * Updated `workflow/reject`: Now it receives `packageId` as a parameter instead of `items`.
+  * Removed `workflow/publish` and `workflow/requestPublish`, replaced by `publishing/publish` and `publishing/publish`.
+  * Removed `publishing/cancelPackage` service, replaced by `workflow/cancel`.
+  * Removed `publishing/start` and `publishing/stop` services, replaced by `publishing/enable`.
+  * Removed `publishing/bulkGoLive`, `publishing/publishByCommits` and `publishing/publishAll` services, replaced by `publishing/publish`.
+  * Removed `content/fetchWorkflowAffectedItems` service. Now workflow affected validation is checked against packages using `workflow/fetchAffectedPackages`.
 * `PublishingItem` interface changes: 
   * `approver` is now `reviewer`, of type Person.
   * `comment` is removed, and now there's `reviewerComment` and `submitterComment`.
@@ -35,6 +42,8 @@
   * `items` is now of type `PublishingItem[]`.
   * `state` is now `approvalState`.
   * Added `title`, `submittedOn`, `reviewedOn`,`packageState`, `reviewer`, `liveError`, `stagingError`, `publishedOn`, `packageType`, `commitId`, `publishedStagingCommitId` and `publishedLiveCommitId` props.
+* `PublishFormData` interface change: Added `title` prop. 
+* `approvePublish` anb `rejectPublish` are no longer item actions.
 
 ## 4.2.0
 
