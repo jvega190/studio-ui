@@ -135,17 +135,20 @@ const messages = defineMessages({
 const initialPublishStudioFormData = {
   path: '',
   publishingTarget: '',
+  title: '',
   comment: ''
 };
 
 const initialPublishGitFormData = {
   commitIds: '',
   publishingTarget: '',
+  title: '',
   comment: ''
 };
 
 const initialPublishEverythingFormData = {
   publishingTarget: '',
+  title: '',
   comment: ''
 };
 
@@ -179,26 +182,26 @@ export function PublishOnDemandWidget(props: PublishOnDemandWidgetProps) {
   const [initialPublishingTarget, setInitialPublishingTarget] = useState(null);
   const [publishingTargets, setPublishingTargets] = useState(null);
   const [publishingTargetsError, setPublishingTargetsError] = useState(null);
-  const { bulkPublishCommentRequired, publishByCommitCommentRequired, publishEverythingCommentRequired } = useSelection(
-    (state) => state.uiConfig.publishing
-  );
   const [publishGitFormData, setPublishGitFormData] = useSpreadState<PublishFormData>(initialPublishGitFormData);
   const publishGitFormValid =
     !isBlank(publishGitFormData.publishingTarget) &&
-    (!publishByCommitCommentRequired || !isBlank(publishGitFormData.comment)) &&
+    !isBlank(publishGitFormData.title) &&
+    !isBlank(publishGitFormData.comment) &&
     publishGitFormData.commitIds.replace(/\s/g, '') !== '';
   const [publishStudioFormData, setPublishStudioFormData] =
     useSpreadState<PublishFormData>(initialPublishStudioFormData);
   const publishStudioFormValid =
     !isBlank(publishStudioFormData.publishingTarget) &&
-    (!bulkPublishCommentRequired || !isBlank(publishStudioFormData.comment)) &&
+    !isBlank(publishStudioFormData.title) &&
+    !isBlank(publishStudioFormData.comment) &&
     publishStudioFormData.path.replace(/\s/g, '') !== '';
   const [publishEverythingFormData, setPublishEverythingFormData] = useSpreadState<PublishFormData>(
     initialPublishEverythingFormData
   );
   const publishEverythingFormValid =
     publishEverythingFormData.publishingTarget !== '' &&
-    (!publishEverythingCommentRequired || !isBlank(publishEverythingFormData.comment));
+    !isBlank(publishEverythingFormData.comment) &&
+    !isBlank(publishEverythingFormData.title);
   const fnRefs = useUpdateRefs({ onSubmittingAndOrPendingChange });
   // region currentFormData
   const currentFormData =
@@ -291,13 +294,13 @@ export function PublishOnDemandWidget(props: PublishOnDemandWidgetProps) {
 
   const onSubmitPublishBy = () => {
     setIsSubmitting(true);
-    const { commitIds, publishingTarget, comment } = publishGitFormData;
+    const { commitIds, publishingTarget, title, comment } = publishGitFormData;
     const ids = commitIds.replace(/\s/g, '').split(',');
 
     publish(siteId, {
       publishingTarget,
       commitIds: ids,
-      title: 'Publish by tags or commit ids', // TODO: title generation
+      title,
       comment
     }).subscribe({
       next() {
@@ -339,12 +342,12 @@ export function PublishOnDemandWidget(props: PublishOnDemandWidgetProps) {
     createCustomDocumentEventListener<{ button: 'ok' | 'cancel' }>(eventId, ({ button }) => {
       if (button === 'ok') {
         setIsSubmitting(true);
-        const { path, publishingTarget, comment } = publishStudioFormData;
+        const { path, publishingTarget, title, comment } = publishStudioFormData;
 
         publish(siteId, {
           publishingTarget,
           paths: [{ path, includeChildren: false, includeSoftDeps: false }],
-          title: `Publish by path: "${path}"`, // TODO: discuss title
+          title,
           comment
         }).subscribe({
           next() {
@@ -374,11 +377,11 @@ export function PublishOnDemandWidget(props: PublishOnDemandWidgetProps) {
 
   const onSubmitPublishEverything = () => {
     setIsSubmitting(true);
-    const { publishingTarget, comment } = publishEverythingFormData;
+    const { publishingTarget, title, comment } = publishEverythingFormData;
     publish(siteId, {
       publishingTarget,
       publishAll: true,
-      title: 'Publish all', // TODO: discuss title
+      title,
       comment
     }).subscribe({
       next() {
@@ -547,8 +550,6 @@ export function PublishOnDemandWidget(props: PublishOnDemandWidgetProps) {
                 mode={selectedMode}
                 publishingTargets={publishingTargets}
                 publishingTargetsError={publishingTargetsError}
-                bulkPublishCommentRequired={bulkPublishCommentRequired}
-                publishByCommitCommentRequired={publishByCommitCommentRequired}
               />
               {selectedMode !== 'everything' && (
                 <div className={classes.noteContainer}>

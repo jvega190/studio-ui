@@ -72,6 +72,7 @@ export interface PublishingStatus {
 export interface PublishFormData {
   path?: string;
   commitIds?: string;
+  title?: string;
   comment: string;
   publishingTarget: string;
 }
