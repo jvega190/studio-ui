@@ -44,6 +44,7 @@ import { nnou } from '../../utils/object';
 import {
   CANCELLED_MASK,
   COMPLETED_MASK,
+  LIVE_COMPLETED_WITH_ERRORS_MASK,
   LIVE_FAILED_MASK,
   LIVE_SUCCESS_MASK,
   PROCESSING_MASK,
@@ -173,6 +174,7 @@ export const allFiltersState =
   PROCESSING_MASK +
   LIVE_SUCCESS_MASK +
   LIVE_FAILED_MASK +
+  LIVE_COMPLETED_WITH_ERRORS_MASK +
   STAGING_SUCCESS_MASK +
   STAGING_COMPLETED_WITH_ERRORS_MASK +
   STAGING_FAILED_MASK +
@@ -181,7 +183,7 @@ export const allFiltersState =
 
 const currentFiltersInitialState: CurrentFilters = {
   target: '',
-  states: null, // Null means any/all states
+  states: allFiltersState,
   approvalStates: [],
   submitter: '',
   reviewer: '',
