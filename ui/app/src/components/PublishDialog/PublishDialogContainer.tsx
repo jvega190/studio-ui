@@ -74,6 +74,7 @@ import Tooltip from '@mui/material/Tooltip';
 import ErrorOutlineRounded from '@mui/icons-material/ErrorOutlineRounded';
 import PublishPackageItemsView from './PublishPackageItemsView';
 import PublishReferencesLegend from './PublishReferencesLegend';
+import { of } from 'rxjs';
 
 const messages = defineMessages({
   publishingTargetLoading: {
@@ -145,7 +146,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
   const selectedDependenciesPaths = Object.keys(selectedDependenciesMap).filter(
     (path) => selectedDependenciesMap[path]
   );
-  const submissionCommentRequired = useSelection((state) => state.uiConfig.publishing.publishCommentRequired);
   const effectRefs = useUpdateRefs({ initialItems, state });
   const itemsDataSummary = useMemo(() => {
     let allItemsInSubmittedState = true;
@@ -289,14 +289,14 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     isSubmitting ||
     // If package title is blank
     isBlank(state.packageTitle) ||
+    // If package comment is blank
+    isBlank(state.submissionComment) ||
     // When there are no available/loaded publishing targets
     !publishingTargets?.length ||
     // When there are selected dependencies not applied.
     Boolean(selectedDependenciesPaths?.length) ||
     // When no publishing target is selected
     !state.publishingTarget ||
-    // If submission comment is required (per config) and blank
-    (submissionCommentRequired && isBlank(state.submissionComment)) ||
     // When there's an error
     Boolean(state.error) ||
     // The scheduled date is in the past
@@ -307,19 +307,25 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
     // TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     // TODO: This is not scalable (bulk fetch of countless DetailedItems). We must review and discuss how to adjust.
     // TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    if (publishingTarget) {
+    if (state.publishingTarget) {
       calculatePackage(siteId, {
-        publishingTarget,
+        publishingTarget: state.publishingTarget,
         paths: itemsDataSummary.itemPaths.map((path) => ({ path, includeChildren: false, includeSoftDeps: false })),
         commitIds: [] // TODO: there's a bug where the API fails if commitsIds is not provided. Needs to be fixed.
       })
         .pipe(
-          switchMap((dependenciesByType) =>
-            fetchDetailedItems(siteId, [
-              ...dependenciesByType.hardDependencies,
-              ...dependenciesByType.softDependencies
-            ]).pipe(map((detailedItemsList) => ({ dependenciesByType, detailedItemsList })))
-          )
+          switchMap((dependenciesByType) => {
+            const dependencies = [...dependenciesByType.hardDependencies, ...dependenciesByType.softDependencies];
+            if (dependencies.length) {
+              return fetchDetailedItems(siteId, dependencies).pipe(
+                map((detailedItemsList) => {
+                  return { dependenciesByType, detailedItemsList };
+                })
+              );
+            } else {
+              return of({ dependenciesByType, detailedItemsList: [] });
+            }
+          })
         )
         .subscribe({
           next({ dependenciesByType, detailedItemsList }) {
@@ -338,12 +344,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
               itemsByPath: depLookup,
               items: detailedItemsList
             });
-            const softDependenciesMap: LookupTable<boolean> = {};
-            Object.entries(depMap).forEach(([path, type]) => {
-              if (type === 'soft') {
-                softDependenciesMap[path] = true;
-              }
-            });
           },
           error() {
             setState({ fetchingDependencies: false });
@@ -351,7 +351,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
           }
         });
     }
-  }, [itemsDataSummary.itemPaths, setState, siteId, setSelectedDependenciesMap, publishingTarget]);
+  }, [itemsDataSummary.itemPaths, setState, siteId, setSelectedDependenciesMap, state.publishingTarget]);
 
   useEffect(() => {
     const subscription = fetchPublishingTargetsFn();
@@ -515,7 +515,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                     value={state.submissionComment}
                     multiline
                     disabled={disabled}
-                    required={submissionCommentRequired}
+                    required={true}
                   />
                   <Box sx={{ mb: 1.25 }}>
                     {showRequestApproval && (
