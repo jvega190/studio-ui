@@ -166,7 +166,7 @@ export function PackageDetailsDialog(props: PackageDetailsDialogProps) {
               <List sx={{ height: dialogContentHeight, overflowY: 'auto', p: 0 }}>
                 {state.items.map((item) => (
                   <ListItemButton
-                    key={item.id}
+                    key={item.path}
                     onMouseOver={() => setOver(item.path)}
                     onMouseOut={() => setOver(null)}
                     sx={{
