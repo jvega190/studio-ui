@@ -27,20 +27,20 @@ import { WorkflowCancellationDialogUIProps } from './utils';
 import Typography from '@mui/material/Typography';
 
 export function WorkflowCancellationDialogUI(props: WorkflowCancellationDialogUIProps) {
-  const { items, onCloseButtonClick, onContinue, classes } = props;
+  const { packages, onCloseButtonClick, onContinue, classes } = props;
   return (
     <>
       <DialogBody>
         <Typography variant="overline">
-          <FormattedMessage defaultMessage="Items on this package" />
+          <FormattedMessage defaultMessage="Packages containing this item" />
         </Typography>
         <List className={classes.filesList}>
-          {items.map((item) => (
-            <ListItem key={item.path}>
+          {packages?.map((pkg) => (
+            <ListItem key={pkg.id}>
               <ListItemText
-                primary={item.label}
-                secondary={item.path}
-                secondaryTypographyProps={{ noWrap: true, title: item.path }}
+                primary={`${pkg.id} - ${pkg.title}`}
+                secondary={pkg.submitterComment}
+                secondaryTypographyProps={{ noWrap: true, title: pkg.title }}
               />
             </ListItem>
           ))}

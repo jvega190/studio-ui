@@ -25,7 +25,7 @@ import {
   editController,
   editTemplate
 } from '../actions/misc';
-import { changeContentType, createFile, fetchWorkflowAffectedItems } from '../../services/content';
+import { changeContentType, createFile } from '../../services/content';
 import { showCodeEditorDialog, showEditDialog, showWorkflowCancellationDialog } from '../actions/dialogs';
 import { reloadDetailedItem } from '../actions/content';
 import { blockUI, showEditItemSuccessNotification, unblockUI } from '../actions/system';
@@ -35,6 +35,7 @@ import { showErrorDialog } from '../reducers/dialogs/error';
 import { getFileNameFromPath, getParentPath } from '../../utils/path';
 import { popPiece } from '../../utils/string';
 import { associateTemplate } from '../actions/preview';
+import { fetchAffectedPackages } from '../../services/workflow';
 
 const epics = [
   (action$, state$: Observable<GlobalState>) =>
@@ -87,12 +88,12 @@ const epics = [
         }
         return merge(
           of(blockUI({ message: getIntl().formatMessage(translations.verifyingAffectedWorkflows) })),
-          fetchWorkflowAffectedItems(state.sites.active, path).pipe(
-            map((items) =>
-              items?.length > 0
+          fetchAffectedPackages(state.sites.active, path).pipe(
+            map((packages) =>
+              packages?.length > 0
                 ? batchActions([
                     showWorkflowCancellationDialog({
-                      items,
+                      packages,
                       onContinue: showCodeEditorDialog({
                         path,
                         mode,

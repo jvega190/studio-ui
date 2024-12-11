@@ -14,21 +14,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { SandboxItem } from '../../models/Item';
 import StandardAction from '../../models/StandardAction';
 import React from 'react';
 import { EnhancedDialogProps } from '../EnhancedDialog';
 import { EnhancedDialogState } from '../../hooks/useEnhancedDialogState';
+import { PublishPackage } from '../../models';
 
 export interface WorkflowCancellationDialogUIProps {
-  items: SandboxItem[];
+  packages?: PublishPackage[];
   classes?: any;
   onCloseButtonClick?(e: React.MouseEvent<HTMLButtonElement, MouseEvent>): void;
   onContinue?(response): void;
 }
 
 export interface WorkflowCancellationDialogBaseProps {
-  items?: SandboxItem[];
+  packages?: PublishPackage[];
 }
 
 export interface WorkflowCancellationDialogProps extends WorkflowCancellationDialogBaseProps, EnhancedDialogProps {

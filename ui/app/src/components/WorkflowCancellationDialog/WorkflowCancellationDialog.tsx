@@ -21,7 +21,7 @@ import WorkflowCancellationDialogContainer from './WorkflowCancellationDialogCon
 import { WorkflowCancellationDialogProps } from './utils';
 
 export function WorkflowCancellationDialog(props: WorkflowCancellationDialogProps) {
-  const { items, onContinue, ...rest } = props;
+  const { packages, onContinue, ...rest } = props;
 
   return (
     <EnhancedDialog
@@ -29,12 +29,12 @@ export function WorkflowCancellationDialog(props: WorkflowCancellationDialogProp
       title={<FormattedMessage defaultMessage="Publish Cancellation Warning" />}
       dialogHeaderProps={{
         subtitle: (
-          <FormattedMessage defaultMessage="The item is part of a publishing package. Editing it will cancel the entire package." />
+          <FormattedMessage defaultMessage="The item is part of one or more publishing packages. Editing it will cancel the packages." />
         )
       }}
       {...rest}
     >
-      <WorkflowCancellationDialogContainer items={items} onContinue={onContinue} />
+      <WorkflowCancellationDialogContainer packages={packages} onContinue={onContinue} />
     </EnhancedDialog>
   );
 }

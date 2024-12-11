@@ -15,6 +15,7 @@
  */
 
 import LookupTable from './LookupTable';
+import { PackageApprovalState } from '../services/publishing';
 
 export type PublishingTargets = 'live' | 'staging';
 
@@ -39,7 +40,7 @@ export interface File {
 export interface CurrentFilters {
   target: string;
   states?: number;
-  approvalStates: Array<'SUBMITTED' | 'APPROVED' | 'REJECTED'>;
+  approvalStates: Array<PackageApprovalState>;
   submitter: string;
   reviewer: string;
   isScheduled: boolean;

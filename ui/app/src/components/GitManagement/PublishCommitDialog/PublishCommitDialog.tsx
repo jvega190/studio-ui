@@ -165,8 +165,6 @@ export function PublishCommitDialog(props: PublishCommitDialogProps) {
               }}
               publishingTargets={state.publishingTargets}
               publishingTargetsError={null}
-              bulkPublishCommentRequired={false}
-              publishByCommitCommentRequired={publishByCommitCommentRequired}
               disabled={!state.publishingTargets || isSubmitting}
             />
           </DialogBody>

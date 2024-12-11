@@ -22,7 +22,7 @@ import { SandboxItem } from '../models/Item';
 import { PagedArray } from '../models/PagedArray';
 import { createItemActionMap, createItemStateMap } from '../utils/content';
 import PaginationOptions from '../models/PaginationOptions';
-import { PublishingPackageApproveParams } from '../models/Publishing';
+import { PublishingPackageApproveParams, PublishPackage } from '../models/Publishing';
 import { ApiResponse } from '../models';
 
 export function fetchItemStates(
@@ -97,4 +97,13 @@ export function cancel(siteId: string, packageId: number, comment: string): Obse
   return postJSON(`/studio/api/2/workflow/${siteId}/package/${packageId}/cancel`, {
     comment
   }).pipe(map(({ response }) => response));
+}
+
+export function fetchAffectedPackages(
+  siteId: string,
+  path: string,
+  includeChildren?: boolean
+): Observable<PublishPackage[]> {
+  const qs = toQueryString({ path, includeChildren });
+  return get(`/studio/api/2/workflow/${siteId}/affected_packages${qs}`).pipe(map(({ response }) => response.packages));
 }

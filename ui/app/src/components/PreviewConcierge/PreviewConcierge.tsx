@@ -82,7 +82,6 @@ import {
   fetchContentInstanceDescriptor,
   fetchItemsByPath,
   fetchSandboxItem as fetchSandboxItemService,
-  fetchWorkflowAffectedItems,
   insertComponent,
   insertInstance,
   insertItem,
@@ -190,6 +189,7 @@ import { Dispatch } from 'redux';
 import { ActionCreatorWithOptionalPayload } from '@reduxjs/toolkit';
 import { ItemMegaMenuStateProps } from '../ItemMegaMenu';
 import StandardAction from '../../models/StandardAction';
+import { fetchAffectedPackages } from '../../services/workflow';
 
 const issueDescriptorRequest = (props: {
   site: string;
@@ -1108,10 +1108,10 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
           break;
         }
         case requestWorkflowCancellationDialog.type: {
-          fetchWorkflowAffectedItems(payload.siteId, payload.path).subscribe((items) => {
+          fetchAffectedPackages(payload.siteId, payload.path).subscribe((packages) => {
             dispatch(
               showWorkflowCancellationDialog({
-                items,
+                packages,
                 onClosed: batchActions([
                   workflowCancellationDialogClosed(),
                   requestWorkflowCancellationDialogOnResult({ type: 'close' })

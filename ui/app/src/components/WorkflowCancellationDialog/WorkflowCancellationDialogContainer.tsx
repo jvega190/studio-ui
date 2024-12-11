@@ -36,7 +36,7 @@ const useStyles = makeStyles()((theme) => ({
 }));
 
 export function WorkflowCancellationDialogContainer(props: WorkflowCancellationDialogContainerProps) {
-  const { items, onClose, onContinue } = props;
+  const { packages, onClose, onContinue } = props;
   const { classes } = useStyles();
 
   const onContinueClick = (e) => {
@@ -44,10 +44,10 @@ export function WorkflowCancellationDialogContainer(props: WorkflowCancellationD
     onContinue();
   };
 
-  return items ? (
-    items.length > 0 ? (
+  return packages ? (
+    packages?.length > 0 ? (
       <WorkflowCancellationDialogUI
-        items={items}
+        packages={packages}
         onCloseButtonClick={(e) => onClose(e, null)}
         onContinue={onContinueClick}
         classes={classes}

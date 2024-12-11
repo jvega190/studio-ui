@@ -43,12 +43,7 @@ import {
   showUploadDialog,
   showWorkflowCancellationDialog
 } from '../state/actions/dialogs';
-import {
-  fetchItemsByPath,
-  fetchLegacyItemsTree,
-  fetchSandboxItem,
-  fetchWorkflowAffectedItems
-} from '../services/content';
+import { fetchItemsByPath, fetchLegacyItemsTree, fetchSandboxItem } from '../services/content';
 import {
   batchActions,
   changeContentType,
@@ -126,6 +121,7 @@ import SystemType from '../models/SystemType';
 import { fetchItemVersions } from '../state/actions/versions';
 import StandardAction from '../models/StandardAction';
 import { fetchDependant } from '../services/dependencies';
+import { fetchAffectedPackages } from '../services/workflow';
 
 export type ContextMenuOptionDescriptor<ID extends string = string> = {
   id: ID;
@@ -523,8 +519,8 @@ export const itemActionDispatcher = ({
         //  we need the modelId that's not supplied to this function.
         // const src = `${defaultSrc}site=${site}&path=${embeddedParentPath}&isHidden=true&modelId=${modelId}&type=form`
         const path = item.path;
-        fetchWorkflowAffectedItems(site, path).subscribe((items) => {
-          let actionToDispatch = showEditDialog({
+        fetchAffectedPackages(site, path).subscribe((packages) => {
+          const actionToDispatch = showEditDialog({
             site,
             path,
             authoringBase,
@@ -535,7 +531,7 @@ export const itemActionDispatcher = ({
             ...extraPayload
           });
           if (items?.length > 0) {
-            dispatch(showWorkflowCancellationDialog({ items, onContinue: actionToDispatch }));
+            dispatch(showWorkflowCancellationDialog({ packages, onContinue: actionToDispatch }));
           } else {
             dispatch(actionToDispatch);
           }
@@ -732,12 +728,12 @@ export const itemActionDispatcher = ({
               title: `${formatMessage(translations.processing)}...`
             })
           );
-          fetchWorkflowAffectedItems(site, clipboard.sourcePath).subscribe((items) => {
+          fetchAffectedPackages(site, clipboard.sourcePath).subscribe((packages) => {
             dispatch(unblockUI());
-            if (items?.length > 0) {
+            if (packages?.length > 0) {
               dispatch(
                 showWorkflowCancellationDialog({
-                  items,
+                  packages,
                   onContinue: pasteItem({ path: item.path })
                 })
               );
@@ -832,17 +828,17 @@ export const itemActionDispatcher = ({
             title: formatMessage(translations.verifyingAffectedWorkflows)
           })
         );
-        fetchWorkflowAffectedItems(site, path).subscribe((items) => {
+        fetchAffectedPackages(site, path).subscribe((packages) => {
           const editorShowAction = showCodeEditorDialog({
             path: item.path,
             mode: getEditorMode(item)
           });
-          if (items?.length > 0) {
+          if (packages?.length > 0) {
             dispatch(
               batchActions([
                 unblockUI(),
                 showWorkflowCancellationDialog({
-                  items,
+                  packages,
                   onContinue: editorShowAction
                 })
               ])
