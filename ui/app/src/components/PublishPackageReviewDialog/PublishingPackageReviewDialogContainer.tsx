@@ -376,6 +376,7 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
                       onChange={onArgumentChange}
                       multiline
                       name="approverComment"
+                      required
                     />
                   </>
                 ) : (
