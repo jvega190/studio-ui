@@ -19,7 +19,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { fetchPackage } from '../../services/publishing';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
 import { DialogBody } from '../DialogBody';
-import { ApiResponse, DetailedItem, PublishPackage, PublishingPackageApproveParams, SandboxItem } from '../../models';
+import { ApiResponse, DetailedItem, PublishingPackageApproveParams, PublishPackage } from '../../models';
 import { ApiResponseErrorState } from '../ApiResponseErrorState';
 import { LoadingState } from '../LoadingState';
 import Grid from '@mui/material/Grid2';
@@ -27,9 +27,6 @@ import { Typography } from '@mui/material';
 import { FormattedMessage } from 'react-intl';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
-import { PersonAvatar } from '../DashletCard/dashletCommons';
-import { getPersonFullName } from '../SiteDashboard';
-import ItemPublishingTargetIcon from '../ItemPublishingTargetIcon';
 import Paper from '@mui/material/Paper';
 import RadioGroup from '@mui/material/RadioGroup';
 import Radio from '@mui/material/Radio';
@@ -61,11 +58,7 @@ import { showErrorDialog } from '../../state/reducers/dialogs/error';
 import { updatePublishPackageApprovalDialog } from '../../state/actions/dialogs';
 import { AsDayMonthDateTime } from '../VersionList';
 import PublishPackageItemsView from '../PublishDialog/PublishPackageItemsView';
-
-const statusItems = {
-  staging: { stateMap: { staged: true } },
-  live: { stateMap: { live: true } }
-};
+import { PublishPackageReview } from './PublishPackageReview';
 
 interface InternalDialogState {
   action: 'approve' | 'reject';
@@ -136,16 +129,16 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
     setIsFetchingPackage(true);
     fetchPackage(siteId, packageId)
       .pipe(
-        switchMap((publishingPackage) =>
+        switchMap(({ publishPackage, items }) =>
           fetchDetailedItems(
             siteId,
-            publishingPackage.items.map((item) => item.path)
-          ).pipe(map((detailedItemsList) => ({ publishingPackage, detailedItemsList })))
+            items.map((item) => item.path)
+          ).pipe(map((detailedItemsList) => ({ publishPackage, detailedItemsList })))
         )
       )
       .subscribe({
-        next: ({ publishingPackage, detailedItemsList }) => {
-          setPublishingPackage(publishingPackage);
+        next: ({ publishPackage, detailedItemsList }) => {
+          setPublishingPackage(publishPackage);
           setDetailedItems(detailedItemsList);
           setIsFetchingPackage(false);
         },
@@ -263,44 +256,7 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, sm: 5 }}>
               {/* region review */}
-              <Box>
-                <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                  <FormattedMessage defaultMessage="Submitter" />
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <PersonAvatar person={publishingPackage.submitter} />
-                  <Typography variant="body1" sx={{ ml: 1 }}>
-                    {getPersonFullName(publishingPackage.submitter)}
-                  </Typography>
-                </Box>
-                <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                  <FormattedMessage defaultMessage="Package Title" />
-                </Typography>
-                <Typography variant="body1" sx={{ mb: 2 }}>
-                  {publishingPackage.title}
-                </Typography>
-                <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                  <FormattedMessage defaultMessage="Submission Comment" />
-                </Typography>
-                <Typography variant="body1" sx={{ mb: 2 }}>
-                  {publishingPackage.submitterComment || (
-                    <FormattedMessage defaultMessage="No submission comment provided" />
-                  )}
-                </Typography>
-                <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                  <FormattedMessage defaultMessage="Publishing Target" />
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
-                  <ItemPublishingTargetIcon item={statusItems[publishingPackage.target] as SandboxItem} />
-                  <Typography variant="body1" component="span">
-                    {publishingPackage.target === 'live' ? (
-                      <FormattedMessage defaultMessage="Live" />
-                    ) : (
-                      <FormattedMessage defaultMessage="Staging" />
-                    )}
-                  </Typography>
-                </Box>
-              </Box>
+              <PublishPackageReview publishPackage={publishingPackage} />
               {/* endregion */}
               <Divider />
               {/* region form */}

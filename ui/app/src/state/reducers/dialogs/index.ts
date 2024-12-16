@@ -47,6 +47,7 @@ import uiBlocker from './uiBlocker';
 import renameAsset from './renameAsset';
 import brokenReferences from './brokenReferences';
 import publishingPackageApproval from './publishingPackageApproval';
+import cancelPackage from './cancelPackage';
 
 export default combineReducers({
   confirm,
@@ -80,5 +81,6 @@ export default combineReducers({
   unlockPublisher,
   widget,
   uiBlocker,
-  brokenReferences
+  brokenReferences,
+  cancelPackage
 });
