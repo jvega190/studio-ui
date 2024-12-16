@@ -67,6 +67,7 @@ import Person from './Person';
 import { BrokenReferencesDialogStateProps } from '../components/BrokenReferencesDialog/types';
 import AllowedContentTypesData from './AllowedContentTypesData';
 import { PublishingPackageApprovalDialogStateProps } from '../components/PublishPackageReviewDialog/types';
+import { CancelPackageDialogStateProps } from '../components/CancelPackageDialog';
 
 export type HighlightMode = 'all' | 'move';
 
@@ -248,6 +249,7 @@ export interface GlobalState {
     widget: WidgetDialogStateProps;
     uiBlocker: UIBlockerStateProps;
     brokenReferences: BrokenReferencesDialogStateProps;
+    cancelPackage: CancelPackageDialogStateProps;
   };
   uiConfig: {
     error: ApiResponse;

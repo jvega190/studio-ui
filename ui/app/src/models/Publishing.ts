@@ -159,6 +159,7 @@ export interface PublishPackage {
     lastName: string;
     avatar: string;
   };
+  submitterId: number;
   reviewer: {
     id: number;
     username: string;
@@ -166,6 +167,7 @@ export interface PublishPackage {
     lastName: string;
     avatar: string;
   };
+  reviewerId: number;
   siteId: string;
   liveError: number;
   stagingError: number;
@@ -174,5 +176,5 @@ export interface PublishPackage {
   commitId: string;
   publishedStagingCommitId: string;
   publishedLiveCommitId: string;
-  items: PublishingItem[];
+  itemCount: number;
 }

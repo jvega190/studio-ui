@@ -29,7 +29,6 @@ import {
 } from '../../services/publishing';
 import { getComputedPublishingTarget, getDateScheduled } from '../../utils/content';
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
-import { useSelection } from '../../hooks/useSelection';
 import { capitalize, isBlank } from '../../utils/string';
 import { updatePublishDialog } from '../../state/actions/dialogs';
 import { fetchDetailedItems } from '../../services/content';

@@ -50,6 +50,7 @@ import { RenameAssetStateProps } from '../../components/RenameAssetDialog';
 import { AjaxError } from 'rxjs/ajax';
 import { BrokenReferencesDialogStateProps } from '../../components/BrokenReferencesDialog/types';
 import { PublishingPackageApprovalDialogStateProps } from '../../components/PublishPackageReviewDialog/types';
+import { CancelPackageDialogProps } from '../../components/CancelPackageDialog';
 
 // region History
 export const showHistoryDialog = /*#__PURE__*/ createAction<Partial<HistoryDialogStateProps>>('SHOW_HISTORY_DIALOG');
@@ -330,4 +331,13 @@ export const updateBrokenReferencesDialog = /*#__PURE__*/ createAction<Partial<B
   'UPDATE_BROKEN_REFERENCES_DIALOG'
 );
 
+// endregion
+
+// region Cancel Package
+export const showCancelPackageDialog =
+  /*#__PURE__*/ createAction<Partial<CancelPackageDialogProps>>('SHOW_CANCEL_PACKAGE_DIALOG');
+export const updateCancelPackageDialog =
+  /*#__PURE__*/ createAction<Partial<CancelPackageDialogProps>>('UPDATE_CANCEL_PACKAGE_DIALOG');
+export const closeCancelPackageDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_CANCEL_PACKAGE_DIALOG');
+export const cancelPackageDialogClosed = /*#__PURE__*/ createAction('CANCEL_PACKAGE_DIALOG_CLOSED');
 // endregion

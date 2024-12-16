@@ -19,7 +19,13 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { LegacyItem } from '../models/Item';
 import { pluckProps, toQueryString } from '../utils/object';
-import { PublishingStatus, PublishingTarget, PublishPackage, PublishParams } from '../models/Publishing';
+import {
+  PublishingItem,
+  PublishingStatus,
+  PublishingTarget,
+  PublishPackage,
+  PublishParams
+} from '../models/Publishing';
 import { Api2BulkResponseFormat, Api2ResponseFormat, ApiResponse } from '../models/ApiResponse';
 import { PagedArray } from '../models/PagedArray';
 
@@ -54,14 +60,24 @@ export function fetchPackage(
     path?: string;
     systemType?: string;
     internalName?: string;
+    offset?: number;
+    limit?: number;
   }
-): Observable<PublishPackage> {
+): Observable<{ publishPackage: PublishPackage; items: PublishingItem[] }> {
   const qs = toQueryString(data);
   return get<
     Api2ResponseFormat<{
       package: PublishPackage;
+      items: PublishingItem[];
     }>
-  >(`/studio/api/2/publish/${siteId}/package/${packageId}${qs}`).pipe(map((response) => response?.response?.package));
+  >(`/studio/api/2/publish/${siteId}/package/${packageId}${qs}`).pipe(
+    map((response) => {
+      return {
+        publishPackage: response?.response?.package,
+        items: response?.response?.items
+      };
+    })
+  );
 }
 
 export type FetchPublishingTargetsResponse = Api2ResponseFormat<{
