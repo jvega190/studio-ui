@@ -93,12 +93,6 @@ export function reject(siteId: string, packageId: number, comment: string): Obse
   }).pipe(map(({ response }) => response));
 }
 
-export function cancel(siteId: string, packageId: number, comment: string): Observable<ApiResponse> {
-  return postJSON(`/studio/api/2/workflow/${siteId}/package/${packageId}/cancel`, {
-    comment
-  }).pipe(map(({ response }) => response));
-}
-
 export function cancelPackages(
   siteId: string,
   data: {

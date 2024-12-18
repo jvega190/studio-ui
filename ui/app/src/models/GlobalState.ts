@@ -68,6 +68,7 @@ import { BrokenReferencesDialogStateProps } from '../components/BrokenReferences
 import AllowedContentTypesData from './AllowedContentTypesData';
 import { PublishingPackageApprovalDialogStateProps } from '../components/PublishPackageReviewDialog/types';
 import { CancelPackageDialogStateProps } from '../components/CancelPackageDialog';
+import { BulkCancelPackageDialogProps } from '../components/BulkCancelPackageDialog';
 
 export type HighlightMode = 'all' | 'move';
 
@@ -250,6 +251,7 @@ export interface GlobalState {
     uiBlocker: UIBlockerStateProps;
     brokenReferences: BrokenReferencesDialogStateProps;
     cancelPackage: CancelPackageDialogStateProps;
+    bulkCancelPackage: BulkCancelPackageDialogProps;
   };
   uiConfig: {
     error: ApiResponse;

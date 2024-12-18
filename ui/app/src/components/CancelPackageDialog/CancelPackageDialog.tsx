@@ -36,15 +36,16 @@ export interface CancelPackageDialogStateProps extends CancelPackageDialogBasePr
 }
 
 export function CancelPackageDialog(props: CancelPackageDialogProps) {
-  const { packageId, onSuccess, ...enhancedDialogProps } = props;
+  const { packageId, onSuccess, isSubmitting, ...enhancedDialogProps } = props;
   return (
     <EnhancedDialog
       fullWidth
       maxWidth="lg"
       {...enhancedDialogProps}
       title={<FormattedMessage defaultMessage="Cancel Package" />}
+      isSubmitting={isSubmitting}
     >
-      <CancelPackageDialogContainer packageId={packageId} onSuccess={onSuccess} />
+      <CancelPackageDialogContainer packageId={packageId} onSuccess={onSuccess} isSubmitting={isSubmitting} />
     </EnhancedDialog>
   );
 }

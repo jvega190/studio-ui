@@ -48,6 +48,7 @@ import renameAsset from './renameAsset';
 import brokenReferences from './brokenReferences';
 import publishingPackageApproval from './publishingPackageApproval';
 import cancelPackage from './cancelPackage';
+import bulkCancelPackage from './bulkCancelPackage';
 
 export default combineReducers({
   confirm,
@@ -82,5 +83,6 @@ export default combineReducers({
   widget,
   uiBlocker,
   brokenReferences,
-  cancelPackage
+  cancelPackage,
+  bulkCancelPackage
 });

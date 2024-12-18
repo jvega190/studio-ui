@@ -341,3 +341,16 @@ export const updateCancelPackageDialog =
 export const closeCancelPackageDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_CANCEL_PACKAGE_DIALOG');
 export const cancelPackageDialogClosed = /*#__PURE__*/ createAction('CANCEL_PACKAGE_DIALOG_CLOSED');
 // endregion
+
+// region BulkCancelPackage
+export const showBulkCancelPackageDialog = /*#__PURE__*/ createAction<Partial<CancelPackageDialogProps>>(
+  'SHOW_BULK_CANCEL_PACKAGE_DIALOG'
+);
+export const updateBulkCancelPackageDialog = /*#__PURE__*/ createAction<Partial<CancelPackageDialogProps>>(
+  'UPDATE_BULK_CANCEL_PACKAGE_DIALOG'
+);
+export const closeBulkCancelPackageDialog = /*#__PURE__*/ createAction<StandardAction>(
+  'CLOSE_BULK_CANCEL_PACKAGE_DIALOG'
+);
+export const bulkCancelPackageDialogClosed = /*#__PURE__*/ createAction('BULK_CANCEL_PACKAGE_DIALOG_CLOSED');
+// endregion

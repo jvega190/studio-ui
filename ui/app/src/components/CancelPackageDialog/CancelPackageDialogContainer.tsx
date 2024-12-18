@@ -30,13 +30,15 @@ import useSpreadState from '../../hooks/useSpreadState';
 import { useDispatch } from 'react-redux';
 import { showErrorDialog } from '../../state/reducers/dialogs/error';
 import { Divider } from '@mui/material';
+import { updateCancelPackageDialog } from '../../state/actions/dialogs';
+import { batchActions } from '../../state/actions/misc';
 
 export interface CancelPackageDialogContainerProps
   extends CancelPackageDialogBaseProps,
-    Pick<CancelPackageDialogProps, 'onSuccess' | 'onClose'> {}
+    Pick<CancelPackageDialogProps, 'onSuccess' | 'onClose' | 'isSubmitting'> {}
 
 export function CancelPackageDialogContainer(props: CancelPackageDialogContainerProps) {
-  const { packageId, onSuccess, onClose } = props;
+  const { packageId, onSuccess, onClose, isSubmitting } = props;
   const [state, setState] = useSpreadState({
     comment: '',
     error: null
@@ -46,15 +48,22 @@ export function CancelPackageDialogContainer(props: CancelPackageDialogContainer
   const submitDisabled = isBlank(state.comment);
 
   const handleSubmit = () => {
+    dispatch(updateCancelPackageDialog({ isSubmitting: true }));
     cancelPackages(siteId, {
       packageIds: [packageId],
       comment: state.comment
     }).subscribe({
       next() {
+        dispatch(updateCancelPackageDialog({ isSubmitting: false }));
         onSuccess?.();
       },
       error({ response }) {
-        dispatch(showErrorDialog({ error: response.response }));
+        dispatch(
+          batchActions([
+            updateCancelPackageDialog({ isSubmitting: false }),
+            showErrorDialog({ error: response.response })
+          ])
+        );
       }
     });
   };
@@ -81,10 +90,10 @@ export function CancelPackageDialogContainer(props: CancelPackageDialogContainer
         />
       </DialogBody>
       <DialogFooter>
-        <SecondaryButton onClick={(e) => onClose(e, null)}>
+        <SecondaryButton disabled={isSubmitting} onClick={(e) => onClose(e, null)}>
           <FormattedMessage defaultMessage="Close" />
         </SecondaryButton>
-        <PrimaryButton disabled={submitDisabled} onClick={() => handleSubmit()}>
+        <PrimaryButton disabled={submitDisabled} loading={isSubmitting} onClick={() => handleSubmit()}>
           <FormattedMessage defaultMessage="Confirm" />
         </PrimaryButton>
       </DialogFooter>
