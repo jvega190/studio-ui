@@ -15,7 +15,12 @@
  */
 
 import React, { ReactNode, useCallback, useEffect } from 'react';
-import { CommonDashletProps, getPackagesValidatedSelectionState } from '../SiteDashboard/utils';
+import {
+  CommonDashletProps,
+  getPackagesValidatedSelectionState,
+  useSpreadStateWithSelected,
+  WithSelectedState
+} from '../SiteDashboard/utils';
 import DashletCard from '../DashletCard/DashletCard';
 import {
   DashletEmptyMessage,
@@ -39,7 +44,6 @@ import ListItemButton from '@mui/material/ListItemButton';
 import { deleteContentEvent, publishEvent, workflowEvent } from '../../state/actions/system';
 import { getHostToHostBus } from '../../utils/subjects';
 import { filter } from 'rxjs/operators';
-import useSpreadState from '../../hooks/useSpreadState';
 import { LoadingIconButton } from '../LoadingIconButton';
 import Box from '@mui/material/Box';
 import { asLocalizedDateTime } from '../../utils/datetime';
@@ -55,14 +59,12 @@ import { PublishPackage } from '../../models';
 
 interface PendingApprovalDashletProps extends CommonDashletProps {}
 
-interface PendingApprovalDashletState {
-  publishingPackages: FetchPackagesResponse[];
+interface PendingApprovalDashletState extends WithSelectedState<FetchPackagesResponse> {
   total: number;
   loading: boolean;
   loadingSkeleton: boolean;
   limit: number;
   offset: number;
-  selectedPackage: PublishPackage;
   packageDetailsDialogId: number;
 }
 
@@ -73,26 +75,40 @@ const messages = defineMessages({
 
 const pendingApprovalState: PackageApprovalState[] = ['SUBMITTED'];
 
-// TODO: use radiobuttons instead of checkboxes, leave clear
 export function PendingApprovalDashlet(props: PendingApprovalDashletProps) {
   const { borderLeftColor = palette.purple.tint, onMinimize } = props;
   const [
-    { publishingPackages, total, loading, loadingSkeleton, limit, offset, selectedPackage, packageDetailsDialogId },
-    setState
-  ] = useSpreadState<PendingApprovalDashletState>({
-    publishingPackages: null,
+    {
+      items: publishingPackages,
+      total,
+      loading,
+      loadingSkeleton,
+      isAllSelected,
+      hasSelected,
+      selected,
+      selectedCount,
+      limit,
+      offset,
+      packageDetailsDialogId
+    },
+    setState,
+    onSelectItem,
+    onSelectAll,
+    isSelected
+  ] = useSpreadStateWithSelected<PendingApprovalDashletState>({
     loading: false,
     loadingSkeleton: true,
     total: null,
     limit: 50,
     offset: 0,
-    selectedPackage: null,
     packageDetailsDialogId: null
   });
   const { formatMessage } = useIntl();
   const currentPage = offset / limit;
   const totalPages = total ? Math.ceil(total / limit) : 0;
-  const selectionOptions = selectedPackage ? (generatePackageOptions(selectedPackage) as ActionsBarAction[]) : [];
+  const selectedPackages = publishingPackages?.filter((pkg) => selected[pkg.id]) ?? [];
+  const selectionOptions = generatePackageOptions(selectedPackages) as ActionsBarAction[];
+  const isIndeterminate = hasSelected && !isAllSelected;
   const site = useActiveSiteId();
   const locale = useLocale();
   const dispatch = useDispatch();
@@ -116,7 +132,7 @@ export function PendingApprovalDashlet(props: PendingApprovalDashletProps) {
         approvalStates: pendingApprovalState
       }).subscribe((packages) => {
         setState({
-          publishingPackages: packages,
+          items: packages,
           total: packages.total,
           offset: newOffset,
           loading: false
@@ -164,24 +180,14 @@ export function PendingApprovalDashlet(props: PendingApprovalDashletProps) {
 
   const onOptionClicked = (option) => {
     // Clear selection
-    setState({ selectedPackage: null });
+    setState({ selectedCount: 0, isAllSelected: false, selected: {}, hasSelected: false });
     if (option !== 'clear') {
       return packageActionDispatcher({
-        pkg: selectedPackage,
+        pkg: selectedPackages.length > 1 ? selectedPackages : selectedPackages[0],
         option,
         dispatch
       });
     }
-  };
-
-  const setSelectedPackage = (pkg: PublishPackage) => {
-    setState({
-      selectedPackage: selectedPackage?.id === pkg.id ? null : pkg
-    });
-  };
-
-  const isSelected = (packageId: number) => {
-    return selectedPackage?.id === packageId;
   };
 
   const onPackageDetailsClick = (packageId: number) => {
@@ -227,27 +233,29 @@ export function PendingApprovalDashlet(props: PendingApprovalDashletProps) {
       actionsBar={
         <ActionsBar
           disabled={loading}
-          isChecked={false}
-          isIndeterminate={false}
-          onCheckboxChange={null}
+          isChecked={isAllSelected}
+          isIndeterminate={isIndeterminate}
+          onCheckboxChange={onSelectAll}
           onOptionClicked={onOptionClicked}
           options={selectionOptions?.concat([
-            ...(selectedPackage
+            ...(selectedCount > 0
               ? [
                   {
                     id: 'clear',
-                    label: formatMessage({
-                      defaultMessage: 'Clear selection'
-                    })
+                    label: formatMessage(
+                      {
+                        defaultMessage: 'Clear {count} selected'
+                      },
+                      { count: selectedCount }
+                    )
                   }
                 ]
               : [])
           ])}
           buttonProps={{ size: 'small' }}
-          showCheckbox={false}
           sxs={{
             root: { flexGrow: 1 },
-            container: { bgcolor: selectedPackage ? 'action.selected' : UNDEFINED },
+            container: { bgcolor: selectedCount > 0 ? 'action.selected' : UNDEFINED },
             checkbox: { padding: '5px', borderRadius: 0 },
             button: { minWidth: 50 }
           }}
@@ -276,12 +284,12 @@ export function PendingApprovalDashlet(props: PendingApprovalDashletProps) {
       {Boolean(publishingPackages?.length) && (
         <List sx={{ pb: 0 }}>
           {publishingPackages.map((pkg, index) => (
-            <ListItemButton key={index} onClick={() => setSelectedPackage(pkg as PublishPackage)} sx={{ pt: 0, pb: 0 }}>
+            <ListItemButton key={index} onClick={(e) => onSelectItem(e, pkg as PublishPackage)} sx={{ pt: 0, pb: 0 }}>
               <ListItemIcon>
                 <Checkbox
                   edge="start"
-                  checked={isSelected(pkg.id)}
-                  onClick={() => setSelectedPackage(pkg as PublishPackage)}
+                  checked={isSelected(pkg)}
+                  onClick={(e) => onSelectItem(e, pkg as PublishPackage)}
                 />
               </ListItemIcon>
               {pkg.submitter && (

@@ -180,7 +180,7 @@ export function getPackagesValidatedSelectionState(packages: PagedArray<FetchPac
   const currentPagePackages = packages.slice(lastPageWithPackages * limit, lastPageWithPackages * limit + limit);
 
   return {
-    publishingPackages: currentPagePackages,
+    items: currentPagePackages,
     offset: limit * lastPageWithPackages,
     total: packages.total,
     loading: false

@@ -54,7 +54,7 @@ export const allPackageActions = Object.keys(unparsedOptions);
 
 // TODO: packages will include AA, we need to consider that
 export const generatePackageOptions = (
-  pkg: PublishPackage,
+  packages: PublishPackage[],
   options?: {
     includeOnly?: PackageActions[];
   }
@@ -64,14 +64,19 @@ export const generatePackageOptions = (
     boolean
   >;
   const packageOptions = [];
-  if (pkg.approvalState === 'SUBMITTED' && actionsToInclude.review) {
-    packageOptions.push(unparsedOptions.review);
-  }
-  if (actionsToInclude.resubmit) {
-    packageOptions.push(unparsedOptions.resubmit);
-  }
-  if (actionsToInclude.cancel) {
-    packageOptions.push(unparsedOptions.cancel);
+  if (packages?.length) {
+    if (packages?.length === 1) {
+      const pkg = packages[0];
+      if (pkg.approvalState === 'SUBMITTED' && actionsToInclude.review) {
+        packageOptions.push(unparsedOptions.review);
+      }
+      if (actionsToInclude.resubmit) {
+        packageOptions.push(unparsedOptions.resubmit);
+      }
+    }
+    if (actionsToInclude.cancel) {
+      packageOptions.push(unparsedOptions.cancel);
+    }
   }
   return packageOptions;
 };
@@ -82,7 +87,7 @@ export const packageActionDispatcher = ({
   dispatch,
   onActionSuccess
 }: {
-  pkg: PublishPackage;
+  pkg: PublishPackage | PublishPackage[];
   option: PackageActions;
   dispatch: Dispatch;
   onActionSuccess?: Action;
@@ -91,7 +96,7 @@ export const packageActionDispatcher = ({
     case 'review':
       dispatch(
         showPublishPackageApprovalDialog({
-          packageId: pkg.id,
+          packageId: (pkg as PublishPackage).id,
           onSuccess: batchActions([closePublishPackageApprovalDialog(), ...(onActionSuccess ? [onActionSuccess] : [])])
         })
       );

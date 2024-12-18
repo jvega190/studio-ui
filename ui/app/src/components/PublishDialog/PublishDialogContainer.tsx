@@ -410,7 +410,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
       })),
       schedule: scheduling === 'custom' ? scheduledDateTime.toISOString() : null,
       requestApproval,
-      title: packageTitle, // TODO: this is not in the API yet
+      title: packageTitle,
       comment: submissionComment
     };
 
