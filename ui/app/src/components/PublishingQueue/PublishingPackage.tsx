@@ -20,7 +20,6 @@ import Checkbox from '@mui/material/Checkbox';
 import React, { ChangeEvent, ReactNode, useRef, useState } from 'react';
 import { makeStyles } from 'tss-react/mui';
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
-import SelectButton from '../ConfirmDropdown';
 import Typography from '@mui/material/Typography';
 import { fetchPackage } from '../../services/publishing';
 import List from '@mui/material/List';
@@ -32,7 +31,9 @@ import palette from '../../styles/palette';
 import PrimaryButton from '../PrimaryButton';
 import { PublishPackage } from '../../models';
 import { getPackageStateLabel, isReady } from '../PublishPackageReviewDialog/utils';
-import { cancel } from '../../services/workflow';
+import Button from '@mui/material/Button';
+import { CancelPackageDialog } from '../CancelPackageDialog';
+import useEnhancedDialogState from '../../hooks/useEnhancedDialogState';
 
 const useStyles = makeStyles()((theme) => ({
   package: {
@@ -224,15 +225,11 @@ export function PublishingPackage(props: PublishingPackageProps) {
   const username = submitter.username;
   const comment = submitterComment;
   const schedule = submittedOn;
+  const cancelPackageDialogState = useEnhancedDialogState();
 
   const [loading, setLoading] = useState(null);
 
   const { current: ref } = useRef<any>({});
-
-  ref.cancelComplete = (packageId: string) => {
-    setPending({ ...pending, [packageId]: false });
-    getPackages(siteId);
-  };
 
   function onSelect(event: ChangeEvent, id: number, checked: boolean) {
     if (checked) {
@@ -242,19 +239,18 @@ export function PublishingPackage(props: PublishingPackageProps) {
     }
   }
 
-  function handleCancel(packageId: number) {
+  function onCancel(packageId: number) {
     setPending({ ...pending, [packageId]: true });
-
-    // TODO: comment is required - need to discuss generation of comment
-    cancel(siteId, packageId, `cancelling package ${packageId}`).subscribe({
-      next() {
-        ref.cancelComplete(packageId);
-      },
-      error({ response }) {
-        setApiState({ error: true, errorResponse: response });
-      }
-    });
+    cancelPackageDialogState.onOpen();
   }
+
+  const onCancelDialogSuccess = () => {
+    getPackages(siteId);
+  };
+
+  ref.onCancelDialogClosed = (packageId: string) => {
+    setPending({ ...pending, [packageId]: false });
+  };
 
   function onFetchPackages(packageId: number) {
     setLoading(true);
@@ -321,15 +317,9 @@ export function PublishingPackage(props: PublishingPackageProps) {
           </Typography>
         )}
         {isReady(state) && (
-          <SelectButton
-            classes={{ button: classes.cancelButton }}
-            text={formatMessage(translations.cancelText)}
-            cancelText={formatMessage(translations.cancel)}
-            confirmText={formatMessage(translations.confirm)}
-            confirmHelperText={formatMessage(translations.confirmHelperText)}
-            onConfirm={() => handleCancel(id)}
-            disabled={readOnly}
-          />
+          <Button variant="outlined" color="warning" onClick={() => onCancel(id)} disabled={readOnly}>
+            <FormattedMessage defaultMessage="Cancel" />
+          </Button>
         )}
       </section>
       <div className="status">
@@ -381,6 +371,14 @@ export function PublishingPackage(props: PublishingPackageProps) {
           </PrimaryButton>
         )}
       </div>
+      <CancelPackageDialog
+        open={cancelPackageDialogState.open}
+        onSuccess={onCancelDialogSuccess}
+        onClose={cancelPackageDialogState.onClose}
+        onClosed={() => ref.onCancelDialogClosed(id)}
+        isSubmitting={cancelPackageDialogState.isSubmitting}
+        packageId={id}
+      />
     </div>
   );
 }

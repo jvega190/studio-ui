@@ -20,6 +20,7 @@ import { EnhancedDialog, EnhancedDialogProps } from '../EnhancedDialog';
 import { EnhancedDialogState } from '../../hooks/useEnhancedDialogState';
 import { FormattedMessage } from 'react-intl';
 import BulkCancelPackageDialogContainer from './BulkCancelPackageDialogContainer';
+import StandardAction from '../../models/StandardAction';
 
 export interface BulkCancelPackageDialogBaseProps {
   packages?: PublishPackage[];
@@ -30,9 +31,9 @@ export interface BulkCancelPackageDialogProps extends EnhancedDialogProps, BulkC
 }
 
 export interface BulkCancelPackageDialogStateProps extends BulkCancelPackageDialogBaseProps, EnhancedDialogState {
-  onClose?(): void;
-  onClosed?(): void;
-  onSuccess?(): void;
+  onClose?: StandardAction;
+  onClosed?: StandardAction;
+  onSuccess?: StandardAction;
 }
 
 export function BulkCancelPackageDialog(props: BulkCancelPackageDialogProps) {

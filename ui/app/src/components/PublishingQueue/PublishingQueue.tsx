@@ -19,10 +19,10 @@ import { makeStyles } from 'tss-react/mui';
 import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
-import { defineMessages, useIntl } from 'react-intl';
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
 import PublishingPackage from './PublishingPackage';
 import { fetchPackages, fetchPublishingTargets } from '../../services/publishing';
-import { CurrentFilters, Package, PublishPackage, Selected } from '../../models/Publishing';
+import { CurrentFilters, PublishPackage, Selected } from '../../models/Publishing';
 import FilterDropdown from './FilterDropdown';
 import { setRequestForgeryToken } from '../../utils/auth';
 import TablePagination from '@mui/material/TablePagination';
@@ -35,7 +35,6 @@ import { alpha } from '@mui/material/styles';
 import palette from '../../styles/palette';
 import ApiResponseErrorState from '../ApiResponseErrorState';
 import { useSpreadState } from '../../hooks/useSpreadState';
-import ConfirmDropdown from '../ConfirmDropdown';
 import { publishEvent, workflowEvent } from '../../state/actions/system';
 import { getHostToHostBus } from '../../utils/subjects';
 import { filter } from 'rxjs/operators';
@@ -54,6 +53,8 @@ import {
   STAGING_SUCCESS_MASK
 } from '../../utils/constants';
 import { getPackageStateLabel, isReady } from '../PublishPackageReviewDialog/utils';
+import { BulkCancelPackageDialog } from '../BulkCancelPackageDialog';
+import useEnhancedDialogState from '../../hooks/useEnhancedDialogState';
 
 const messages = defineMessages({
   selectAll: {
@@ -224,10 +225,11 @@ function renderCount(selected: Selected) {
 
 function PublishingQueue(props: PublishingQueueProps) {
   const { classes } = useStyles();
-  const [packages, setPackages] = useState(null);
+  const [packages, setPackages] = useState<PublishPackage[]>(null);
   const [isFetchingPackages, setIsFetchingPackages] = useState(false);
   const [filesPerPackage, setFilesPerPackage] = useState(null);
   const [selected, setSelected] = useState<Selected>({});
+  const selectedPackages: PublishPackage[] = packages?.filter((pkg) => selected[pkg.id]) ?? [];
   const [pending, setPending] = useState({});
   const [count, setCount] = useState(0);
   const [total, setTotal] = useState(0);
@@ -245,6 +247,7 @@ function PublishingQueue(props: PublishingQueueProps) {
   const { siteId, readOnly } = props;
   const hasReadyForLivePackages =
     (packages || []).filter((item: PublishPackage) => isReady(item.packageState)).length > 0;
+  const bulkCancelPackageDialogState = useEnhancedDialogState();
 
   const getPackages = useCallback(
     (siteId: string) => {
@@ -301,30 +304,30 @@ function PublishingQueue(props: PublishingQueueProps) {
     };
   }, [siteId, getPackages]);
 
-  // TODO: new API doesn't support bulk anymore
-  function handleCancelAll() {
+  function onCancelAll() {
     if (count === 0) return false;
-    let _pending: Selected = {};
+    const _pending: Selected = {};
     Object.keys(selected).forEach((key: string) => {
       if (selected[key]) {
         _pending[key] = true;
       }
     });
     setPending(_pending);
-    // cancelPackage(siteId, Object.keys(_pending)).subscribe({
-    //   next() {
-    //     Object.keys(selected).forEach((key: string) => {
-    //       _pending[key] = false;
-    //     });
-    //     setPending({ ...pending, ..._pending });
-    //     clearSelected();
-    //     getPackages(siteId);
-    //   },
-    //   error({ response }) {
-    //     setApiState({ error: true, errorResponse: response });
-    //   }
-    // });
+    bulkCancelPackageDialogState.onOpen();
   }
+
+  const onCancelDialogSuccess = () => {
+    clearSelected();
+    getPackages(siteId);
+  };
+
+  const onCancelDialogClosed = () => {
+    const _pending: Selected = {};
+    Object.keys(selected).forEach((key: string) => {
+      _pending[key] = false;
+    });
+    setPending({ ...pending, ..._pending });
+  };
 
   function clearSelected() {
     setSelected({});
@@ -340,7 +343,7 @@ function PublishingQueue(props: PublishingQueueProps) {
         setSelected({ ...selected, ..._selected });
       });
     } else {
-      packages.forEach((item: Package) => {
+      packages.forEach((item) => {
         _selected[item.id] = false;
         setSelected({ ...selected, ..._selected });
       });
@@ -393,115 +396,124 @@ function PublishingQueue(props: PublishingQueueProps) {
   }
 
   return (
-    <div className={classes.publishingQueue}>
-      <div className={classes.topBar}>
-        {isReady(currentFilters.states) && (
-          <FormGroup className={classes.selectAll}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  color="primary"
-                  checked={areAllSelected()}
-                  disabled={!packages || !hasReadyForLivePackages || readOnly}
-                  onClick={handleSelectAll}
-                />
+    <>
+      <div className={classes.publishingQueue}>
+        <div className={classes.topBar}>
+          {isReady(currentFilters.states) && (
+            <FormGroup className={classes.selectAll}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    color="primary"
+                    checked={areAllSelected()}
+                    disabled={!packages || !hasReadyForLivePackages || readOnly}
+                    onClick={handleSelectAll}
+                  />
+                }
+                label={formatMessage(messages.selectAll)}
+              />
+            </FormGroup>
+          )}
+          {count > 0 && isReady(currentFilters.states) && (
+            <Typography variant="body2" className={classes.packagesSelected} color="textSecondary">
+              {formatMessage(messages.packagesSelected, { count: count })}
+              <HighlightOffIcon className={classes.clearSelected} onClick={clearSelected} />
+            </Typography>
+          )}
+          <Button variant="outlined" className={classes.button} onClick={() => getPackages(siteId)}>
+            <RefreshIcon />
+          </Button>
+          {isReady(currentFilters.states) && (
+            <Button
+              variant="outlined"
+              color="warning"
+              onClick={onCancelAll}
+              disabled={
+                !(hasReadyForLivePackages && Object.values(selected).filter((value) => value).length > 0) || readOnly
               }
-              label={formatMessage(messages.selectAll)}
-            />
-          </FormGroup>
-        )}
-        {count > 0 && isReady(currentFilters.states) && (
-          <Typography variant="body2" className={classes.packagesSelected} color="textSecondary">
-            {formatMessage(messages.packagesSelected, { count: count })}
-            <HighlightOffIcon className={classes.clearSelected} onClick={clearSelected} />
-          </Typography>
-        )}
-        <Button variant="outlined" className={classes.button} onClick={() => getPackages(siteId)}>
-          <RefreshIcon />
-        </Button>
-        {isReady(currentFilters.states) && (
-          <ConfirmDropdown
-            classes={{ button: classes.cancelButton }}
-            text={formatMessage(messages.cancelSelected)}
-            cancelText={formatMessage(messages.cancel)}
-            confirmText={formatMessage(messages.confirm)}
-            confirmHelperText={formatMessage(messages.confirmAllHelper)}
-            onConfirm={handleCancelAll}
-            disabled={
-              !(hasReadyForLivePackages && Object.values(selected).filter((value) => value).length > 0) || readOnly
-            }
+            >
+              <FormattedMessage defaultMessage="Cancel Selected" />
+            </Button>
+          )}
+          <FilterDropdown
+            className={classes.button}
+            text={formatMessage(messages.filters)}
+            handleFilterChange={handleFilterChange}
+            currentFilters={currentFilters}
+            filters={filters}
           />
+        </div>
+        {(currentFilters.states || currentFilters.target) && (
+          <div className={classes.secondBar}>
+            <Typography variant="body2">
+              {formatMessage(messages.filteredBy, {
+                state: currentFilters.states ? (
+                  <strong key="state">{getPackageStateLabel(currentFilters.states)}</strong>
+                ) : (
+                  'all'
+                ),
+                environment: currentFilters.target ? <strong key="environment">{currentFilters.target}</strong> : 'all'
+              })}
+            </Typography>
+          </div>
         )}
-        <FilterDropdown
-          className={classes.button}
-          text={formatMessage(messages.filters)}
-          handleFilterChange={handleFilterChange}
-          currentFilters={currentFilters}
-          filters={filters}
+        {apiState.error && apiState.errorResponse ? (
+          <ApiResponseErrorState error={apiState.errorResponse} />
+        ) : (
+          <div className={classes.queueList}>
+            {packages === null && isFetchingPackages && <LoadingState />}
+            {packages &&
+              packages.map((item: PublishPackage, index: number) => (
+                <PublishingPackage
+                  pkg={item}
+                  key={index}
+                  siteId={siteId}
+                  selected={selected}
+                  pending={pending}
+                  setPending={setPending}
+                  getPackages={getPackages}
+                  setApiState={setApiState}
+                  setSelected={setSelected}
+                  filesPerPackage={filesPerPackage}
+                  setFilesPerPackage={setFilesPerPackage}
+                  readOnly={readOnly}
+                />
+              ))}
+            {packages !== null && packages.length === 0 && (
+              <div className={classes.empty}>
+                <EmptyState
+                  title={formatMessage(messages.noPackagesTitle)}
+                  subtitle={formatMessage(messages.noPackagesSubtitle)}
+                />
+              </div>
+            )}
+          </div>
+        )}
+        <TablePagination
+          rowsPerPageOptions={[3, 5, 10]}
+          component="div"
+          count={total}
+          rowsPerPage={currentFilters.limit}
+          page={page}
+          backIconButtonProps={{
+            'aria-label': formatMessage(messages.previous)
+          }}
+          nextIconButtonProps={{
+            'aria-label': formatMessage(messages.next)
+          }}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
         />
       </div>
-      {(currentFilters.states || currentFilters.target) && (
-        <div className={classes.secondBar}>
-          <Typography variant="body2">
-            {formatMessage(messages.filteredBy, {
-              state: currentFilters.states ? (
-                <strong key="state">{getPackageStateLabel(currentFilters.states)}</strong>
-              ) : (
-                'all'
-              ),
-              environment: currentFilters.target ? <strong key="environment">{currentFilters.target}</strong> : 'all'
-            })}
-          </Typography>
-        </div>
-      )}
-      {apiState.error && apiState.errorResponse ? (
-        <ApiResponseErrorState error={apiState.errorResponse} />
-      ) : (
-        <div className={classes.queueList}>
-          {packages === null && isFetchingPackages && <LoadingState />}
-          {packages &&
-            packages.map((item: PublishPackage, index: number) => (
-              <PublishingPackage
-                pkg={item}
-                key={index}
-                siteId={siteId}
-                selected={selected}
-                pending={pending}
-                setPending={setPending}
-                getPackages={getPackages}
-                setApiState={setApiState}
-                setSelected={setSelected}
-                filesPerPackage={filesPerPackage}
-                setFilesPerPackage={setFilesPerPackage}
-                readOnly={readOnly}
-              />
-            ))}
-          {packages !== null && packages.length === 0 && (
-            <div className={classes.empty}>
-              <EmptyState
-                title={formatMessage(messages.noPackagesTitle)}
-                subtitle={formatMessage(messages.noPackagesSubtitle)}
-              />
-            </div>
-          )}
-        </div>
-      )}
-      <TablePagination
-        rowsPerPageOptions={[3, 5, 10]}
-        component="div"
-        count={total}
-        rowsPerPage={currentFilters.limit}
-        page={page}
-        backIconButtonProps={{
-          'aria-label': formatMessage(messages.previous)
-        }}
-        nextIconButtonProps={{
-          'aria-label': formatMessage(messages.next)
-        }}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
+      <BulkCancelPackageDialog
+        open={bulkCancelPackageDialogState.open}
+        onSuccess={onCancelDialogSuccess}
+        onClose={bulkCancelPackageDialogState.onClose}
+        onClosed={onCancelDialogClosed}
+        isSubmitting={bulkCancelPackageDialogState.isSubmitting}
+        packages={selectedPackages}
       />
-    </div>
+    </>
   );
 }
 
