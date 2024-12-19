@@ -20,7 +20,12 @@ import { ContextMenuOptionDescriptor } from './itemActions';
 import { ContextMenuOption } from '../components';
 import { createPresenceTable } from './array';
 import { Action, Dispatch } from 'redux';
-import { closePublishPackageApprovalDialog, showPublishPackageApprovalDialog } from '../state/actions/dialogs';
+import {
+  closePublishPackageApprovalDialog,
+  showBulkCancelPackageDialog,
+  showCancelPackageDialog,
+  showPublishPackageApprovalDialog
+} from '../state/actions/dialogs';
 import { batchActions } from '../state/actions/misc';
 
 const translations = defineMessages({
@@ -105,7 +110,27 @@ export const packageActionDispatcher = ({
       console.log('resubmit');
       break;
     case 'cancel':
-      console.log('cancel');
+      if (Array.isArray(pkg)) {
+        dispatch(
+          showBulkCancelPackageDialog({
+            packages: pkg,
+            onSuccess: batchActions([
+              closePublishPackageApprovalDialog(),
+              ...(onActionSuccess ? [onActionSuccess] : [])
+            ])
+          })
+        );
+      } else {
+        dispatch(
+          showCancelPackageDialog({
+            packageId: pkg.id,
+            onSuccess: batchActions([
+              closePublishPackageApprovalDialog(),
+              ...(onActionSuccess ? [onActionSuccess] : [])
+            ])
+          })
+        );
+      }
       break;
     default:
       break;

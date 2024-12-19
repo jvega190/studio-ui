@@ -70,6 +70,8 @@ const WidgetDialog = lazy(() => import('../WidgetDialog'));
 const CodeEditorDialog = lazy(() => import('../CodeEditorDialog'));
 const BrokenReferencesDialog = lazy(() => import('../BrokenReferencesDialog'));
 const PublishingPackageReviewDialog = lazy(() => import('../PublishPackageReviewDialog/PublishingPackageReviewDialog'));
+const CancelPackageDialog = lazy(() => import('../CancelPackageDialog'));
+const BulkCancelPackageDialog = lazy(() => import('../BulkCancelPackageDialog'));
 // endregion
 
 // @formatter:off
@@ -580,6 +582,24 @@ function GlobalDialogManager() {
           onMaximize={createCallback(tab.onMaximized, dispatch)}
         />
       ))}
+      {/* endregion */}
+
+      {/* region Cancel Package Dialog */}
+      <CancelPackageDialog
+        {...state.cancelPackage}
+        onClose={createCallback(state.cancelPackage.onClose, dispatch)}
+        onClosed={createCallback(state.cancelPackage.onClosed, dispatch)}
+        onSuccess={createCallback(state.cancelPackage.onSuccess, dispatch)}
+      />
+      {/* endregion */}
+
+      {/* region Bulk Cancel Package Dialog */}
+      <BulkCancelPackageDialog
+        {...state.bulkCancelPackage}
+        onClose={createCallback(state.bulkCancelPackage.onClose, dispatch)}
+        onClosed={createCallback(state.bulkCancelPackage.onClosed, dispatch)}
+        onSuccess={createCallback(state.bulkCancelPackage.onSuccess, dispatch)}
+      />
       {/* endregion */}
 
       {/* region UIBlocker */}
