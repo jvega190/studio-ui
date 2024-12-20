@@ -18,14 +18,14 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import ListRoundedIcon from '@mui/icons-material/ListRounded';
 import TreeOutlined from '../../icons/TreeOutlined';
-import { buttonClasses, listItemSecondaryActionClasses, Typography } from '@mui/material';
+import { buttonClasses, listItemSecondaryActionClasses } from '@mui/material';
 import { FormattedMessage, useIntl } from 'react-intl';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import UnfoldMoreRoundedIcon from '@mui/icons-material/UnfoldMoreRounded';
 import UnfoldLessRoundedIcon from '@mui/icons-material/UnfoldLessRounded';
 import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView';
-import { TreeItem, treeItemClasses } from '@mui/x-tree-view/TreeItem';
+import { treeItemClasses } from '@mui/x-tree-view/TreeItem';
 import List from '@mui/material/List';
 import ListItem, { listItemClasses } from '@mui/material/ListItem';
 import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
@@ -33,10 +33,9 @@ import Checkbox from '@mui/material/Checkbox';
 import ListItemText from '@mui/material/ListItemText';
 import ItemDisplay from '../ItemDisplay';
 import React, { useState } from 'react';
-import { DependencyChip, DependencyDataState, DependencyMap } from './PublishDialogContainer';
+import { DependencyChip, DependencyDataState } from './PublishDialogContainer';
 import { AllItemActions, DetailedItem } from '../../models';
 import { PathTreeNode } from './buildPathTrees';
-import LookupTable from '../../models/LookupTable';
 import { getPublishingPackagePreferredView, setPublishingPackagePreferredView } from '../../utils/state';
 import { nnou } from '../../utils/object';
 import useActiveUser from '../../hooks/useActiveUser';
@@ -46,7 +45,7 @@ import { generateSingleItemOptions, itemActionDispatcher } from '../../utils/ite
 import useEnv from '../../hooks/useEnv';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
 import { useDispatch } from 'react-redux';
-import FolderOpenRoundedIcon from '@mui/icons-material/FolderOpenRounded';
+import { renderTreeNode } from '../PackageItems/utils';
 
 export interface PublishItemsProps {
   itemMap: Record<string, DetailedItem>;
@@ -57,92 +56,6 @@ export interface PublishItemsProps {
   selectedDependenciesMap?: Record<string, boolean>;
   trees: PathTreeNode[];
   onCheckboxChange?: (event: React.ChangeEvent<HTMLInputElement>, checked: boolean, path: string) => void;
-}
-
-function renderTreeNode(props: {
-  itemMap: LookupTable<DetailedItem>;
-  node: PathTreeNode;
-  onMenuClick: (e: React.MouseEvent<HTMLButtonElement>, path: string) => void;
-  dependencyTypeMap?: DependencyMap;
-  onCheckboxChange?: (e: React.ChangeEvent<HTMLInputElement>, checked: boolean, path: string) => void;
-  selectedDependencies?: string[];
-}) {
-  const { itemMap, node, onMenuClick, dependencyTypeMap, onCheckboxChange, selectedDependencies } = props;
-  const isItem = Boolean(itemMap[node.path]);
-  const isDependency = Boolean(dependencyTypeMap?.[node.path]);
-  const isSoft = dependencyTypeMap?.[node.path] === 'soft';
-  return (
-    <TreeItem
-      key={node.path}
-      itemId={node.path}
-      data-is-item={isItem}
-      label={
-        isItem ? (
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <div>
-              <Box display="flex">
-                <ItemDisplay
-                  item={itemMap[node.path]}
-                  showNavigableAsLinks={false}
-                  showWorkflowState={false}
-                  sx={{ mr: 1 }}
-                />
-                {isDependency && <DependencyChip type={dependencyTypeMap[node.path]} />}
-              </Box>
-              <Typography
-                component="div"
-                variant="body2"
-                color="text.secondary"
-                children={node.path}
-                title={node.path}
-                noWrap
-              />
-            </div>
-            <Box display="flex">
-              <IconButton
-                className="tree-item-more-section"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onMenuClick?.(e, node.path);
-                }}
-              >
-                <MoreVertRounded />
-              </IconButton>
-              {isSoft && (
-                <Checkbox
-                  size="small"
-                  checked={selectedDependencies?.includes(node.path)}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e, checked) => {
-                    onCheckboxChange?.(e, checked, node.path);
-                  }}
-                />
-              )}
-            </Box>
-          </Box>
-        ) : (
-          <Box display="flex" alignItems="center">
-            <FolderOpenRoundedIcon sx={{ fontSize: '1.1rem', mr: '5px' }} />
-            <span title={node.path}>{node.label}</span>
-          </Box>
-        )
-      }
-      children={
-        node.children?.length === 0
-          ? undefined
-          : node.children.map((child) =>
-              renderTreeNode({
-                itemMap,
-                node: child,
-                dependencyTypeMap,
-                onMenuClick,
-                onCheckboxChange,
-                selectedDependencies
-              })
-            )
-      }
-    />
-  );
 }
 
 export function PublishPackageItemsView(props: PublishItemsProps) {

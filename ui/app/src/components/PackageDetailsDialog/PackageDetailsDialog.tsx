@@ -40,19 +40,6 @@ export function PackageDetailsDialog(props: PackageDetailsDialogProps) {
       }
     >
       <PackageDetailsDialogContainer packageId={packageId} />
-      <DialogFooter>
-        <Box display="flex" justifyContent="space-between">
-          {/* <Pager
-            totalPages={totalPages}
-            totalItems={state.total}
-            currentPage={currentPage}
-            rowsPerPage={state.limit}
-            onPagePickerChange={(page) => loadPage(page)}
-            onPageChange={(page) => loadPage(page)}
-            onRowsPerPageChange={onRowsPerPageChange}
-          />*/}
-        </Box>
-      </DialogFooter>
     </EnhancedDialog>
   );
 }
