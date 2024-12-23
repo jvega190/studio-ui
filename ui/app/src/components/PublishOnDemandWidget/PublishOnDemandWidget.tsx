@@ -346,7 +346,7 @@ export function PublishOnDemandWidget(props: PublishOnDemandWidgetProps) {
 
         publish(siteId, {
           publishingTarget,
-          paths: [{ path, includeChildren: false, includeSoftDeps: false }],
+          paths: [{ path, includeChildren: true, includeSoftDeps: false }],
           title,
           comment
         }).subscribe({
