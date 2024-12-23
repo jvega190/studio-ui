@@ -41,7 +41,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import { asLocalizedDateTime } from '../../utils/datetime';
 import useLocale from '../../hooks/useLocale';
 import { ActionsBar, ActionsBarAction } from '../ActionsBar';
-import { UNDEFINED } from '../../utils/constants';
+import { READY_MASK, UNDEFINED } from '../../utils/constants';
 import { useDispatch } from 'react-redux';
 import { deleteContentEvent, publishEvent, workflowEvent } from '../../state/actions/system';
 import { getHostToHostBus } from '../../utils/subjects';
@@ -135,6 +135,7 @@ export function ScheduledDashlet(props: ScheduledDashletProps) {
         offset: newOffset,
         sort,
         isScheduled: true,
+        states: READY_MASK,
         approvalStates: ['APPROVED']
       }).subscribe((packages) => {
         setState({
@@ -173,6 +174,7 @@ export function ScheduledDashlet(props: ScheduledDashletProps) {
         offset: 0,
         sort,
         isScheduled: true,
+        states: READY_MASK,
         approvalStates: ['APPROVED']
       }).subscribe((packages) => {
         const validatedState = getPackagesValidatedSelectionState(packages, limit);

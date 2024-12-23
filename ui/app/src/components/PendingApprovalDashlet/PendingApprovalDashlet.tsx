@@ -38,7 +38,7 @@ import useActiveSiteId from '../../hooks/useActiveSiteId';
 import { LIVE_COLOUR, STAGING_COLOUR } from '../ItemPublishingTargetIcon/styles';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import { ActionsBar, ActionsBarAction } from '../ActionsBar';
-import { UNDEFINED } from '../../utils/constants';
+import { READY_MASK, UNDEFINED } from '../../utils/constants';
 import { useDispatch } from 'react-redux';
 import ListItemButton from '@mui/material/ListItemButton';
 import { deleteContentEvent, publishEvent, workflowEvent } from '../../state/actions/system';
@@ -129,6 +129,7 @@ export function PendingApprovalDashlet(props: PendingApprovalDashletProps) {
       fetchPackages(site, {
         limit,
         offset: newOffset,
+        states: READY_MASK,
         approvalStates: pendingApprovalState
       }).subscribe((packages) => {
         setState({
@@ -153,6 +154,7 @@ export function PendingApprovalDashlet(props: PendingApprovalDashletProps) {
       fetchPackages(site, {
         limit: totalLimit + limit,
         offset: 0,
+        states: READY_MASK,
         approvalStates: pendingApprovalState
       }).subscribe((packages) => {
         const validatedState = getPackagesValidatedSelectionState(packages, limit);
