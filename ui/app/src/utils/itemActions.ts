@@ -530,7 +530,7 @@ export const itemActionDispatcher = ({
             ]),
             ...extraPayload
           });
-          if (items?.length > 0) {
+          if (packages?.length > 0) {
             dispatch(showWorkflowCancellationDialog({ packages, onContinue: actionToDispatch }));
           } else {
             dispatch(actionToDispatch);

@@ -71,7 +71,7 @@ export function PackageItems(props: PackageItemsProps) {
     loading: false,
     error: null,
     total: null,
-    limit: 100, // TODO: We need to assess what's a good performance-wise value for lists and trees
+    limit: 100,
     offset: 0,
     isNextPageLoading: false
   });

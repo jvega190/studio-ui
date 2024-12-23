@@ -319,6 +319,7 @@ function PublishingQueue(props: PublishingQueueProps) {
   const onCancelDialogSuccess = () => {
     clearSelected();
     getPackages(siteId);
+    bulkCancelPackageDialogState.onClose();
   };
 
   const onCancelDialogClosed = () => {

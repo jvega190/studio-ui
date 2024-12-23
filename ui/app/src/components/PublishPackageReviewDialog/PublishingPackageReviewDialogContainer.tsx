@@ -15,19 +15,16 @@
  */
 
 import { PublishingPackageApprovaDialogContainerProps } from './types';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { fetchPackage } from '../../services/publishing';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
 import { DialogBody } from '../DialogBody';
 import { ApiResponse, DetailedItem, PublishingPackageApproveParams, PublishPackage } from '../../models';
 import { ApiResponseErrorState } from '../ApiResponseErrorState';
 import { LoadingState } from '../LoadingState';
-import Grid from '@mui/material/Grid2';
 import { Typography } from '@mui/material';
 import { FormattedMessage } from 'react-intl';
 import Box from '@mui/material/Box';
-import Divider from '@mui/material/Divider';
-import Paper from '@mui/material/Paper';
 import RadioGroup from '@mui/material/RadioGroup';
 import Radio from '@mui/material/Radio';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -37,7 +34,6 @@ import TextFieldWithMax from '../TextFieldWithMax';
 import { DialogFooter } from '../DialogFooter';
 import SecondaryButton from '../SecondaryButton';
 import PrimaryButton from '../PrimaryButton';
-import { buildPathTrees, PathTreeNode } from '../PublishDialog/buildPathTrees';
 import { switchMap } from 'rxjs';
 import { fetchDetailedItems } from '../../services/content';
 import { map } from 'rxjs/operators';
@@ -57,8 +53,7 @@ import { useDispatch } from 'react-redux';
 import { showErrorDialog } from '../../state/reducers/dialogs/error';
 import { updatePublishPackageApprovalDialog } from '../../state/actions/dialogs';
 import { AsDayMonthDateTime } from '../VersionList';
-import PublishPackageItemsView from '../PublishDialog/PublishPackageItemsView';
-import { PublishPackageReview } from './PublishPackageReview';
+import PackageDetails from '../PackageDetailsDialog/PackageDetails';
 
 interface InternalDialogState {
   action: 'approve' | 'reject';
@@ -86,23 +81,6 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
   });
   const [error, setError] = useState<ApiResponse>();
   const siteId = useActiveSiteId();
-  const itemsDataSummary = useMemo(() => {
-    const itemPaths = [];
-    const itemMap: Record<string, DetailedItem> = {};
-    detailedItems.forEach((item) => {
-      itemMap[item.path] = item;
-      itemPaths.push(item.path);
-    });
-    return {
-      itemMap,
-      itemPaths
-    };
-  }, [detailedItems]);
-  const [trees, parentTreeNodePaths] = useMemo(() => {
-    const treeItemPaths = itemsDataSummary.itemPaths;
-    const treeBuilderResult = buildPathTrees(treeItemPaths);
-    return [...treeBuilderResult, treeItemPaths] as [PathTreeNode[], string[], string[]];
-  }, [itemsDataSummary.itemPaths]);
   const submitLabel =
     state.action === 'reject' ? (
       <FormattedMessage defaultMessage="Reject" />
@@ -253,13 +231,9 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
         ) : isFetchingPackage ? (
           <LoadingState sx={{ flexGrow: 1 }} />
         ) : publishingPackage ? (
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, sm: 5 }}>
-              {/* region review */}
-              <PublishPackageReview publishPackage={publishingPackage} />
-              {/* endregion */}
-              <Divider />
-              {/* region form */}
+          <PackageDetails
+            packageId={packageId}
+            reviewActions={
               <Box component="form" sx={{ my: 2 }}>
                 <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
                   <FormattedMessage defaultMessage="Action" />
@@ -377,28 +351,8 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
                   )
                 )}
               </Box>
-              {/* endregion */}
-            </Grid>
-            <Grid size={{ xs: 12, sm: 7 }}>
-              <Paper
-                elevation={1}
-                sx={{
-                  bgcolor: (theme) =>
-                    theme.palette.mode === 'dark' ? theme.palette.background.default : 'background.paper',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  height: '100%'
-                }}
-              >
-                <PublishPackageItemsView
-                  itemMap={itemsDataSummary.itemMap}
-                  itemsAndDependenciesPaths={itemsDataSummary.itemPaths}
-                  defaultExpandedPaths={parentTreeNodePaths}
-                  trees={trees}
-                />
-              </Paper>
-            </Grid>
-          </Grid>
+            }
+          />
         ) : (
           <></>
         )}
