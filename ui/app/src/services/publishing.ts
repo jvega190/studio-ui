@@ -123,7 +123,7 @@ export function clearLock(siteId: string): Observable<boolean> {
 }
 
 export function publish(siteId: string, data: PublishParams): Observable<string> {
-  return postJSON(`/studio/api/2/publish/${siteId}`, data).pipe(map(({ response }) => response?.packageId));
+  return postJSON(`/studio/api/2/publish/${siteId}/package`, data).pipe(map(({ response }) => response?.packageId));
 }
 
 export interface CalculatedPackageResponse {

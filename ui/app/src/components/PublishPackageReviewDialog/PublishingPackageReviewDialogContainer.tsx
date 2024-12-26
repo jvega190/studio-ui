@@ -196,6 +196,7 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
       reject(siteId, packageId, state.rejectComment).subscribe({
         next() {
           dispatch(updatePublishPackageApprovalDialog({ isSubmitting: false, hasPendingChanges: false }));
+          onSuccess?.();
         },
         error({ response }) {
           dispatch(
