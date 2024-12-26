@@ -17,7 +17,7 @@
 import DialogFooter from '../DialogFooter';
 import React from 'react';
 import SecondaryButton from '../SecondaryButton';
-import { FormattedMessage } from 'react-intl';
+import { FormattedMessage, useIntl } from 'react-intl';
 import PrimaryButton from '../PrimaryButton';
 import { CancelPackageDialogBaseProps, CancelPackageDialogProps } from './CancelPackageDialog';
 import { DialogBody } from '../DialogBody';
@@ -32,6 +32,7 @@ import { showErrorDialog } from '../../state/reducers/dialogs/error';
 import { Divider } from '@mui/material';
 import { updateCancelPackageDialog } from '../../state/actions/dialogs';
 import { batchActions } from '../../state/actions/misc';
+import { showSystemNotification } from '../../state/actions/system';
 
 export interface CancelPackageDialogContainerProps
   extends CancelPackageDialogBaseProps,
@@ -46,6 +47,7 @@ export function CancelPackageDialogContainer(props: CancelPackageDialogContainer
   const dispatch = useDispatch();
   const siteId = useActiveSiteId();
   const submitDisabled = isBlank(state.comment);
+  const { formatMessage } = useIntl();
 
   const handleSubmit = () => {
     dispatch(updateCancelPackageDialog({ isSubmitting: true }));
@@ -54,7 +56,12 @@ export function CancelPackageDialogContainer(props: CancelPackageDialogContainer
       comment: state.comment
     }).subscribe({
       next() {
-        dispatch(updateCancelPackageDialog({ isSubmitting: false }));
+        dispatch(
+          batchActions([
+            updateCancelPackageDialog({ isSubmitting: false }),
+            showSystemNotification({ message: formatMessage({ defaultMessage: 'Package cancelled successfully.' }) })
+          ])
+        );
         onSuccess?.();
       },
       error({ response }) {

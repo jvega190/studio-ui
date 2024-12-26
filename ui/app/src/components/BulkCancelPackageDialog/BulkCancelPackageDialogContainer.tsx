@@ -26,7 +26,7 @@ import List from '@mui/material/List';
 import Paper from '@mui/material/Paper';
 import { Divider } from '@mui/material';
 import TextFieldWithMax from '../TextFieldWithMax';
-import { FormattedMessage } from 'react-intl';
+import { FormattedMessage, useIntl } from 'react-intl';
 import { isBlank } from '../../utils/string';
 import { useDispatch } from 'react-redux';
 import { cancelPackages } from '../../services/workflow';
@@ -34,6 +34,7 @@ import useActiveSiteId from '../../hooks/useActiveSiteId';
 import { showErrorDialog } from '../../state/reducers/dialogs/error';
 import { batchActions } from '../../state/actions/misc';
 import { updateBulkCancelPackageDialog } from '../../state/actions/dialogs';
+import { showSystemNotification } from '../../state/actions/system';
 
 export interface BulkCancelPackageDialogContainerProps
   extends BulkCancelPackageDialogBaseProps,
@@ -46,6 +47,7 @@ export function BulkCancelPackageDialogContainer(props: BulkCancelPackageDialogC
   const submitDisabled = isBlank(comment);
   const packageIds = packages?.map((pkg) => pkg.id);
   const dispatch = useDispatch();
+  const { formatMessage } = useIntl();
 
   const handleSubmit = () => {
     dispatch(updateBulkCancelPackageDialog({ isSubmitting: true }));
@@ -54,7 +56,12 @@ export function BulkCancelPackageDialogContainer(props: BulkCancelPackageDialogC
       comment
     }).subscribe({
       next() {
-        dispatch(updateBulkCancelPackageDialog({ isSubmitting: false }));
+        dispatch(
+          batchActions([
+            updateBulkCancelPackageDialog({ isSubmitting: false }),
+            showSystemNotification({ message: formatMessage({ defaultMessage: 'Packages cancelled successfully.' }) })
+          ])
+        );
         onSuccess?.();
       },
       error({ response }) {
