@@ -251,7 +251,7 @@ export function RecentlyPublishedDashlet(props: RecentlyPublishedDashletProps) {
                     defaultMessage="<bold>{title}</bold> ({total} items)"
                     values={{
                       title: pkg.title,
-                      total: 0,
+                      total: pkg.itemCount,
                       bold: (chunks: React.ReactNode) => <strong>{chunks}</strong>
                     }}
                   />

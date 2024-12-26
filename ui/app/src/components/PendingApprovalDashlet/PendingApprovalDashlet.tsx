@@ -76,7 +76,7 @@ const messages = defineMessages({
 const pendingApprovalState: PackageApprovalState[] = ['SUBMITTED'];
 
 export function PendingApprovalDashlet(props: PendingApprovalDashletProps) {
-  const { borderLeftColor = palette.purple.tint, onMinimize } = props;
+  const { borderLeftColor = palette.purple.tint } = props;
   const [
     {
       items: publishingPackages,
@@ -312,7 +312,7 @@ export function PendingApprovalDashlet(props: PendingApprovalDashletProps) {
                     defaultMessage="<bold>{title}</bold> awaiting approval ({total} items)"
                     values={{
                       title: pkg.title,
-                      total: 0,
+                      total: pkg.itemCount,
                       bold: (chunks: React.ReactNode) => <strong>{chunks}</strong>
                     }}
                   />

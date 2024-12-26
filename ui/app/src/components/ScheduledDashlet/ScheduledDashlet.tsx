@@ -309,7 +309,7 @@ export function ScheduledDashlet(props: ScheduledDashletProps) {
                     defaultMessage="<bold>{title}</bold> ({total} items)"
                     values={{
                       title: pkg.title,
-                      total: 0,
+                      total: pkg.itemCount,
                       bold: (chunks: React.ReactNode) => <strong>{chunks}</strong>
                     }}
                   />
