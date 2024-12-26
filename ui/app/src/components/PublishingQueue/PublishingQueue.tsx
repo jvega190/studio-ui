@@ -227,7 +227,6 @@ function PublishingQueue(props: PublishingQueueProps) {
   const { classes } = useStyles();
   const [packages, setPackages] = useState<PublishPackage[]>(null);
   const [isFetchingPackages, setIsFetchingPackages] = useState(false);
-  const [filesPerPackage, setFilesPerPackage] = useState(null);
   const [selected, setSelected] = useState<Selected>({});
   const selectedPackages: PublishPackage[] = packages?.filter((pkg) => selected[pkg.id]) ?? [];
   const [pending, setPending] = useState({});
@@ -464,10 +463,10 @@ function PublishingQueue(props: PublishingQueueProps) {
           <div className={classes.queueList}>
             {packages === null && isFetchingPackages && <LoadingState />}
             {packages &&
-              packages.map((item: PublishPackage, index: number) => (
+              packages.map((item: PublishPackage) => (
                 <PublishingPackage
                   pkg={item}
-                  key={index}
+                  key={item.id}
                   siteId={siteId}
                   selected={selected}
                   pending={pending}
@@ -475,8 +474,6 @@ function PublishingQueue(props: PublishingQueueProps) {
                   getPackages={getPackages}
                   setApiState={setApiState}
                   setSelected={setSelected}
-                  filesPerPackage={filesPerPackage}
-                  setFilesPerPackage={setFilesPerPackage}
                   readOnly={readOnly}
                 />
               ))}

@@ -53,7 +53,13 @@ export function fetchPackages(
   ).pipe(map(({ response }) => Object.assign(response.packages, pluckProps(response, 'limit', 'offset', 'total'))));
 }
 
-export function fetchPackage(
+export function fetchPackage(siteId: string, packageId: number): Observable<PublishPackage> {
+  return get<Api2ResponseFormat<{ package: PublishPackage }>>(
+    `/studio/api/2/publish/${siteId}/package/${packageId}`
+  ).pipe(map(({ response }) => response?.package));
+}
+
+export function fetchPackageItems(
   siteId: string,
   packageId: number,
   data?: {
@@ -63,21 +69,11 @@ export function fetchPackage(
     offset?: number;
     limit?: number;
   }
-): Observable<{ publishPackage: PublishPackage; items: PublishingItem[] }> {
+): Observable<PagedArray<PublishingItem>> {
   const qs = toQueryString(data);
-  return get<
-    Api2ResponseFormat<{
-      package: PublishPackage;
-      items: PublishingItem[];
-    }>
-  >(`/studio/api/2/publish/${siteId}/package/${packageId}${qs}`).pipe(
-    map((response) => {
-      return {
-        publishPackage: response?.response?.package,
-        items: response?.response?.items
-      };
-    })
-  );
+  return get<Api2ResponseFormat<{ limit: number; offset: number; total: number; items: PublishingItem[] }>>(
+    `/studio/api/2/publish/${siteId}/package/${packageId}/items${qs}`
+  ).pipe(map(({ response }) => Object.assign(response.items, pluckProps(response, 'limit', 'offset', 'total'))));
 }
 
 export type FetchPublishingTargetsResponse = Api2ResponseFormat<{

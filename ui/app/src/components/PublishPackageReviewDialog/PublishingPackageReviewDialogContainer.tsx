@@ -68,7 +68,6 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
   const { packageId, isSubmitting, onSuccess, onClose } = props;
   const { activeEnvironment } = useEnv();
   const [publishingPackage, setPublishingPackage] = useState<PublishPackage>();
-  const [detailedItems, setDetailedItems] = useState<DetailedItem[]>([]);
   const [cannedMessages, setCannedMessages] = useState<CannedMessage[]>([]);
   const [isFetchingPackage, setIsFetchingPackage] = useState(false);
   const [state, setState] = useSpreadState<InternalDialogState>({
@@ -93,7 +92,6 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
   const submitDisabled =
     // Detailed items haven't loaded
     isFetchingPackage ||
-    !detailedItems ||
     // While submitting
     isSubmitting ||
     // No action has been selected
@@ -105,26 +103,16 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
 
   useEffect(() => {
     setIsFetchingPackage(true);
-    fetchPackage(siteId, packageId)
-      .pipe(
-        switchMap(({ publishPackage, items }) =>
-          fetchDetailedItems(
-            siteId,
-            items.map((item) => item.path)
-          ).pipe(map((detailedItemsList) => ({ publishPackage, detailedItemsList })))
-        )
-      )
-      .subscribe({
-        next: ({ publishPackage, detailedItemsList }) => {
-          setPublishingPackage(publishPackage);
-          setDetailedItems(detailedItemsList);
-          setIsFetchingPackage(false);
-        },
-        error: ({ response }) => {
-          setError(response.response);
-          setIsFetchingPackage(false);
-        }
-      });
+    fetchPackage(siteId, packageId).subscribe({
+      next: (publishPackage) => {
+        setPublishingPackage(publishPackage);
+        setIsFetchingPackage(false);
+      },
+      error: ({ response }) => {
+        setError(response.response);
+        setIsFetchingPackage(false);
+      }
+    });
   }, [siteId, packageId]);
 
   useEffect(() => {

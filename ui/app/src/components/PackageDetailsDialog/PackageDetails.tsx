@@ -36,23 +36,18 @@ export function PackageDetails(props: PackageDetailsProps) {
   const site = useActiveSiteId();
   const [state, setState] = useSpreadState({
     publishPackage: null,
-    items: null,
     loading: false,
     error: null,
-    total: null,
-    limit: 10,
-    offset: 0
+    total: null
   });
   useEffect(() => {
     if (packageId) {
-      setState({ items: null, loading: true, error: null });
-      fetchPackage(site, packageId, { limit: state.limit }).subscribe({
-        next({ publishPackage, items }) {
+      setState({ loading: true, error: null });
+      fetchPackage(site, packageId).subscribe({
+        next(publishPackage) {
           setState({
             publishPackage,
-            items: items.map((item) => ({ ...item.itemMetadata, path: item.path })),
             loading: false,
-            offset: 0,
             total: publishPackage.itemCount
           });
         },
@@ -61,7 +56,7 @@ export function PackageDetails(props: PackageDetailsProps) {
         }
       });
     }
-  }, [packageId, site, setState, state.limit]);
+  }, [packageId, site, setState]);
 
   return (
     <>

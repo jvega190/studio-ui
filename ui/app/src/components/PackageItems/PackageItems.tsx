@@ -17,7 +17,7 @@
 import useSpreadState from '../../hooks/useSpreadState';
 import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { fetchPackage } from '../../services/publishing';
+import { fetchPackageItems } from '../../services/publishing';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
 import { FormattedMessage } from 'react-intl';
 import { ApiResponse, PublishingItem } from '../../models';
@@ -87,13 +87,13 @@ export function PackageItems(props: PackageItemsProps) {
   useEffect(() => {
     if (packageId) {
       setState({ items: null, loading: true, error: null });
-      fetchPackage(siteId, packageId, { limit: state.limit }).subscribe({
-        next({ publishPackage, items }) {
+      fetchPackageItems(siteId, packageId, { limit: state.limit }).subscribe({
+        next(items) {
           setState({
             items: items.map((item) => ({ ...item.itemMetadata, path: item.path })),
             loading: false,
             offset: 0,
-            total: publishPackage.itemCount
+            total: items.total
           });
         },
         error({ response }) {
@@ -107,13 +107,13 @@ export function PackageItems(props: PackageItemsProps) {
     const pageNumber = currentPage + 1;
     const newOffset = pageNumber * state.limit;
     setState({ isNextPageLoading: true, error: null });
-    fetchPackage(siteId, packageId, { limit: state.limit, offset: newOffset }).subscribe({
-      next({ publishPackage, items }) {
+    fetchPackageItems(siteId, packageId, { limit: state.limit, offset: newOffset }).subscribe({
+      next(items) {
         setState({
           items: [...state.items, ...items.map((item) => ({ ...item.itemMetadata, path: item.path }))],
           isNextPageLoading: false,
           offset: newOffset,
-          total: publishPackage.itemCount
+          total: items.total
         });
       },
       error({ response }) {
