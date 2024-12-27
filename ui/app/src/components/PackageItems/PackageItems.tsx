@@ -206,6 +206,7 @@ export function PackageItems(props: PackageItemsProps) {
             display: 'flex',
             flexDirection: 'column',
             minHeight: 420,
+            height: 'calc(60vh)',
             maxHeight: 600,
             overflowY: 'auto'
           }}
