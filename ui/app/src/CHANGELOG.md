@@ -11,6 +11,8 @@
   * Removed `PublishDialog/styles.ts` file.
   * `PackageDetailsDialog`: Updated `packageId` prop to be of type `number`.
   * `PublishOnDemandForm`: Removed `bulkPublishCommentRequired` and `publishByCommitCommentRequired` props.
+  * `PublishingQueue/FilterDropdown`: Removed `filterStates` prop.
+  * `PackageDetailsDialog`: Update packageId prop to be of type number.
 * [hooks]
   * Removed `useLogicResource` hook.
   * Removed `useSelectorResource` hook.
@@ -44,6 +46,7 @@
   * Added `title`, `submittedOn`, `reviewedOn`,`packageState`, `reviewer`, `liveError`, `stagingError`, `publishedOn`, `packageType`, `commitId`, `publishedStagingCommitId` and `publishedLiveCommitId` props.
 * `PublishFormData` interface change: Added `title` prop. 
 * `approvePublish` anb `rejectPublish` are no longer item actions.
+* [SiteDashboard/utils] Renamed `getValidatedSelectionState` to `getItemsValidatedSelectionState`.
 
 ## 4.2.0
 
