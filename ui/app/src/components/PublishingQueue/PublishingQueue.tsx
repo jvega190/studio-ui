@@ -35,7 +35,14 @@ import { alpha } from '@mui/material/styles';
 import palette from '../../styles/palette';
 import ApiResponseErrorState from '../ApiResponseErrorState';
 import { useSpreadState } from '../../hooks/useSpreadState';
-import { publishEvent, workflowEvent } from '../../state/actions/system';
+import {
+  publishEvent,
+  workflowEventApprove,
+  workflowEventCancel,
+  workflowEventDirectPublish,
+  workflowEventReject,
+  workflowEventSubmit
+} from '../../state/actions/system';
 import { getHostToHostBus } from '../../utils/subjects';
 import { filter } from 'rxjs/operators';
 import { LoadingState } from '../LoadingState';
@@ -292,7 +299,14 @@ function PublishingQueue(props: PublishingQueueProps) {
   }, [selected]);
 
   useEffect(() => {
-    const events: string[] = [workflowEvent.type, publishEvent.type];
+    const events: string[] = [
+      workflowEventSubmit.type,
+      workflowEventDirectPublish.type,
+      workflowEventApprove.type,
+      workflowEventReject.type,
+      workflowEventCancel.type,
+      publishEvent.type
+    ];
     const hostToHost$ = getHostToHostBus();
     const subscription = hostToHost$.pipe(filter((e) => events.includes(e.type))).subscribe(() => {
       getPackages(siteId);

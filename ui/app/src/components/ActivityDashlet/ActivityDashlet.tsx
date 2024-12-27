@@ -53,7 +53,16 @@ import { useDispatch } from 'react-redux';
 import { changeCurrentUrl } from '../../state/actions/preview';
 import { useWidgetDialogContext } from '../WidgetDialog';
 import PackageDetailsDialog from '../PackageDetailsDialog/PackageDetailsDialog';
-import { contentEvent, deleteContentEvent, publishEvent, workflowEvent } from '../../state/actions/system';
+import {
+  contentEvent,
+  deleteContentEvent,
+  publishEvent,
+  workflowEventApprove,
+  workflowEventCancel,
+  workflowEventDirectPublish,
+  workflowEventReject,
+  workflowEventSubmit
+} from '../../state/actions/system';
 import { getHostToHostBus } from '../../utils/subjects';
 import { filter } from 'rxjs/operators';
 import LoadingIconButton from '../LoadingIconButton';
@@ -329,7 +338,16 @@ export function ActivityDashlet(props: ActivityDashletProps) {
 
   // region Item Updates Propagation
   useEffect(() => {
-    const events = [deleteContentEvent.type, workflowEvent.type, publishEvent.type, contentEvent.type];
+    const events = [
+      deleteContentEvent.type,
+      workflowEventSubmit.type,
+      workflowEventDirectPublish.type,
+      workflowEventApprove.type,
+      workflowEventReject.type,
+      workflowEventCancel.type,
+      publishEvent.type,
+      contentEvent.type
+    ];
     const hostToHost$ = getHostToHostBus();
     const subscription = hostToHost$.pipe(filter((e) => events.includes(e.type))).subscribe(({ type, payload }) => {
       onRefresh();

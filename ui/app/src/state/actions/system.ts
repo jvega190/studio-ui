@@ -58,7 +58,13 @@ export const publishEvent = /*#__PURE__*/ createAction<PublishEventPayload>('PUB
 
 export const repositoryEvent = /*#__PURE__*/ createAction<RepositoryEventPayload>('REPOSITORY_EVENT');
 
-export const workflowEvent = /*#__PURE__*/ createAction<WorkflowEventPayload>('WORKFLOW_EVENT');
+export const workflowEventSubmit = /*#__PURE__*/ createAction<WorkflowEventPayload>('WORKFLOW_EVENT_SUBMIT');
+export const workflowEventDirectPublish = /*#__PURE__*/ createAction<WorkflowEventPayload>(
+  'WORKFLOW_EVENT_DIRECT_PUBLISH'
+);
+export const workflowEventApprove = /*#__PURE__*/ createAction<WorkflowEventPayload>('WORKFLOW_EVENT_APPROVE');
+export const workflowEventReject = /*#__PURE__*/ createAction<WorkflowEventPayload>('WORKFLOW_EVENT_REJECT');
+export const workflowEventCancel = /*#__PURE__*/ createAction<WorkflowEventPayload>('WORKFLOW_EVENT_CANCEL');
 
 export const moveContentEvent = /*#__PURE__*/ createAction<MoveContentEventPayload>('MOVE_CONTENT_EVENT');
 

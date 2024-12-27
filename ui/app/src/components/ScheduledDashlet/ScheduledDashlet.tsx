@@ -43,7 +43,15 @@ import useLocale from '../../hooks/useLocale';
 import { ActionsBar, ActionsBarAction } from '../ActionsBar';
 import { READY_MASK, UNDEFINED } from '../../utils/constants';
 import { useDispatch } from 'react-redux';
-import { deleteContentEvent, publishEvent, workflowEvent } from '../../state/actions/system';
+import {
+  deleteContentEvent,
+  publishEvent,
+  workflowEventApprove,
+  workflowEventCancel,
+  workflowEventDirectPublish,
+  workflowEventReject,
+  workflowEventSubmit
+} from '../../state/actions/system';
 import { getHostToHostBus } from '../../utils/subjects';
 import { filter } from 'rxjs/operators';
 import { LoadingIconButton } from '../LoadingIconButton';
@@ -202,7 +210,15 @@ export function ScheduledDashlet(props: ScheduledDashletProps) {
 
   // region Item Updates Propagation
   useEffect(() => {
-    const events = [workflowEvent.type, publishEvent.type, deleteContentEvent.type];
+    const events = [
+      workflowEventSubmit.type,
+      workflowEventDirectPublish.type,
+      workflowEventApprove.type,
+      workflowEventReject.type,
+      workflowEventCancel.type,
+      publishEvent.type,
+      deleteContentEvent.type
+    ];
     const hostToHost$ = getHostToHostBus();
     const subscription = hostToHost$.pipe(filter((e) => events.includes(e.type))).subscribe(() => {
       loadPagesUntil(currentPage, true);

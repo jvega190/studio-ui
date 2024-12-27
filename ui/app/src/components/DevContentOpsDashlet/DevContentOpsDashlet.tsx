@@ -28,7 +28,16 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
-import { contentEvent, deleteContentEvent, publishEvent, workflowEvent } from '../../state/actions/system';
+import {
+  contentEvent,
+  deleteContentEvent,
+  publishEvent,
+  workflowEventApprove,
+  workflowEventCancel,
+  workflowEventDirectPublish,
+  workflowEventReject,
+  workflowEventSubmit
+} from '../../state/actions/system';
 import { getHostToHostBus } from '../../utils/subjects';
 import { filter } from 'rxjs/operators';
 import { SxProps } from '@mui/system';
@@ -104,7 +113,16 @@ export function DevContentOpsDashlet(props: DevContentOpsDashletProps) {
 
   // region Item Updates Propagation
   useEffect(() => {
-    const events = [deleteContentEvent.type, workflowEvent.type, publishEvent.type, contentEvent.type];
+    const events = [
+      deleteContentEvent.type,
+      workflowEventSubmit.type,
+      workflowEventDirectPublish.type,
+      workflowEventApprove.type,
+      workflowEventReject.type,
+      workflowEventCancel.type,
+      publishEvent.type,
+      contentEvent.type
+    ];
     const hostToHost$ = getHostToHostBus();
     const subscription = hostToHost$.pipe(filter((e) => events.includes(e.type))).subscribe(({ type, payload }) => {
       onRefresh(true);
