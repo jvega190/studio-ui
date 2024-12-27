@@ -85,16 +85,6 @@ export interface PublishingTarget {
   order: number;
 }
 
-// TODO: this is still used in workflow services
-export interface PublishingParams {
-  items: string[];
-  publishingTarget: string;
-  optionalDependencies?: string[];
-  schedule?: string;
-  comment?: string;
-  sendEmailNotifications?: boolean;
-}
-
 export interface PublishParams {
   publishingTarget: string;
   paths?: {

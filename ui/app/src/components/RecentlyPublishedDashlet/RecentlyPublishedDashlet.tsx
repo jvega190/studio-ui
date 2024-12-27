@@ -271,7 +271,6 @@ export function RecentlyPublishedDashlet(props: RecentlyPublishedDashletProps) {
                           </Box>
                         );
                       },
-                      // TODO: format so if is close show as 'X hours/minutes ago'
                       submittedDate: asLocalizedDateTime(
                         pkg.submittedOn,
                         locale.localeCode,

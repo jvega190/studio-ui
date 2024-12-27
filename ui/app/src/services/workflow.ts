@@ -58,15 +58,20 @@ export interface StatesToUpdate {
   staged?: boolean;
 }
 
-export function setItemStates(siteId: string, items: string[], { ...rest }: StatesToUpdate) {
+export function setItemStates(siteId: string, items: string[], { ...rest }: StatesToUpdate): Observable<ApiResponse> {
   return postJSON('/studio/api/2/workflow/item_states', {
     siteId,
     items: items,
     ...rest
-  }).pipe(map(() => true));
+  }).pipe(map(({ response }) => response));
 }
 
-export function setItemStatesByQuery(siteId: string, states: number, update: StatesToUpdate, path?: string) {
+export function setItemStatesByQuery(
+  siteId: string,
+  states: number,
+  update: StatesToUpdate,
+  path?: string
+): Observable<ApiResponse> {
   return postJSON('/studio/api/2/workflow/update_item_states_by_query', {
     query: {
       siteId,
@@ -74,7 +79,7 @@ export function setItemStatesByQuery(siteId: string, states: number, update: Sta
       states
     },
     update
-  }).pipe(map(() => true));
+  }).pipe(map(({ response }) => response));
 }
 
 export function approve(
@@ -82,9 +87,9 @@ export function approve(
   packageId: number,
   data: PublishingPackageApproveParams
 ): Observable<ApiResponse> {
-  return postJSON(`/studio/api/2/workflow/${siteId}/package/${packageId}/approve`, {
-    ...data
-  }).pipe(map(({ response }) => response));
+  return postJSON(`/studio/api/2/workflow/${siteId}/package/${packageId}/approve`, data).pipe(
+    map(({ response }) => response)
+  );
 }
 
 export function reject(siteId: string, packageId: number, comment: string): Observable<ApiResponse> {
