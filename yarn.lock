@@ -1745,6 +1745,7 @@ __metadata:
     react-router-dom: "npm:^6.23.1"
     react-swipeable-views: "npm:^0.14.0"
     react-swipeable-views-utils: "npm:^0.14.0"
+    react-virtualized-auto-sizer: "npm:^1.0.25"
     react-window: "npm:^1.8.11"
     react-window-infinite-loader: "npm:^1.0.9"
     redux: "npm:^5.0.1"
@@ -11188,6 +11189,16 @@ __metadata:
     react: ">=16.6.0"
     react-dom: ">=16.6.0"
   checksum: 10/ca32d3fd2168c976c5d90a317f25d5f5cd723608b415fb3b9006f9d793c8965c619562d0884503a3e44e4b06efbca4fdd1520f30e58ca3e00a0890e637d55419
+  languageName: node
+  linkType: hard
+
+"react-virtualized-auto-sizer@npm:^1.0.25":
+  version: 1.0.25
+  resolution: "react-virtualized-auto-sizer@npm:1.0.25"
+  peerDependencies:
+    react: ^15.3.0 || ^16.0.0-alpha || ^17.0.0 || ^18.0.0 || ^19.0.0
+    react-dom: ^15.3.0 || ^16.0.0-alpha || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10/43678a904019f0413a3c649b5b64ea51263283120c991b285077b5075cf2ea564571f6d48b3a396b588d500d45820d1c98989cb7091e2a009e73e4faa7da9d20
   languageName: node
   linkType: hard
 
