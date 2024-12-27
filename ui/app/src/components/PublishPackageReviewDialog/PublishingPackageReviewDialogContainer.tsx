@@ -19,11 +19,11 @@ import React, { useEffect, useState } from 'react';
 import { fetchPackage } from '../../services/publishing';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
 import { DialogBody } from '../DialogBody';
-import { ApiResponse, DetailedItem, PublishingPackageApproveParams, PublishPackage } from '../../models';
+import { ApiResponse, PublishingPackageApproveParams, PublishPackage } from '../../models';
 import { ApiResponseErrorState } from '../ApiResponseErrorState';
 import { LoadingState } from '../LoadingState';
 import { Typography } from '@mui/material';
-import { FormattedMessage } from 'react-intl';
+import { FormattedMessage, useIntl } from 'react-intl';
 import Box from '@mui/material/Box';
 import RadioGroup from '@mui/material/RadioGroup';
 import Radio from '@mui/material/Radio';
@@ -34,9 +34,6 @@ import TextFieldWithMax from '../TextFieldWithMax';
 import { DialogFooter } from '../DialogFooter';
 import SecondaryButton from '../SecondaryButton';
 import PrimaryButton from '../PrimaryButton';
-import { switchMap } from 'rxjs';
-import { fetchDetailedItems } from '../../services/content';
-import { map } from 'rxjs/operators';
 import useSpreadState from '../../hooks/useSpreadState';
 import { CannedMessage, fetchCannedMessages } from '../../services/configuration';
 import useEnv from '../../hooks/useEnv';
@@ -54,9 +51,11 @@ import { showErrorDialog } from '../../state/reducers/dialogs/error';
 import { updatePublishPackageApprovalDialog } from '../../state/actions/dialogs';
 import { AsDayMonthDateTime } from '../VersionList';
 import PackageDetails from '../PackageDetailsDialog/PackageDetails';
+import { showSystemNotification } from '../../state/actions/system';
 
+export type PackageReviewAction = 'approve' | 'reject';
 interface InternalDialogState {
-  action: 'approve' | 'reject';
+  action: PackageReviewAction;
   scheduling: 'keep' | 'now' | 'custom';
   schedule: Date;
   approverComment: string;
@@ -87,6 +86,7 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
       <FormattedMessage defaultMessage="Approve" />
     );
   const dispatch = useDispatch();
+  const { formatMessage } = useIntl();
 
   // Submit button should be disabled when:
   const submitDisabled =
@@ -180,7 +180,12 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
 
       approve(siteId, packageId, data).subscribe({
         next() {
-          dispatch(updatePublishPackageApprovalDialog({ isSubmitting: false, hasPendingChanges: false }));
+          dispatch(
+            batchActions([
+              updatePublishPackageApprovalDialog({ isSubmitting: false, hasPendingChanges: false }),
+              showSystemNotification({ message: formatMessage({ defaultMessage: 'Package approved successfully.' }) })
+            ])
+          );
           onSuccess?.();
         },
         error({ response }) {
@@ -195,7 +200,12 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
     } else {
       reject(siteId, packageId, state.rejectComment).subscribe({
         next() {
-          dispatch(updatePublishPackageApprovalDialog({ isSubmitting: false, hasPendingChanges: false }));
+          dispatch(
+            batchActions([
+              updatePublishPackageApprovalDialog({ isSubmitting: false, hasPendingChanges: false }),
+              showSystemNotification({ message: formatMessage({ defaultMessage: 'Package rejected successfully.' }) })
+            ])
+          );
           onSuccess?.();
         },
         error({ response }) {
