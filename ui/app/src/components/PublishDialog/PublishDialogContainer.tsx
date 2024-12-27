@@ -489,7 +489,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
           <LoadingState sx={{ flexGrow: 1 }} />
         ) : detailedItems && publishingTargets ? (
           detailedItems.length ? (
-            <Grid container spacing={2}>
+            <Grid container spacing={2} sx={{ flex: 1 }}>
               <Grid size={{ xs: 12, sm: 5 }}>
                 <Box component="form" sx={{ width: 'auto' }} onSubmit={handleSubmit}>
                   <TextField
