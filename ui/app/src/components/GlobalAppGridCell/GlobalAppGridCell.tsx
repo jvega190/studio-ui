@@ -17,6 +17,7 @@
 import { withStyles } from 'tss-react/mui';
 import TableCell from '@mui/material/TableCell';
 
+// @ts-expect-error tss-react will be replaced with sx
 const GlobalAppGridCell = withStyles(TableCell, () => ({
   root: {
     '&.action': {

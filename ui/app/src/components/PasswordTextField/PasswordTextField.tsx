@@ -80,7 +80,3 @@ const PasswordTextField = React.forwardRef<HTMLDivElement, PasswordTextFieldProp
 });
 
 export default PasswordTextField;
-
-PasswordTextField.defaultProps = {
-  type: 'password'
-};
