@@ -153,7 +153,7 @@ function Body(props: BodyProps) {
 
   const locale = useSelection<GlobalState['uiConfig']['locale']>((state) => state.uiConfig.locale);
   const functionRefs = useUpdateRefs({ onSubmittingAndOrPendingChange });
-  const chipsContainerRef = useRef<HTMLDivElement>();
+  const chipsContainerRef = useRef<HTMLDivElement>(null);
 
   const theme = useTheme();
   const [projects, setProjects] = React.useState<string[]>([]);

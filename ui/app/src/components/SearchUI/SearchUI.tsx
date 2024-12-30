@@ -317,7 +317,7 @@ export function SearchUI(props: SearchUIProps) {
 
   const { formatMessage } = useIntl();
 
-  const container = useRef();
+  const container = useRef(null);
 
   return (
     <section ref={container} className={classes.container}>

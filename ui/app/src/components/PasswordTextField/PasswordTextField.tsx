@@ -38,7 +38,7 @@ const PasswordTextField = React.forwardRef<HTMLDivElement, PasswordTextFieldProp
   const { visibilitySwitch = true, initialVisible = false } = props;
   const { formatMessage } = useIntl();
   const [showPassword, setShowPassword] = useState(initialVisible);
-  const inputRef = useRef<HTMLInputElement>();
+  const inputRef = useRef<HTMLInputElement>(null);
   const handleClickShowPassword = () => {
     setShowPassword(!showPassword);
     inputRef.current.focus();
