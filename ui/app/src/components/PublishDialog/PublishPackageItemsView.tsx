@@ -15,15 +15,10 @@
  */
 
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import ListRoundedIcon from '@mui/icons-material/ListRounded';
-import TreeOutlined from '../../icons/TreeOutlined';
-import { buttonClasses, listItemSecondaryActionClasses } from '@mui/material';
-import { FormattedMessage, useIntl } from 'react-intl';
+import { listItemSecondaryActionClasses } from '@mui/material';
+import { useIntl } from 'react-intl';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
-import UnfoldMoreRoundedIcon from '@mui/icons-material/UnfoldMoreRounded';
-import UnfoldLessRoundedIcon from '@mui/icons-material/UnfoldLessRounded';
 import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView';
 import { treeItemClasses } from '@mui/x-tree-view/TreeItem';
 import ListItem, { listItemClasses } from '@mui/material/ListItem';
@@ -46,8 +41,8 @@ import { useDispatch } from 'react-redux';
 import { renderTreeNode } from '../PackageItems/utils';
 import { FixedSizeList as List } from 'react-window';
 import Popover, { getOffsetLeft, getOffsetTop } from '@mui/material/Popover';
-import Tooltip from '@mui/material/Tooltip';
 import AutoSizer from 'react-virtualized-auto-sizer';
+import PackageItemsActions from '../PackageItems/PackageItemsActions';
 
 export interface PublishItemsProps {
   itemMap: Record<string, DetailedItem>;
@@ -131,51 +126,13 @@ export function PublishPackageItemsView(props: PublishItemsProps) {
 
   return (
     <>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mr={1} ml={1}>
-        <Box display="flex" py={0.5}>
-          <Tooltip
-            title={
-              disableTreeView ? (
-                <FormattedMessage
-                  defaultMessage="Tree view is disabled for packages with more than {maxTreeItems} items due to performance considerations."
-                  values={{
-                    maxTreeItems
-                  }}
-                />
-              ) : (
-                ''
-              )
-            }
-          >
-            <Box component="span">
-              <Button
-                size="small"
-                startIcon={!disableTreeView && isTreeView ? <ListRoundedIcon /> : <TreeOutlined />}
-                sx={{ [`.${buttonClasses.startIcon}`]: { mr: 0.5 } }}
-                onClick={() => onSetIsTreeView(!isTreeView)}
-                disabled={disableTreeView}
-              >
-                {!disableTreeView && isTreeView ? (
-                  <FormattedMessage defaultMessage="List View" />
-                ) : (
-                  <FormattedMessage defaultMessage="Tree View" />
-                )}
-              </Button>
-            </Box>
-          </Tooltip>
-          {!disableTreeView && isTreeView && (
-            <>
-              <Divider flexItem orientation="vertical" sx={{ mx: 0.5 }} />
-              <IconButton size="small" color="primary" onClick={() => setExpandedPaths(undefined)}>
-                <UnfoldMoreRoundedIcon fontSize="small" />
-              </IconButton>
-              <IconButton size="small" color="primary" onClick={() => setExpandedPaths([])}>
-                <UnfoldLessRoundedIcon fontSize="small" />
-              </IconButton>
-            </>
-          )}
-        </Box>
-      </Box>
+      <PackageItemsActions
+        isTreeView={isTreeView}
+        onSetIsTreeView={onSetIsTreeView}
+        setExpandedPaths={setExpandedPaths}
+        disableTreeView={disableTreeView}
+        maxTreeItems={maxTreeItems}
+      />
       <Divider />
       <Box sx={{ p: 1, flexGrow: 1, overflowY: 'auto' }}>
         {!disableTreeView && isTreeView ? (
