@@ -19,10 +19,9 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { fetchPackageItems } from '../../services/publishing';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
-import { FormattedMessage } from 'react-intl';
-import { ApiResponse, PublishingItem } from '../../models';
-import { getOffsetLeft, getOffsetTop } from '@mui/material/Popover';
-import { showItemMegaMenu } from '../../state/actions/dialogs';
+import { FormattedMessage, useIntl } from 'react-intl';
+import { AllItemActions, ApiResponse, PublishingItem } from '../../models';
+import Popover, { getOffsetLeft, getOffsetTop } from '@mui/material/Popover';
 import { EmptyState } from '../EmptyState';
 import PackageItemsList from './PackageItemsList';
 import { nnou } from '../../utils/object';
@@ -40,6 +39,10 @@ import UnfoldLessRoundedIcon from '@mui/icons-material/UnfoldLessRounded';
 import PackageItemsTree from './PackageItemsTree';
 import Paper from '@mui/material/Paper';
 import Tooltip from '@mui/material/Tooltip';
+import { fetchDetailedItem } from '../../services/content';
+import { generateSingleItemOptions, itemActionDispatcher } from '../../utils/itemActions';
+import MenuItem from '@mui/material/MenuItem';
+import useEnv from '../../hooks/useEnv';
 
 export interface PackageItemsProps {
   packageId: number;
@@ -83,6 +86,13 @@ export function PackageItems(props: PackageItemsProps) {
   const [isTreeView, setIsTreeView] = useState(nnou(storedPreferredView) ? storedPreferredView === 'tree' : true);
   const disableTreeView = state.total > maxTreeItems;
   const [expandedPaths, setExpandedPaths] = useState<string[]>();
+  const { formatMessage } = useIntl();
+  const { authoringBase } = useEnv();
+  const [contextMenu, setContextMenu] = useState({
+    item: null,
+    options: null,
+    anchorPosition: null
+  });
 
   useEffect(() => {
     if (packageId) {
@@ -122,28 +132,38 @@ export function PackageItems(props: PackageItemsProps) {
     });
   };
 
-  const onOpenMenu = (e: React.MouseEvent<HTMLButtonElement>, item: PackageItem) => {
+  const onOpenMenu = (e: React.MouseEvent<HTMLButtonElement>, packageItem: PackageItem) => {
     const element = e.currentTarget;
     const anchorRect = element.getBoundingClientRect();
     const top = anchorRect.top + getOffsetTop(anchorRect, 'top');
     const left = anchorRect.left + getOffsetLeft(anchorRect, 'left');
-    dispatch(
-      showItemMegaMenu({
-        path: item.path,
-        anchorReference: 'anchorPosition',
-        anchorPosition: { top, left }
-      })
-    );
+    fetchDetailedItem(siteId, packageItem.path).subscribe((detailedItem) => {
+      const itemMenuOptions = generateSingleItemOptions(detailedItem, formatMessage, {
+        includeOnly: ['view', 'dependencies', 'history']
+      });
+      setContextMenu({ options: itemMenuOptions.flat(), item: detailedItem, anchorPosition: { top, left } });
+    });
   };
 
-  // TODO: if I want to use generateSingleItemOptions I need the detailed item, should I fetch?
-  // const onOpenMenu = (e: React.MouseEvent<HTMLButtonElement>, item: PublishingItem) => {
-  //   const itemMenuOptions = generateSingleItemOptions(item as unknown as DetailedItem, formatMessage, {
-  //     includeOnly: ['view', 'dependencies', 'history']
-  //   });
-  //   console.log('itemMenuOptions', itemMenuOptions);
-  //   // setContextMenu({ el: e.currentTarget, options: itemMenuOptions.flat(), item });
-  // };
+  const onMenuItemClicked = (option: string) => {
+    itemActionDispatcher({
+      site: siteId,
+      item: contextMenu.item,
+      option: option as AllItemActions,
+      authoringBase,
+      dispatch,
+      formatMessage
+    });
+    onContextMenuClose();
+  };
+
+  const onContextMenuClose = () => {
+    setContextMenu({
+      item: null,
+      options: null,
+      anchorPosition: null
+    });
+  };
 
   const onSetIsTreeView = (isTreeView: boolean) => {
     setIsTreeView(isTreeView);
@@ -247,6 +267,18 @@ export function PackageItems(props: PackageItemsProps) {
             ))}
         </Paper>
       </Box>
+      <Popover
+        open={Boolean(contextMenu.anchorPosition)}
+        anchorReference="anchorPosition"
+        anchorPosition={contextMenu.anchorPosition}
+        onClose={onContextMenuClose}
+      >
+        {contextMenu.options?.map((option) => (
+          <MenuItem key={option.id} onClick={() => onMenuItemClicked(option.id)}>
+            {option.label}
+          </MenuItem>
+        ))}
+      </Popover>
     </>
   );
 }
