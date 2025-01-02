@@ -731,19 +731,21 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
                         trees={trees}
                         onCheckboxChange={onDependencyCheckboxChange}
                       />
-                      <Fade in={Boolean(selectedDependenciesPaths?.length)}>
-                        <Alert
-                          severity="info"
-                          action={
-                            <Button color="inherit" size="small" onClick={onApplyDependenciesChanges}>
-                              <FormattedMessage defaultMessage="Apply" />
-                            </Button>
-                          }
-                          sx={{ borderTopRightRadius: 0, borderTopLeftRadius: 0 }}
-                        >
-                          <FormattedMessage defaultMessage="Changes in the item selection must be applied" />
-                        </Alert>
-                      </Fade>
+                      {Boolean(selectedDependenciesPaths.length) && (
+                        <Fade in={Boolean(selectedDependenciesPaths?.length)}>
+                          <Alert
+                            severity="info"
+                            action={
+                              <Button color="inherit" size="small" onClick={onApplyDependenciesChanges}>
+                                <FormattedMessage defaultMessage="Apply" />
+                              </Button>
+                            }
+                            sx={{ borderTopRightRadius: 0, borderTopLeftRadius: 0 }}
+                          >
+                            <FormattedMessage defaultMessage="Changes in the item selection must be applied" />
+                          </Alert>
+                        </Fade>
+                      )}
                     </Paper>
                   </>
                 ) : (
