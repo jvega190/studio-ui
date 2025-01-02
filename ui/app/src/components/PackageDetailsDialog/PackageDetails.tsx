@@ -62,7 +62,7 @@ export function PackageDetails(props: PackageDetailsProps) {
     <>
       {state.loading && <LoadingState styles={{ root: { width: 100, minHeight: 420 } }} />}
       {state.error && <ApiResponseErrorState error={state.error} />}
-      {!Boolean(packageId) && (
+      {!Boolean(packageId) && !state.publishPackage && (
         <Typography color="error.main">
           <FormattedMessage
             id="packageDetailsDialog.missingPackageId"
