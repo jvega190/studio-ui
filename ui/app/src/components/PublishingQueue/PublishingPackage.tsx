@@ -21,23 +21,17 @@ import React, { ChangeEvent, ReactNode, useRef } from 'react';
 import { makeStyles } from 'tss-react/mui';
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
 import Typography from '@mui/material/Typography';
-import { fetchPackageItems } from '../../services/publishing';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
 import CircularProgress from '@mui/material/CircularProgress';
 import '../../styles/animations.scss';
 import { alpha } from '@mui/material/styles';
 import palette from '../../styles/palette';
 import PrimaryButton from '../PrimaryButton';
-import { ApiResponse, PublishingItem, PublishPackage } from '../../models';
+import { ApiResponse, PublishPackage } from '../../models';
 import { getPackageStateLabel, isReady } from '../PublishPackageReviewDialog/utils';
 import Button from '@mui/material/Button';
 import { CancelPackageDialog } from '../CancelPackageDialog';
 import useEnhancedDialogState from '../../hooks/useEnhancedDialogState';
-import useSpreadState from '../../hooks/useSpreadState';
-import Box from '@mui/material/Box';
-import { Pagination } from '../Pagination';
-import { nnou } from '../../utils/object';
+import { PackageDetailsDialog } from '../PackageDetailsDialog';
 
 const useStyles = makeStyles()((theme) => ({
   package: {
@@ -130,10 +124,6 @@ const translations = defineMessages({
     id: 'publishingDashboard.confirmHelperText',
     defaultMessage: 'Set item state to "Cancelled"?'
   },
-  fetchPackagesFiles: {
-    id: 'publishingDashboard.fetchPackagesFiles',
-    defaultMessage: 'Fetch Packages Files'
-  },
   status: {
     id: 'publishingDashboard.status',
     defaultMessage: 'Status is {state} for {environment} target'
@@ -207,20 +197,13 @@ interface PublishingPackageProps {
 export function PublishingPackage(props: PublishingPackageProps) {
   const { classes, cx } = useStyles();
   const { formatMessage } = useIntl();
-  const { pkg, siteId, selected, setSelected, pending, setPending, getPackages, setApiState, readOnly } = props;
-  const [{ items, total, limit, offset, loading }, setState] = useSpreadState({
-    items: null,
-    total: null,
-    limit: 10,
-    offset: 0,
-    loading: false
-  });
-  const currentPage = offset / limit;
+  const { pkg, siteId, selected, setSelected, pending, setPending, getPackages, readOnly } = props;
   const { id, title, packageState: state, target, submitter, submittedOn, submitterComment } = pkg;
   const username = submitter.username;
   const comment = submitterComment;
   const schedule = submittedOn;
   const cancelPackageDialogState = useEnhancedDialogState();
+  const packageDetailsDialogState = useEnhancedDialogState();
 
   const { current: ref } = useRef<any>({});
 
@@ -245,28 +228,9 @@ export function PublishingPackage(props: PublishingPackageProps) {
     setPending({ ...pending, [packageId]: false });
   };
 
-  function onFetchPackageItems(page?: number, itemsPerPage?: number) {
-    setState({ loading: true });
-    const newOffset = nnou(page) ? page * limit : offset;
-    const newLimit = nnou(itemsPerPage) ? itemsPerPage : limit;
-    fetchPackageItems(siteId, id, {
-      offset: newOffset,
-      limit: newLimit
-    }).subscribe({
-      next: (items) => {
-        setState({ loading: false, items, total: items.total, offset: newOffset });
-      },
-      error: ({ response }) => {
-        setState({ loading: false });
-        setApiState({ error: true, errorResponse: response });
-      }
-    });
+  function onShowPackageDetails() {
+    packageDetailsDialogState.onOpen();
   }
-
-  const onRowsPerPageChange = (rowsPerPage: number) => {
-    setState({ limit: rowsPerPage, offset: 0 });
-    onFetchPackageItems(0, rowsPerPage);
-  };
 
   const checked = selected[id] ? selected[id] : false;
   return (
@@ -340,49 +304,9 @@ export function PublishingPackage(props: PublishingPackageProps) {
         </Typography>
       </div>
       <div className="files">
-        {items && (
-          <>
-            <List aria-label={formatMessage(translations.filesList)} className={classes.list}>
-              <ListItem className={classes.thRow} divider>
-                <Typography variant="caption" className={classes.th}>
-                  {formatMessage(translations.item)} ({formatMessage(translations.path).toLowerCase()})
-                </Typography>
-                <Typography variant="caption" className={classes.th}>
-                  {formatMessage(translations.type)}
-                </Typography>
-              </ListItem>
-              {items.map((item: PublishingItem, index: number) => (
-                <ListItem key={index} divider>
-                  <Typography variant="body2">{item.path}</Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    {item.itemMetadata.systemType in translations
-                      ? formatMessage(translations[item.itemMetadata.systemType])
-                      : item.itemMetadata.systemType}
-                  </Typography>
-                </ListItem>
-              ))}
-            </List>
-            <Box display="flex" justifyContent="flex-end">
-              <Pagination
-                count={total}
-                onPageChange={(event, page) => onFetchPackageItems(page)}
-                page={currentPage}
-                rowsPerPage={limit}
-                onRowsPerPageChange={(e) => onRowsPerPageChange(parseInt(e.target.value))}
-              />
-            </Box>
-          </>
-        )}
-        {items === null && (
-          <PrimaryButton
-            variant="outlined"
-            onClick={() => onFetchPackageItems()}
-            disabled={!!loading}
-            loading={loading}
-          >
-            {formatMessage(translations.fetchPackagesFiles)}
-          </PrimaryButton>
-        )}
+        <PrimaryButton variant="outlined" onClick={() => onShowPackageDetails()}>
+          <FormattedMessage defaultMessage="Show package details" />
+        </PrimaryButton>
       </div>
       <CancelPackageDialog
         open={cancelPackageDialogState.open}
@@ -390,6 +314,11 @@ export function PublishingPackage(props: PublishingPackageProps) {
         onClose={cancelPackageDialogState.onClose}
         onClosed={() => ref.onCancelDialogClosed(id)}
         isSubmitting={cancelPackageDialogState.isSubmitting}
+        packageId={id}
+      />
+      <PackageDetailsDialog
+        open={packageDetailsDialogState.open}
+        onClose={packageDetailsDialogState.onClose}
         packageId={id}
       />
     </div>
