@@ -67,13 +67,11 @@ export function PackageItems(props: PackageItemsProps) {
     loading: false,
     error: null,
     total: null,
-    limit: 100,
+    limit: 20,
     offset: 0,
     isNextPageLoading: false
   });
-  const currentPage = state.offset / state.limit;
-  const totalPages = state.total ? Math.ceil(state.total / state.limit) : 0;
-  const hasNextPage = currentPage + 1 < totalPages;
+  const hasNextPage = state.items?.length < state.total;
   const { username } = useActiveUser();
   const storedPreferredView = getPublishingPackagePreferredView(username);
   const [isTreeView, setIsTreeView] = useState(nnou(storedPreferredView) ? storedPreferredView === 'tree' : true);
@@ -90,12 +88,13 @@ export function PackageItems(props: PackageItemsProps) {
   useEffect(() => {
     if (packageId) {
       setState({ items: null, loading: true, error: null });
-      fetchPackageItems(siteId, packageId, { limit: state.limit }).subscribe({
+      const firstFetchLimit = 100;
+      fetchPackageItems(siteId, packageId, { limit: firstFetchLimit }).subscribe({
         next(items) {
           setState({
             items: items.map((item) => ({ ...item.itemMetadata, path: item.path })),
             loading: false,
-            offset: 0,
+            offset: firstFetchLimit,
             total: items.total
           });
         },
@@ -107,11 +106,10 @@ export function PackageItems(props: PackageItemsProps) {
   }, [packageId, siteId, setState, state.limit]);
 
   const loadNextPage = () => {
-    const pageNumber = currentPage + 1;
-    const newOffset = pageNumber * state.limit;
     setState({ isNextPageLoading: true, error: null });
-    fetchPackageItems(siteId, packageId, { limit: state.limit, offset: newOffset }).subscribe({
+    fetchPackageItems(siteId, packageId, { limit: state.limit, offset: state.offset }).subscribe({
       next(items) {
+        const newOffset = state.offset + state.limit;
         setState({
           items: [...state.items, ...items.map((item) => ({ ...item.itemMetadata, path: item.path }))],
           isNextPageLoading: false,
