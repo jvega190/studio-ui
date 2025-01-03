@@ -112,7 +112,7 @@ export interface PublishingPackageApproveParams {
   updateSchedule: boolean;
 }
 
-export type PackageActions = 'review' | 'cancel' | 'resubmit';
+export type PackageActions = 'review' | 'cancel' | 'resubmit' | 'promote';
 
 export interface PublishingItem {
   action: string;
@@ -167,4 +167,5 @@ export interface PublishPackage {
   publishedStagingCommitId: string;
   publishedLiveCommitId: string;
   itemCount: number;
+  availableActions: number;
 }

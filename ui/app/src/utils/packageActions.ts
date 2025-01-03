@@ -28,6 +28,7 @@ import {
   showPublishPackageApprovalDialog
 } from '../state/actions/dialogs';
 import { batchActions } from '../state/actions/misc';
+import { hasApproveAction, hasCancelAction, hasResubmitAction } from './content';
 
 const translations = defineMessages({
   review: {
@@ -35,6 +36,9 @@ const translations = defineMessages({
   },
   resubmit: {
     defaultMessage: 'Resubmit'
+  },
+  promote: {
+    defaultMessage: 'Promote'
   },
   cancel: {
     defaultMessage: 'Cancel'
@@ -50,6 +54,10 @@ const unparsedOptions: Record<PackageActions, ContextMenuOptionDescriptor<Packag
     id: 'resubmit',
     label: translations.resubmit
   },
+  promote: {
+    id: 'promote',
+    label: translations.promote
+  },
   cancel: {
     id: 'cancel',
     label: translations.cancel
@@ -58,7 +66,6 @@ const unparsedOptions: Record<PackageActions, ContextMenuOptionDescriptor<Packag
 
 export const allPackageActions = Object.keys(unparsedOptions);
 
-// TODO: packages will include AA, we need to consider that
 export const generatePackageOptions = (
   packages: PublishPackage[],
   options?: {
@@ -71,16 +78,23 @@ export const generatePackageOptions = (
   >;
   const packageOptions = [];
   if (packages?.length) {
+    const packagesHaveCancelAction = packages.every((pkg) => hasCancelAction(pkg.availableActions));
     if (packages?.length === 1) {
       const pkg = packages[0];
-      if (pkg.approvalState === 'SUBMITTED' && actionsToInclude.review) {
+      // TODO: are we going to have 2 actions for review (approve and reject) or just one (review)?
+      if (hasApproveAction(pkg.availableActions) && pkg.approvalState === 'SUBMITTED' && actionsToInclude.review) {
         packageOptions.push(unparsedOptions.review);
       }
-      if (actionsToInclude.resubmit) {
-        packageOptions.push(unparsedOptions.resubmit);
+      if (hasResubmitAction(pkg.availableActions) && actionsToInclude.resubmit) {
+        if (pkg.target === 'staging' && pkg.approvalState === 'APPROVED') {
+          // Promote is a virtual action, it's shown when the package is approved and the target is staging
+          packageOptions.push(unparsedOptions.promote);
+        } else {
+          packageOptions.push(unparsedOptions.resubmit);
+        }
       }
     }
-    if (actionsToInclude.cancel) {
+    if (packagesHaveCancelAction && actionsToInclude.cancel) {
       packageOptions.push(unparsedOptions.cancel);
     }
   }
@@ -108,7 +122,8 @@ export const packageActionDispatcher = ({
       );
       break;
     case 'resubmit':
-      console.log('resubmit');
+    case 'promote':
+      console.log(option);
       break;
     case 'cancel':
       if (Array.isArray(pkg)) {

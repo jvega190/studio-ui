@@ -44,6 +44,10 @@ import {
   CONTENT_REVERT_MASK,
   CONTENT_UPLOAD_MASK,
   FOLDER_CREATE_MASK,
+  PACKAGE_APPROVE_MASK,
+  PACKAGE_CANCEL_MASK,
+  PACKAGE_REJECT_MASK,
+  PACKAGE_RESUBMIT_MASK,
   pageControllersFieldId,
   pageControllersLegacyFieldId,
   PUBLISH_APPROVE_MASK,
@@ -905,7 +909,7 @@ export const createItemStateMap: (status: number) => ItemStateMap = (status: num
   translationInProgress: isTranslationInProgressState(status)
 });
 
-// region Action presence checker functions
+// region Item Action presence checker functions
 export const hasReadAction = (value: number) => Boolean(value & READ_MASK);
 export const hasCopyAction = (value: number) => Boolean(value & CONTENT_COPY_MASK);
 export const hasReadHistoryAction = (value: number) => Boolean(value & CONTENT_READ_VERSION_HISTORY_MASK);
@@ -1204,3 +1208,9 @@ export function generatePlaceholderImageDataUrl(attributes?: Partial<GeneratePla
 
   return canvas.toDataURL();
 }
+
+// region Package presence checker functions
+export const hasApproveAction = (value: number) => Boolean(value & PACKAGE_APPROVE_MASK);
+export const hasRejectAction = (value: number) => Boolean(value & PACKAGE_REJECT_MASK);
+export const hasCancelAction = (value: number) => Boolean(value & PACKAGE_CANCEL_MASK);
+export const hasResubmitAction = (value: number) => Boolean(value & PACKAGE_RESUBMIT_MASK);
