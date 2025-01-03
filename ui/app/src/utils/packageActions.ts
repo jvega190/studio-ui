@@ -22,10 +22,10 @@ import { createPresenceTable } from './array';
 import { Action, Dispatch } from 'redux';
 import {
   closeCancelPackageDialog,
-  closePublishPackageApprovalDialog,
+  closePublishingPackageReviewDialog,
   showBulkCancelPackageDialog,
   showCancelPackageDialog,
-  showPublishPackageApprovalDialog
+  showPublishingPackageReviewDialog
 } from '../state/actions/dialogs';
 import { batchActions } from '../state/actions/misc';
 import { hasApproveAction, hasCancelAction, hasResubmitAction } from './content';
@@ -115,9 +115,9 @@ export const packageActionDispatcher = ({
   switch (option) {
     case 'review':
       dispatch(
-        showPublishPackageApprovalDialog({
+        showPublishingPackageReviewDialog({
           packageId: (pkg as PublishPackage).id,
-          onSuccess: batchActions([closePublishPackageApprovalDialog(), ...(onActionSuccess ? [onActionSuccess] : [])])
+          onSuccess: batchActions([closePublishingPackageReviewDialog(), ...(onActionSuccess ? [onActionSuccess] : [])])
         })
       );
       break;

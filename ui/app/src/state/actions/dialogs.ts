@@ -49,7 +49,7 @@ import { ContentTypeFieldValidation, DetailedItem } from '../../models';
 import { RenameAssetStateProps } from '../../components/RenameAssetDialog';
 import { AjaxError } from 'rxjs/ajax';
 import { BrokenReferencesDialogStateProps } from '../../components/BrokenReferencesDialog/types';
-import { PublishingPackageApprovalDialogStateProps } from '../../components/PublishPackageReviewDialog/types';
+import { PublishingPackageReviewDialogStateProps } from '../../components/PublishPackageReviewDialog/types';
 import { CancelPackageDialogProps } from '../../components/CancelPackageDialog';
 
 // region History
@@ -95,16 +95,16 @@ export const publishDialogClosed = /*#__PURE__*/ createAction('PUBLISH_DIALOG_CL
 // endregion
 
 // region ApproveReject
-export const showPublishPackageApprovalDialog = /*#__PURE__*/ createAction<
-  Partial<PublishingPackageApprovalDialogStateProps>
->('SHOW_PUBLISH_PACKAGE_APPROVAL_DIALOG');
-export const updatePublishPackageApprovalDialog = /*#__PURE__*/ createAction<Partial<PublishDialogStateProps>>(
-  'UPDATE_PUBLISH_PACKAGE_APPROVAL_DIALOG'
+export const showPublishingPackageReviewDialog = /*#__PURE__*/ createAction<
+  Partial<PublishingPackageReviewDialogStateProps>
+>('SHOW_PUBLISH_PACKAGE_REVIEW_DIALOG');
+export const updatePublishingPackageReviewDialog = /*#__PURE__*/ createAction<Partial<PublishDialogStateProps>>(
+  'UPDATE_PUBLISH_PACKAGE_REVIEW_DIALOG'
 );
-export const closePublishPackageApprovalDialog = /*#__PURE__*/ createAction<StandardAction>(
-  'CLOSE_PUBLISH_PACKAGE_APPROVAL_DIALOG'
+export const closePublishingPackageReviewDialog = /*#__PURE__*/ createAction<StandardAction>(
+  'CLOSE_PUBLISH_PACKAGE_REVIEW_DIALOG'
 );
-export const publishPackageApprovalDialogClosed = /*#__PURE__*/ createAction('PUBLISH_PACKAGE_APPROVAL_DIALOG_CLOSED');
+export const publishingPackageReviewDialogClosed = /*#__PURE__*/ createAction('PUBLISH_PACKAGE_REVIEW_DIALOG_CLOSED');
 // endregion
 
 // region Delete

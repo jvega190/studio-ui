@@ -15,12 +15,12 @@
  */
 
 import React from 'react';
-import { PublishingPackageApprovalDialogProps } from './types';
+import { PublishingPackageReviewDialogProps } from './types';
 import { EnhancedDialog } from '../EnhancedDialog';
 import { FormattedMessage } from 'react-intl';
 import PublishingPackageReviewDialogContainer from './PublishingPackageReviewDialogContainer';
 
-export function PublishingPackageReviewDialog(props: PublishingPackageApprovalDialogProps) {
+export function PublishingPackageReviewDialog(props: PublishingPackageReviewDialogProps) {
   const { packageId, isSubmitting, onSuccess, ...rest } = props;
   return (
     <EnhancedDialog

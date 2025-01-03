@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { PublishingPackageApprovaDialogContainerProps } from './types';
+import { PublishingPackageReviewDialogContainerProps } from './types';
 import React, { useEffect, useState } from 'react';
 import { fetchPackage } from '../../services/publishing';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
@@ -48,7 +48,7 @@ import { approve, reject } from '../../services/workflow';
 import { batchActions } from '../../state/actions/misc';
 import { useDispatch } from 'react-redux';
 import { showErrorDialog } from '../../state/reducers/dialogs/error';
-import { updatePublishPackageApprovalDialog } from '../../state/actions/dialogs';
+import { updatePublishingPackageReviewDialog } from '../../state/actions/dialogs';
 import { AsDayMonthDateTime } from '../VersionList';
 import PackageDetails from '../PackageDetailsDialog/PackageDetails';
 import { showSystemNotification } from '../../state/actions/system';
@@ -63,7 +63,7 @@ interface InternalDialogState {
   rejectComment: string;
 }
 
-export function PublishingPackageReviewDialogContainer(props: PublishingPackageApprovaDialogContainerProps) {
+export function PublishingPackageReviewDialogContainer(props: PublishingPackageReviewDialogContainerProps) {
   const { packageId, isSubmitting, onSuccess, onClose } = props;
   const { activeEnvironment } = useEnv();
   const [publishingPackage, setPublishingPackage] = useState<PublishPackage>();
@@ -137,7 +137,7 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
 
   const onArgumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value: unknown;
-    dispatch(updatePublishPackageApprovalDialog({ hasPendingChanges: true }));
+    dispatch(updatePublishingPackageReviewDialog({ hasPendingChanges: true }));
     switch (e.target.type) {
       case 'textarea':
       case 'radio':
@@ -170,7 +170,7 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
   };
 
   const handleSubmit = () => {
-    dispatch(updatePublishPackageApprovalDialog({ isSubmitting: true }));
+    dispatch(updatePublishingPackageReviewDialog({ isSubmitting: true }));
     if (state.action === 'approve') {
       const data: PublishingPackageApproveParams = {
         comment: state.approverComment,
@@ -182,7 +182,7 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
         next() {
           dispatch(
             batchActions([
-              updatePublishPackageApprovalDialog({ isSubmitting: false, hasPendingChanges: false }),
+              updatePublishingPackageReviewDialog({ isSubmitting: false, hasPendingChanges: false }),
               showSystemNotification({ message: formatMessage({ defaultMessage: 'Package approved successfully.' }) })
             ])
           );
@@ -191,7 +191,7 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
         error({ response }) {
           dispatch(
             batchActions([
-              updatePublishPackageApprovalDialog({ isSubmitting: false }),
+              updatePublishingPackageReviewDialog({ isSubmitting: false }),
               showErrorDialog({ error: response.response })
             ])
           );
@@ -202,7 +202,7 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
         next() {
           dispatch(
             batchActions([
-              updatePublishPackageApprovalDialog({ isSubmitting: false, hasPendingChanges: false }),
+              updatePublishingPackageReviewDialog({ isSubmitting: false, hasPendingChanges: false }),
               showSystemNotification({ message: formatMessage({ defaultMessage: 'Package rejected successfully.' }) })
             ])
           );
@@ -211,7 +211,7 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageA
         error({ response }) {
           dispatch(
             batchActions([
-              updatePublishPackageApprovalDialog({ isSubmitting: false }),
+              updatePublishingPackageReviewDialog({ isSubmitting: false }),
               showErrorDialog({ error: response.response })
             ])
           );

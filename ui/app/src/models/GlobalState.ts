@@ -66,7 +66,7 @@ import { RenameAssetStateProps } from '../components/RenameAssetDialog';
 import Person from './Person';
 import { BrokenReferencesDialogStateProps } from '../components/BrokenReferencesDialog/types';
 import AllowedContentTypesData from './AllowedContentTypesData';
-import { PublishingPackageApprovalDialogStateProps } from '../components/PublishPackageReviewDialog/types';
+import { PublishingPackageReviewDialogStateProps } from '../components/PublishPackageReviewDialog/types';
 import { CancelPackageDialogStateProps } from '../components/CancelPackageDialog';
 import { BulkCancelPackageDialogStateProps } from '../components/BulkCancelPackageDialog';
 
@@ -226,7 +226,7 @@ export interface GlobalState {
     viewVersion: ViewVersionDialogStateProps;
     compareVersions: CompareVersionsDialogStateProps;
     publish: PublishDialogStateProps;
-    publishingPackageApproval: PublishingPackageApprovalDialogStateProps;
+    publishingPackageApproval: PublishingPackageReviewDialogStateProps;
     dependencies: DependenciesDialogStateProps;
     delete: DeleteDialogStateProps;
     edit: LegacyFormDialogStateProps;

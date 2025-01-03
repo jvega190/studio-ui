@@ -18,24 +18,24 @@ import { EnhancedDialogProps } from '../EnhancedDialog';
 import { EnhancedDialogState } from '../../hooks/useEnhancedDialogState';
 import { StandardAction } from '../../models';
 
-export interface PublishingPackageApprovalDialogBaseProps {
+export interface PublishingPackageReviewDialogBaseProps {
   packageId: number;
 }
 
-export interface PublishingPackageApprovalDialogProps
-  extends PublishingPackageApprovalDialogBaseProps,
+export interface PublishingPackageReviewDialogProps
+  extends PublishingPackageReviewDialogBaseProps,
     EnhancedDialogProps {
   onSuccess?(): void;
 }
 
-export interface PublishingPackageApprovalDialogStateProps
-  extends PublishingPackageApprovalDialogBaseProps,
+export interface PublishingPackageReviewDialogStateProps
+  extends PublishingPackageReviewDialogBaseProps,
     EnhancedDialogState {
   onClose?: StandardAction;
   onClosed?: StandardAction;
   onSuccess?: StandardAction;
 }
 
-export interface PublishingPackageApprovaDialogContainerProps
-  extends PublishingPackageApprovalDialogBaseProps,
-    Pick<PublishingPackageApprovalDialogProps, 'isSubmitting' | 'onSuccess' | 'onClose'> {}
+export interface PublishingPackageReviewDialogContainerProps
+  extends PublishingPackageReviewDialogBaseProps,
+    Pick<PublishingPackageReviewDialogProps, 'isSubmitting' | 'onSuccess' | 'onClose'> {}
