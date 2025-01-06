@@ -21,6 +21,7 @@ import { ContextMenuOption } from '../components';
 import { createPresenceTable } from './array';
 import { Action, Dispatch } from 'redux';
 import {
+  closeBulkCancelPackageDialog,
   closeCancelPackageDialog,
   closePublishingPackageResubmitDialog,
   closePublishingPackageReviewDialog,
@@ -141,7 +142,7 @@ export const packageActionDispatcher = ({
         dispatch(
           showBulkCancelPackageDialog({
             packages: pkg,
-            onSuccess: batchActions([closeCancelPackageDialog(), ...(onActionSuccess ? [onActionSuccess] : [])])
+            onSuccess: batchActions([closeBulkCancelPackageDialog(), ...(onActionSuccess ? [onActionSuccess] : [])])
           })
         );
       } else {
