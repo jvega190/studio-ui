@@ -70,6 +70,7 @@ const WidgetDialog = lazy(() => import('../WidgetDialog'));
 const CodeEditorDialog = lazy(() => import('../CodeEditorDialog'));
 const BrokenReferencesDialog = lazy(() => import('../BrokenReferencesDialog'));
 const PublishingPackageReviewDialog = lazy(() => import('../PublishPackageReviewDialog/PublishingPackageReviewDialog'));
+const PublishingPackageResubmitDialog = lazy(() => import('../PublishingPackageResubmitDialog'));
 const CancelPackageDialog = lazy(() => import('../CancelPackageDialog'));
 const BulkCancelPackageDialog = lazy(() => import('../BulkCancelPackageDialog'));
 // endregion
@@ -305,7 +306,7 @@ function GlobalDialogManager() {
       />
       {/* endregion */}
 
-      {/* region ApproveReject */}
+      {/* region Package Review */}
       <PublishingPackageReviewDialog
         {...state.publishingPackageApproval}
         onClose={createCallback(state.publishingPackageApproval.onClose, dispatch)}
@@ -313,6 +314,18 @@ function GlobalDialogManager() {
         onSuccess={createCallback(state.publishingPackageApproval.onSuccess, dispatch)}
         onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
           createCallback(state.publishingPackageApproval.onClose, dispatch)
+        )}
+      />
+      {/* endregion */}
+
+      {/* region Package Resubmit */}
+      <PublishingPackageResubmitDialog
+        {...state.publishingPackageResubmit}
+        onClose={createCallback(state.publishingPackageResubmit.onClose, dispatch)}
+        onClosed={createCallback(state.publishingPackageResubmit.onClosed, dispatch)}
+        onSuccess={createCallback(state.publishingPackageResubmit.onSuccess, dispatch)}
+        onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
+          createCallback(state.publishingPackageResubmit.onClose, dispatch)
         )}
       />
       {/* endregion */}

@@ -21,6 +21,10 @@ import { GoLiveResponse } from '../../services/publishing';
 import { EnhancedDialogProps } from '../EnhancedDialog';
 import { EnhancedDialogState } from '../../hooks/useEnhancedDialogState';
 import { PublishingTarget } from '../../models/Publishing';
+import { useMemo, useState } from 'react';
+import { DependencyDataState } from './PublishDialogContainer';
+import LookupTable from '../../models/LookupTable';
+import { buildPathTrees, PathTreeNode } from './buildPathTrees';
 
 export interface ExtendedGoLiveResponse extends GoLiveResponse {
   schedule: 'now' | 'custom';
@@ -57,5 +61,87 @@ export interface InternalDialogState {
   scheduling: 'now' | 'custom';
   scheduledDateTime: Date;
   error: ApiResponse;
-  fetchingDependencies: boolean;
+  fetchingItems: boolean;
 }
+
+interface usePublishStateProps {
+  mainItems: DetailedItem[];
+}
+
+interface usePublishStateReturn {
+  itemsDataSummary: {
+    itemMap: Record<string, DetailedItem>;
+    itemPaths: string[];
+    allItemsInSubmittedState: boolean;
+    allItemsHavePublishPermission: boolean;
+    incompleteDetailedItemPaths: string[];
+  };
+  dependencyData: DependencyDataState;
+  setDependencyData: (data: DependencyDataState) => void;
+  selectedDependenciesMap: LookupTable<boolean>;
+  setSelectedDependenciesMap: (map: LookupTable<boolean>) => void;
+  selectedDependenciesPaths: string[];
+  dependencyPaths: string[];
+  trees: PathTreeNode[];
+  parentTreeNodePaths: string[];
+  itemsAndDependenciesPaths: string[];
+  dependencyItemMap: Record<string, DetailedItem>;
+  itemsAndDependenciesMap: Record<string, DetailedItem>;
+}
+
+export const usePublishState = ({ mainItems }: usePublishStateProps): usePublishStateReturn => {
+  const [dependencyData, setDependencyData] = useState<DependencyDataState>(null);
+  const [selectedDependenciesMap, setSelectedDependenciesMap] = useState<LookupTable<boolean>>({});
+  const selectedDependenciesPaths = Object.keys(selectedDependenciesMap).filter(
+    (path) => selectedDependenciesMap[path]
+  );
+  const itemsDataSummary = useMemo(() => {
+    let allItemsInSubmittedState = true;
+    let allItemsHavePublishPermission = true;
+    const itemPaths = [];
+    const itemMap: Record<string, DetailedItem> = {};
+    const incompleteDetailedItemPaths = [];
+    mainItems.forEach((item) => {
+      itemMap[item.path] = item;
+      itemPaths.push(item.path);
+      allItemsHavePublishPermission = allItemsHavePublishPermission && item.availableActionsMap.publish;
+      allItemsInSubmittedState = allItemsInSubmittedState && item.stateMap.submitted;
+      if (item.live == null || item.staging == null) {
+        incompleteDetailedItemPaths.push(item.path);
+      }
+    });
+    return {
+      itemMap,
+      itemPaths,
+      allItemsInSubmittedState,
+      allItemsHavePublishPermission,
+      incompleteDetailedItemPaths
+    };
+  }, [mainItems]);
+  const dependencyPaths = dependencyData?.paths;
+  const [trees, parentTreeNodePaths, itemsAndDependenciesPaths] = useMemo(() => {
+    const treeItemPaths = itemsDataSummary.itemPaths.concat(dependencyPaths ?? []);
+    const treeBuilderResult = buildPathTrees(treeItemPaths);
+    return [...treeBuilderResult, treeItemPaths] as [PathTreeNode[], string[], string[]];
+  }, [dependencyPaths, itemsDataSummary.itemPaths]);
+  const dependencyItemMap = dependencyData?.itemsByPath;
+  const itemsAndDependenciesMap = useMemo(
+    () => ({ ...itemsDataSummary.itemMap, ...dependencyItemMap }),
+    [itemsDataSummary.itemMap, dependencyItemMap]
+  );
+
+  return {
+    itemsDataSummary,
+    dependencyData,
+    setDependencyData,
+    selectedDependenciesMap,
+    setSelectedDependenciesMap,
+    selectedDependenciesPaths,
+    dependencyPaths,
+    trees,
+    parentTreeNodePaths,
+    itemsAndDependenciesPaths,
+    dependencyItemMap,
+    itemsAndDependenciesMap
+  };
+};

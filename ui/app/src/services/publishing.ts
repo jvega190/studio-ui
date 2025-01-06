@@ -145,3 +145,13 @@ export function calculatePackage(
     map((response) => response?.response?.package)
   );
 }
+
+export function recalculatePackage(
+  siteId: string,
+  packageId: number,
+  publishingTarget: string
+): Observable<CalculatedPackageResponse> {
+  return postJSON(`/studio/api/2/publish/${siteId}/package/${packageId}/recalculate`, { publishingTarget }).pipe(
+    map((response) => response?.response?.package)
+  );
+}

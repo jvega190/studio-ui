@@ -46,9 +46,10 @@ import widget from './widget';
 import uiBlocker from './uiBlocker';
 import renameAsset from './renameAsset';
 import brokenReferences from './brokenReferences';
-import publishingPackageApproval from './publishingPackageApproval';
+import publishingPackageApproval from './publishingPackageReview';
 import cancelPackage from './cancelPackage';
 import bulkCancelPackage from './bulkCancelPackage';
+import publishingPackageResubmit from './publishingPackageResubmit';
 
 export default combineReducers({
   confirm,
@@ -60,6 +61,7 @@ export default combineReducers({
   compareVersions,
   publish,
   publishingPackageApproval,
+  publishingPackageResubmit,
   dependencies,
   delete: deleteDialog,
   edit,

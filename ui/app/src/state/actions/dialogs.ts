@@ -51,6 +51,7 @@ import { AjaxError } from 'rxjs/ajax';
 import { BrokenReferencesDialogStateProps } from '../../components/BrokenReferencesDialog/types';
 import { PublishingPackageReviewDialogStateProps } from '../../components/PublishPackageReviewDialog/types';
 import { CancelPackageDialogProps } from '../../components/CancelPackageDialog';
+import { PublishingPackageResubmitDialogStateProps } from '../../components/PublishingPackageResubmitDialog/types';
 
 // region History
 export const showHistoryDialog = /*#__PURE__*/ createAction<Partial<HistoryDialogStateProps>>('SHOW_HISTORY_DIALOG');
@@ -94,7 +95,7 @@ export const closePublishDialog = /*#__PURE__*/ createAction<StandardAction>('CL
 export const publishDialogClosed = /*#__PURE__*/ createAction('PUBLISH_DIALOG_CLOSED');
 // endregion
 
-// region ApproveReject
+// region Review
 export const showPublishingPackageReviewDialog = /*#__PURE__*/ createAction<
   Partial<PublishingPackageReviewDialogStateProps>
 >('SHOW_PUBLISH_PACKAGE_REVIEW_DIALOG');
@@ -105,6 +106,21 @@ export const closePublishingPackageReviewDialog = /*#__PURE__*/ createAction<Sta
   'CLOSE_PUBLISH_PACKAGE_REVIEW_DIALOG'
 );
 export const publishingPackageReviewDialogClosed = /*#__PURE__*/ createAction('PUBLISH_PACKAGE_REVIEW_DIALOG_CLOSED');
+// endregion
+
+// region Resubmit
+export const showPublishingPackageResubmitDialog = /*#__PURE__*/ createAction<
+  Partial<PublishingPackageResubmitDialogStateProps>
+>('SHOW_PUBLISHING_PACKAGE_RESUBMIT_DIALOG');
+export const updatePublishingPackageResubmitDialog = /*#__PURE__*/ createAction<Partial<PublishDialogStateProps>>(
+  'UPDATE_PUBLISHING_PACKAGE_RESUBMIT_DIALOG'
+);
+export const closePublishingPackageResubmitDialog = /*#__PURE__*/ createAction<StandardAction>(
+  'CLOSE_PUBLISHING_PACKAGE_RESUBMIT_DIALOG'
+);
+export const publishingPackageResubmitDialogClosed = /*#__PURE__*/ createAction(
+  'PUBLISHING_PACKAGE_RESUBMIT_DIALOG_CLOSED'
+);
 // endregion
 
 // region Delete

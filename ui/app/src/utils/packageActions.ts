@@ -22,9 +22,11 @@ import { createPresenceTable } from './array';
 import { Action, Dispatch } from 'redux';
 import {
   closeCancelPackageDialog,
+  closePublishingPackageResubmitDialog,
   closePublishingPackageReviewDialog,
   showBulkCancelPackageDialog,
   showCancelPackageDialog,
+  showPublishingPackageResubmitDialog,
   showPublishingPackageReviewDialog
 } from '../state/actions/dialogs';
 import { batchActions } from '../state/actions/misc';
@@ -123,7 +125,16 @@ export const packageActionDispatcher = ({
       break;
     case 'resubmit':
     case 'promote':
-      console.log(option);
+      dispatch(
+        showPublishingPackageResubmitDialog({
+          pkg,
+          type: option,
+          onSuccess: batchActions([
+            closePublishingPackageResubmitDialog(),
+            ...(onActionSuccess ? [onActionSuccess] : [])
+          ])
+        })
+      );
       break;
     case 'cancel':
       if (Array.isArray(pkg)) {

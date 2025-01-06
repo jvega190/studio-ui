@@ -69,6 +69,7 @@ import AllowedContentTypesData from './AllowedContentTypesData';
 import { PublishingPackageReviewDialogStateProps } from '../components/PublishPackageReviewDialog/types';
 import { CancelPackageDialogStateProps } from '../components/CancelPackageDialog';
 import { BulkCancelPackageDialogStateProps } from '../components/BulkCancelPackageDialog';
+import { PublishingPackageResubmitDialogStateProps } from '../components/PublishingPackageResubmitDialog/types';
 
 export type HighlightMode = 'all' | 'move';
 
@@ -252,6 +253,7 @@ export interface GlobalState {
     brokenReferences: BrokenReferencesDialogStateProps;
     cancelPackage: CancelPackageDialogStateProps;
     bulkCancelPackage: BulkCancelPackageDialogStateProps;
+    publishingPackageResubmit: PublishingPackageResubmitDialogStateProps;
   };
   uiConfig: {
     error: ApiResponse;
