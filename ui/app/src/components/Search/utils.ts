@@ -40,12 +40,14 @@ import useFetchSandboxItems from '../../hooks/useFetchSandboxItems';
 
 export const drawerWidth = 300;
 
+export const SORT_AUTO = '-AUTO-';
+
 export const initialSearchParameters: ElasticParams = {
   query: '',
   keywords: '',
   offset: 0,
   limit: 21,
-  sortBy: '_score',
+  sortBy: SORT_AUTO,
   sortOrder: 'desc',
   filters: {}
 };
@@ -186,6 +188,22 @@ interface useSearchStateReturn {
   handleChangeView(): void;
 }
 
+/**
+ * Encapsulates logic to pick sortBy depending on whether there's a keyword.
+ */
+export function prepareSearchParams(
+  searchParameters: UseSearchStateHookProps['searchParameters']
+): UseSearchStateHookProps['searchParameters'] {
+  if (!searchParameters.sortBy || searchParameters.sortBy === SORT_AUTO) {
+    return {
+      ...searchParameters,
+      sortBy: searchParameters.keywords ? '_score' : 'internalName',
+      sortOrder: searchParameters.keywords ? 'desc' : 'asc'
+    };
+  }
+  return searchParameters;
+}
+
 export const useSearchState = ({
   searchParameters,
   preselectedPaths = [],
@@ -288,7 +306,7 @@ export const useSearchState = ({
   const refreshSearch = useCallback(() => {
     setError(null);
     setIsFetchingResults(true);
-    search(site, searchParameters).subscribe({
+    search(site, prepareSearchParams(searchParameters)).subscribe({
       next(result) {
         setSearchResults(result);
         setIsFetchingResults(false);

@@ -38,6 +38,7 @@ import { withIndex, withoutIndex } from '../../utils/path';
 import { MediaCardViewModes } from '../MediaCard';
 import { createPresenceTable } from '../../utils/array';
 import { createLookupTable } from '../../utils/object';
+import { prepareSearchParams } from '../Search/utils';
 
 const viewModes: MediaCardViewModes[] = ['card', 'compact', 'row'];
 const defaultPreselectedPaths = [];
@@ -91,7 +92,7 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
     // negative filter in a query. This scenario only happens with pages, hence the `withIndex` function wrapping the
     // current path.
     search(site, {
-      ...searchParameters,
+      ...prepareSearchParams(searchParameters),
       path: `${currentPath}/[^/]+(/index\\.xml)?`,
       query: `-localId:"${withIndex(currentPath)}"`
     }).subscribe((response) => {
