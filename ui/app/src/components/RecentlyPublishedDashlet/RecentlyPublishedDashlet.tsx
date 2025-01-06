@@ -100,7 +100,8 @@ export function RecentlyPublishedDashlet(props: RecentlyPublishedDashletProps) {
       fetchPackages(site, {
         limit,
         offset: newOffset,
-        states: COMPLETED_MASK
+        states: COMPLETED_MASK,
+        sort: 'publishedOn DESC'
       }).subscribe((packages) => {
         setState({
           publishingPackages: packages,

@@ -345,7 +345,6 @@ export function ScheduledDashlet(props: ScheduledDashletProps) {
                           </Box>
                         );
                       },
-                      // TODO: format so if is close show as 'X hours/minutes ago'
                       submittedDate: asLocalizedDateTime(
                         pkg.schedule,
                         locale.localeCode,
