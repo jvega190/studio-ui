@@ -287,24 +287,35 @@ export function PublishDialogForm(props: PublishDialogFormProps) {
               sx={{ paddingTop: '10px', fontSize: '14px' }}
             >
               {publishingTargets.map((target) => (
-                <FormControlLabel
+                <Tooltip
+                  placement="bottom-start"
+                  title={
+                    isPromote && target.name === 'staging' ? (
+                      <FormattedMessage defaultMessage="When promoting, publishing target is 'live'" />
+                    ) : null
+                  }
                   key={target.name}
-                  disabled={disabled || (target.name === 'staging' && isPromote)}
-                  value={target.name}
-                  control={<Radio color="primary" sx={{ padding: '4px', marginLeft: '5px', marginRight: '5px' }} />}
-                  label={messages[target.name] ? formatMessage(messages[target.name]) : capitalize(target.name)}
-                  slotProps={{
-                    typography: {
-                      sx: { fontSize: '14px' }
-                    }
-                  }}
-                />
+                >
+                  <Box component="span">
+                    <FormControlLabel
+                      disabled={disabled || (target.name === 'staging' && isPromote)}
+                      value={target.name}
+                      control={<Radio color="primary" sx={{ padding: '4px', marginLeft: '5px', marginRight: '5px' }} />}
+                      label={messages[target.name] ? formatMessage(messages[target.name]) : capitalize(target.name)}
+                      slotProps={{
+                        typography: {
+                          sx: { fontSize: '14px' }
+                        }
+                      }}
+                    />
+                  </Box>
+                </Tooltip>
               ))}
             </RadioGroup>
           ) : (
             <Box sx={{ paddingTop: '24px', display: 'inline-flex' }}>
               <Typography variant="body1" sx={{ padding: '10px 12px', borderRadius: '4px', width: '100%' }}>
-                No publishing channels are available.
+                <FormattedMessage defaultMessage="No publishing channels are available." />
               </Typography>
             </Box>
           )

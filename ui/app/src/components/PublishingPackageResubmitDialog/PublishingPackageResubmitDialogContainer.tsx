@@ -257,7 +257,7 @@ export function PublishingPackageResubmitDialogContainer(props: PublishingPackag
             <Grid size={{ xs: 12, sm: 5 }}>
               <PublishDialogForm
                 formState={state}
-                onSubmit={() => console.log('submit')}
+                onSubmit={handleSubmit}
                 onInputChange={onPublishingArgumentChange}
                 onDateTimePickerChange={handleDateTimePickerChange}
                 showRequestApproval={showRequestApproval}
