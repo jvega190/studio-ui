@@ -29,7 +29,7 @@
   "scripts": {
     "start": "vite",
     "build": "run-s compile build:worker build:vite",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint .",
     "build:vite": "vite build",
     "build:worker": "rollup -c rollup.config.mjs --environment PRODUCTION",
     "build:worker:dev": "rollup -c rollup.config.mjs --environment PRODUCTION:false",
@@ -111,6 +111,9 @@
     "zxcvbn": "^4.4.2"
   },
   "devDependencies": {
+    "@eslint/compat": "^1.2.4",
+    "@eslint/eslintrc": "^3.2.0",
+    "@eslint/js": "^9.17.0",
     "@formatjs/cli": "^6.2.12",
     "@rollup/plugin-swc": "^0.4.0",
     "@types/js-cookie": "^3.0.6",
@@ -127,6 +130,7 @@
     "eslint-plugin-formatjs": "^4.13.3",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.7",
+    "globals": "^15.14.0",
     "ncp": "^2.0.0",
     "npm-run-all": "^4.1.5",
     "prop-types": "^15.8.1",
