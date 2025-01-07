@@ -397,7 +397,7 @@ export function UppyDashboard(props: UppyDashboardProps) {
     ...props.options
   };
   const { classes } = useStyles();
-  const ref = useRef(null);
+  const ref = useRef(undefined);
   const { formatMessage } = useIntl();
   const dispatch = useDispatch();
   const targetsRef = useRef<string[]>([]);

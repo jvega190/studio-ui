@@ -70,7 +70,7 @@ export function TransferListColumn(props: TransferListColumnProps) {
     hasMoreItems
   } = props;
   const { classes } = useStyles();
-  const listRef = useRef(null);
+  const listRef = useRef(undefined);
 
   const onSearch = (value) => {
     onFilter?.(value);
