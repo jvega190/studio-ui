@@ -23,7 +23,7 @@ import { defineMessages, useIntl } from 'react-intl';
 import ErrorState from '../ErrorState';
 import { isValidElementType } from 'react-is';
 import WidgetDescriptor from '../../models/WidgetDescriptor';
-import { NonReactWidgetRecord } from '../../models';
+import NonReactWidgetRecord from '../../models/NonReactWidgetRecord';
 
 export interface WidgetProps extends WidgetDescriptor {
   /** Props applied to all widgets; supersedes widget props. */
