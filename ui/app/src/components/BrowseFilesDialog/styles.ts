@@ -40,9 +40,6 @@ export const useStyles = makeStyles()((theme) => ({
     gridGap: '16px',
     padding: 'initial'
   },
-  mediaCardRoot: {
-    cursor: 'pointer'
-  },
   selectedCard: {
     boxShadow: `0px 0px 4px 4px ${theme.palette.primary.main}`
   },

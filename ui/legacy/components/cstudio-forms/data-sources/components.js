@@ -173,15 +173,18 @@
     _openBrowse: function (contentType, control) {
       const path = this._processPathsForMacros(this.baseBrowsePath);
       const multiSelect = this.selectItemsCount === -1 || this.selectItemsCount > 1;
+      // Paths already in the control, by sending them to the Browse Dialog, it'll mark them as selected, and disable
+      // the actions for those paths.
+      const preselectedPaths = craftercms.utils.array
+        .asArray(control?.form.model[control.fieldDef.id])
+        .flatMap((item) => item.key || []);
+
       CStudioAuthoring.Operations.openBrowseFilesDialog({
         path,
         contentTypes: [contentType],
         multiSelect,
         allowUpload: false,
-        initialParameters: {
-          sortBy: 'internalName',
-          sortOrder: 'asc'
-        },
+        preselectedPaths,
         onSuccess: (result) => {
           (Array.isArray(result) ? result : [result]).forEach(({ name, path }) => {
             const value = name && name !== '' ? name : path;
@@ -201,8 +204,6 @@
         itemsPerPage: 12,
         keywords: '',
         filters: {},
-        sortBy: 'internalName',
-        sortOrder: 'asc',
         numFilters: 1,
         filtersShowing: 10,
         currentPage: 1,
@@ -221,6 +222,12 @@
           searchContext.filters['content-type'] = this.contentTypes.split(',');
         }
       }
+
+      // Paths already in the control, by sending them to the Search Dialog, it'll mark them as selected, and disable
+      // the actions for those paths.
+      searchContext.preselectedPaths = craftercms.utils.array
+        .asArray(control?.form.model[control.fieldDef.id])
+        .flatMap((item) => item.key || []);
 
       CStudioAuthoring.Operations.openSearch(
         searchContext,

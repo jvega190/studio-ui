@@ -50,6 +50,7 @@ import { inputBaseClasses } from '@mui/material/InputBase';
 import ListViewIcon from '@mui/icons-material/ViewStreamRounded';
 import GridViewIcon from '@mui/icons-material/GridOnRounded';
 import ReorderRoundedIcon from '@mui/icons-material/ReorderRounded';
+import { SORT_AUTO } from '../Search/utils';
 
 export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
   // region const { ... } = props;
@@ -82,13 +83,16 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
     onUpload,
     allowUpload = true,
     viewMode = 'card',
-    onToggleViewMode
+    onToggleViewMode,
+    preselectedLookup = {},
+    disableChangePreselected = true,
+    disableSubmission
   } = props;
   // endregion
   const { classes, cx: clsx } = useStyles();
   const { formatMessage } = useIntl();
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
-  const buttonRef = useRef();
+  const buttonRef = useRef(undefined);
 
   return (
     <>
@@ -160,6 +164,9 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
                           className={classes.sortingSelect}
                           label={<FormattedMessage id="BrowseFilesDialog.sortBy" defaultMessage="Sort By" />}
                         >
+                          <MenuItem value={SORT_AUTO}>
+                            <FormattedMessage defaultMessage="Auto" />
+                          </MenuItem>
                           <MenuItem value={'_score'}>
                             <FormattedMessage id="words.relevance" defaultMessage="Relevance" />
                           </MenuItem>
@@ -179,46 +186,48 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
                         </Select>
                       </FormControl>
                     </MenuItem>
-                    <MenuItem>
-                      <FormControl fullWidth>
-                        <InputLabel>
-                          <FormattedMessage id="words.order" defaultMessage="Order" />
-                        </InputLabel>
-                        <Select
-                          fullWidth
-                          value={searchParameters.sortOrder}
-                          onChange={({ target }) => {
-                            setSearchParameters({
-                              sortOrder: target.value
-                            });
-                          }}
-                          size="small"
-                          className={classes.sortingSelect}
-                          label={<FormattedMessage id="words.order" defaultMessage="Order" />}
-                        >
-                          <MenuItem value={'asc'}>
-                            {searchParameters.sortBy === '_score' ? (
-                              <FormattedMessage
-                                id="browseFilesDialog.lessRelevantFirst"
-                                defaultMessage="Less relevant first"
-                              />
-                            ) : (
-                              <FormattedMessage id="words.ascending" defaultMessage="Ascending" />
-                            )}
-                          </MenuItem>
-                          <MenuItem value={'desc'}>
-                            {searchParameters.sortBy === '_score' ? (
-                              <FormattedMessage
-                                id="browseFilesDialog.mostRelevantFirst"
-                                defaultMessage="Most relevant first"
-                              />
-                            ) : (
-                              <FormattedMessage id="words.descending" defaultMessage="Descending" />
-                            )}
-                          </MenuItem>
-                        </Select>
-                      </FormControl>
-                    </MenuItem>
+                    {searchParameters.sortBy && SORT_AUTO !== searchParameters.sortBy && (
+                      <MenuItem>
+                        <FormControl fullWidth>
+                          <InputLabel>
+                            <FormattedMessage id="words.order" defaultMessage="Order" />
+                          </InputLabel>
+                          <Select
+                            fullWidth
+                            value={searchParameters.sortOrder}
+                            onChange={({ target }) => {
+                              setSearchParameters({
+                                sortOrder: target.value
+                              });
+                            }}
+                            size="small"
+                            className={classes.sortingSelect}
+                            label={<FormattedMessage id="words.order" defaultMessage="Order" />}
+                          >
+                            <MenuItem value={'asc'}>
+                              {searchParameters.sortBy === '_score' ? (
+                                <FormattedMessage
+                                  id="browseFilesDialog.lessRelevantFirst"
+                                  defaultMessage="Less relevant first"
+                                />
+                              ) : (
+                                <FormattedMessage id="words.ascending" defaultMessage="Ascending" />
+                              )}
+                            </MenuItem>
+                            <MenuItem value={'desc'}>
+                              {searchParameters.sortBy === '_score' ? (
+                                <FormattedMessage
+                                  id="browseFilesDialog.mostRelevantFirst"
+                                  defaultMessage="Most relevant first"
+                                />
+                              ) : (
+                                <FormattedMessage id="words.descending" defaultMessage="Descending" />
+                              )}
+                            </MenuItem>
+                          </Select>
+                        </FormControl>
+                      </MenuItem>
+                    )}
                   </Menu>
                   <Divider orientation="vertical" flexItem className={classes.actionsBarDivider} />
                 </Box>
@@ -259,25 +268,34 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
             </Paper>
             <Box
               className={classes.cardsContainer}
-              sx={viewMode === 'row' ? { display: 'flex !important', flexFlow: 'wrap' } : undefined}
+              sx={[viewMode === 'row' && { display: 'flex !important', flexFlow: 'wrap' }]}
             >
               {items
-                ? items.map((item: SearchItem) => (
-                    <MediaCard
-                      viewMode={viewMode}
-                      classes={{
-                        root: clsx(classes.mediaCardRoot, item.path === selectedCard?.path && classes.selectedCard)
-                      }}
-                      key={item.path}
-                      item={item}
-                      selected={multiSelect ? selectedArray : null}
-                      onSelect={multiSelect ? onCheckboxChecked : null}
-                      onPreview={onPreviewImage ? () => onPreviewImage(item) : null}
-                      previewAppBaseUri={guestBase}
-                      onClick={() => onCardSelected(item)}
-                      showPath={true}
-                    />
-                  ))
+                ? items.map((item: SearchItem) => {
+                    const isPreselected = preselectedLookup[item.path];
+                    const onSelect = disableChangePreselected && isPreselected ? () => null : onCheckboxChecked;
+
+                    return (
+                      <MediaCard
+                        viewMode={viewMode}
+                        classes={{
+                          root: item.path === selectedCard?.path && classes.selectedCard
+                        }}
+                        sxs={{
+                          root: { cursor: disableChangePreselected && isPreselected ? 'not-allowed' : 'pointer' }
+                        }}
+                        key={item.path}
+                        item={item}
+                        disableSelection={disableChangePreselected && isPreselected}
+                        selected={multiSelect ? [...selectedArray] : []}
+                        onSelect={multiSelect ? onSelect : null}
+                        onPreview={onPreviewImage ? () => onPreviewImage(item) : null}
+                        previewAppBaseUri={guestBase}
+                        onClick={() => !(disableChangePreselected && isPreselected) && onCardSelected(item)}
+                        showPath={true}
+                      />
+                    );
+                  })
                 : new Array(numOfLoaderItems).fill(null).map((x, i) => <MediaSkeletonCard key={i} />)}
             </Box>
             {items && items.length === 0 && (
@@ -293,7 +311,7 @@ export function BrowseFilesDialogUI(props: BrowseFilesDialogUIProps) {
         <SecondaryButton onClick={onCloseButtonClick}>
           <FormattedMessage id="words.cancel" defaultMessage="Cancel" />
         </SecondaryButton>
-        <PrimaryButton disabled={!Boolean(selectedArray.length) && !selectedCard} onClick={onSelectButtonClick}>
+        <PrimaryButton disabled={disableSubmission} onClick={onSelectButtonClick}>
           <FormattedMessage id="words.select" defaultMessage="Select" />
         </PrimaryButton>
       </DialogFooter>

@@ -20,7 +20,7 @@ import Drawer from '@mui/material/Drawer';
 import SiteSearchFilters from '../SiteSearchFilters';
 import { makeStyles } from 'tss-react/mui';
 import palette from '../../styles/palette';
-import { ElasticParams, Filter, MediaItem } from '../../models/Search';
+import { ElasticParams, Filter, MediaItem, SearchResult } from '../../models/Search';
 import { CheckedFilter, drawerWidth, SearchProps, UseSearchStateReturn } from '../Search/utils';
 import LookupTable from '../../models/LookupTable';
 import FormGroup from '@mui/material/FormGroup';
@@ -73,6 +73,8 @@ export interface SearchUIProps
   checkedFilters: LookupTable<CheckedFilter>;
   searchParameters: ElasticParams;
   error: ApiResponse;
+  preselectedLookup?: LookupTable<boolean>;
+  disableChangePreselected?: SearchProps['disableChangePreselected'];
   onCheckedFiltersChanges(checkedFilters: LookupTable<CheckedFilter>): void;
   clearFilter(facet: string): void;
   clearFilters(): void;
@@ -305,13 +307,15 @@ export function SearchUI(props: SearchUIProps) {
     onActionClicked,
     handleClearSelected,
     onClose,
-    onAcceptSelection
+    onAcceptSelection,
+    preselectedLookup = {},
+    disableChangePreselected = true
   } = props;
   // endregion
 
   const { formatMessage } = useIntl();
 
-  const container = useRef();
+  const container = useRef(undefined);
 
   return (
     <section ref={container} className={classes.container}>
@@ -469,12 +473,21 @@ export function SearchUI(props: SearchUIProps) {
                                 }
                               : {}
                           }
+                          sxs={{
+                            root: {
+                              cursor:
+                                disableChangePreselected && preselectedLookup[item.path] ? 'not-allowed' : 'pointer'
+                            }
+                          }}
                           item={item}
                           onPreview={mode === 'default' ? () => onPreview(item) : UNDEFINED}
                           onClick={
-                            mode === 'select' ? () => handleSelect(item.path, !selected.includes(item.path)) : UNDEFINED
+                            !(disableChangePreselected && preselectedLookup[item.path]) && mode === 'select'
+                              ? () => handleSelect(item.path, !selected.includes(item.path))
+                              : UNDEFINED
                           }
                           onSelect={handleSelect}
+                          disableSelection={disableChangePreselected && preselectedLookup[item.path]}
                           selected={selected}
                           previewAppBaseUri={guestBase}
                           action={
