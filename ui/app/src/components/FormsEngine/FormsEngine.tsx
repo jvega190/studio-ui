@@ -89,7 +89,7 @@ import ItemStateIcon from '../ItemStateIcon';
 import Tabs, { TabsProps } from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Divider from '@mui/material/Divider';
-import Grid from '@mui/material/Grid';
+import Grid from '@mui/material/Grid2';
 import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView';
 import { TreeItem } from '@mui/x-tree-view/TreeItem';
 import { FieldRequiredStateIndicator } from './common/FieldRequiredStateIndicator';
@@ -197,6 +197,7 @@ type JotaiStore = ReturnType<typeof createStore>;
 const ItemNotFoundError = Symbol('ItemNotFoundError');
 const ContentTypeNotFoundError = Symbol('ContentTypeNotFoundError');
 const InvalidParamsError = Symbol('InvalidParamsError');
+const NoSiteIdError = Symbol('NoSiteIdError');
 const UnknownError = Symbol('UnknownError');
 
 export interface BaseProps extends Partial<UpdateModeProps & RepeatModeProps & CreateModeProps> {
@@ -549,6 +550,7 @@ function createValueAtoms(
   return [
     valueAtom,
     atom((get) => {
+      // TODO: It would be best for this to be in a different place and be a sort of effect.
       const value = get(valueAtom);
       if (isInitialization) {
         isInitialization = false;
@@ -705,7 +707,9 @@ function Prepper(props: FormsEngineProps) {
     //  - Invalid params (e.g. create mode without a content type id)
     // TODO: Consider backend that provides all form requirements: form def xml, context xml, sandbox/detailed item, affected workflow, lock(?)
     const previousProps = effectRefs.current.previousProps;
-    if (
+    if (!siteId) {
+      setPrepError(NoSiteIdError);
+    } else if (
       // Missing or bad combination of props
       [create, update, repeat].filter(Boolean).length !== 1 ||
       // Update prop but no path
@@ -921,9 +925,9 @@ function Prepper(props: FormsEngineProps) {
           {
             [XmlKeys.modelId]: newModelId,
             [XmlKeys.contentTypeId]: contentType.id,
-            'display-template': contentType.displayTemplate,
-            'no-template-required': Boolean(contentType.displayTemplate ? 'false' : 'true'),
-            'merge-strategy': 'inherit-levels',
+            [XmlKeys.displayTemplate]: contentType.displayTemplate,
+            [XmlKeys.templateNotRequired]: Boolean(contentType.displayTemplate ? 'false' : 'true'),
+            [XmlKeys.mergeStrategy]: 'inherit-levels',
             createdDate: dateIsoString,
             createdDate_dt: dateIsoString,
             lastModifiedDate: dateIsoString,
@@ -934,7 +938,6 @@ function Prepper(props: FormsEngineProps) {
             createAtom(contentType, contentType.fields, fieldId, atoms, value);
           }
         );
-
         initializeState(atoms, values, {
           id: newModelId,
           // TODO: Should/can we somehow deduce the target path?
@@ -1032,6 +1035,9 @@ function Prepper(props: FormsEngineProps) {
         break;
       case InvalidParamsError:
         error = <FormattedMessage defaultMessage="The form was opened with an incorrect set of arguments" />;
+        break;
+      case NoSiteIdError:
+        error = <FormattedMessage defaultMessage="No CrafterCMS project was specified." />;
         break;
       case UnknownError:
       default:
@@ -1375,6 +1381,17 @@ function Form(props: FormsEngineProps) {
     setIsSubmitting(isSubmitting);
     setTimeout(() => {
       const values = extractValueAtoms(store, stableFormContext.atoms.valueByFieldId);
+      // Put system properties in xml before creating the XML
+      values[XmlKeys.contentTypeId] = contentType.id;
+      values[XmlKeys.displayTemplate] = contentType.displayTemplate;
+      values[XmlKeys.mergeStrategy] = null;
+      values[XmlKeys.modelId] = objectId;
+      values[XmlKeys.fileName] = null;
+      values[XmlKeys.folderName] = null;
+      values[XmlKeys.dateCreated] = null;
+      values[XmlKeys.dateModified] = null;
+      values[XmlKeys.dateCreated + '_dt'] = null;
+      values[XmlKeys.dateModified + '_dt'] = null;
       const xml = buildContentXml(values, contentTypesById);
       const dom = fromString(xml);
       setIsSubmitting(false);
@@ -1546,7 +1563,7 @@ function Form(props: FormsEngineProps) {
       >
         <Container maxWidth={isLargeContainer ? 'xl' : undefined}>
           <Grid container spacing={2}>
-            <Grid item xs={useCollapsedToC ? 'auto' : true}>
+            <Grid size={useCollapsedToC ? 'auto' : 'grow'}>
               <StickyBox data-area-id="stickySidebar">
                 {useCollapsedToC ? (
                   <IconButton size="small" onClick={handleOpenDrawerSidebar}>
@@ -1557,7 +1574,7 @@ function Form(props: FormsEngineProps) {
                 )}
               </StickyBox>
             </Grid>
-            <Grid item xs={useCollapsedToC ? 8.3 : 7} className="space-y" data-area-id="formBody">
+            <Grid size={useCollapsedToC ? 8.3 : 7} className="space-y" data-area-id="formBody">
               {affectsWorkflowItems && (
                 <Alert
                   severity="warning"
@@ -1644,7 +1661,7 @@ function Form(props: FormsEngineProps) {
                 </Tooltip>
               </Box>
             </Grid>
-            <Grid item xs>
+            <Grid size="grow">
               <StickyBox className="space-y">
                 {readonly ? (
                   <>

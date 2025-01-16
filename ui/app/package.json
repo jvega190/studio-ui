@@ -86,6 +86,7 @@
     "highlight.js": "^11.9.0",
     "jabber": "^1.5.3",
     "jotai": "^2.10.2",
+    "jotai-effect": "^1.0.4",
     "js-cookie": "^3.0.5",
     "marked": "^15.0.0",
     "marked-highlight": "^2.1.1",
