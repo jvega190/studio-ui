@@ -15,7 +15,7 @@
  */
 
 import { PublishingPackageReviewDialogContainerProps } from './types';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { fetchPackage } from '../../services/publishing';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
 import { DialogBody } from '../DialogBody';
@@ -52,6 +52,7 @@ import { updatePublishingPackageReviewDialog } from '../../state/actions/dialogs
 import { AsDayMonthDateTime } from '../VersionList';
 import PackageDetails from '../PackageDetailsDialog/PackageDetails';
 import { showSystemNotification } from '../../state/actions/system';
+import { hasApproveAction, hasRejectAction } from '../../utils/content';
 
 export type PackageReviewAction = 'approve' | 'reject';
 interface InternalDialogState {
@@ -87,6 +88,15 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageR
     );
   const dispatch = useDispatch();
   const { formatMessage } = useIntl();
+  const { hasApprovePermission, hasRejectPermission } = useMemo(() => {
+    let hasApprovePermission = false;
+    let hasRejectPermission = false;
+    if (publishingPackage) {
+      hasApprovePermission = hasApproveAction(publishingPackage.availableActions);
+      hasRejectPermission = hasRejectAction(publishingPackage.availableActions);
+    }
+    return { hasApprovePermission, hasRejectPermission };
+  }, [publishingPackage]);
 
   // Submit button should be disabled when:
   const submitDisabled =
@@ -134,6 +144,15 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageR
       });
     }
   }, [siteId, activeEnvironment]);
+
+  useEffect(() => {
+    if (hasApprovePermission && !hasRejectPermission) {
+      setState({ action: 'approve' });
+    }
+    if (hasRejectPermission && !hasApprovePermission) {
+      setState({ action: 'reject' });
+    }
+  }, [hasApprovePermission, hasRejectPermission, setState]);
 
   const onArgumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value: unknown;
@@ -237,28 +256,34 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageR
                 <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
                   <FormattedMessage defaultMessage="Action" />
                 </Typography>
-                <RadioGroup sx={{ mb: 2 }} value={state.action} name="action" onChange={onArgumentChange}>
-                  <FormControlLabel
-                    value="approve"
-                    control={<Radio color="primary" />}
-                    label={
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <VerifiedUserOutlinedIcon color="success" sx={{ mr: 1, fontSize: 18 }} />
-                        <FormattedMessage defaultMessage="Approve" />
-                      </Box>
-                    }
-                  />
-                  <FormControlLabel
-                    value="reject"
-                    control={<Radio color="primary" />}
-                    label={
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <BlockOutlinedIcon color="error" sx={{ mr: 1, fontSize: 18 }} />
-                        <FormattedMessage defaultMessage="Reject" />
-                      </Box>
-                    }
-                  />
-                </RadioGroup>
+                {(hasApprovePermission || hasRejectPermission) && (
+                  <RadioGroup sx={{ mb: 2 }} value={state.action} name="action" onChange={onArgumentChange}>
+                    {hasApprovePermission && (
+                      <FormControlLabel
+                        value="approve"
+                        control={<Radio color="primary" />}
+                        label={
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <VerifiedUserOutlinedIcon color="success" sx={{ mr: 1, fontSize: 18 }} />
+                            <FormattedMessage defaultMessage="Approve" />
+                          </Box>
+                        }
+                      />
+                    )}
+                    {hasRejectPermission && (
+                      <FormControlLabel
+                        value="reject"
+                        control={<Radio color="primary" />}
+                        label={
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <BlockOutlinedIcon color="error" sx={{ mr: 1, fontSize: 18 }} />
+                            <FormattedMessage defaultMessage="Reject" />
+                          </Box>
+                        }
+                      />
+                    )}
+                  </RadioGroup>
+                )}
 
                 {state.action === 'approve' ? (
                   <>

@@ -31,7 +31,7 @@ import {
   showPublishingPackageReviewDialog
 } from '../state/actions/dialogs';
 import { batchActions } from '../state/actions/misc';
-import { hasApproveAction, hasCancelAction, hasResubmitAction } from './content';
+import { hasApproveAction, hasCancelAction, hasRejectAction, hasResubmitAction } from './content';
 
 const translations = defineMessages({
   review: {
@@ -84,8 +84,11 @@ export const generatePackageOptions = (
     const packagesHaveCancelAction = packages.every((pkg) => hasCancelAction(pkg.availableActions));
     if (packages?.length === 1) {
       const pkg = packages[0];
-      // TODO: are we going to have 2 actions for review (approve and reject) or just one (review)?
-      if (hasApproveAction(pkg.availableActions) && pkg.approvalState === 'SUBMITTED' && actionsToInclude.review) {
+      if (
+        (hasApproveAction(pkg.availableActions) || hasRejectAction(pkg.availableActions)) &&
+        pkg.approvalState === 'SUBMITTED' &&
+        actionsToInclude.review
+      ) {
         packageOptions.push(unparsedOptions.review);
       }
       if (hasResubmitAction(pkg.availableActions) && actionsToInclude.resubmit) {

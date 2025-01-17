@@ -289,5 +289,4 @@ export * from './WidgetDialog';
 export * from './WidgetDialogIconButton';
 export * from './WidgetsAccordion';
 export * from './WidgetsGrid';
-export * from './WorkflowCancellationDialog';
 export * from './WorkflowStateManagement';

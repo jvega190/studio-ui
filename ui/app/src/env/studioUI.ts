@@ -334,7 +334,6 @@ export const components = {
   WidgetDialogIconButton: lazy(() => import('../components/WidgetDialogIconButton')),
   WidgetsAccordion: lazy(() => import('../components/WidgetsAccordion')),
   WidgetsGrid: lazy(() => import('../components/WidgetsGrid')),
-  WorkflowCancellationDialog: lazy(() => import('../components/WorkflowCancellationDialog')),
   WorkflowStateManagement: lazy(() => import('../components/WorkflowStateManagement'))
 };
 export const icons = {
