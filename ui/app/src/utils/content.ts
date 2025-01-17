@@ -156,6 +156,10 @@ export function isBlobUrl(url: string): boolean {
   return url.startsWith('blob:');
 }
 
+export function isInActiveWorkflow(item: DetailedItem | SandboxItem): boolean {
+  return item.stateMap.scheduled || item.stateMap.submitted;
+}
+
 /**
  * TODO: Remove?
  * Returns the boolean intersection of editMode, lock status and the item's edit permission

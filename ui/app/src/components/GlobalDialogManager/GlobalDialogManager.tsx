@@ -51,7 +51,6 @@ const HistoryDialog = lazy(() => import('../HistoryDialog'));
 const PublishDialog = lazy(() => import('../PublishDialog'));
 const DependenciesDialog = lazy(() => import('../DependenciesDialog/DependenciesDialog'));
 const DeleteDialog = lazy(() => import('../DeleteDialog'));
-const WorkflowCancellationDialog = lazy(() => import('../WorkflowCancellationDialog'));
 const LegacyFormDialog = lazy(() => import('../LegacyFormDialog'));
 const CreateFolderDialog = lazy(() => import('../CreateFolderDialog'));
 const CopyItemsDialog = lazy(() => import('../CopyDialog'));
@@ -73,6 +72,8 @@ const PublishingPackageReviewDialog = lazy(() => import('../PublishPackageReview
 const PublishingPackageResubmitDialog = lazy(() => import('../PublishingPackageResubmitDialog'));
 const CancelPackageDialog = lazy(() => import('../CancelPackageDialog'));
 const BulkCancelPackageDialog = lazy(() => import('../BulkCancelPackageDialog'));
+const PackageDetailsDialog = lazy(() => import('../PackageDetailsDialog'));
+const ViewPackagesDialog = lazy(() => import('../ViewPackagesDialog'));
 // endregion
 
 // @formatter:off
@@ -418,15 +419,6 @@ function GlobalDialogManager() {
       <AuthMonitor />
       {/* endregion */}
 
-      {/* region Workflow Cancellation */}
-      <WorkflowCancellationDialog
-        {...state.workflowCancellation}
-        onClose={createCallback(state.workflowCancellation.onClose, dispatch)}
-        onClosed={createCallback(state.workflowCancellation.onClosed, dispatch)}
-        onContinue={createCallback(state.workflowCancellation.onContinue, dispatch)}
-      />
-      {/* endregion */}
-
       {/* region Broken References */}
       <BrokenReferencesDialog
         {...state.brokenReferences}
@@ -612,6 +604,23 @@ function GlobalDialogManager() {
         onClose={createCallback(state.bulkCancelPackage.onClose, dispatch)}
         onClosed={createCallback(state.bulkCancelPackage.onClosed, dispatch)}
         onSuccess={createCallback(state.bulkCancelPackage.onSuccess, dispatch)}
+      />
+      {/* endregion */}
+
+      {/* region Package Details Dialog */}
+      <PackageDetailsDialog
+        {...state.packageDetails}
+        onClose={createCallback(state.packageDetails.onClose, dispatch)}
+        onClosed={createCallback(state.packageDetails.onClosed, dispatch)}
+      />
+      {/* endregion */}
+
+      {/* region View Packages Dialog */}
+      <ViewPackagesDialog
+        {...state.viewPackages}
+        onClose={createCallback(state.viewPackages.onClose, dispatch)}
+        onClosed={createCallback(state.viewPackages.onClosed, dispatch)}
+        onContinue={createCallback(state.viewPackages.onContinue, dispatch)}
       />
       {/* endregion */}
 

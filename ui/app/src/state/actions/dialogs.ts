@@ -37,7 +37,6 @@ import { ViewVersionDialogStateProps } from '../../components/ViewVersionDialog/
 import { CompareVersionsDialogStateProps } from '../../components/CompareVersionsDialog';
 import { ConfirmDialogStateProps } from '../../components/ConfirmDialog';
 import { ChangeContentTypeDialogStateProps } from '../../components/ChangeContentTypeDialog';
-import { WorkflowCancellationDialogStateProps } from '../../components/WorkflowCancellationDialog/utils';
 import { CreateFileStateProps } from '../../components/CreateFileDialog';
 import { UploadDialogStateProps } from '../../components/UploadDialog/util';
 import { PreviewDialogStateProps } from '../../components/PreviewDialog/utils';
@@ -52,6 +51,8 @@ import { BrokenReferencesDialogStateProps } from '../../components/BrokenReferen
 import { PublishingPackageReviewDialogStateProps } from '../../components/PublishPackageReviewDialog/types';
 import { CancelPackageDialogProps } from '../../components/CancelPackageDialog';
 import { PublishingPackageResubmitDialogStateProps } from '../../components/PublishingPackageResubmitDialog/types';
+import { PackageDetailsDialogProps } from '../../components';
+import { ViewPackagesDialogProps } from '../../components/ViewPackagesDialog';
 
 // region History
 export const showHistoryDialog = /*#__PURE__*/ createAction<Partial<HistoryDialogStateProps>>('SHOW_HISTORY_DIALOG');
@@ -157,20 +158,6 @@ export const showDependenciesDialog =
   /*#__PURE__*/ createAction<Partial<DependenciesDialogStateProps>>('SHOW_DEPENDENCIES_DIALOG');
 export const closeDependenciesDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_DEPENDENCIES_DIALOG');
 export const dependenciesDialogClosed = /*#__PURE__*/ createAction('DEPENDENCIES_DIALOG_CLOSED');
-// endregion
-
-// region Workflow Cancellation
-
-export const showWorkflowCancellationDialog = /*#__PURE__*/ createAction<Partial<WorkflowCancellationDialogStateProps>>(
-  'SHOW_WORKFLOW_CANCELLATION_DIALOG'
-);
-
-export const closeWorkflowCancellationDialog = /*#__PURE__*/ createAction<StandardAction>(
-  'CLOSE_WORKFLOW_CANCELLATION_DIALOG'
-);
-
-export const workflowCancellationDialogClosed = /*#__PURE__*/ createAction('WORKFLOW_CANCELLATION_DIALOG_CLOSED');
-
 // endregion
 
 // region Legacy Form
@@ -369,4 +356,26 @@ export const closeBulkCancelPackageDialog = /*#__PURE__*/ createAction<StandardA
   'CLOSE_BULK_CANCEL_PACKAGE_DIALOG'
 );
 export const bulkCancelPackageDialogClosed = /*#__PURE__*/ createAction('BULK_CANCEL_PACKAGE_DIALOG_CLOSED');
+// endregion
+
+// region PackageDetailsDialog
+
+export const showPackageDetailsDialog =
+  /*#__PURE__*/ createAction<Partial<PackageDetailsDialogProps>>('SHOW_PACKAGE_DETAILS_DIALOG');
+
+export const closePackageDetailsDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_PACKAGE_DETAILS_DIALOG');
+
+export const packageDetailsDialogClosed = /*#__PURE__*/ createAction('PACKAGE_DETAILS_DIALOG_CLOSED');
+
+// endregion
+
+// region ViewPackagesDialog
+
+export const showViewPackagesDialog =
+  /*#__PURE__*/ createAction<Partial<ViewPackagesDialogProps>>('SHOW_VIEW_PACKAGES_DIALOG');
+
+export const closeViewPackagesDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_VIEW_PACKAGES_DIALOG');
+
+export const viewPackagesDialogClosed = /*#__PURE__*/ createAction('VIEW_PACKAGES_DIALOG_CLOSED');
+
 // endregion

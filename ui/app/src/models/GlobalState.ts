@@ -53,7 +53,6 @@ import { ViewVersionDialogStateProps } from '../components/ViewVersionDialog/uti
 import { CompareVersionsDialogStateProps } from '../components/CompareVersionsDialog/utils';
 import { ConfirmDialogStateProps } from '../components/ConfirmDialog/utils';
 import { ChangeContentTypeDialogStateProps } from '../components/ChangeContentTypeDialog/utils';
-import { WorkflowCancellationDialogStateProps } from '../components/WorkflowCancellationDialog/utils';
 import { CreateFileStateProps } from '../components/CreateFileDialog/utils';
 import { UploadDialogStateProps } from '../components/UploadDialog/util';
 import { PreviewDialogStateProps } from '../components/PreviewDialog/utils';
@@ -70,6 +69,8 @@ import { PublishingPackageReviewDialogStateProps } from '../components/PublishPa
 import { CancelPackageDialogStateProps } from '../components/CancelPackageDialog';
 import { BulkCancelPackageDialogStateProps } from '../components/BulkCancelPackageDialog';
 import { PublishingPackageResubmitDialogStateProps } from '../components/PublishingPackageResubmitDialog/types';
+import { PackageDetailsDialogStateProps } from '../components';
+import { ViewPackagesDialogStateProps } from '../components/ViewPackagesDialog';
 
 export type HighlightMode = 'all' | 'move';
 
@@ -232,7 +233,6 @@ export interface GlobalState {
     delete: DeleteDialogStateProps;
     edit: LegacyFormDialogStateProps;
     codeEditor: CodeEditorDialogStateProps;
-    workflowCancellation: WorkflowCancellationDialogStateProps;
     createFolder: CreateFolderStateProps;
     createFile: CreateFileStateProps;
     renameAsset: RenameAssetStateProps;
@@ -254,6 +254,8 @@ export interface GlobalState {
     cancelPackage: CancelPackageDialogStateProps;
     bulkCancelPackage: BulkCancelPackageDialogStateProps;
     publishingPackageResubmit: PublishingPackageResubmitDialogStateProps;
+    packageDetails: PackageDetailsDialogStateProps;
+    viewPackages: ViewPackagesDialogStateProps;
   };
   uiConfig: {
     error: ApiResponse;

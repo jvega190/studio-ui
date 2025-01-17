@@ -41,7 +41,7 @@ import {
   showPublishDialog,
   showRenameAssetDialog,
   showUploadDialog,
-  showWorkflowCancellationDialog
+  showViewPackagesDialog
 } from '../state/actions/dialogs';
 import { fetchItemsByPath, fetchLegacyItemsTree, fetchSandboxItem } from '../services/content';
 import {
@@ -101,7 +101,8 @@ import {
   hasRenameAction,
   hasSchedulePublishAction,
   hasUnlockAction,
-  hasUploadAction
+  hasUploadAction,
+  isInActiveWorkflow
 } from './content';
 import {
   getEditorMode,
@@ -258,6 +259,10 @@ const unparsedMenuOptions: Record<AllItemActions, ContextMenuOptionDescriptor<Al
   preview: {
     id: 'preview',
     label: translations.preview
+  },
+  viewPackages: {
+    id: 'viewPackages',
+    label: translations.viewPackages
   }
   // endregion
 };
@@ -398,6 +403,9 @@ export function generateSingleItemOptions(
   ) {
     sectionC.push(menuOptions.publish);
   }
+  if (isInActiveWorkflow(item)) {
+    sectionC.push(menuOptions.viewPackages);
+  }
   // endregion
 
   // region Section D
@@ -519,23 +527,21 @@ export const itemActionDispatcher = ({
         //  we need the modelId that's not supplied to this function.
         // const src = `${defaultSrc}site=${site}&path=${embeddedParentPath}&isHidden=true&modelId=${modelId}&type=form`
         const path = item.path;
-        fetchAffectedPackages(site, path).subscribe((packages) => {
-          const actionToDispatch = showEditDialog({
-            site,
-            path,
-            authoringBase,
-            onSaveSuccess: batchActions([
-              showEditItemSuccessNotification(),
-              ...(onActionSuccess ? [onActionSuccess] : [])
-            ]),
-            ...extraPayload
-          });
-          if (packages?.length > 0) {
-            dispatch(showWorkflowCancellationDialog({ packages, onContinue: actionToDispatch }));
-          } else {
-            dispatch(actionToDispatch);
-          }
+        const actionToDispatch = showEditDialog({
+          site,
+          path,
+          authoringBase,
+          onSaveSuccess: batchActions([
+            showEditItemSuccessNotification(),
+            ...(onActionSuccess ? [onActionSuccess] : [])
+          ]),
+          ...extraPayload
         });
+        if (isInActiveWorkflow(item)) {
+          dispatch(showViewPackagesDialog({ item, onContinue: actionToDispatch }));
+        } else {
+          dispatch(actionToDispatch);
+        }
         break;
       }
       case 'createFolder': {
@@ -722,18 +728,11 @@ export const itemActionDispatcher = ({
       }
       case 'paste': {
         if (clipboard.type === 'CUT') {
-          dispatch(
-            blockUI({
-              progress: 'indeterminate',
-              title: `${formatMessage(translations.processing)}...`
-            })
-          );
-          fetchAffectedPackages(site, clipboard.sourcePath).subscribe((packages) => {
-            dispatch(unblockUI());
-            if (packages?.length > 0) {
+          fetchSandboxItem(site, clipboard.sourcePath).subscribe((clipboardItem) => {
+            if (isInActiveWorkflow(clipboardItem)) {
               dispatch(
-                showWorkflowCancellationDialog({
-                  packages,
+                showViewPackagesDialog({
+                  item: clipboardItem,
                   onContinue: pasteItem({ path: item.path })
                 })
               );
@@ -821,32 +820,20 @@ export const itemActionDispatcher = ({
         break;
       }
       case 'editCode': {
-        const path = item.path;
-        dispatch(
-          blockUI({
-            progress: 'indeterminate',
-            title: formatMessage(translations.verifyingAffectedWorkflows)
-          })
-        );
-        fetchAffectedPackages(site, path).subscribe((packages) => {
-          const editorShowAction = showCodeEditorDialog({
-            path: item.path,
-            mode: getEditorMode(item)
-          });
-          if (packages?.length > 0) {
-            dispatch(
-              batchActions([
-                unblockUI(),
-                showWorkflowCancellationDialog({
-                  packages,
-                  onContinue: editorShowAction
-                })
-              ])
-            );
-          } else {
-            dispatch(batchActions([unblockUI(), editorShowAction]));
-          }
+        const editorShowAction = showCodeEditorDialog({
+          path: item.path,
+          mode: getEditorMode(item)
         });
+        if (isInActiveWorkflow(item)) {
+          dispatch(
+            showViewPackagesDialog({
+              item,
+              onContinue: editorShowAction
+            })
+          );
+        } else {
+          dispatch(editorShowAction);
+        }
         break;
       }
       case 'viewCode': {
@@ -888,6 +875,10 @@ export const itemActionDispatcher = ({
       }
       case 'preview': {
         dispatch(previewItem({ item: item, newTab: event.ctrlKey || event.metaKey }));
+        break;
+      }
+      case 'viewPackages': {
+        dispatch(showViewPackagesDialog({ item }));
         break;
       }
       default:

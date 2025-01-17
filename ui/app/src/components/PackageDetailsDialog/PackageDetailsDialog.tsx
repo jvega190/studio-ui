@@ -17,12 +17,19 @@
 import React from 'react';
 import { FormattedMessage } from 'react-intl';
 import { EnhancedDialog, EnhancedDialogProps } from '../EnhancedDialog';
-import Box from '@mui/material/Box';
-import DialogFooter from '../DialogFooter';
 import PackageDetailsDialogContainer from './PackageDetailsDialogContainer';
+import { EnhancedDialogState } from '../../hooks/useEnhancedDialogState';
+import StandardAction from '../../models/StandardAction';
 
-export interface PackageDetailsDialogProps extends EnhancedDialogProps {
+export interface PackageDetailsDialogBaseProps {
   packageId: number;
+}
+
+export interface PackageDetailsDialogProps extends PackageDetailsDialogBaseProps, EnhancedDialogProps {}
+
+export interface PackageDetailsDialogStateProps extends PackageDetailsDialogBaseProps, EnhancedDialogState {
+  onClose?: StandardAction;
+  onClosed?: StandardAction;
 }
 
 export function PackageDetailsDialog(props: PackageDetailsDialogProps) {

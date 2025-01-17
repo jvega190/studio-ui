@@ -27,7 +27,6 @@ import dependencies from './dependencies';
 import deleteDialog from './delete';
 import edit from './edit';
 import codeEditor from './codeEditor';
-import workflowCancellation from './workflowCancellation';
 import createFolder from './createFolder';
 import createFile from './createFile';
 import copy from './copy';
@@ -50,6 +49,8 @@ import publishingPackageApproval from './publishingPackageReview';
 import cancelPackage from './cancelPackage';
 import bulkCancelPackage from './bulkCancelPackage';
 import publishingPackageResubmit from './publishingPackageResubmit';
+import packageDetails from './packageDetails';
+import viewPackages from './viewPackages';
 
 export default combineReducers({
   confirm,
@@ -66,7 +67,6 @@ export default combineReducers({
   delete: deleteDialog,
   edit,
   codeEditor,
-  workflowCancellation,
   editSite,
   createFolder,
   createFile,
@@ -86,5 +86,7 @@ export default combineReducers({
   uiBlocker,
   brokenReferences,
   cancelPackage,
-  bulkCancelPackage
+  bulkCancelPackage,
+  packageDetails,
+  viewPackages
 });

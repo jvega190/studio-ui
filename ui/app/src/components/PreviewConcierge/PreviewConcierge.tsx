@@ -145,8 +145,8 @@ import {
   showRtePickerActions,
   ShowRtePickerActionsPayload,
   showSingleFileUploadDialog,
-  showWorkflowCancellationDialog,
-  workflowCancellationDialogClosed
+  showViewPackagesDialog,
+  viewPackagesDialogClosed
 } from '../../state/actions/dialogs';
 import { UNDEFINED } from '../../utils/constants';
 import { useCurrentPreviewItem } from '../../hooks/useCurrentPreviewItem';
@@ -189,7 +189,6 @@ import { Dispatch } from 'redux';
 import { ActionCreatorWithOptionalPayload } from '@reduxjs/toolkit';
 import { ItemMegaMenuStateProps } from '../ItemMegaMenu';
 import StandardAction from '../../models/StandardAction';
-import { fetchAffectedPackages } from '../../services/workflow';
 
 const issueDescriptorRequest = (props: {
   site: string;
@@ -1108,18 +1107,16 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
           break;
         }
         case requestWorkflowCancellationDialog.type: {
-          fetchAffectedPackages(payload.siteId, payload.path).subscribe((packages) => {
-            dispatch(
-              showWorkflowCancellationDialog({
-                packages,
-                onClosed: batchActions([
-                  workflowCancellationDialogClosed(),
-                  requestWorkflowCancellationDialogOnResult({ type: 'close' })
-                ]),
-                onContinue: requestWorkflowCancellationDialogOnResult({ type: 'continue' })
-              })
-            );
-          });
+          dispatch(
+            showViewPackagesDialog({
+              item: payload.item,
+              onClosed: batchActions([
+                viewPackagesDialogClosed(),
+                requestWorkflowCancellationDialogOnResult({ type: 'close' })
+              ]),
+              onContinue: requestWorkflowCancellationDialogOnResult({ type: 'continue' })
+            })
+          );
           break;
         }
         case showItemMegaMenu.type: {

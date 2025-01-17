@@ -64,7 +64,7 @@ export type ItemActions =
   | 'schedulePublish';
 // endregion
 
-export type VirtualItemActions = 'preview' | 'copyWithChildren';
+export type VirtualItemActions = 'preview' | 'copyWithChildren' | 'viewPackages';
 
 // region export type AssessRemovalItemActions =
 export type AssessRemovalItemActions =

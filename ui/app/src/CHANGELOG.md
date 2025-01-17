@@ -13,6 +13,7 @@
   * `PublishOnDemandForm`: Removed `bulkPublishCommentRequired` and `publishByCommitCommentRequired` props.
   * `PublishingQueue/FilterDropdown`: Removed `filterStates` prop.
   * `PackageDetailsDialog`: Update packageId prop to be of type number.
+  * Removed `WorkflowCancellationDialog`. Replaced by `ViewPackagesDialog`.
 * [hooks]
   * Removed `useLogicResource` hook.
   * Removed `useSelectorResource` hook.
