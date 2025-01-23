@@ -84,12 +84,11 @@ interface SiteConfigurationManagementProps {
   embedded?: boolean;
   showAppsButton?: boolean;
   isSubmitting?: boolean;
-  mountMode?: 'page' | 'dialog';
   onSubmittingAndOrPendingChange?(value: onSubmittingAndOrPendingChangeProps): void;
 }
 
 export function SiteConfigurationManagement(props: SiteConfigurationManagementProps) {
-  const { embedded, showAppsButton, onSubmittingAndOrPendingChange, isSubmitting, mountMode } = props;
+  const { embedded, showAppsButton, onSubmittingAndOrPendingChange, isSubmitting } = props;
   const site = useActiveSiteId();
   const { username } = useActiveUser();
   const sessionStorageKey = `craftercms.${username}.projectToolsConfigurationData.${site}`;
