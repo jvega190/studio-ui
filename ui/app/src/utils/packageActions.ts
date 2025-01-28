@@ -123,7 +123,7 @@ export const packageActionDispatcher = ({
       dispatch(
         showPublishingPackageReviewDialog({
           packageId: (pkg as PublishPackage).id,
-          onSuccess: batchActions([closePublishingPackageReviewDialog(), ...(onActionSuccess ? [onActionSuccess] : [])])
+          onSuccess: batchActions([closePublishingPackageReviewDialog(), onActionSuccess].filter(Boolean))
         })
       );
       break;
@@ -133,10 +133,7 @@ export const packageActionDispatcher = ({
         showPublishingPackageResubmitDialog({
           pkg,
           type: option,
-          onSuccess: batchActions([
-            closePublishingPackageResubmitDialog(),
-            ...(onActionSuccess ? [onActionSuccess] : [])
-          ])
+          onSuccess: batchActions([closePublishingPackageResubmitDialog(), onActionSuccess].filter(Boolean))
         })
       );
       break;
@@ -145,14 +142,14 @@ export const packageActionDispatcher = ({
         dispatch(
           showBulkCancelPackageDialog({
             packages: pkg,
-            onSuccess: batchActions([closeBulkCancelPackageDialog(), ...(onActionSuccess ? [onActionSuccess] : [])])
+            onSuccess: batchActions([closeBulkCancelPackageDialog(), onActionSuccess].filter(Boolean))
           })
         );
       } else {
         dispatch(
           showCancelPackageDialog({
             packageId: pkg.id,
-            onSuccess: batchActions([closeCancelPackageDialog(), ...(onActionSuccess ? [onActionSuccess] : [])])
+            onSuccess: batchActions([closeCancelPackageDialog(), onActionSuccess].filter(Boolean))
           })
         );
       }
