@@ -46,7 +46,7 @@
   * `state` is now `approvalState`.
   * Added `title`, `submittedOn`, `reviewedOn`,`packageState`, `reviewer`, `liveError`, `stagingError`, `publishedOn`, `packageType`, `commitId`, `publishedStagingCommitId` and `publishedLiveCommitId` props.
 * `PublishFormData` interface change: Added `title` prop. 
-* `approvePublish` anb `rejectPublish` are no longer item actions.
+* `approvePublish` anb `rejectPublish` are no longer item actions in BaseItem's `availableActionsMap` property.
 * [SiteDashboard/utils] Renamed `getValidatedSelectionState` to `getItemsValidatedSelectionState`.
 
 ## 4.2.0
