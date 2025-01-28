@@ -1699,7 +1699,6 @@ __metadata:
     "@types/js-cookie": "npm:^3.0.6"
     "@types/react": "npm:^18.3.2"
     "@types/react-dom": "npm:^18.3.0"
-    "@types/react-infinite-scroller": "npm:^1.2.5"
     "@types/react-swipeable-views": "npm:^0.13.5"
     "@types/react-window": "npm:^1"
     "@types/react-window-infinite-loader": "npm:^1"
@@ -1739,7 +1738,6 @@ __metadata:
     react-animations: "npm:^1.0.0"
     react-dom: "npm:18.3.1"
     react-hotkeys-hook: "npm:^4.5.0"
-    react-infinite-scroller: "npm:^1.2.6"
     react-intl: "npm:^6.6.8"
     react-redux: "npm:^9.1.2"
     react-router-dom: "npm:^6.23.1"
@@ -4552,15 +4550,6 @@ __metadata:
   dependencies:
     "@types/react": "npm:*"
   checksum: 10/6ff53f5a7b7fba952a68e114d3b542ebdc1e87a794234785ebab0bcd9bde7fb4885f21ebaf93d26dc0a1b5b93287f42cad68b78ae04dddf6b20da7aceff0beaf
-  languageName: node
-  linkType: hard
-
-"@types/react-infinite-scroller@npm:^1.2.5":
-  version: 1.2.5
-  resolution: "@types/react-infinite-scroller@npm:1.2.5"
-  dependencies:
-    "@types/react": "npm:*"
-  checksum: 10/8b56f63c35802d2593cc25b3ab03bfbeceb2a5379997364fb5cea414cc8690341fbf3902d8fc7a6db43f87c144276009cb4a7f3388f1a52091ac3a4fd7de7d33
   languageName: node
   linkType: hard
 
@@ -10847,7 +10836,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prop-types@npm:^15.5.4, prop-types@npm:^15.5.8, prop-types@npm:^15.6.0, prop-types@npm:^15.6.2, prop-types@npm:^15.8.1":
+"prop-types@npm:^15.5.4, prop-types@npm:^15.6.0, prop-types@npm:^15.6.2, prop-types@npm:^15.8.1":
   version: 15.8.1
   resolution: "prop-types@npm:15.8.1"
   dependencies:
@@ -10991,17 +10980,6 @@ __metadata:
     react: ">=16.8.1"
     react-dom: ">=16.8.1"
   checksum: 10/f83d4ef7d56e40717f293d936101fb9d72f83b92568d5eb85594cf99e2b7c66556ff8f94e6dd9008813c7d097185593ff1b716b941ccf7ebf1969fecb4dc4b84
-  languageName: node
-  linkType: hard
-
-"react-infinite-scroller@npm:^1.2.6":
-  version: 1.2.6
-  resolution: "react-infinite-scroller@npm:1.2.6"
-  dependencies:
-    prop-types: "npm:^15.5.8"
-  peerDependencies:
-    react: ^0.14.9 || ^15.3.0 || ^16.0.0 || ^17.0.0 || ^18.0.0
-  checksum: 10/d37d3dfc99029e203631b155cc92181453f14cef1cfbbf9bb05504a67b97eedc0771ca6848d110d846c26e3001981702baefd951bcdcdf9fbec15b5dfb420cad
   languageName: node
   linkType: hard
 
