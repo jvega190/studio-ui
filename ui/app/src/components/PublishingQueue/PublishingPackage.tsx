@@ -23,7 +23,6 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import '../../styles/animations.scss';
-import { READY_FOR_LIVE } from './constants';
 import PrimaryButton from '../PrimaryButton';
 import { ApiResponse, PublishPackage } from '../../models';
 import { getPackageStateLabel, isReady } from '../PublishPackageReviewDialog/utils';
