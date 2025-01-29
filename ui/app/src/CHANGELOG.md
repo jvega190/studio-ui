@@ -14,6 +14,7 @@
   * `PublishingQueue/FilterDropdown`: Removed `filterStates` prop.
   * `PackageDetailsDialog`: Update packageId prop to be of type number.
   * Removed `WorkflowCancellationDialog`. Replaced by `ViewPackagesDialog`.
+  * Removed `UnlockPublisherDialog` component.
 * [hooks]
   * Removed `useLogicResource` hook.
   * Removed `useSelectorResource` hook.
@@ -38,14 +39,15 @@
   * Removed `publishing/start` and `publishing/stop` services, replaced by `publishing/enable`.
   * Removed `publishing/bulkGoLive`, `publishing/publishByCommits` and `publishing/publishAll` services, replaced by `publishing/publish`.
   * Removed `content/fetchWorkflowAffectedItems` service. Now workflow affected validation is checked against packages using `workflow/fetchAffectedPackages`.
-* `PublishingItem` interface changes: 
+  * Removed `publishing/clearLock` service.
+* `PublishingItem` interface changes:
   * `approver` is now `reviewer`, of type Person.
   * `comment` is removed, and now there's `reviewerComment` and `submitterComment`.
   * `environment` is now `target`.
   * `items` is now of type `PublishingItem[]`.
   * `state` is now `approvalState`.
   * Added `title`, `submittedOn`, `reviewedOn`,`packageState`, `reviewer`, `liveError`, `stagingError`, `publishedOn`, `packageType`, `commitId`, `publishedStagingCommitId` and `publishedLiveCommitId` props.
-* `PublishFormData` interface change: Added `title` prop. 
+* `PublishFormData` interface change: Added `title` prop.
 * `approvePublish` anb `rejectPublish` are no longer item actions in BaseItem's `availableActionsMap` property.
 * [SiteDashboard/utils] Renamed `getValidatedSelectionState` to `getItemsValidatedSelectionState`.
 
@@ -96,7 +98,7 @@
 * Upgraded target compilation to ES2022, dropping many code transforms for features that are supported by most modern browsers such as nullish coalescing, optional chaining, object spreading and destructuring.
 * The `allowedContentTypes` ContentTypeField validation changed from being an array to a Record<contentTypeId, { embedded?: true; shared?: true; sharedExisting?: true; }>
 * Remove legacy `browseCMIS` dialog and `openCMISBrowse` function from common-api.
-* Remove `CMIS-repo`, `CMIS-upload`, `img-cmis-repo`, `img-CMIS-upload`, `video-cmis-repo` and `video-CMIS-upload` datasources. 
+* Remove `CMIS-repo`, `CMIS-upload`, `img-cmis-repo`, `img-CMIS-upload`, `video-cmis-repo` and `video-CMIS-upload` datasources.
 * `ICEConfig` TypeScript `interface` changed to be `type`. It now accepts either the (model) or (modelId & path).
 * The `acecode` TinyMCE plugin (for code-highlighted Rich Text Editor code editing), renders the code exactly as Tiny provides without decoding entities.
 * `compareVersion` action creator was removed as the action is no longer in use and handled.
