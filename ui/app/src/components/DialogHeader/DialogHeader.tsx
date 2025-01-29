@@ -16,7 +16,6 @@
 
 import Typography, { TypographyProps } from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
-import { makeStyles } from 'tss-react/mui';
 import CloseIconRounded from '@mui/icons-material/CloseRounded';
 import MinimizeIconRounded from '@mui/icons-material/RemoveRounded';
 import ArrowBack from '@mui/icons-material/ArrowBackIosRounded';
@@ -27,49 +26,8 @@ import StandardAction from '../../models/StandardAction';
 import Action, { DialogHeaderActionProps } from '../DialogHeaderAction/DialogHeaderAction';
 import OpenInFullIcon from '@mui/icons-material/OpenInFullRounded';
 import { SystemIconDescriptor } from '../SystemIcon';
-import { CSSObject } from 'tss-react';
 import Box from '@mui/material/Box';
 import { PartialSxRecord } from '../../models';
-
-const dialogTitleStyles = makeStyles()((theme) => ({
-  root: {
-    margin: 0,
-    display: 'flex',
-    flex: '0 0 auto',
-    flexWrap: 'wrap',
-    borderBottom: `1px solid ${theme.palette.divider}`,
-    padding: theme.spacing(1),
-    background: theme.palette.background.paper,
-    ...(theme.mixins.toolbar as CSSObject)
-  },
-  titleWrapper: {
-    display: 'flex',
-    width: '100%',
-    alignItems: 'center'
-  },
-  title: {
-    padding: `0 ${theme.spacing(1)}`,
-    overflow: 'hidden',
-    whiteSpace: 'nowrap',
-    textOverflow: 'ellipsis'
-  },
-  subtitle: {
-    fontSize: '14px',
-    lineHeight: '18px'
-  },
-  subtitleWrapper: {
-    padding: theme.spacing(1),
-    paddingTop: 0
-  },
-  leftActions: {
-    whiteSpace: 'nowrap'
-  },
-  rightActions: {
-    marginLeft: 'auto',
-    whiteSpace: 'nowrap'
-  },
-  backIcon: {}
-}));
 
 export interface DialogHeaderStateAction {
   icon: SystemIconDescriptor;
@@ -97,6 +55,16 @@ const translations = defineMessages({
   }
 });
 
+export type DialogHeaderClassKey =
+  | 'root'
+  | 'titleWrapper'
+  | 'title'
+  | 'subtitle'
+  | 'subtitleWrapper'
+  | 'leftActions'
+  | 'rightActions'
+  | 'backIcon';
+
 export type DialogHeaderProps<
   PrimaryTypographyComponent extends ElementType = 'h2',
   SecondaryTypographyComponent extends ElementType = 'p'
@@ -112,11 +80,9 @@ export type DialogHeaderProps<
   minimizeIcon?: ElementType;
   fullScreenIcon?: ElementType;
   backIcon?: ElementType;
-  classes?: Partial<Record<'root' | 'titleWrapper' | 'subtitleWrapper', string>>;
+  classes?: Partial<Record<DialogHeaderClassKey, string>>;
   className?: string;
-  sxs?: PartialSxRecord<
-    'root' | 'titleWrapper' | 'title' | 'subtitle' | 'subtitleWrapper' | 'leftActions' | 'rightActions' | 'backIcon'
-  >;
+  sxs?: PartialSxRecord<DialogHeaderClassKey>;
   disabled?: boolean;
   onCloseButtonClick?(e: React.MouseEvent<HTMLButtonElement, MouseEvent>, reason: string): void;
   onMinimizeButtonClick?(e: React.MouseEvent<HTMLButtonElement, MouseEvent>): void;
@@ -126,7 +92,6 @@ export type DialogHeaderProps<
 
 export function DialogHeader(props: DialogHeaderProps) {
   // region
-  const { classes, cx } = dialogTitleStyles();
   const { formatMessage } = useIntl();
   const {
     id,
@@ -157,16 +122,34 @@ export function DialogHeader(props: DialogHeaderProps) {
   } = props;
   // endregion
   return (
-    <Box id={id} className={cx(className, classes.root, props.classes?.root)} sx={sxs?.root}>
-      <Box component="section" className={cx(classes.titleWrapper, props.classes?.titleWrapper)} sx={sxs?.titleWrapper}>
+    <Box
+      id={id}
+      className={[className, props.classes?.root].filter(Boolean).join(' ')}
+      sx={{
+        margin: 0,
+        display: 'flex',
+        flex: '0 0 auto',
+        flexWrap: 'wrap',
+        borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+        padding: (theme) => theme.spacing(1),
+        background: (theme) => theme.palette.background.paper,
+        ...(theme) => theme.mixins.toolbar,
+        ...sxs?.root
+      }}
+    >
+      <Box
+        component="section"
+        className={props.classes?.titleWrapper}
+        sx={{ display: 'flex', width: '100%', alignItems: 'center', ...sxs?.titleWrapper }}
+      >
         {(leftActions || onBack) && (
-          <Box className={classes.leftActions} sx={sxs?.leftActions}>
+          <Box className={props.classes?.leftActions} sx={{ whiteSpace: 'nowrap', ...sxs?.leftActions }}>
             {onBack && (
               <Tooltip title={disabled ? '' : formatMessage(translations.back)}>
                 <IconButton
                   aria-label="close"
                   onClick={onBack}
-                  className={classes.backIcon}
+                  className={props.classes?.backIcon}
                   sx={sxs?.backIcon}
                   size="large"
                   disabled={disabled}
@@ -180,11 +163,24 @@ export function DialogHeader(props: DialogHeaderProps) {
             ))}
           </Box>
         )}
-        <Typography className={classes.title} {...titleTypographyProps} sx={sxs?.title}>
+        <Typography
+          {...titleTypographyProps}
+          className={props.classes?.title}
+          sx={{
+            padding: (theme) => `0 ${theme.spacing(1)}`,
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
+            ...sxs?.title
+          }}
+        >
           {title}
         </Typography>
         {(rightActions || onCloseButtonClick || onMinimizeButtonClick || onFullScreenButtonClick) && (
-          <Box className={classes.rightActions} sx={sxs?.rightActions}>
+          <Box
+            className={props.classes?.rightActions}
+            sx={{ marginLeft: 'auto', whiteSpace: 'nowrap', ...sxs?.rightActions }}
+          >
             {rightActions?.map(({ icon, 'aria-label': tooltip, ...rest }: DialogHeaderActionProps, i: number) => (
               <Action key={i} icon={icon} tooltip={tooltip} disabled={disabled} {...rest} />
             ))}
@@ -220,11 +216,15 @@ export function DialogHeader(props: DialogHeaderProps) {
       {(subtitle || children) && (
         <Box
           component="section"
-          className={cx(classes.subtitleWrapper, props.classes?.subtitleWrapper)}
-          sx={sxs?.subtitleWrapper}
+          className={props.classes?.subtitleWrapper}
+          sx={{ padding: (theme) => theme.spacing(1), paddingTop: 0, ...sxs?.subtitleWrapper }}
         >
           {subtitle && (
-            <Typography className={classes.subtitle} {...subtitleTypographyProps} sx={sxs?.subtitle}>
+            <Typography
+              {...subtitleTypographyProps}
+              className={props.classes?.subtitle}
+              sx={{ fontSize: '14px', lineHeight: '18px', ...sxs?.subtitle }}
+            >
               {subtitle}
             </Typography>
           )}

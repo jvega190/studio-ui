@@ -15,7 +15,6 @@
  */
 
 import React from 'react';
-import { makeStyles } from 'tss-react/mui';
 import Accordion from '@mui/material/Accordion';
 import { PathNavigatorHeader } from '../PathNavigator/PathNavigatorHeader';
 import AccordionDetails from '@mui/material/AccordionDetails';
@@ -28,6 +27,9 @@ import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import { FormattedMessage } from 'react-intl';
 import { ErrorState } from '../ErrorState';
 import { SimpleTreeView } from '@mui/x-tree-view';
+import { PartialSxRecord } from '../../models';
+
+export type PathNavigatorTreeUIClassKey = 'root' | 'body' | 'header';
 
 export interface PathNavigatorTreeUIProps
   extends Pick<
@@ -56,36 +58,12 @@ export interface PathNavigatorTreeUIProps
   onMoreClick(path: string): void;
   isCollapsed: boolean;
   expandedNodes: string[];
-  classes?: Partial<Record<'root' | 'body' | 'header', string>>;
+  classes?: Partial<Record<PathNavigatorTreeUIClassKey, string>>;
+  sxs?: PartialSxRecord<PathNavigatorTreeUIClassKey>;
   active?: PathNavigatorTreeItemProps['active'];
 }
 
-const useStyles = makeStyles()(() => ({
-  root: {},
-  accordion: {
-    boxShadow: 'none',
-    backgroundColor: 'inherit',
-    '&.Mui-expanded': {
-      margin: 'inherit'
-    }
-  },
-  accordionDetails: {
-    padding: 0,
-    flexDirection: 'column'
-  },
-  loading: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '2px',
-    marginLeft: '5px',
-    '& p': {
-      marginLeft: '10px'
-    }
-  }
-}));
-
 export function PathNavigatorTreeUI(props: PathNavigatorTreeUIProps) {
-  const { classes, cx } = useStyles();
   // region const { ... } = props
   const {
     icon,
@@ -111,7 +89,8 @@ export function PathNavigatorTreeUI(props: PathNavigatorTreeUIProps) {
     showNavigableAsLinks,
     showPublishingTarget,
     showWorkflowState,
-    showItemMenu
+    showItemMenu,
+    sxs
   } = props;
   // endregion
   return (
@@ -122,15 +101,20 @@ export function PathNavigatorTreeUI(props: PathNavigatorTreeUIProps) {
       TransitionProps={{ unmountOnExit: true }}
       expanded={!isCollapsed}
       onChange={() => onChangeCollapsed(!isCollapsed)}
-      className={cx(
-        classes.accordion,
-        props.classes?.root,
-        container?.baseClass,
-        container ? (isCollapsed ? container.collapsedClass : container.expandedClass) : void 0
-      )}
+      className={props.classes?.root}
       style={{
         ...container?.baseStyle,
         ...(container ? (isCollapsed ? container.collapsedStyle : container.expandedStyle) : void 0)
+      }}
+      sx={{
+        boxShadow: 'none',
+        backgroundColor: 'inherit',
+        '&.Mui-expanded': {
+          margin: 'inherit'
+        },
+        ...sxs?.root,
+        ...container?.baseSxs,
+        ...(isCollapsed ? container?.collapsedSxs : container?.expandedSxs)
       }}
     >
       <PathNavigatorHeader
@@ -142,10 +126,11 @@ export function PathNavigatorTreeUI(props: PathNavigatorTreeUIProps) {
         collapsed={isCollapsed}
         onMenuButtonClick={onHeaderButtonClick}
         className={props.classes?.header}
+        sx={sxs?.header}
       />
       {isRootPathMissing ? (
         <ErrorState
-          styles={{ image: { display: 'none' } }}
+          sxs={{ image: { display: 'none' } }}
           title={
             <FormattedMessage
               id="pathNavigatorTree.missingRootPath"
@@ -155,8 +140,8 @@ export function PathNavigatorTreeUI(props: PathNavigatorTreeUIProps) {
           }
         />
       ) : (
-        <AccordionDetails className={cx(classes.accordionDetails, props.classes?.body)}>
-          <SimpleTreeView className={classes.root} expandedItems={expandedNodes} disableSelection>
+        <AccordionDetails className={props.classes?.body} sx={{ padding: 0, flexDirection: 'column', ...sxs?.body }}>
+          <SimpleTreeView expandedItems={expandedNodes} disableSelection>
             <PathNavigatorTreeItem
               path={rootPath}
               active={active}

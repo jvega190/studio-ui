@@ -102,7 +102,8 @@ export function PublishDialogUI(props: PublishDialogUIProps) {
           <SecondaryButton
             color="primary"
             onClick={onClickShowAllDeps}
-            className={classes.leftAlignedAction}
+            className={classes?.leftAlignedAction}
+            sx={{ marginRight: 'auto' }}
             disabled={isSubmitting || state.fetchingDependencies}
             loading={state.fetchingDependencies}
           >

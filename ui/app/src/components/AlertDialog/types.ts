@@ -16,8 +16,9 @@
 
 import { ReactNode } from 'react';
 import { DialogProps } from '@mui/material/Dialog';
-import { ConfirmDialogStateStyles } from '../ConfirmDialog';
 import { PartialSxRecord } from '../../models';
+
+export type AlertDialogClassKey = 'root' | 'image' | 'body' | 'title' | 'footer';
 
 export interface AlertDialogBaseProps {
   title?: ReactNode;
@@ -28,9 +29,8 @@ export interface AlertDialogBaseProps {
   disableEscapeKeyDown?: boolean;
   disableBackdropClick?: boolean;
   maxWidth?: DialogProps['maxWidth'];
-  styles?: ConfirmDialogStateStyles;
   buttons?: ReactNode;
-  sxs?: PartialSxRecord<'root' | 'image' | 'body' | 'title' | 'footer'>;
+  sxs?: PartialSxRecord<AlertDialogClassKey>;
 }
 
 export interface AlertDialogProps extends AlertDialogBaseProps, Omit<DialogProps, 'title' | 'classes'> {

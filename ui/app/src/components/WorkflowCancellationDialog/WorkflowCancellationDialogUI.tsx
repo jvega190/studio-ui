@@ -34,7 +34,15 @@ export function WorkflowCancellationDialogUI(props: WorkflowCancellationDialogUI
         <Typography variant="overline">
           <FormattedMessage defaultMessage="Items on this package" />
         </Typography>
-        <List className={classes.filesList}>
+        <List
+          className={classes?.filesList}
+          sx={(theme) => ({
+            height: '100%',
+            border: `1px solid ${theme.palette.divider}`,
+            background: theme.palette.background.paper,
+            padding: 0
+          })}
+        >
           {items.map((item) => (
             <ListItem key={item.path}>
               <ListItemText

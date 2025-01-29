@@ -19,8 +19,10 @@ import TextField from '@mui/material/TextField';
 import { FormattedMessage } from 'react-intl';
 import PasswordTextField from '../PasswordTextField/PasswordTextField';
 import Button from '@mui/material/Button';
-import { makeStyles } from 'tss-react/mui';
 import { USER_PASSWORD_MAX_LENGTH, USER_USERNAME_MAX_LENGTH } from '../UserManagement/utils';
+import { PartialSxRecord } from '../../models';
+
+export type LogInFormClassKey = 'username' | 'password' | 'submit' | 'recover';
 
 export type LogInFormProps = PropsWithChildren<{
   username: string;
@@ -30,7 +32,8 @@ export type LogInFormProps = PropsWithChildren<{
   onSetPassword: Function;
   enableUsernameInput?: boolean;
   onSetUsername?: Function;
-  classes?: Partial<Record<'username' | 'password' | 'submit' | 'recover', string>>;
+  classes?: Partial<Record<LogInFormClassKey, string>>;
+  sxs?: PartialSxRecord<LogInFormClassKey>;
   action?: string;
   method?: 'get' | 'post';
   onRecover?: Function;
@@ -38,25 +41,7 @@ export type LogInFormProps = PropsWithChildren<{
   xsrfToken?: string;
 }>;
 
-const useStyles = makeStyles()((theme) => ({
-  spacing: {
-    marginBottom: theme.spacing(1.5)
-  },
-  doubleSpacing: {
-    marginBottom: theme.spacing(2)
-  },
-  inputLabel: {
-    '&.MuiInputLabel-shrink, &[class*="MuiInputLabel-shrink"]': {
-      padding: '0 8px',
-      borderRadius: 10,
-      background: theme.palette.background.paper,
-      transform: 'translate(9px, -6px) scale(.75)'
-    }
-  }
-}));
-
 export function LogInForm(props: LogInFormProps) {
-  const { classes: cls, cx } = useStyles();
   const {
     children,
     username,
@@ -67,6 +52,7 @@ export function LogInForm(props: LogInFormProps) {
     password,
     enableUsernameInput = false,
     classes,
+    sxs,
     action = '/studio/login',
     method = 'post',
     onRecover,
@@ -85,9 +71,22 @@ export function LogInForm(props: LogInFormProps) {
         type="text"
         value={username}
         onChange={(e: any) => onSetUsername?.(e.target.value)}
-        className={cx(cls.spacing, classes?.username)}
+        className={classes?.username}
+        sx={{
+          marginBottom: (theme) => theme.spacing(1.5),
+          ...sxs?.username
+        }}
         label={<FormattedMessage id="loginView.usernameTextFieldLabel" defaultMessage="Username" />}
-        InputLabelProps={{ className: cls.inputLabel }}
+        InputLabelProps={{
+          sx: {
+            '&.MuiInputLabel-shrink, &[class*="MuiInputLabel-shrink"]': {
+              padding: '0 8px',
+              borderRadius: 10,
+              background: (theme) => theme.palette.background.paper,
+              transform: 'translate(9px, -6px) scale(.75)'
+            }
+          }
+        }}
         inputProps={{ maxLength: USER_USERNAME_MAX_LENGTH }}
       />
       <PasswordTextField
@@ -97,9 +96,24 @@ export function LogInForm(props: LogInFormProps) {
         autoFocus={!enableUsernameInput || Boolean(username)}
         value={password}
         onChange={(e: any) => onSetPassword?.(e.target.value)}
-        className={cx(cls.spacing, classes?.password, 'last-before-button')}
+        className={['last-before-button', classes?.password].join(' ')}
+        sxs={{
+          root: {
+            marginBottom: (theme) => theme.spacing(1.5),
+            ...sxs?.password
+          }
+        }}
         label={<FormattedMessage id="authMonitor.passwordTextFieldLabel" defaultMessage="Password" />}
-        InputLabelProps={{ className: cls.inputLabel }}
+        InputLabelProps={{
+          sx: {
+            '&.MuiInputLabel-shrink, &[class*="MuiInputLabel-shrink"]': {
+              padding: '0 8px',
+              borderRadius: 10,
+              background: (theme) => theme.palette.background.paper,
+              transform: 'translate(9px, -6px) scale(.75)'
+            }
+          }
+        }}
         inputProps={{ maxLength: USER_PASSWORD_MAX_LENGTH }}
       />
       {xsrfParamName && <input type="hidden" name={xsrfParamName} value={xsrfToken} />}
@@ -109,7 +123,8 @@ export function LogInForm(props: LogInFormProps) {
         fullWidth
         type="submit"
         disabled={isFetching}
-        className={cx(onRecover && cls.spacing, classes?.submit)}
+        className={classes?.submit}
+        sx={[onRecover && { marginBottom: (theme) => theme.spacing(1.5) }]}
       >
         <FormattedMessage id="loginView.loginButtonLabel" defaultMessage="Log In" />
       </Button>
@@ -121,6 +136,7 @@ export function LogInForm(props: LogInFormProps) {
           variant="text"
           fullWidth
           className={classes?.recover}
+          sx={sxs?.recover}
           onClick={() => onRecover()}
         >
           <FormattedMessage id="loginView.forgotPasswordButtonLabel" defaultMessage="Forgot your password?" />

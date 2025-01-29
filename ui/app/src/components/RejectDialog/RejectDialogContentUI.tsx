@@ -20,26 +20,42 @@ import ListSubheader from '@mui/material/ListSubheader';
 import { FormattedMessage } from 'react-intl';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import Checkbox from '@mui/material/Checkbox';
-import ListItemText from '@mui/material/ListItemText';
+import ListItemText, { listItemTextClasses } from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import React from 'react';
 import ListItemButton from '@mui/material/ListItemButton';
+import Box from '@mui/material/Box';
 
 export function RejectDialogContentUI(props: RejectDialogContentUIProps) {
   const { items: rejectItems, checkedItems, onUpdateChecked, classes } = props;
   return (
     <List
       subheader={
-        <ListSubheader component="div" className={classes.listSubHeader}>
-          <label className={classes.subHeaderItem}>
+        <ListSubheader
+          component="div"
+          className={classes?.listSubHeader}
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+            lineHeight: '30px'
+          }}
+        >
+          <Box component="label" className={classes?.subHeaderItem} sx={{ marginLeft: '40px' }}>
             <FormattedMessage id="words.item" defaultMessage="Item" />
-          </label>
+          </Box>
           <label>
             <FormattedMessage id="rejectDialog.submittedBy" defaultMessage="Submitted By" />
           </label>
         </ListSubheader>
       }
-      className={classes.itemsList}
+      className={classes?.itemsList}
+      sx={(theme) => ({
+        border: `1px solid ${theme.palette.divider}`,
+        background: theme.palette.background.paper,
+        padding: 0,
+        height: '100%'
+      })}
     >
       {rejectItems.map((item) => {
         const labelId = `checkbox-list-label-${item.path}`;
@@ -61,13 +77,29 @@ export function RejectDialogContentUI(props: RejectDialogContentUIProps) {
               secondary={item.path}
               id={labelId}
               primaryTypographyProps={{
-                classes: { root: classes.ellipsis }
+                classes: { root: classes?.ellipsis }
               }}
               secondaryTypographyProps={{
-                classes: { root: classes.ellipsis }
+                classes: { root: classes?.ellipsis }
+              }}
+              sx={{
+                [`& .${listItemTextClasses.primary}, & .${listItemTextClasses.secondary}`]: {
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }
               }}
             />
-            <ListItemText disableTypography={true} className={classes.submittedBy}>
+            <ListItemText
+              disableTypography={true}
+              className={classes?.submittedBy}
+              sx={{
+                flexGrow: 0,
+                width: '100px',
+                textAlign: 'right',
+                alignSelf: 'flex-start'
+              }}
+            >
               <Typography>{item.modifier?.username}</Typography>
             </ListItemText>
           </ListItemButton>
