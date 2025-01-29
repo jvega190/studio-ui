@@ -64,7 +64,6 @@ const AuthMonitor = lazy(() => import('../AuthMonitor'));
 const PublishingStatusDialog = lazy(() => import('../PublishingStatusDialog'));
 const UIBlocker = lazy(() => import('../UIBlocker'));
 const PathSelectionDialog = lazy(() => import('../PathSelectionDialog'));
-const UnlockPublisherDialog = lazy(() => import('../UnlockPublisherDialog'));
 const WidgetDialog = lazy(() => import('../WidgetDialog'));
 const CodeEditorDialog = lazy(() => import('../CodeEditorDialog'));
 const BrokenReferencesDialog = lazy(() => import('../BrokenReferencesDialog'));
@@ -550,16 +549,6 @@ function GlobalDialogManager() {
         {...state.publishingStatus}
         onClose={createCallback(state.publishingStatus.onClose, dispatch)}
         onRefresh={createCallback(state.publishingStatus.onRefresh, dispatch)}
-        onUnlock={createCallback(state.publishingStatus.onUnlock, dispatch)}
-      />
-      {/* endregion */}
-
-      {/* region Unlock Publisher Dialog */}
-      <UnlockPublisherDialog
-        open={state.unlockPublisher.open}
-        onError={createCallback(state.unlockPublisher.onError, dispatch)}
-        onCancel={createCallback(state.unlockPublisher.onCancel, dispatch)}
-        onComplete={createCallback(state.unlockPublisher.onComplete, dispatch)}
       />
       {/* endregion */}
 

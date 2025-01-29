@@ -106,10 +106,6 @@ export function enable(siteId: string, enable: boolean): Observable<ApiResponse>
   return postJSON(`/studio/api/2/publish/${siteId}/enable`, { enable }).pipe(map(({ response }) => response));
 }
 
-export function clearLock(siteId: string): Observable<boolean> {
-  return postJSON('/studio/api/2/publish/clear_lock', { siteId }).pipe(map(() => true));
-}
-
 export function publish(siteId: string, data: PublishParams): Observable<string> {
   return postJSON(`/studio/api/2/publish/${siteId}/package`, data).pipe(map(({ response }) => response?.packageId));
 }

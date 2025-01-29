@@ -24,7 +24,6 @@ import { ItemMenuStateProps } from '../../components/ItemActionsMenu';
 import { ItemMegaMenuStateProps } from '../../components/ItemMegaMenu';
 import { LauncherStateProps } from '../../components/Launcher';
 import { PublishingStatusDialogStateProps } from '../../components/PublishingStatusDialog';
-import { UnlockPublisherDialogStateProps } from '../../components/UnlockPublisherDialog';
 import { WidgetDialogStateProps } from '../../components/WidgetDialog/utils';
 import { CodeEditorDialogStateProps } from '../../components/CodeEditorDialog';
 import { PublishDialogStateProps } from '../../components/PublishDialog/utils';
@@ -281,12 +280,6 @@ export const showPublishingStatusDialog = /*#__PURE__*/ createAction<Partial<Pub
   'SHOW_PUBLISHING_STATUS_DIALOG'
 );
 export const closePublishingStatusDialog = /*#__PURE__*/ createAction('HIDE_PUBLISHING_STATUS_DIALOG');
-// endregion
-
-// region Unlock Publisher Dialog
-export const showUnlockPublisherDialog =
-  /*#__PURE__*/ createAction<Partial<UnlockPublisherDialogStateProps>>('SHOW_UNLOCK_PUBLISHER_DIALOG');
-export const closeUnlockPublisherDialog = /*#__PURE__*/ createAction('CLOSE_UNLOCK_PUBLISHER_DIALOG');
 // endregion
 
 // region Widget Dialog

@@ -21,10 +21,6 @@ import DialogBody from '../DialogBody/DialogBody';
 import * as React from 'react';
 import PublishingStatusDisplay, { publishingStatusMessages } from '../PublishingStatusDisplay';
 import { PublishingStatusDialogContainerProps } from './utils';
-import { useState } from 'react';
-import Menu from '@mui/material/Menu';
-import Typography from '@mui/material/Typography';
-import MenuItem from '@mui/material/MenuItem';
 import useActiveUser from '../../hooks/useActiveUser';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
 
@@ -38,23 +34,13 @@ const useStyles = makeStyles()(() => ({
 const permittedRoles = ['developer', 'admin'];
 
 export function PublishingStatusDialogContainer(props: PublishingStatusDialogContainerProps) {
-  const { enabled, published, currentTask, onClose, onRefresh, onUnlock, onStartStop, isFetching } = props;
+  const { enabled, published, currentTask, onClose, onRefresh, onStartStop, isFetching } = props;
   const { classes } = useStyles();
   const { formatMessage } = useIntl();
-  const [unlockAnchorEl, setUnlockAnchorEl] = useState(null);
   const user = useActiveUser();
   const siteId = useActiveSiteId();
   const userRoles = user?.rolesBySite[siteId];
   const allowedUser = (userRoles && permittedRoles?.some((role) => userRoles.includes(role))) ?? false;
-
-  const handleClose = () => {
-    setUnlockAnchorEl(null);
-  };
-
-  const handleConfirm = () => {
-    handleClose();
-    onUnlock();
-  };
 
   return (
     <>
@@ -62,14 +48,6 @@ export function PublishingStatusDialogContainer(props: PublishingStatusDialogCon
         title={formatMessage(publishingStatusMessages.publishingStatus)}
         onCloseButtonClick={onClose}
         rightActions={[
-          onUnlock &&
-            allowedUser && {
-              icon: { id: '@mui/icons-material/LockOpenRounded' },
-              onClick: (e) => {
-                setUnlockAnchorEl(e.currentTarget);
-              },
-              tooltip: formatMessage(publishingStatusMessages.unlock)
-            },
           onStartStop &&
             allowedUser && {
               icon: enabled
@@ -93,30 +71,6 @@ export function PublishingStatusDialogContainer(props: PublishingStatusDialogCon
           currentTask={currentTask}
         />
       </DialogBody>
-      <Menu
-        anchorEl={unlockAnchorEl}
-        open={Boolean(unlockAnchorEl)}
-        onClose={handleClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right'
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right'
-        }}
-      >
-        <Typography
-          variant="body1"
-          sx={{
-            padding: '10px 16px 10px 16px'
-          }}
-        >
-          {formatMessage(publishingStatusMessages.confirmUnlockPublisher)}
-        </Typography>
-        <MenuItem onClick={handleClose}>{formatMessage(publishingStatusMessages.no)}</MenuItem>
-        <MenuItem onClick={handleConfirm}>{formatMessage(publishingStatusMessages.yes)}</MenuItem>
-      </Menu>
     </>
   );
 }

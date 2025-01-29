@@ -17,20 +17,10 @@
 import * as React from 'react';
 import Paper from '@mui/material/Paper';
 import { PublishingStatusDialogContainer } from '../PublishingStatusDialog';
-import { clearLock, enable } from '../../services/publishing';
+import { enable } from '../../services/publishing';
 import { fetchPublishingStatus } from '../../state/actions/publishingStatus';
 import { useDispatch } from 'react-redux';
 import { useSelection } from '../../hooks/useSelection';
-import { batchActions } from '../../state/actions/misc';
-import { showSystemNotification } from '../../state/actions/system';
-import { defineMessages, useIntl } from 'react-intl';
-
-const messages = defineMessages({
-  publisherUnlocked: {
-    id: 'publishingStatus.publisherUnlocked',
-    defaultMessage: 'Publisher Unlocked'
-  }
-});
 
 type PublishingStatusWidgetProps = {
   siteId: string;
@@ -41,22 +31,10 @@ export function PublishingStatusWidget(props: PublishingStatusWidgetProps) {
   const state = useSelection((state) => state.dialogs.publishingStatus);
   const { enabled, published, currentTask } = state;
   const dispatch = useDispatch();
-  const { formatMessage } = useIntl();
 
   const onStartStop = () => {
     enable(siteId, !state.enabled).subscribe(() => {
       dispatch(fetchPublishingStatus());
-    });
-  };
-
-  const onUnlock = () => {
-    clearLock(siteId).subscribe(() => {
-      dispatch(
-        batchActions([
-          showSystemNotification({ message: formatMessage(messages.publisherUnlocked) }),
-          fetchPublishingStatus()
-        ])
-      );
     });
   };
 
@@ -74,7 +52,6 @@ export function PublishingStatusWidget(props: PublishingStatusWidgetProps) {
         onClose={null}
         onRefresh={onRefresh}
         onStartStop={onStartStop}
-        // onUnlock={lockOwner ? onUnlock : null}
       />
     </Paper>
   );

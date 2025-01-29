@@ -318,7 +318,6 @@ export const components = {
   TransferList: lazy(() => import('../components/TransferList')),
   TransferListColumn: lazy(() => import('../components/TransferListColumn')),
   UIBlocker: lazy(() => import('../components/UIBlocker')),
-  UnlockPublisherDialog: lazy(() => import('../components/UnlockPublisherDialog')),
   UnpublishedDashlet: lazy(() => import('../components/UnpublishedDashlet')),
   UploadDialog: lazy(() => import('../components/UploadDialog')),
   UppyDashboard: lazy(() => import('../components/UppyDashboard')),

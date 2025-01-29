@@ -40,7 +40,6 @@ import itemMenu from './itemMenu';
 import itemMegaMenu from './itemMegaMenu';
 import launcher from './launcher';
 import publishingStatus from './publishingStatus';
-import unlockPublisher from './unlockPublisher';
 import widget from './widget';
 import uiBlocker from './uiBlocker';
 import renameAsset from './renameAsset';
@@ -81,7 +80,6 @@ export default combineReducers({
   itemMegaMenu,
   launcher,
   publishingStatus,
-  unlockPublisher,
   widget,
   uiBlocker,
   brokenReferences,

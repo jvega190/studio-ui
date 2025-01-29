@@ -273,7 +273,6 @@ export * from './ToolsPanelPageButton';
 export * from './TransferList';
 export * from './TransferListColumn';
 export * from './UIBlocker';
-export * from './UnlockPublisherDialog';
 export * from './UnpublishedDashlet';
 export * from './UploadDialog';
 export * from './UppyDashboard';
