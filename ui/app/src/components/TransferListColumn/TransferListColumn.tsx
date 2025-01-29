@@ -72,7 +72,7 @@ export function TransferListColumn(props: TransferListColumnProps) {
     hasMoreItems
   } = props;
   const { classes } = useStyles();
-  const listRef = useRef();
+  const listRef = useRef(undefined);
 
   // If there are more items to be loaded then add an extra row to hold a loading indicator.
   const currentItemsCount = items ? (hasMoreItems ? items.length + 1 : items.length) : 0;

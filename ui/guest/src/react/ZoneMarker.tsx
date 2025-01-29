@@ -125,7 +125,7 @@ export function ZoneMarker(props: ZoneMarkerProps) {
   const isLockedItem = Boolean(lockInfo);
   const [zoneStyle, setZoneStyle] = useState<CSSProperties>();
   const sx = getStyles(props.sx);
-  const elRef = useRef();
+  const elRef = useRef(undefined);
   const theme = useTheme();
   let allowedTypesMeta: LookupTable<Partial<AllowedContentTypesData<boolean>>>;
   let contentTypes: LookupTable<ContentType>;
@@ -187,6 +187,7 @@ export function ZoneMarker(props: ZoneMarkerProps) {
                     );
                     return (
                       <UltraStyledTooltip
+                        key={id}
                         arrow
                         // TODO: i18n
                         title={`Drop target compatible with "${type?.name}" as ${Object.keys(modes)

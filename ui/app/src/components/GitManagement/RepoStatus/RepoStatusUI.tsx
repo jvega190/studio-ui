@@ -80,8 +80,9 @@ export function RepoStatusUI(props: RepoStatusUIProps) {
   const { classes, cx } = useStyles();
   const { formatMessage } = useIntl();
   const hasConflicts = status.conflicting.length > 0;
+  const hasUntracked = status.untracked.length > 0;
   const hasConflictsOrUncommitted = hasConflicts || status.uncommittedChanges.length > 0;
-  return hasConflictsOrUncommitted ? (
+  return hasConflictsOrUncommitted || hasUntracked ? (
     <>
       <GlobalAppToolbar
         title=""
@@ -92,35 +93,42 @@ export function RepoStatusUI(props: RepoStatusUIProps) {
           />
         }
         rightContent={
-          <>
-            <DropDownMenu
-              onMenuItemClick={onBulkAction}
-              variant="outlined"
-              options={[
-                {
-                  id: 'acceptAll',
-                  primaryText: <FormattedMessage defaultMessage="Accept all Remote" />,
-                  disabled: !hasConflicts
-                },
-                {
-                  id: 'keepAll',
-                  primaryText: <FormattedMessage defaultMessage="Keep all Local" />,
-                  disabled: !hasConflicts
-                },
-                {
-                  id: 'revertAll',
-                  primaryText: <FormattedMessage defaultMessage="Revert all" />
-                }
-              ]}
-              menuProps={{ sx: { minWidth: 180 } }}
-              sx={{ mr: 2 }}
-            >
-              <FormattedMessage defaultMessage="Bulk actions" />
-            </DropDownMenu>
-            <Button variant="outlined" className={classes.commitButton} onClick={onCommitClick} disabled={hasConflicts}>
-              <FormattedMessage id="repositories.commitResolution" defaultMessage="Commit Resolution" />
-            </Button>
-          </>
+          hasConflictsOrUncommitted && (
+            <>
+              <DropDownMenu
+                onMenuItemClick={onBulkAction}
+                variant="outlined"
+                options={[
+                  {
+                    id: 'acceptAll',
+                    primaryText: <FormattedMessage defaultMessage="Accept all Remote" />,
+                    disabled: !hasConflicts
+                  },
+                  {
+                    id: 'keepAll',
+                    primaryText: <FormattedMessage defaultMessage="Keep all Local" />,
+                    disabled: !hasConflicts
+                  },
+                  {
+                    id: 'revertAll',
+                    primaryText: <FormattedMessage defaultMessage="Revert all" />
+                  }
+                ]}
+                menuProps={{ sx: { minWidth: 180 } }}
+                sx={{ mr: 2 }}
+              >
+                <FormattedMessage defaultMessage="Bulk actions" />
+              </DropDownMenu>
+              <Button
+                variant="outlined"
+                className={classes.commitButton}
+                onClick={onCommitClick}
+                disabled={hasConflicts}
+              >
+                <FormattedMessage id="repositories.commitResolution" defaultMessage="Commit Resolution" />
+              </Button>
+            </>
+          )
         }
         showHamburgerMenuButton={false}
         showAppsButton={false}
@@ -188,6 +196,26 @@ export function RepoStatusUI(props: RepoStatusUIProps) {
                 <Table>
                   <TableBody>
                     {status.uncommittedChanges.map((file) => (
+                      <GlobalAppGridRow key={file} className="hoverDisabled">
+                        <GlobalAppGridCell>
+                          <span className={classes.fileName}>{file.substr(file.lastIndexOf('/') + 1)}</span> - {file}
+                        </GlobalAppGridCell>
+                      </GlobalAppGridRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Grid>
+          )}
+          {status.untracked.length > 0 && (
+            <Grid size={{ md: 12 }}>
+              <Typography variant="h6" color="textDisabled">
+                <FormattedMessage id="repository.pendingCommit" defaultMessage="Untracked Files" />
+              </Typography>
+              <TableContainer>
+                <Table>
+                  <TableBody>
+                    {status.untracked.map((file) => (
                       <GlobalAppGridRow key={file} className="hoverDisabled">
                         <GlobalAppGridCell>
                           <span className={classes.fileName}>{file.substr(file.lastIndexOf('/') + 1)}</span> - {file}

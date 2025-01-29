@@ -31,8 +31,7 @@ import Typography from '@mui/material/Typography';
 import HighlightOffIcon from '@mui/icons-material/HighlightOffRounded';
 import RefreshIcon from '@mui/icons-material/RefreshRounded';
 import Button from '@mui/material/Button';
-import { alpha } from '@mui/material/styles';
-import palette from '../../styles/palette';
+import { BLOCKED, CANCELLED, COMPLETED, PROCESSING, READY_FOR_LIVE } from './constants';
 import ApiResponseErrorState from '../ApiResponseErrorState';
 import { useSpreadState } from '../../hooks/useSpreadState';
 import {
@@ -168,12 +167,7 @@ const useStyles = makeStyles()((theme) => ({
     padding: '40px 0'
   },
   cancelButton: {
-    paddingRight: '10px',
-    color: palette.orange.main,
-    border: `1px solid ${alpha(palette.orange.main, 0.5)}`,
-    '&:hover': {
-      backgroundColor: alpha(palette.orange.main, 0.08)
-    }
+    paddingRight: '10px'
   }
 }));
 
@@ -253,6 +247,7 @@ function PublishingQueue(props: PublishingQueueProps) {
   const { siteId, readOnly } = props;
   const hasReadyForLivePackages =
     (packages || []).filter((item: PublishPackage) => isReady(item.packageState)).length > 0;
+  const areThereItemsSelected = Object.values(selected).some((value) => value);
   const bulkCancelPackageDialogState = useEnhancedDialogState();
 
   const getPackages = useCallback(
@@ -442,9 +437,7 @@ function PublishingQueue(props: PublishingQueueProps) {
               variant="outlined"
               color="warning"
               onClick={onCancelAll}
-              disabled={
-                !(hasReadyForLivePackages && Object.values(selected).filter((value) => value).length > 0) || readOnly
-              }
+              disabled={!(hasReadyForLivePackages && areThereItemsSelected) || readOnly}
             >
               <FormattedMessage defaultMessage="Cancel Selected" />
             </Button>

@@ -516,9 +516,9 @@ YAHOO.extend(CStudioForms.Controls.NodeSelector, CStudioForms.CStudioFormField, 
       var items = this.items;
       for (var i = 0; i < items.length; i++) {
         var item = items[i];
-        if (item.key == key) {
+        if (item.key === key) {
+          validation.duplicate = true;
           validation.successful = false;
-          validation.message = `The item "${CrafterCMSNext.util.string.escapeHTML(value)}" already exists.`;
           break;
         }
       }
@@ -552,7 +552,7 @@ YAHOO.extend(CStudioForms.Controls.NodeSelector, CStudioForms.CStudioFormField, 
 
       this.count();
       this._onChangeVal(this);
-    } else {
+    } else if (!validation.duplicate) {
       this.showValidationMessage(validation.message);
     }
   },
@@ -630,7 +630,7 @@ YAHOO.extend(CStudioForms.Controls.NodeSelector, CStudioForms.CStudioFormField, 
 
       this.count();
       this._onChangeVal(this);
-    } else {
+    } else if (!validation.duplicate) {
       this.showValidationMessage(validation.message);
     }
   },

@@ -23,8 +23,7 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import '../../styles/animations.scss';
-import { alpha } from '@mui/material/styles';
-import palette from '../../styles/palette';
+import { READY_FOR_LIVE } from './constants';
 import PrimaryButton from '../PrimaryButton';
 import { ApiResponse, PublishPackage } from '../../models';
 import { getPackageStateLabel, isReady } from '../PublishPackageReviewDialog/utils';
@@ -91,12 +90,7 @@ const useStyles = makeStyles()((theme) => ({
     pointerEvents: 'none'
   },
   cancelButton: {
-    paddingRight: '10px',
-    color: palette.orange.main,
-    border: `1px solid ${alpha(palette.orange.main, 0.5)}`,
-    '&:hover': {
-      backgroundColor: alpha(palette.orange.main, 0.08)
-    }
+    paddingRight: '10px'
   },
   username: {
     maxWidth: '390px',
