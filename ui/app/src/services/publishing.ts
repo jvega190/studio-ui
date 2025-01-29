@@ -98,19 +98,7 @@ export interface GoLiveResponse {
 
 export function fetchStatus(siteId: string): Observable<PublishingStatus> {
   return get<Api2ResponseFormat<{ publishingStatus: PublishingStatus }>>(`/studio/api/2/publish/${siteId}/status`).pipe(
-    map((response) => response?.response?.publishingStatus),
-    map((status) => {
-      if (status.status) {
-        return status;
-      } else {
-        console.error(`[/api/2/publish/status?siteId=${siteId}] Status property value was ${status.status}`);
-        return {
-          ...status,
-          // Address backend sending status as null.
-          status: status.status ?? ('' as PublishingStatus['status'])
-        };
-      }
-    })
+    map((response) => response?.response?.publishingStatus)
   );
 }
 

@@ -85,6 +85,7 @@ import { ProjectLifecycleEvent } from '../../models/ProjectLifecycleEvent';
 import { isDashboardAppUrl, isPreviewAppUrl, isProjectToolsAppUrl } from '../../utils/system';
 import { GlobalRoutes } from '../../env/routes';
 import { previewSwitch } from '../../services/security';
+import { getPublishingStatusState } from '../../components';
 
 const msgs = defineMessages({
   siteSwitchedOnAnotherTab: {
@@ -402,7 +403,8 @@ const systemEpics: CrafterCMSEpic[] = [
         fetchStatus(state.sites.active).pipe(
           switchMap((response) => {
             let actions = [fetchPublishingStatusComplete(response)];
-            if (['queued', 'ready', 'stopped', 'error'].includes(response.status)) {
+            const publishingStatusState = getPublishingStatusState(response);
+            if (['ready', 'stopped'].includes(publishingStatusState)) {
               actions.push(fetchPublishingStatusProcessingComplete());
             }
             return actions;
@@ -436,7 +438,9 @@ const systemEpics: CrafterCMSEpic[] = [
     action$.pipe(
       ofType(fetchPublishingStatusComplete.type),
       withLatestFrom(state$),
-      filter(([, state]) => ['processing', 'publishing'].includes(state.dialogs.publishingStatus.status)),
+      filter(([, state]) =>
+        ['processing', 'publishing'].includes(getPublishingStatusState(state.dialogs.publishingStatus))
+      ),
       switchMap(() =>
         interval(1000).pipe(
           startWith(0), // To fetch status immediately

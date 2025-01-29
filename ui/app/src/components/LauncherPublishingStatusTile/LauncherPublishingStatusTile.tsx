@@ -33,8 +33,11 @@ function LauncherPublishingStatusTile() {
   return (
     <Tooltip title={formatMessage(publishingStatusMessages.publishingStatus)} disableFocusListener disableTouchListener>
       <PublishingStatusTile
-        enabled={state.enabled}
-        status={state.status}
+        publishingStatus={{
+          enabled: state.enabled,
+          published: state.published,
+          currentTask: state.currentTask
+        }}
         isFetching={state.isFetching}
         styles={{ root: { background: 'transparent' } }}
         onClick={() => {

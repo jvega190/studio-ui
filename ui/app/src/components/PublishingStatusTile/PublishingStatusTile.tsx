@@ -23,15 +23,14 @@ import { ElementType } from 'react';
 import Skeleton from '@mui/material/Skeleton';
 import { PublishingStatus } from '../../models/Publishing';
 import PublishingStatusAvatar from '../PublishingStatusAvatar/PublishingStatusAvatar';
-import { getPublishingStatusText } from '../PublishingStatusDisplay';
+import { getPublishingStatusState, getPublishingStatusText } from '../PublishingStatusDisplay';
 
 type PublishingStatusTileClassKey = 'root' | 'avatar' | 'text';
 
 type PublishingStatusTileStyles = Partial<Record<PublishingStatusTileClassKey, CSSProperties>>;
 
-export interface PublishingStatusTileProps
-  extends React.HTMLAttributes<HTMLDivElement | HTMLButtonElement>,
-    Pick<PublishingStatus, 'status' | 'enabled'> {
+export interface PublishingStatusTileProps extends React.HTMLAttributes<HTMLDivElement | HTMLButtonElement> {
+  publishingStatus: PublishingStatus;
   isFetching?: boolean;
   styles?: PublishingStatusTileStyles;
   classes?: Partial<Record<PublishingStatusTileClassKey, string>>;
@@ -76,9 +75,10 @@ const PublishingStatusTile = React.forwardRef<HTMLDivElement | HTMLButtonElement
   function (props, ref) {
     const { classes, cx } = usePublishingStatusTileStyles(props.styles);
     const { formatMessage } = useIntl();
-    const { enabled, status, onClick, isFetching, classes: propClasses, ...rest } = props;
+    const { publishingStatus, onClick, isFetching, classes: propClasses, ...rest } = props;
     const Component = onClick ? ('button' as ElementType) : ('div' as ElementType);
-    const statusText = getPublishingStatusText(props, formatMessage);
+    const status = getPublishingStatusState(publishingStatus);
+    const statusText = getPublishingStatusText(publishingStatus, formatMessage);
     return (
       <Component
         ref={ref}
@@ -87,7 +87,7 @@ const PublishingStatusTile = React.forwardRef<HTMLDivElement | HTMLButtonElement
         className={cx(classes.root, propClasses?.root, !isFetching && status)}
       >
         <PublishingStatusAvatar
-          enabled={enabled}
+          enabled={publishingStatus.enabled}
           status={isFetching ? null : status}
           className={cx(classes.avatar, propClasses?.avatar)}
         />

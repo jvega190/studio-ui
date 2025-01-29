@@ -38,22 +38,7 @@ const useStyles = makeStyles()(() => ({
 const permittedRoles = ['developer', 'admin'];
 
 export function PublishingStatusDialogContainer(props: PublishingStatusDialogContainerProps) {
-  const {
-    status,
-    enabled,
-    published,
-    lockOwner,
-    lockTTL,
-    numberOfItems,
-    totalItems,
-    publishingTarget,
-    submissionId,
-    onClose,
-    onRefresh,
-    onUnlock,
-    onStartStop,
-    isFetching
-  } = props;
+  const { enabled, published, currentTask, onClose, onRefresh, onUnlock, onStartStop, isFetching } = props;
   const { classes } = useStyles();
   const { formatMessage } = useIntl();
   const [unlockAnchorEl, setUnlockAnchorEl] = useState(null);
@@ -104,14 +89,8 @@ export function PublishingStatusDialogContainer(props: PublishingStatusDialogCon
         <PublishingStatusDisplay
           enabled={enabled}
           isFetching={isFetching}
-          status={status}
           published={published}
-          lockOwner={lockOwner}
-          lockTTL={lockTTL}
-          numberOfItems={numberOfItems}
-          totalItems={totalItems}
-          publishingTarget={publishingTarget}
-          submissionId={submissionId}
+          currentTask={currentTask}
         />
       </DialogBody>
       <Menu

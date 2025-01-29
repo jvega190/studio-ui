@@ -32,20 +32,14 @@ import { commonDialogProps } from '../../../utils/state';
 
 const initialState: PublishingStatusDialogStateProps = commonDialogProps({
   open: false,
-  enabled: null,
-  status: null,
-  published: null,
   message: null,
-  lockOwner: null,
-  lockTTL: null,
   isFetching: false,
   onClose: closePublishingStatusDialog(),
   onRefresh: fetchPublishingStatus(),
   onUnlock: null,
-  numberOfItems: null,
-  totalItems: null,
-  publishingTarget: null,
-  submissionId: null
+  enabled: null,
+  published: null,
+  currentTask: null
 });
 
 const publishingStatus = createReducer<GlobalState['dialogs']['publishingStatus']>(initialState, (builder) => {
@@ -56,7 +50,7 @@ const publishingStatus = createReducer<GlobalState['dialogs']['publishingStatus'
         ...state,
         ...data,
         // Only show unlock if there is a lockOwner (i.e. if there's a lock)
-        onUnlock: data?.lockOwner ? showUnlockPublisherDialog({}) : null,
+        // onUnlock: data?.lockOwner ? showUnlockPublisherDialog({}) : null,
         open: true
       };
     })

@@ -39,8 +39,7 @@ type PublishingStatusWidgetProps = {
 export function PublishingStatusWidget(props: PublishingStatusWidgetProps) {
   const { siteId } = props;
   const state = useSelection((state) => state.dialogs.publishingStatus);
-  const { enabled, status, lockOwner, published, lockTTL, numberOfItems, publishingTarget, submissionId, totalItems } =
-    state;
+  const { enabled, published, currentTask } = state;
   const dispatch = useDispatch();
   const { formatMessage } = useIntl();
 
@@ -70,18 +69,12 @@ export function PublishingStatusWidget(props: PublishingStatusWidgetProps) {
       <PublishingStatusDialogContainer
         enabled={enabled}
         published={published}
-        status={status}
-        lockOwner={lockOwner}
-        lockTTL={lockTTL}
+        currentTask={currentTask}
         isFetching={!state}
         onClose={null}
         onRefresh={onRefresh}
         onStartStop={onStartStop}
-        onUnlock={lockOwner ? onUnlock : null}
-        numberOfItems={numberOfItems}
-        publishingTarget={publishingTarget}
-        submissionId={submissionId}
-        totalItems={totalItems}
+        // onUnlock={lockOwner ? onUnlock : null}
       />
     </Paper>
   );

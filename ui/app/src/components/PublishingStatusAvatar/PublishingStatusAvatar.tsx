@@ -26,7 +26,8 @@ type PublishingStatusAvatarClassKey = 'root' | 'icon';
 
 type PublishingStatusAvatarStyles = Partial<Record<PublishingStatusAvatarClassKey, CSSProperties>>;
 
-export interface PublishingStatusAvatarProps extends Pick<PublishingStatus, 'enabled' | 'status'> {
+export interface PublishingStatusAvatarProps extends Pick<PublishingStatus, 'enabled'> {
+  status: string;
   className?: string;
   classes?: Partial<Record<PublishingStatusAvatarClassKey, string>>;
   styles?: PublishingStatusAvatarStyles;
@@ -46,23 +47,11 @@ const useStyles = makeStyles<{ styles: PublishingStatusAvatarStyles; stylingTarg
       '&.ready': {
         [stylingTarget]: getPublishingStatusCodeColor('ready', theme)
       },
-      '&.processing': {
-        [stylingTarget]: getPublishingStatusCodeColor('processing', theme)
-      },
       '&.publishing': {
         [stylingTarget]: getPublishingStatusCodeColor('publishing', theme)
       },
-      '&.queued': {
-        [stylingTarget]: getPublishingStatusCodeColor('queued', theme)
-      },
       '&.stopped': {
         [stylingTarget]: getPublishingStatusCodeColor('stopped', theme)
-      },
-      '&.error': {
-        [stylingTarget]: getPublishingStatusCodeColor('error', theme)
-      },
-      '&.readyWithErrors': {
-        [stylingTarget]: getPublishingStatusCodeColor('readyWithErrors', theme)
       },
       ...styles?.root
     },
@@ -74,12 +63,8 @@ const useStyles = makeStyles<{ styles: PublishingStatusAvatarStyles; stylingTarg
   // Var below is for typescript to complain if we ever add/remove codes.
   // eslint-disable-next-line no-unreachable,@typescript-eslint/no-unused-vars
   const control: Record<PublishingStatusCodes, any> = {
-    error: undefined,
-    processing: undefined,
     publishing: undefined,
-    queued: undefined,
     ready: undefined,
-    readyWithErrors: undefined,
     stopped: undefined
   };
   // endregion
@@ -101,7 +86,7 @@ export const PublishingStatusAvatar = React.forwardRef<HTMLDivElement, Publishin
         classes.root,
         props.className,
         props.classes?.root,
-        enabled ? status : enabled === false ? 'error' : null
+        enabled ? status : enabled === false ? 'stopped' : null
       )}
     >
       <CloudUploadOutlined className={cx(props.classes?.icon)} />

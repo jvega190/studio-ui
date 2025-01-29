@@ -49,25 +49,27 @@ export interface CurrentFilters {
   limit: number;
 }
 
-export type PublishingStatusCodes =
-  | 'ready'
-  | 'processing'
-  | 'publishing'
-  | 'queued'
-  | 'stopped'
-  | 'error'
-  | 'readyWithErrors';
+export type PublishingStatusCodes = 'ready' | 'publishing' | 'stopped';
 
 export interface PublishingStatus {
   enabled: boolean;
-  status: PublishingStatusCodes;
-  lockOwner: string;
-  lockTTL: string;
   published: boolean;
-  publishingTarget: string;
-  submissionId: string;
-  numberOfItems: number;
-  totalItems: number;
+  currentTask: {
+    taskId: {
+      siteId: string;
+      packageId: number;
+    };
+    type: string;
+    startTime: string;
+    endTime: string;
+    state: string;
+    stages: {
+      name: string;
+      state: string;
+      processed: number;
+      errors: boolean;
+    }[];
+  };
 }
 
 export interface PublishFormData {

@@ -182,9 +182,8 @@ export function SiteCard(props: SiteCardProps) {
           <PublishingStatusButtonUI
             isFetching={isFetching}
             enabled={publishingStatus?.enabled}
-            status={publishingStatus?.status}
-            totalItems={publishingStatus?.totalItems}
-            numberOfItems={publishingStatus?.numberOfItems}
+            published={publishingStatus?.published}
+            currentTask={publishingStatus?.currentTask}
             variant="icon"
             size={compact ? 'small' : 'medium'}
             onClick={(e) => onPublishButtonClick(e, site, publishingStatus)}
