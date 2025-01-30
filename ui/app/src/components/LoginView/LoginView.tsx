@@ -429,7 +429,7 @@ function HeaderView({ error, introMessage, classes }: any) {
   return (
     <Typography
       variant="body2"
-      className={classes[error ? 'errorMessage' : 'recoverInfoMessage']}
+      className={classes?.[error ? 'errorMessage' : 'recoverInfoMessage']}
       sx={
         error
           ? (theme) => ({
