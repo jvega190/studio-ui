@@ -15,7 +15,6 @@
  */
 
 import * as React from 'react';
-import { makeStyles } from 'tss-react/mui';
 import FormControl from '@mui/material/FormControl';
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
 import TextField from '@mui/material/TextField';
@@ -27,21 +26,7 @@ import { PublishFormData, PublishingTarget, PublishOnDemandMode } from '../../mo
 import ApiResponse from '../../models/ApiResponse';
 import Typography from '@mui/material/Typography';
 import InputLabel from '@mui/material/InputLabel';
-
-const useStyles = makeStyles()((theme) => ({
-  formHelperText: {
-    marginLeft: '5px'
-  },
-  environmentLoaderContainer: {
-    display: 'inline-flex'
-  },
-  environmentLoader: {
-    border: `1px solid ${theme.palette.divider}`,
-    padding: '15px',
-    borderRadius: theme.shape.borderRadius,
-    width: '100%'
-  }
-}));
+import Box from '@mui/material/Box';
 
 const messages = defineMessages({
   staging: { id: 'words.staging', defaultMessage: 'Staging' },
@@ -59,7 +44,6 @@ interface PublishOnDemandFormProps {
 
 export function PublishOnDemandForm(props: PublishOnDemandFormProps) {
   const { mode, formData, disabled, setFormData, publishingTargets, publishingTargetsError } = props;
-  const { classes } = useStyles();
   const { formatMessage } = useIntl();
   const handleFormChange = (name: string) => (event: React.ChangeEvent<{ value: unknown }> | SelectChangeEvent) => {
     const value = event.target.value as string;
@@ -97,7 +81,7 @@ export function PublishOnDemandForm(props: PublishOnDemandFormProps) {
                   )
                 }
                 slotProps={{
-                  formHelperText: { className: classes.formHelperText }
+                  formHelperText: { sx: { marginLeft: '5px' } }
                 }}
                 onChange={handleFormChange(mode === 'studio' ? 'path' : 'commitIds')}
                 onBlur={
@@ -133,11 +117,16 @@ export function PublishOnDemandForm(props: PublishOnDemandFormProps) {
             </FormControl>
           ) : (
             <FormControl fullWidth>
-              <div className={classes.environmentLoaderContainer}>
+              <Box sx={{ display: 'inline-flex' }}>
                 <Typography
                   variant="body1"
                   component="span"
-                  className={classes.environmentLoader}
+                  sx={(theme) => ({
+                    border: `1px solid ${theme.palette.divider}`,
+                    padding: '15px',
+                    borderRadius: theme.shape.borderRadius,
+                    width: '100%'
+                  })}
                   color={publishingTargetsError ? 'error' : 'initial'}
                 >
                   {publishingTargetsError ? (
@@ -149,7 +138,7 @@ export function PublishOnDemandForm(props: PublishOnDemandFormProps) {
                     </>
                   )}
                 </Typography>
-              </div>
+              </Box>
             </FormControl>
           )}
         </Grid>

@@ -20,8 +20,8 @@ import { ListItem, ListItemText } from '@mui/material';
 import ItemDisplay from '../ItemDisplay';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
-import { FetchContentTypeUsageResponse } from '../../services/contentTypes';
 import { ReactNode } from 'react';
+import { FetchContentTypeUsageResponse } from '../../services/contentTypes';
 import { SandboxItem } from '../../models/Item';
 
 type ContentTypeUsageReportClassKey = 'listHeader' | 'listItem';
@@ -44,13 +44,22 @@ function ContentTypeUsageReport(props: ContentTypeUsageReportProps) {
         <List
           key={type}
           subheader={
-            <ListSubheader className={classes?.listHeader} disableSticky>
+            <ListSubheader
+              className={classes?.listHeader}
+              sx={{ background: (theme) => theme.palette.background.paper }}
+              disableSticky
+            >
               {messages[type] ?? type} ({items.length})
             </ListSubheader>
           }
         >
           {items.map((item) => (
-            <ListItem key={item.path} divider className={classes?.listItem}>
+            <ListItem
+              key={item.path}
+              divider
+              className={classes?.listItem}
+              sx={{ background: (theme) => theme.palette.background.paper }}
+            >
               <ListItemText
                 primary={<ItemDisplay item={item} showNavigableAsLinks={false} />}
                 secondary={<Typography variant="body2" color="textSecondary" children={item.path} />}

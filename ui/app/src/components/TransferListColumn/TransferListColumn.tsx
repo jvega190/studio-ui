@@ -16,7 +16,6 @@
 
 import React, { ReactNode, useRef } from 'react';
 import LookupTable from '../../models/LookupTable';
-import useStyles from './styles';
 import Paper from '@mui/material/Paper';
 import Checkbox from '@mui/material/Checkbox';
 import Typography from '@mui/material/Typography';
@@ -71,7 +70,6 @@ export function TransferListColumn(props: TransferListColumnProps) {
     onFetchMore,
     hasMoreItems
   } = props;
-  const { classes } = useStyles();
   const listRef = useRef(undefined);
 
   // If there are more items to be loaded then add an extra row to hold a loading indicator.
@@ -85,8 +83,16 @@ export function TransferListColumn(props: TransferListColumnProps) {
   };
 
   return (
-    <Paper className={classes.listPaper}>
-      <header className={classes.listHeader}>
+    <Paper sx={{ flexBasis: '50%', overflow: 'hidden' }}>
+      <Box
+        component="header"
+        sx={{
+          display: 'flex',
+          padding: '15px 16px',
+          alignItems: 'center',
+          borderBottom: (theme) => `1px solid ${theme.palette.divider}`
+        }}
+      >
         {!disabled && onCheckAllClicked && (
           <Checkbox
             disabled={items?.length === 0}
@@ -98,11 +104,16 @@ export function TransferListColumn(props: TransferListColumnProps) {
         <SearchBar
           keyword={keyword}
           onChange={onSearch}
-          classes={{ root: classes.searchBar }}
+          sxs={{
+            root: {
+              width: '100%',
+              marginLeft: '20px'
+            }
+          }}
           showActionButton={Boolean(keyword)}
         />
-      </header>
-      <List dense component="div" role="list" className={classes.list} ref={listRef}>
+      </Box>
+      <List dense component="div" role="list" sx={{ height: '310px', overflow: 'auto' }} ref={listRef}>
         {items ? (
           items.length === 0 ? (
             <EmptyState

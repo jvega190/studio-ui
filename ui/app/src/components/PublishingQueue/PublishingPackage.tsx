@@ -18,12 +18,13 @@ import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import React, { ChangeEvent, ReactNode, useRef } from 'react';
-import { makeStyles } from 'tss-react/mui';
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import '../../styles/animations.scss';
 import PrimaryButton from '../PrimaryButton';
+import Box from '@mui/material/Box';
+import { typographyClasses } from '@mui/material';
 import { ApiResponse, PublishPackage } from '../../models';
 import { getPackageStateLabel, isReady } from '../PublishPackageReviewDialog/utils';
 import Button from '@mui/material/Button';
@@ -31,74 +32,6 @@ import { CancelPackageDialog } from '../CancelPackageDialog';
 import useEnhancedDialogState from '../../hooks/useEnhancedDialogState';
 import { PackageDetailsDialog } from '../PackageDetailsDialog';
 
-const useStyles = makeStyles()((theme) => ({
-  package: {
-    padding: '20px 8px 20px 0',
-    '& .loading-header': {
-      display: 'flex',
-      alignItems: 'center',
-      height: '42px'
-    },
-    '& .name': {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '10px'
-    },
-    '& .status': {
-      display: 'flex',
-      justifyContent: 'space-between',
-      marginBottom: '10px'
-    },
-    '& .comment': {
-      display: 'flex',
-      '& p:first-child': {
-        marginRight: '20px',
-        marginBottom: '10px'
-      },
-      '& span': {
-        color: theme.palette.text.secondary
-      }
-    },
-    '& .files': {
-      marginTop: '10px'
-    }
-  },
-  checkbox: {
-    marginRight: 'auto'
-  },
-  thRow: {
-    background: theme.palette.background.default
-  },
-  th: {
-    fontWeight: 600
-  },
-  list: {
-    '& li': {
-      display: 'flex',
-      justifyContent: 'space-between'
-    }
-  },
-  spinner: {
-    marginRight: '10px',
-    color: theme.palette.text.secondary
-  },
-  packageLoading: {
-    WebkitAnimation: 'pulse 3s infinite ease-in-out',
-    animation: 'pulse 3s infinite ease-in-out',
-    pointerEvents: 'none'
-  },
-  cancelButton: {
-    paddingRight: '10px'
-  },
-  username: {
-    maxWidth: '390px',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    display: 'inline-block',
-    marginBottom: '-5px'
-  }
-}));
 
 const translations = defineMessages({
   cancelText: {
@@ -188,7 +121,6 @@ interface PublishingPackageProps {
 }
 
 export function PublishingPackage(props: PublishingPackageProps) {
-  const { classes, cx } = useStyles();
   const { formatMessage } = useIntl();
   const { pkg, siteId, selected, setSelected, pending, setPending, getPackages, readOnly } = props;
   const { id, title, packageState: state, target, submitter, submittedOn, submitterComment } = pkg;
@@ -210,7 +142,15 @@ export function PublishingPackage(props: PublishingPackageProps) {
 
   function onCancel(packageId: number) {
     setPending({ ...pending, [packageId]: true });
-    cancelPackageDialogState.onOpen();
+
+    cancelPackage(siteId, [packageId]).subscribe(
+      () => {
+        ref.cancelComplete(packageId);
+      },
+      ({ response }) => {
+        setApiState({ error: true, errorResponse: response });
+      }
+    );
   }
 
   const onCancelDialogSuccess = () => {
@@ -227,17 +167,64 @@ export function PublishingPackage(props: PublishingPackageProps) {
 
   const checked = selected[id] ? selected[id] : false;
   return (
-    <div className={cx(classes.package, pending[id] && classes.packageLoading)}>
+    <Box
+      sx={[
+        {
+          padding: '20px 8px 20px 0',
+          '& .loading-header': {
+            display: 'flex',
+            alignItems: 'center',
+            height: '42px'
+          },
+          '& .name': {
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '10px'
+          },
+          '& .status': {
+            display: 'flex',
+            justifyContent: 'space-between',
+            marginBottom: '10px'
+          },
+          '& .comment': {
+            display: 'flex',
+            '& p:first-child': {
+              marginRight: '20px',
+              marginBottom: '10px'
+            },
+            '& span': {
+              color: (theme) => theme.palette.text.secondary
+            }
+          },
+          '& .files': {
+            marginTop: '10px'
+          }
+        },
+        pending[id] && {
+          WebkitAnimation: 'pulse 3s infinite ease-in-out',
+          animation: 'pulse 3s infinite ease-in-out',
+          pointerEvents: 'none'
+        }
+      ]}
+    >
       <section className="name">
         {pending[id] ? (
           <header className={'loading-header'}>
-            <CircularProgress size={15} className={classes.spinner} color={'inherit'} />
+            <CircularProgress
+              size={15}
+              sx={{
+                marginRight: '10px',
+                color: (theme) => theme.palette.text.secondary
+              }}
+              color={'inherit'}
+            />
             <Typography variant="body1">
               <strong>{id}</strong>
             </Typography>
           </header>
         ) : isReady(state) ? (
-          <FormGroup className={classes.checkbox}>
+          <FormGroup sx={{ marginRight: 'auto' }}>
             <FormControlLabel
               control={
                 <Checkbox
@@ -276,9 +263,19 @@ export function PublishingPackage(props: PublishingPackageProps) {
               schedule: new Date(schedule),
               username,
               b: (content: ReactNode[]) => (
-                <strong key={content[0] as string} className={classes.username}>
+                <Box
+                  component="strong"
+                  key={content[0] as string}
+                  sx={{
+                    maxWidth: '390px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: 'inline-block',
+                    marginBottom: '-5px'
+                  }}
+                >
                   {content[0]}
-                </strong>
+                </Box>
               )
             }}
           />
@@ -314,7 +311,7 @@ export function PublishingPackage(props: PublishingPackageProps) {
         onClose={packageDetailsDialogState.onClose}
         packageId={id}
       />
-    </div>
+    </Box>
   );
 }
 

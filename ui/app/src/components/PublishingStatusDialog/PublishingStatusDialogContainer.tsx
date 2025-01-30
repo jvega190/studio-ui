@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { makeStyles } from 'tss-react/mui';
 import { useIntl } from 'react-intl';
 import DialogHeader from '../DialogHeader';
 import DialogBody from '../DialogBody/DialogBody';
@@ -24,18 +23,10 @@ import { PublishingStatusDialogContainerProps } from './utils';
 import useActiveUser from '../../hooks/useActiveUser';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
 
-const useStyles = makeStyles()(() => ({
-  body: {
-    minHeight: 145,
-    placeContent: 'center'
-  }
-}));
-
 const permittedRoles = ['developer', 'admin'];
 
 export function PublishingStatusDialogContainer(props: PublishingStatusDialogContainerProps) {
   const { enabled, published, currentTask, onClose, onRefresh, onStartStop, isFetching } = props;
-  const { classes } = useStyles();
   const { formatMessage } = useIntl();
   const user = useActiveUser();
   const siteId = useActiveSiteId();
@@ -63,7 +54,12 @@ export function PublishingStatusDialogContainer(props: PublishingStatusDialogCon
           }
         ].filter(Boolean)}
       />
-      <DialogBody className={classes.body}>
+      <DialogBody
+        sx={{
+          minHeight: 145,
+          placeContent: 'center'
+        }}
+      >
         <PublishingStatusDisplay
           enabled={enabled}
           isFetching={isFetching}

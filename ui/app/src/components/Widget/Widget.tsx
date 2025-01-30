@@ -74,7 +74,7 @@ const Widget = memo<WidgetProps>(function (props) {
       <EmptyState
         title={formatMessage(messages.componentNotFoundTitle, { id })}
         subtitle={formatMessage(messages.componentNotFoundSubtitle)}
-        styles={{ image: { width: 100 } }}
+        sxs={{ image: { width: 100 } }}
       />
     );
   } else {
@@ -94,7 +94,7 @@ const Widget = memo<WidgetProps>(function (props) {
                   <EmptyState
                     title={formatMessage(messages.componentNotFoundTitle, { id })}
                     subtitle={formatMessage(messages.componentNotFoundSubtitle)}
-                    styles={{ image: { width: 100 } }}
+                    sxs={{ image: { width: 100 } }}
                   />
                 );
               }
@@ -106,7 +106,7 @@ const Widget = memo<WidgetProps>(function (props) {
               default: function ({ id, plugin }) {
                 return (
                   <ErrorState
-                    styles={{ image: { width: 100 } }}
+                    sxs={{ image: { width: 100 } }}
                     title={formatMessage(messages.pluginLoadFailedMessageTitle)}
                     message={formatMessage(messages.pluginLoadFailedMessageBody, {
                       id,

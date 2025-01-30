@@ -39,7 +39,7 @@ function LauncherPublishingStatusTile() {
           currentTask: state.currentTask
         }}
         isFetching={state.isFetching}
-        styles={{ root: { background: 'transparent' } }}
+        sxs={{ root: { background: 'transparent' } }}
         onClick={() => {
           dispatch(closeLauncher());
           onShowDialog();
