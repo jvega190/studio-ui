@@ -16,7 +16,6 @@
 
 import React, { Suspense, useEffect, useMemo } from 'react';
 import { defineMessages, FormattedMessage, IntlShape, useIntl } from 'react-intl';
-import { makeStyles } from 'tss-react/mui';
 import Popover from '@mui/material/Popover';
 import Grid from '@mui/material/Grid2';
 import Typography from '@mui/material/Typography';
@@ -30,7 +29,7 @@ import palette from '../../styles/palette';
 import Avatar from '@mui/material/Avatar';
 import ExitToAppRoundedIcon from '@mui/icons-material/ExitToAppRounded';
 import Card from '@mui/material/Card';
-import CardHeader from '@mui/material/CardHeader';
+import CardHeader, { cardHeaderClasses } from '@mui/material/CardHeader';
 import { Site } from '../../models/Site';
 import EmptyState from '../EmptyState/EmptyState';
 import { setSiteCookie } from '../../utils/auth';
@@ -41,7 +40,6 @@ import { logout } from '../../state/actions/auth';
 import { ListItem, Tooltip } from '@mui/material';
 import { closeLauncher } from '../../state/actions/dialogs';
 import { EnhancedUser } from '../../models/User';
-import LookupTable from '../../models/LookupTable';
 import { batchActions } from '../../state/actions/misc';
 import LauncherGlobalNav from '../LauncherGlobalNav';
 import Skeleton from '@mui/material/Skeleton';
@@ -58,6 +56,7 @@ import { WidgetDescriptor } from '../../models';
 import useMinimizedDialogWarning from '../../hooks/useMinimizedDialogWarning';
 import TranslationOrText from '../../models/TranslationOrText';
 import { SystemIconDescriptor } from '../SystemIcon';
+import Box from '@mui/material/Box';
 
 export interface LauncherStateProps {
   open: boolean;
@@ -105,89 +104,10 @@ const messages = defineMessages({
   }
 });
 
-const useLauncherStyles = makeStyles()((theme) => ({
-  popover: {
-    maxWidth: 1065,
-    borderRadius: '10px',
-    overflowY: 'hidden'
-  },
-  appsSkeletonTile: {
-    margin: 5,
-    width: 120,
-    height: 100,
-    display: 'inline-flex'
-  },
-  sitesRail: {
-    backgroundColor: theme.palette.background.default
-  },
-  appsRail: {},
-  railTop: {
-    padding: '30px 29px',
-    overflow: 'auto',
-    height: 'calc(100% - 65px)',
-    maxHeight: 'calc(100vh - 95px)'
-  },
-  railTopExtraPadded: {
-    paddingTop: 70
-  },
-  railBottom: {
-    height: 65,
-    display: 'flex',
-    alignItems: 'center',
-    padding: '0 20px',
-    placeContent: 'center space-between'
-  },
-  gridContainer: {
-    height: '100%',
-    maxHeight: '100%',
-    '@media(min-width: 1097px)': {
-      width: 1065
-    }
-  },
-  versionText: {},
-  titleCard: {
-    marginBottom: '20px'
-  },
-  closeButton: {
-    position: 'absolute',
-    top: '10px',
-    right: '10px',
-    '&.left': {
-      right: 'auto',
-      left: '10px'
-    }
-  },
-  simpleGear: {
-    margin: 'auto'
-  },
-  userCardRoot: {
-    width: '100%',
-    boxShadow: 'none'
-  },
-  userCardHeader: {
-    padding: 0
-  },
-  userCardActions: {
-    marginTop: 0,
-    marginRight: 0
-  },
-  userCardAvatar: {
-    color: palette.white,
-    textTransform: 'uppercase',
-    backgroundColor: palette.red.main
-  },
-  username: {
-    maxWidth: '300px',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis'
-  },
-  mySitesTitle: { marginBottom: '24px', textTransform: 'uppercase', fontWeight: 600 }
-}));
-
 // region AppsRail
 
 interface AppsRailProps {
-  classes: LookupTable<string>;
+  classes?: Partial<Record<'appsRail' | 'railTop' | 'appsSkeletonTile', string>>;
   widgets: WidgetDescriptor[];
   formatMessage: IntlShape['formatMessage'];
   user: EnhancedUser;
@@ -195,22 +115,35 @@ interface AppsRailProps {
   closeButtonPosition: LauncherStateProps['closeButtonPosition'];
   globalNavigationPosition: LauncherStateProps['globalNavigationPosition'];
   userRoles: string[];
-  clsx: any;
   lonely: boolean;
 }
 
-const UserDisplaySection = ({ classes, formatMessage, user, onLogout }) => (
-  <div className={classes.railBottom}>
-    <Card className={classes.userCardRoot}>
+const UserDisplaySection = ({ formatMessage, user, onLogout }) => (
+  <Box
+    sx={{
+      height: 65,
+      display: 'flex',
+      alignItems: 'center',
+      padding: '0 20px',
+      placeContent: 'center space-between'
+    }}
+  >
+    <Card sx={{ width: '100%', boxShadow: 'none' }}>
       <CardHeader
-        classes={{
-          action: classes.userCardActions
+        sx={{
+          padding: 0,
+          [`& .${cardHeaderClasses.action}`]: {
+            action: { marginTop: '10px', marginRight: '10px' }
+          }
         }}
-        className={classes.userCardHeader}
         avatar={
           <Avatar
             aria-hidden="true"
-            className={classes.userCardAvatar}
+            sx={{
+              color: palette.white,
+              textTransform: 'uppercase',
+              backgroundColor: palette.red.main
+            }}
             children={getInitials(`${user.firstName} ${user.lastName}`)}
           />
         }
@@ -224,11 +157,11 @@ const UserDisplaySection = ({ classes, formatMessage, user, onLogout }) => (
         title={`${user.firstName} ${user.lastName}`}
         subheader={user.username || user.email}
         subheaderTypographyProps={{
-          className: classes.username
+          sx: { maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' }
         }}
       />
     </Card>
-  </div>
+  </Box>
 );
 
 const AppsRail = ({
@@ -240,29 +173,56 @@ const AppsRail = ({
   closeButtonPosition,
   userRoles,
   globalNavigationPosition,
-  clsx,
   lonely
 }: AppsRailProps) => (
-  <Grid size={{ xs: 12, md: lonely ? 12 : 8 }} className={classes.appsRail}>
-    <div className={clsx(classes.railTop, closeButtonPosition === 'left' && classes.railTopExtraPadded)}>
+  <Grid className={classes?.appsRail} size={{ xs: 12, md: lonely ? 12 : 8 }}>
+    <Box
+      className={classes?.railTop}
+      sx={{
+        padding: '30px 29px',
+        overflow: 'auto',
+        height: 'calc(100% - 65px)',
+        maxHeight: 'calc(100vh - 95px)',
+        paddingTop: closeButtonPosition === 'left' ? '70px' : '30px'
+      }}
+    >
       {globalNavigationPosition === 'before' && <LauncherGlobalNav />}
       {renderWidgets(widgets, { userRoles })}
       {/* Using != 'before' (instead of == 'after') to avoid config hiding away the global nav */}
       {globalNavigationPosition !== 'before' && <LauncherGlobalNav />}
-    </div>
-    <UserDisplaySection classes={classes} formatMessage={formatMessage} onLogout={onLogout} user={user} />
+    </Box>
+    <UserDisplaySection formatMessage={formatMessage} onLogout={onLogout} user={user} />
   </Grid>
 );
 
-const AppsRailSkeleton = ({ classes, closeButtonPosition, formatMessage, onLogout, user, clsx }) => (
-  <Grid size={{ xs: 12, md: 8 }} className={classes.appsRail}>
-    <div className={clsx(classes.railTop, closeButtonPosition === 'left' && classes.railTopExtraPadded)}>
+const AppsRailSkeleton = ({ classes, closeButtonPosition, formatMessage, onLogout, user }: Partial<AppsRailProps>) => (
+  <Grid size={{ xs: 12, md: 8 }} className={classes?.appsRail}>
+    <Box
+      className={classes?.railTop}
+      sx={{
+        padding: '30px 29px',
+        overflow: 'auto',
+        height: 'calc(100% - 65px)',
+        maxHeight: 'calc(100vh - 95px)',
+        paddingTop: closeButtonPosition === 'left' ? 70 : 30
+      }}
+    >
       <Skeleton variant="text" width="150px" style={{ marginBottom: 20 }} />
       {new Array(9).fill(null).map((_, i) => (
-        <Skeleton key={i} variant="rectangular" className={classes.appsSkeletonTile} />
+        <Skeleton
+          key={i}
+          variant="rectangular"
+          className={classes?.appsSkeletonTile}
+          sx={{
+            margin: 5,
+            width: 120,
+            height: 100,
+            display: 'inline-flex'
+          }}
+        />
       ))}
-    </div>
-    <UserDisplaySection classes={classes} formatMessage={formatMessage} onLogout={onLogout} user={user} />
+    </Box>
+    <UserDisplaySection formatMessage={formatMessage} onLogout={onLogout} user={user} />
   </Grid>
 );
 
@@ -271,7 +231,9 @@ const AppsRailSkeleton = ({ classes, closeButtonPosition, formatMessage, onLogou
 // region SiteRail
 
 interface SitesRailProps {
-  classes: LookupTable<string>;
+  classes?: Partial<
+    Record<'sitesRail' | 'railTop' | 'mySitesTitle' | 'titleCard' | 'railBottom' | 'versionText', string>
+  >;
   formatMessage: IntlShape['formatMessage'];
   sites: Site[];
   site: string;
@@ -281,9 +243,29 @@ interface SitesRailProps {
 }
 
 const SitesRail = ({ classes, formatMessage, sites, site, onSiteCardClick, options, version }: SitesRailProps) => (
-  <Grid size={{ md: 4 }} sx={{ display: { xs: 'none', sm: 'none', md: 'block' } }} className={classes.sitesRail}>
-    <div className={classes.railTop}>
-      <Typography variant="subtitle1" component="h2" className={classes.mySitesTitle}>
+  <Grid
+    size={{ md: 4 }}
+    className={classes?.sitesRail}
+    sx={{
+      display: { xs: 'none', sm: 'none', md: 'block' },
+      backgroundColor: (theme) => theme.palette.background.default
+    }}
+  >
+    <Box
+      className={classes?.railTop}
+      sx={{
+        padding: '30px 29px',
+        overflow: 'auto',
+        height: 'calc(100% - 65px)',
+        maxHeight: 'calc(100vh - 95px)'
+      }}
+    >
+      <Typography
+        variant="subtitle1"
+        component="h2"
+        className={classes?.mySitesTitle}
+        sx={{ marginBottom: '24px', textTransform: 'uppercase', fontWeight: 600 }}
+      >
         {formatMessage(messages.mySites)}
       </Typography>
       {sites.length ? (
@@ -294,7 +276,8 @@ const SitesRail = ({ classes, formatMessage, sites, site, onSiteCardClick, optio
               selected={item.id === site}
               title={item.name}
               value={item.id}
-              classes={{ root: classes.titleCard }}
+              classes={{ root: classes?.titleCard }}
+              sxs={{ root: { marginBottom: '20px' } }}
               state={item.state}
               onCardClick={() => onSiteCardClick(item.id)}
               options={options}
@@ -306,20 +289,46 @@ const SitesRail = ({ classes, formatMessage, sites, site, onSiteCardClick, optio
           title={<FormattedMessage id="globalMenu.noSitesMessage" defaultMessage="No projects to display." />}
         />
       )}
-    </div>
-    <div className={classes.railBottom}>
+    </Box>
+    <Box
+      className={classes?.railBottom}
+      sx={{
+        height: 65,
+        display: 'flex',
+        alignItems: 'center',
+        padding: '0 20px',
+        placeContent: 'center space-between'
+      }}
+    >
       <CrafterCMSLogo width={115} />
-      <Typography className={classes.versionText} color="textSecondary" variant="caption">
+      <Typography className={classes?.versionText} color="textSecondary" variant="caption">
         {version}
       </Typography>
-    </div>
+    </Box>
   </Grid>
 );
 
-const SiteRailSkeleton = ({ classes, formatMessage, version }) => (
-  <Grid size={{ md: 4 }} className={classes.sitesRail}>
-    <div className={classes.railTop}>
-      <Typography variant="subtitle1" component="h2" className={classes.mySitesTitle}>
+const SiteRailSkeleton = ({ classes, formatMessage, version }: Partial<SitesRailProps>) => (
+  <Grid
+    size={{ md: 4 }}
+    className={classes?.sitesRail}
+    sx={{
+      backgroundColor: (theme) => theme.palette.background.default
+    }}
+  >
+    <Box
+      sx={{
+        padding: '30px 29px',
+        overflow: 'auto',
+        height: 'calc(100% - 65px)',
+        maxHeight: 'calc(100vh - 95px)'
+      }}
+    >
+      <Typography
+        variant="subtitle1"
+        component="h2"
+        sx={{ marginBottom: '24px', textTransform: 'uppercase', fontWeight: 600 }}
+      >
         {formatMessage(messages.mySites)}
       </Typography>
       <List>
@@ -329,20 +338,28 @@ const SiteRailSkeleton = ({ classes, formatMessage, version }) => (
           </ListItem>
         ))}
       </List>
-    </div>
-    <div className={classes.railBottom}>
+    </Box>
+    <Box
+      className={classes?.railBottom}
+      sx={{
+        height: 65,
+        display: 'flex',
+        alignItems: 'center',
+        padding: '0 20px',
+        placeContent: 'center space-between'
+      }}
+    >
       <CrafterCMSLogo width={115} />
-      <Typography className={classes.versionText} color="textSecondary" variant="caption">
+      <Typography className={classes?.versionText} color="textSecondary" variant="caption">
         {version}
       </Typography>
-    </div>
+    </Box>
   </Grid>
 );
 
 // endregion
 
 export function Launcher(props: LauncherStateProps) {
-  const { classes, cx } = useLauncherStyles();
   const siteId = useActiveSiteId();
   const sites = useSiteList();
   const user = useActiveUser();
@@ -416,7 +433,6 @@ export function Launcher(props: LauncherStateProps) {
 
   const sitesRail = () => (
     <SitesRail
-      classes={classes}
       formatMessage={formatMessage}
       sites={sites}
       site={siteId}
@@ -428,7 +444,6 @@ export function Launcher(props: LauncherStateProps) {
 
   const appsRail = () => (
     <AppsRail
-      classes={classes}
       widgets={widgets}
       formatMessage={formatMessage}
       user={user}
@@ -436,23 +451,18 @@ export function Launcher(props: LauncherStateProps) {
       closeButtonPosition={closeButtonPosition}
       userRoles={userRoles}
       globalNavigationPosition={globalNavigationPosition}
-      clsx={cx}
       lonely={sitesRailPosition === 'hidden'}
     />
   );
 
-  const sitesRailSkeleton = () => (
-    <SiteRailSkeleton classes={classes} formatMessage={formatMessage} version={version} />
-  );
+  const sitesRailSkeleton = () => <SiteRailSkeleton formatMessage={formatMessage} version={version} />;
 
   const appsRailSkeleton = () => (
     <AppsRailSkeleton
-      classes={classes}
       formatMessage={formatMessage}
       closeButtonPosition={closeButtonPosition}
       onLogout={onLogout}
       user={user}
-      clsx={cx}
     />
   );
 
@@ -461,7 +471,9 @@ export function Launcher(props: LauncherStateProps) {
       open={open && Boolean(anchor)}
       anchorEl={anchor}
       onClose={onMenuClose}
-      classes={{ paper: classes.popover }}
+      slotProps={{
+        paper: { sx: { maxWidth: 1065, borderRadius: '10px', overflowY: 'hidden' } }
+      }}
       anchorOrigin={{
         vertical: 'top',
         horizontal: 'right'
@@ -475,7 +487,16 @@ export function Launcher(props: LauncherStateProps) {
       <Tooltip title={formatMessage(messages.closeMenu)}>
         <IconButton
           aria-label={formatMessage(messages.closeMenu)}
-          className={cx(classes.closeButton, closeButtonPosition)}
+          className={closeButtonPosition}
+          sx={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            '&.left': {
+              right: 'auto',
+              left: '10px'
+            }
+          }}
           onClick={onMenuClose}
           size="large"
         >
@@ -485,7 +506,17 @@ export function Launcher(props: LauncherStateProps) {
       {/* endregion */}
       <Suspense
         fallback={
-          <Grid container spacing={0} className={classes.gridContainer}>
+          <Grid
+            container
+            spacing={0}
+            sx={{
+              height: '100%',
+              maxHeight: '100%',
+              '@media(min-width: 1097px)': {
+                width: 1065
+              }
+            }}
+          >
             {sitesRailPosition === 'left' ? (
               <>
                 {sitesRailSkeleton()}
@@ -502,7 +533,17 @@ export function Launcher(props: LauncherStateProps) {
           </Grid>
         }
       >
-        <Grid container spacing={0} className={classes.gridContainer}>
+        <Grid
+          container
+          spacing={0}
+          sx={{
+            height: '100%',
+            maxHeight: '100%',
+            '@media(min-width: 1097px)': {
+              width: 1065
+            }
+          }}
+        >
           {sitesRailPosition === 'left' ? (
             <>
               {sitesRail()}

@@ -19,7 +19,6 @@ import Card from '@mui/material/Card';
 import CardHeader, { cardHeaderClasses, CardHeaderProps } from '@mui/material/CardHeader';
 import CardMedia, { cardMediaClasses } from '@mui/material/CardMedia';
 import CardActionArea, { CardActionAreaProps } from '@mui/material/CardActionArea';
-import { makeStyles } from 'tss-react/mui';
 import { MediaItem } from '../../models/Search';
 import FormGroup from '@mui/material/FormGroup';
 import Checkbox from '@mui/material/Checkbox';
@@ -29,50 +28,6 @@ import SystemIcon from '../SystemIcon';
 import Box from '@mui/material/Box';
 import { PartialSxRecord } from '../../models/CustomRecord';
 import { CSSSelectorObjectOrCssVariables } from '@mui/system/styleFunctionSx/styleFunctionSx';
-
-const useStyles = makeStyles()(() => ({
-  card: {
-    position: 'relative'
-  },
-  cardTitle: {
-    ...cardTitleStyles
-  },
-  cardSubtitle: {
-    ...cardSubtitleStyles,
-    WebkitLineClamp: 1
-  },
-  cardHeader: { alignSelf: 'center' },
-  media: {
-    height: 0,
-    paddingTop: '56.25%'
-  },
-  mediaIcon: {
-    paddingTop: '56.25%',
-    position: 'relative',
-    overflow: 'hidden',
-    '& .media-icon': {
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      color: palette.gray.medium4,
-      fontSize: '50px'
-    },
-    '&.list': {
-      height: '80px',
-      width: '80px',
-      paddingTop: '0',
-      order: -1
-    }
-  },
-  videoThumbnail: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: '100%'
-  }
-}));
 
 export type MediaCardViewModes = 'card' | 'compact' | 'row';
 
@@ -86,8 +41,8 @@ export interface MediaCardProps {
   viewMode?: MediaCardViewModes;
   action?: CardHeaderProps['action'];
   avatar?: CardHeaderProps['avatar'];
-  classes?: Partial<Record<MediaCardClassKey, string>>;
   disableSelection?: boolean;
+  classes?: Partial<Record<MediaCardClassKey, string>>;
   sxs?: PartialSxRecord<MediaCardClassKey>;
   onClick?(e): void;
   onPreview?(e): any;
@@ -98,7 +53,6 @@ export interface MediaCardProps {
 }
 
 function MediaCard(props: MediaCardProps) {
-  const { classes, cx } = useStyles();
   // region const { ... } = props
   const {
     onSelect,
@@ -150,12 +104,13 @@ function MediaCard(props: MediaCardProps) {
 
   return (
     <Card
-      className={cx(classes.card, props.classes?.root)}
+      className={props.classes?.root}
       draggable={Boolean(onDragStart || onDragEnd)}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onClick={onClick}
       sx={[
+        { position: 'relative' },
         viewMode === 'row' && {
           display: 'flex',
           width: '100%',
@@ -166,8 +121,8 @@ function MediaCard(props: MediaCardProps) {
       ]}
     >
       <CardHeader
-        classes={{ action: classes.cardHeader, root: props.classes?.cardHeader }}
-        sx={sxs?.cardHeader}
+        classes={{ root: props.classes?.cardHeader }}
+        sx={{ alignSelf: 'center', ...sxs?.cardHeader }}
         avatar={
           onSelect ? (
             <FormGroup className={props.classes?.checkbox} sx={sxs?.checkbox}>
@@ -189,13 +144,18 @@ function MediaCard(props: MediaCardProps) {
         titleTypographyProps={{
           variant: 'subtitle2',
           component: 'h2',
-          className: classes.cardTitle,
+          sx: {
+            ...cardTitleStyles
+          },
           title: item.name
         }}
         subheaderTypographyProps={{
           variant: 'subtitle2',
           component: 'div',
-          className: classes.cardSubtitle,
+          sx: {
+            ...cardSubtitleStyles,
+            WebkitLineClamp: 1
+          },
           color: 'textSecondary',
           title: item.path
         }}
@@ -204,24 +164,52 @@ function MediaCard(props: MediaCardProps) {
         <CardActionAreaOrFragment {...cardActionAreaOrFragmentProps}>
           {type === 'Image' ? (
             <CardMedia
-              className={cx(classes.media, props.classes?.media)}
+              className={props.classes?.media}
               image={`${previewAppBaseUri}${path}`}
               title={name}
-              sx={sxs?.media}
+              sx={{ height: 0, paddingTop: '56.25%', ...sxs?.media }}
             />
           ) : (
             <Box
-              className={cx(classes.mediaIcon, props.classes?.mediaIcon)}
+              className={props.classes?.mediaIcon}
               sx={[
+                {
+                  paddingTop: '56.25%',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '& .media-icon': {
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    color: palette.gray.medium4,
+                    fontSize: '50px'
+                  },
+                  '&.list': {
+                    height: '80px',
+                    width: '80px',
+                    paddingTop: '0',
+                    order: -1
+                  }
+                },
                 viewMode === 'row' && { paddingTop: '0 !important', height: '80px', width: '80px' },
                 sxs?.mediaIcon as CSSSelectorObjectOrCssVariables
               ]}
             >
               {type === 'Video' ? (
-                <video className={classes.videoThumbnail}>
+                <Box
+                  component="video"
+                  sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '100%'
+                  }}
+                >
                   <source src={path} type="video/mp4" />
                   {systemIcon}
-                </video>
+                </Box>
               ) : (
                 systemIcon
               )}

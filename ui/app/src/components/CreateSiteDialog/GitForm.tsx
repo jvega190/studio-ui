@@ -16,7 +16,6 @@
 
 import React from 'react';
 import Grid from '@mui/material/Grid2';
-import { makeStyles } from 'tss-react/mui';
 import TextField from '@mui/material/TextField';
 import { SiteState } from '../../models/Site';
 import { defineMessages, useIntl } from 'react-intl';
@@ -24,23 +23,7 @@ import GitAuthForm from '../GitAuthForm';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import Typography from '@mui/material/Typography';
-
-const useStyles = makeStyles()((theme) => ({
-  formControl: {
-    width: '100%',
-    '& .MuiFormGroup-root': {
-      marginLeft: '10px'
-    }
-  },
-  helpText: {
-    transition: `color .5s`,
-    display: 'block',
-    marginBottom: theme.spacing(2)
-  },
-  muted: {
-    color: theme.palette.text.secondary
-  }
-}));
+import Box from '@mui/material/Box';
 
 interface GitFormProps {
   inputs: SiteState;
@@ -118,7 +101,6 @@ const messages = defineMessages({
 });
 
 function GitForm(props: GitFormProps) {
-  const { classes } = useStyles();
   const { inputs, setInputs, handleInputChange, onKeyPress } = props;
   const { formatMessage } = useIntl();
 
@@ -177,14 +159,21 @@ function GitForm(props: GitFormProps) {
         />
       </Grid>
       <Grid size={12}>
-        <div className={classes.formControl}>
+        <Box
+          sx={{
+            width: '100%',
+            '& .MuiFormGroup-root': {
+              marginLeft: '10px'
+            }
+          }}
+        >
           <GitAuthForm
             inputs={inputs}
             setInputs={setInputs}
             handleInputChange={handleInputChange}
             onKeyPress={onKeyPress}
           />
-        </div>
+        </Box>
       </Grid>
       <Grid size={12} sx={{ mb: 2 }}>
         <FormControlLabel
@@ -201,7 +190,14 @@ function GitForm(props: GitFormProps) {
         <Typography
           variant="subtitle2"
           component="small"
-          className={`${classes.helpText} ${inputs.createAsOrphan ? '' : classes.muted}`}
+          sx={[
+            {
+              transition: `color .5s`,
+              display: 'block',
+              marginBottom: (theme) => theme.spacing(2)
+            },
+            !inputs.createAsOrphan && { color: 'text.secondary' }
+          ]}
         >
           {formatMessage(messages.createAsOrphanHelpText)}
         </Typography>

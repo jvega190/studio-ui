@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2022 Crafter Software Corporation. All Rights Reserved.
+ * Copyright (C) 2007-2025 Crafter Software Corporation. All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as published by
@@ -14,26 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { makeStyles } from 'tss-react/mui';
+import { createContext } from 'react';
 
-const useStyles = makeStyles()((theme) => ({
-  root: {
-    margin: '0',
-    width: '100%',
-    height: '100%',
-    borderRadius: 0,
-    border: 0
-  },
-  paper: {
-    borderRadius: 0,
-    minHeight: '400px',
-    height: 'calc(100vh - 120px)',
-    borderBottom: `1px solid ${theme.palette.divider}`
-  },
-  marginLeftAuto: {
-    marginLeft: 'auto',
-    marginRight: '15px'
-  }
-}));
+export interface SiteToolsContextProps {
+  setTool(toolId: string): void;
+  activeToolId: string;
+}
 
-export default useStyles;
+export const SiteToolsContext = createContext<SiteToolsContextProps>(undefined);

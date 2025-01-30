@@ -17,8 +17,6 @@
 import * as React from 'react';
 import { ElementType, forwardRef } from 'react';
 import { DetailedItem, SandboxItem } from '../../models/Item';
-import { makeStyles } from 'tss-react/mui';
-import { CSSObject as CSSProperties } from 'tss-react';
 import palette from '../../styles/palette';
 import Typography, { TypographyProps } from '@mui/material/Typography';
 import { isPreviewable } from '../PathNavigator/utils';
@@ -26,9 +24,10 @@ import ItemStateIcon, { ItemStateIconProps } from '../ItemStateIcon';
 import ItemTypeIcon, { ItemTypeIconProps } from '../ItemTypeIcon';
 import ItemPublishingTargetIcon, { ItemPublishingTargetIconProps } from '../ItemPublishingTargetIcon';
 import { isInWorkflow } from './utils';
+import Box from '@mui/material/Box';
+import { PartialSxRecord } from '../../models';
 
 export type ItemDisplayClassKey = 'root' | 'label' | 'labelPreviewable' | 'icon' | 'typeIcon';
-export type ItemDisplayStyles = Partial<Record<ItemDisplayClassKey, CSSProperties>>;
 
 export interface ItemDisplayProps<LabelTypographyComponent extends React.ElementType = 'span'>
   extends React.HTMLAttributes<HTMLSpanElement> {
@@ -37,7 +36,7 @@ export interface ItemDisplayProps<LabelTypographyComponent extends React.Element
   showItemType?: boolean;
   showNavigableAsLinks?: boolean;
   classes?: Partial<Record<ItemDisplayClassKey, string>>;
-  styles?: ItemDisplayStyles;
+  sxs?: PartialSxRecord<ItemDisplayClassKey>;
   item: DetailedItem | SandboxItem;
   labelTypographyProps?: TypographyProps<LabelTypographyComponent, { component?: LabelTypographyComponent }>;
   isNavigableFn?: (item: DetailedItem | SandboxItem) => boolean;
@@ -49,41 +48,10 @@ export interface ItemDisplayProps<LabelTypographyComponent extends React.Element
   itemTypeIconProps?: Partial<ItemTypeIconProps>;
 }
 
-const useStyles = makeStyles<ItemDisplayStyles, ItemDisplayClassKey>()(
-  (theme, { root, label, labelPreviewable, icon, typeIcon } = {} as ItemDisplayStyles) => ({
-    root: {
-      display: 'inline-flex',
-      alignItems: 'center',
-      placeContent: 'left center',
-      maxWidth: '100%',
-      ...root
-    },
-    label: {
-      marginLeft: 2,
-      display: 'inline-block',
-      ...label
-    },
-    labelPreviewable: {
-      color: theme.palette.mode === 'dark' ? palette.teal.tint : palette.teal.shade,
-      ...labelPreviewable
-    },
-    icon: {
-      fontSize: '1.1rem',
-      ...icon
-    },
-    typeIcon: {
-      marginRight: 3,
-      ...typeIcon
-    }
-  })
-);
-
 const ItemDisplay = forwardRef<HTMLSpanElement, ItemDisplayProps>((props, ref) => {
   // region const { ... } = props;
   const {
     item,
-    styles,
-    classes: propClasses,
     // @see https://github.com/craftercms/craftercms/issues/5442
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     showPublishingTarget = true,
@@ -98,53 +66,84 @@ const ItemDisplay = forwardRef<HTMLSpanElement, ItemDisplayProps>((props, ref) =
     stateIconProps,
     publishingTargetIconProps,
     itemTypeIconProps,
+    classes,
+    sxs,
     ...rest
   } = props;
   // endregion
-  const { classes, cx } = useStyles(props.styles);
   if (!item) {
     // Prevents crashing if the item is nullish
     return null;
   }
   const inWorkflow = isInWorkflow(item.stateMap) || item.systemType === 'folder';
   return (
-    <span ref={ref} {...rest} className={cx(classes.root, propClasses?.root, rest?.className)}>
+    <Box
+      component="span"
+      ref={ref}
+      {...rest}
+      className={[classes?.root, rest?.className].filter(Boolean).join(' ')}
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        placeContent: 'left center',
+        maxWidth: '100%',
+        ...sxs?.root
+      }}
+    >
       {/* @see https://github.com/craftercms/craftercms/issues/5442 */}
       {inWorkflow
         ? showWorkflowState && (
             <ItemStateIcon
               {...stateIconProps}
               item={item}
-              className={cx(classes.icon, propClasses?.icon, stateIconProps?.className)}
+              className={[classes?.icon, stateIconProps?.className].filter(Boolean).join(' ')}
+              sxs={{
+                root: {
+                  fontSize: '1.1rem',
+                  ...sxs?.icon
+                }
+              }}
             />
           )
         : showPublishingTarget && (
             <ItemPublishingTargetIcon
               {...publishingTargetIconProps}
               item={item}
-              className={cx(classes.icon, propClasses?.icon, publishingTargetIconProps?.className)}
+              className={[classes?.icon, publishingTargetIconProps?.className].filter(Boolean).join(' ')}
+              sxs={{
+                root: {
+                  fontSize: '1.1rem',
+                  ...sxs?.icon
+                }
+              }}
             />
           )}
       {showItemType && (
         <ItemTypeIcon
           {...itemTypeIconProps}
           item={item}
-          className={cx(classes.icon, propClasses?.icon, itemTypeIconProps?.className)}
+          className={[classes?.icon, itemTypeIconProps?.className].filter(Boolean).join(' ')}
+          sx={{ fontSize: '1.1rem', ...sxs?.icon }}
         />
       )}
       <Typography
         noWrap
         component={labelComponent}
         {...labelTypographyProps}
-        className={cx(
-          classes.label,
-          showNavigableAsLinks && isNavigableFn(item) && classes.labelPreviewable,
-          labelTypographyProps?.className
-        )}
+        className={[classes?.label, labelTypographyProps?.className].filter(Boolean).join(' ')}
+        sx={{
+          marginLeft: '2px',
+          display: 'inline-block',
+          color:
+            showNavigableAsLinks && isNavigableFn(item)
+              ? (theme) => (theme.palette.mode === 'dark' ? palette.teal.tint : palette.teal.shade)
+              : null,
+          ...sxs?.label
+        }}
         title={item[titleDisplayProp]}
         children={item[labelDisplayProp]}
       />
-    </span>
+    </Box>
   );
 });
 
