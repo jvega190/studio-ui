@@ -100,8 +100,7 @@ interface FilterDropdownProps {
 
 export function FilterDropdown(props: FilterDropdownProps) {
   const [anchorEl, setAnchorEl] = React.useState(null);
-  const { text, className, handleFilterChange, currentFilters, filters } = props;
-  const [path, setPath] = useState('');
+  const { text, className, handleFilterChange, currentFilters, filters, sx } = props;
   const { formatMessage } = useIntl();
 
   const handleClick = (event: any) => {
@@ -133,60 +132,6 @@ export function FilterDropdown(props: FilterDropdownProps) {
           horizontal: 'right'
         }}
       >
-        <section>
-          <Box
-            component="header"
-            sx={(theme) => ({
-              background: theme.palette.mode === 'dark' ? theme.palette.background.default : theme.palette.grey['100'],
-              padding: '10px'
-            })}
-          >
-            <Typography variant="body1">
-              <strong>{formatMessage(messages.pathExpression)}</strong>
-            </Typography>
-          </Box>
-          <Box
-            sx={{
-              padding: '10px',
-              position: 'relative'
-            }}
-            display="flex"
-            alignItems="center"
-          >
-            <Box
-              sx={{
-                width: (theme) => theme.spacing(7),
-                color: '#828282',
-                height: '41px;',
-                position: 'absolute',
-                pointerEvents: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 1
-              }}
-            >
-              <SearchIcon />
-            </Box>
-            <TextField
-              id="path"
-              name="path"
-              sx={{
-                '& input': {
-                  paddingLeft: '50px'
-                }
-              }}
-              slotProps={{
-                inputLabel: { shrink: true }
-              }}
-              fullWidth
-              placeholder="e.g. /SOME/PATH/*"
-              onChange={(event) => setPath(event.target.value)}
-              onKeyPress={(event) => onKeyPress(event, path)}
-              value={path}
-            />
-          </Box>
-        </section>
         <section>
           <Box
             component="header"

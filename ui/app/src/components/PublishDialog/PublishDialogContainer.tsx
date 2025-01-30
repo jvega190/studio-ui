@@ -18,7 +18,7 @@ import { useSpreadState } from '../../hooks/useSpreadState';
 import React, { SyntheticEvent, useEffect, useMemo, useState } from 'react';
 import { PublishingTarget, PublishParams } from '../../models/Publishing';
 import LookupTable from '../../models/LookupTable';
-import { InternalDialogState, paths, PublishDialogContainerProps } from './utils';
+import { InternalDialogState, PublishDialogContainerProps, usePublishState } from './utils';
 import { useActiveSiteId } from '../../hooks/useActiveSiteId';
 import { useDispatch } from 'react-redux';
 import { calculatePackage, publish } from '../../services/publishing';

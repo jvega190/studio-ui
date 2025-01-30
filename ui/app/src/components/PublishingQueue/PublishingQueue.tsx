@@ -114,16 +114,16 @@ const messages = defineMessages({
 });
 
 export const allFiltersState =
-	READY_MASK +
-	PROCESSING_MASK +
-	LIVE_SUCCESS_MASK +
-	LIVE_FAILED_MASK +
-	LIVE_COMPLETED_WITH_ERRORS_MASK +
-	STAGING_SUCCESS_MASK +
-	STAGING_COMPLETED_WITH_ERRORS_MASK +
-	STAGING_FAILED_MASK +
-	COMPLETED_MASK +
-	CANCELLED_MASK;
+  READY_MASK +
+  PROCESSING_MASK +
+  LIVE_SUCCESS_MASK +
+  LIVE_FAILED_MASK +
+  LIVE_COMPLETED_WITH_ERRORS_MASK +
+  STAGING_SUCCESS_MASK +
+  STAGING_COMPLETED_WITH_ERRORS_MASK +
+  STAGING_FAILED_MASK +
+  COMPLETED_MASK +
+  CANCELLED_MASK;
 
 const currentFiltersInitialState: CurrentFilters = {
   target: '',
@@ -356,7 +356,7 @@ function PublishingQueue(props: PublishingQueueProps) {
           justifyContent: 'flex-end'
         }}
       >
-				{isReady(currentFilters.states) && (
+        {isReady(currentFilters.states) && (
           <FormGroup sx={{ marginRight: 'auto' }}>
             <FormControlLabel
               control={
@@ -371,7 +371,7 @@ function PublishingQueue(props: PublishingQueueProps) {
             />
           </FormGroup>
         )}
-				{count > 0 && isReady(currentFilters.states) && (
+        {count > 0 && isReady(currentFilters.states) && (
           <Typography
             variant="body2"
             sx={{ marginRight: '10px', display: 'flex', alignItems: 'center' }}
@@ -384,16 +384,16 @@ function PublishingQueue(props: PublishingQueueProps) {
         <Button variant="outlined" sx={{ m: 1 }} onClick={() => getPackages(siteId)}>
           <RefreshIcon />
         </Button>
-				{isReady(currentFilters.states) && (
-					<Button
-						variant="outlined"
-						color="warning"
-						onClick={onCancelAll}
-						disabled={!(hasReadyForLivePackages && areThereItemsSelected) || readOnly}
-					>
-						<FormattedMessage defaultMessage="Cancel Selected" />
-					</Button>
-				)}
+        {isReady(currentFilters.states) && (
+          <Button
+            variant="outlined"
+            color="warning"
+            onClick={onCancelAll}
+            disabled={!(hasReadyForLivePackages && areThereItemsSelected) || readOnly}
+          >
+            <FormattedMessage defaultMessage="Cancel Selected" />
+          </Button>
+        )}
         <FilterDropdown
           sx={{ m: 1 }}
           text={formatMessage(messages.filters)}
@@ -402,7 +402,7 @@ function PublishingQueue(props: PublishingQueueProps) {
           filters={filters}
         />
       </Box>
-			{(currentFilters.states || currentFilters.target) && (
+      {(currentFilters.states || currentFilters.target) && (
         <Box
           sx={{
             background: (theme) => theme.palette.divider,
@@ -411,14 +411,14 @@ function PublishingQueue(props: PublishingQueueProps) {
           }}
         >
           <Typography variant="body2">
-						{formatMessage(messages.filteredBy, {
-							state: currentFilters.states ? (
-								<strong key="state">{getPackageStateLabel(currentFilters.states)}</strong>
-							) : (
-								'all'
-							),
-							environment: currentFilters.target ? <strong key="environment">{currentFilters.target}</strong> : 'all'
-						})}
+            {formatMessage(messages.filteredBy, {
+              state: currentFilters.states ? (
+                <strong key="state">{getPackageStateLabel(currentFilters.states)}</strong>
+              ) : (
+                'all'
+              ),
+              environment: currentFilters.target ? <strong key="environment">{currentFilters.target}</strong> : 'all'
+            })}
           </Typography>
         </Box>
       )}
@@ -426,30 +426,30 @@ function PublishingQueue(props: PublishingQueueProps) {
         <ApiResponseErrorState error={apiState.errorResponse} />
       ) : (
         <div>
-					{packages === null && isFetchingPackages && <LoadingState />}
-					{packages &&
-						packages.map((item: PublishPackage) => (
-							<PublishingPackage
-								pkg={item}
-								key={item.id}
-								siteId={siteId}
-								selected={selected}
-								pending={pending}
-								setPending={setPending}
-								getPackages={getPackages}
-								setApiState={setApiState}
-								setSelected={setSelected}
-								readOnly={readOnly}
-							/>
-						))}
-					{packages !== null && packages.length === 0 && (
-						<div className={classes.empty}>
-							<EmptyState
-								title={formatMessage(messages.noPackagesTitle)}
-								subtitle={formatMessage(messages.noPackagesSubtitle)}
-							/>
-						</div>
-					)}
+          {packages === null && isFetchingPackages && <LoadingState />}
+          {packages &&
+            packages.map((item: PublishPackage) => (
+              <PublishingPackage
+                pkg={item}
+                key={item.id}
+                siteId={siteId}
+                selected={selected}
+                pending={pending}
+                setPending={setPending}
+                getPackages={getPackages}
+                setApiState={setApiState}
+                setSelected={setSelected}
+                readOnly={readOnly}
+              />
+            ))}
+          {packages !== null && packages.length === 0 && (
+            <Box sx={{ padding: '40px 0' }}>
+              <EmptyState
+                title={formatMessage(messages.noPackagesTitle)}
+                subtitle={formatMessage(messages.noPackagesSubtitle)}
+              />
+            </Box>
+          )}
         </div>
       )}
       <TablePagination
@@ -467,14 +467,14 @@ function PublishingQueue(props: PublishingQueueProps) {
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
       />
-			<BulkCancelPackageDialog
-				open={bulkCancelPackageDialogState.open}
-				onSuccess={onCancelDialogSuccess}
-				onClose={bulkCancelPackageDialogState.onClose}
-				onClosed={onCancelDialogClosed}
-				isSubmitting={bulkCancelPackageDialogState.isSubmitting}
-				packages={selectedPackages}
-			/>
+      <BulkCancelPackageDialog
+        open={bulkCancelPackageDialogState.open}
+        onSuccess={onCancelDialogSuccess}
+        onClose={bulkCancelPackageDialogState.onClose}
+        onClosed={onCancelDialogClosed}
+        isSubmitting={bulkCancelPackageDialogState.isSubmitting}
+        packages={selectedPackages}
+      />
     </div>
   );
 }

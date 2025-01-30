@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import TextField from '@mui/material/TextField';
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
 import TextFieldWithMax from '../TextFieldWithMax';
@@ -33,18 +33,13 @@ import Radio from '@mui/material/Radio';
 import Collapse from '@mui/material/Collapse';
 import DateTimeTimezonePicker from '../DateTimeTimezonePicker';
 import { capitalize } from '../../utils/string';
-import { PublishDialogUIProps } from './utils';
-import { PartialSxRecord } from '../../models';
-import Box from '@mui/material/Box';
-import { Theme } from '@mui/material';
+import { InternalDialogState } from './utils';
+import { PartialSxRecord, PublishingTarget } from '../../models';
+import { Theme, Typography } from '@mui/material';
 import { SystemStyleObject } from '@mui/system/styleFunctionSx/styleFunctionSx';
-import { Typography } from '@mui/material';
 import Link from '@mui/material/Link';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { PublishingTarget } from '../../models';
 import { fetchPublishingTargets, FetchPublishingTargetsResponse } from '../../services/publishing';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
-import { InternalDialogState } from './utils';
 
 const messages = defineMessages({
   publishingTargetLoading: {
@@ -98,7 +93,7 @@ export interface PublishDialogFormProps {
   mixedPublishingTargets?: boolean;
   isPromote?: boolean;
   onFetchedPublishedTargets?: ({ published, targets }: { published: boolean; targets: PublishingTarget[] }) => void;
-	sxs?: PartialSxRecord<PublishDialogFormSxKeys>;
+  sxs?: PartialSxRecord<PublishDialogFormSxKeys>;
 }
 
 export function PublishDialogForm(props: PublishDialogFormProps) {
@@ -114,7 +109,7 @@ export function PublishDialogForm(props: PublishDialogFormProps) {
     mixedPublishingDates = false,
     mixedPublishingTargets = false,
     onFetchedPublishedTargets,
-		sxs
+    sxs
   } = props;
 
   const siteId = useActiveSiteId();
@@ -241,19 +236,29 @@ export function PublishDialogForm(props: PublishDialogFormProps) {
           )}
           <FormControlLabel
             value="now"
-            control={<Radio color="primary" sx={{ padding: '4px', marginLeft: '5px', marginRight: '5px', ...sxs?.radioInput }} />}
+            control={
+              <Radio
+                color="primary"
+                sx={{ padding: '4px', marginLeft: '5px', marginRight: '5px', ...sxs?.radioInput }}
+              />
+            }
             label={<FormattedMessage defaultMessage="Now" />}
             slotProps={{
               typography: {
                 sx: { fontSize: '14px' }
               }
             }}
-						sx={{ [`& .${formControlLabelClasses.label}`]: { fontSize: '14px', ...sxs?.formInputs } }}
+            sx={{ [`& .${formControlLabelClasses.label}`]: { fontSize: '14px', ...sxs?.formInputs } }}
             disabled={disabled}
           />
           <FormControlLabel
             value="custom"
-            control={<Radio color="primary" sx={{ padding: '4px', marginLeft: '5px', marginRight: '5px', ...sxs?.radioInput }} />}
+            control={
+              <Radio
+                color="primary"
+                sx={{ padding: '4px', marginLeft: '5px', marginRight: '5px', ...sxs?.radioInput }}
+              />
+            }
             label={
               published ? (
                 <FormattedMessage defaultMessage="Later" />
@@ -274,7 +279,7 @@ export function PublishDialogForm(props: PublishDialogFormProps) {
           in={formState.scheduling === 'custom'}
           timeout={300}
           sx={[
-						formState.scheduling === 'custom' && {
+            formState.scheduling === 'custom' && {
               position: 'relative',
               paddingLeft: '30px',
               '&::before': {
@@ -325,7 +330,12 @@ export function PublishDialogForm(props: PublishDialogFormProps) {
                     <FormControlLabel
                       disabled={disabled || (target.name === 'staging' && isPromote)}
                       value={target.name}
-                      control={<Radio color="primary" sx={{ padding: '4px', marginLeft: '5px', marginRight: '5px', ...sxs?.radioInput }} />}
+                      control={
+                        <Radio
+                          color="primary"
+                          sx={{ padding: '4px', marginLeft: '5px', marginRight: '5px', ...sxs?.radioInput }}
+                        />
+                      }
                       label={messages[target.name] ? formatMessage(messages[target.name]) : capitalize(target.name)}
                       slotProps={{
                         typography: {
@@ -339,7 +349,10 @@ export function PublishDialogForm(props: PublishDialogFormProps) {
             </RadioGroup>
           ) : (
             <Box sx={{ paddingTop: '24px', display: 'inline-flex', ...sxs?.publishingTargetLoaderContainer }}>
-              <Typography variant="body1" sx={{ padding: '10px 12px', borderRadius: '4px', width: '100%', ...sxs?.publishingTargetEmpty }}>
+              <Typography
+                variant="body1"
+                sx={{ padding: '10px 12px', borderRadius: '4px', width: '100%', ...sxs?.publishingTargetEmpty }}
+              >
                 <FormattedMessage defaultMessage="No publishing channels are available." />
               </Typography>
             </Box>
@@ -349,14 +362,14 @@ export function PublishDialogForm(props: PublishDialogFormProps) {
             <Typography
               variant="body1"
               component="span"
-							sx={{
-								border: '1px solid #ced4da',
-								padding: '10px 12px',
-								borderRadius: '4px',
-								width: '100%',
-								fontSize: '14px',
-								...sxs?.formInputs
-							}}
+              sx={{
+                border: '1px solid #ced4da',
+                padding: '10px 12px',
+                borderRadius: '4px',
+                width: '100%',
+                fontSize: '14px',
+                ...sxs?.formInputs
+              }}
               color={publishingTargetsStatus === 'Error' ? 'error' : 'initial'}
             >
               {formatMessage(messages[`publishingTarget${publishingTargetsStatus}`])}

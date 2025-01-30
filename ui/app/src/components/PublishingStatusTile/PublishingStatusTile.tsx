@@ -38,9 +38,9 @@ export interface PublishingStatusTileProps extends React.HTMLAttributes<HTMLDivE
 const PublishingStatusTile = React.forwardRef<HTMLDivElement | HTMLButtonElement, PublishingStatusTileProps>(
   function (props, ref) {
     const { formatMessage } = useIntl();
-		const { publishingStatus, onClick, isFetching, classes: propClasses, ...rest } = props;
-		const status = getPublishingStatusState(publishingStatus);
-		const statusText = getPublishingStatusText(publishingStatus, formatMessage);
+    const { publishingStatus, onClick, isFetching, sxs, ...rest } = props;
+    const status = getPublishingStatusState(publishingStatus);
+    const statusText = getPublishingStatusText(publishingStatus, formatMessage);
     return (
       <Box
         component={onClick ? 'button' : 'div'}

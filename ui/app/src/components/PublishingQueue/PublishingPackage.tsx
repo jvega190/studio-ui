@@ -32,7 +32,6 @@ import { CancelPackageDialog } from '../CancelPackageDialog';
 import useEnhancedDialogState from '../../hooks/useEnhancedDialogState';
 import { PackageDetailsDialog } from '../PackageDetailsDialog';
 
-
 const translations = defineMessages({
   cancelText: {
     id: 'publishingDashboard.cancelItemButtonText',
@@ -142,15 +141,7 @@ export function PublishingPackage(props: PublishingPackageProps) {
 
   function onCancel(packageId: number) {
     setPending({ ...pending, [packageId]: true });
-
-    cancelPackage(siteId, [packageId]).subscribe(
-      () => {
-        ref.cancelComplete(packageId);
-      },
-      ({ response }) => {
-        setApiState({ error: true, errorResponse: response });
-      }
-    );
+    cancelPackageDialogState.onOpen();
   }
 
   const onCancelDialogSuccess = () => {

@@ -19,6 +19,8 @@ import Typography from '@mui/material/Typography';
 import Gears from '../Gears/Gears';
 import { PartialSxRecord } from '../../models';
 import Box, { BoxProps } from '@mui/material/Box';
+import { SystemStyleObject } from '@mui/system/styleFunctionSx/styleFunctionSx';
+import { Theme } from '@mui/material';
 
 type LoadingStateClassKey = 'root' | 'title' | 'subtitle' | 'graphic' | 'graphicRoot';
 
@@ -29,7 +31,6 @@ export interface LoadingStateProps {
   graphicProps?: any;
   classes?: Partial<Record<LoadingStateClassKey, string>>;
   sxs?: PartialSxRecord<LoadingStateClassKey>;
-  styles?: LoadingStateStyles;
   sx?: BoxProps['sx'];
 }
 
@@ -48,8 +49,8 @@ export function LoadingState(props: LoadingStateProps) {
         justifyContent: 'center',
         margin: (theme) => `${theme.spacing(2)} auto`,
         minHeight: '100%',
-				...props.sx,
-        ...sxs?.root
+        ...(props.sx as SystemStyleObject<Theme>),
+        ...(sxs?.root as SystemStyleObject<Theme>)
       }}
     >
       {props.title && (

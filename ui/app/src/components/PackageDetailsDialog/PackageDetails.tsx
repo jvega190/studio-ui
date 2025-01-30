@@ -60,7 +60,7 @@ export function PackageDetails(props: PackageDetailsProps) {
 
   return (
     <>
-      {state.loading && <LoadingState styles={{ root: { width: 100, minHeight: 420 } }} />}
+      {state.loading && <LoadingState sxs={{ root: { width: 100, minHeight: 420 } }} />}
       {state.error && <ApiResponseErrorState error={state.error} />}
       {!Boolean(packageId) && !state.publishPackage && (
         <Typography color="error.main">
