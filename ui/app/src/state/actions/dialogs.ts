@@ -56,7 +56,7 @@ export const showHistoryDialog = /*#__PURE__*/ createAction<Partial<HistoryDialo
 export const closeHistoryDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_HISTORY_DIALOG');
 export const historyDialogClosed = /*#__PURE__*/ createAction('HISTORY_DIALOG_CLOSED');
 export const historyDialogUpdate =
-  /*#__PURE__*/ createAction<Partial<HistoryDialogStateProps>>('HISTORY_DIALOG_UPDATE');
+  /*#__PURE__*/ createAction<Partial<HistoryDialogStateProps>>('UPDATE_HISTORY_DIALOG');
 // endregion
 
 // region View Versions
@@ -221,8 +221,9 @@ export const closeSingleFileUploadDialog = /*#__PURE__*/ createAction<StandardAc
   'CLOSE_SINGLE_FILE_UPLOAD_DIALOG'
 );
 export const singleFileUploadDialogClosed = /*#__PURE__*/ createAction('SINGLE_FILE_UPLOAD_DIALOG_CLOSED');
-export const updateSingleFileUploadDialog =
-  /*#__PURE__*/ createAction<Partial<CreateFileStateProps>>('UPDATE_CREATE_FILE_DIALOG');
+export const updateSingleFileUploadDialog = /*#__PURE__*/ createAction<Partial<CreateFileStateProps>>(
+  'UPDATE_SINGLE_FILE_UPLOAD_DIALOG'
+);
 // endregion
 
 // region Preview Dialog

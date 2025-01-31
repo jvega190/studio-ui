@@ -52,10 +52,8 @@ const RejectDialog = lazy(() => import('../RejectDialog'));
 const EditSiteDialog = lazy(() => import('../EditSiteDialog'));
 const ConfirmDialog = lazy(() => import('../ConfirmDialog'));
 const ErrorDialog = lazy(() => import('../ErrorDialog'));
-const NewContentDialog = lazy(() => import('../NewContentDialog'));
 const ChangeContentTypeDialog = lazy(() => import('../ChangeContentTypeDialog'));
 const HistoryDialog = lazy(() => import('../HistoryDialog'));
-const PublishDialog = lazy(() => import('../PublishDialog'));
 const DependenciesDialog = lazy(() => import('../DependenciesDialog/DependenciesDialog'));
 const DeleteDialog = lazy(() => import('../DeleteDialog'));
 const WorkflowCancellationDialog = lazy(() => import('../WorkflowCancellationDialog'));
@@ -147,6 +145,16 @@ function DialogStackItemContainer(props: DialogStackItem<EnhancedDialogProps>) {
     () => (components.get(component as string) ?? component) as ElementType<EnhancedDialogProps>,
     [component]
   );
+
+  // Check if any of the props is an action
+  const dialogProps: DialogStackItem<EnhancedDialogProps>['props'] = { ...props.props };
+  Object.entries(props?.props ?? {}).forEach(([key, value]) => {
+    // TODO: By just having a type, can I say it is an action?
+    if (value.type) {
+      dialogProps[key] = createCallback(value, dispatch);
+    }
+  });
+
   const onClose: EnhancedDialogProps['onClose'] = () => {
     dispatch(updateDialogState({ id, props: { open: false } }));
   };
@@ -194,7 +202,7 @@ function DialogStackItemContainer(props: DialogStackItem<EnhancedDialogProps>) {
   };
   return (
     <Dialog
-      {...props.props}
+      {...dialogProps}
       onClose={onClose}
       onMaximize={onMaximize}
       onMinimize={onMinimize}
@@ -350,16 +358,6 @@ function GlobalDialogManager() {
         </Suspense>
       ))}
       <Suspense fallback="">
-        {/* region Confirm */}
-        <ConfirmDialog
-          {...state.confirm}
-          onOk={createCallback(state.confirm.onOk, dispatch)}
-          onCancel={createCallback(state.confirm.onCancel, dispatch)}
-          onClose={createCallback(state.confirm.onClose, dispatch)}
-          onClosed={createCallback(state.confirm.onClosed, dispatch)}
-        />
-        {/* endregion */}
-
         {/* region Error */}
         <ErrorDialog
           {...state.error}
@@ -396,44 +394,6 @@ function GlobalDialogManager() {
         />
         {/* endregion */}
 
-        {/* region Publish */}
-        <PublishDialog
-          {...state.publish}
-          onClose={createCallback(state.publish.onClose, dispatch)}
-          onClosed={createCallback(state.publish.onClosed, dispatch)}
-          onSuccess={createCallback(state.publish.onSuccess, dispatch)}
-          onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
-            createCallback(state.publish.onClose, dispatch)
-          )}
-        />
-        {/* endregion */}
-
-        {/* region Create Content */}
-        <NewContentDialog
-          {...state.newContent}
-          onContentTypeSelected={createCallback(state.newContent.onContentTypeSelected, dispatch)}
-          onClose={createCallback(state.newContent.onClose, dispatch)}
-          onClosed={createCallback(state.newContent.onClosed, dispatch)}
-        />
-        {/* endregion */}
-
-        {/* region Change ContentType */}
-        <ChangeContentTypeDialog
-          {...state.changeContentType}
-          onContentTypeSelected={createCallback(state.changeContentType.onContentTypeSelected, dispatch)}
-          onClose={createCallback(state.changeContentType.onClose, dispatch)}
-          onClosed={createCallback(state.changeContentType.onClosed, dispatch)}
-        />
-        {/* endregion */}
-
-        {/* region Dependencies */}
-        <DependenciesDialog
-          {...state.dependencies}
-          onClose={createCallback(state.dependencies.onClose, dispatch)}
-          onClosed={createCallback(state.dependencies.onClosed, dispatch)}
-        />
-        {/* endregion */}
-
         {/* region Delete */}
         <DeleteDialog
           {...state.delete}
@@ -455,6 +415,7 @@ function GlobalDialogManager() {
         />
         {/* endregion */}
 
+        {/* TODO: not used anymore (?) */}
         {/* region View Versions */}
         <ViewVersionDialog
           {...state.viewVersion}
@@ -526,31 +487,6 @@ function GlobalDialogManager() {
         />
         {/* endregion */}
 
-        {/* region Create Folder */}
-        <CreateFolderDialog
-          {...state.createFolder}
-          onClose={createCallback(state.createFolder.onClose, dispatch)}
-          onClosed={createCallback(state.createFolder.onClosed, dispatch)}
-          onCreated={createCallback(state.createFolder.onCreated, dispatch)}
-          onRenamed={createCallback(state.createFolder.onRenamed, dispatch)}
-          onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
-            createCallback(state.createFolder.onClose, dispatch)
-          )}
-        />
-        {/* endregion */}
-
-        {/* region Create File */}
-        <CreateFileDialog
-          {...state.createFile}
-          onClose={createCallback(state.createFile.onClose, dispatch)}
-          onClosed={createCallback(state.createFile.onClosed, dispatch)}
-          onCreated={createCallback(state.createFile.onCreated, dispatch)}
-          onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
-            createCallback(state.createFile.onClose, dispatch)
-          )}
-        />
-        {/* endregion */}
-
         {/* region Rename Asset */}
         <RenameAssetDialog
           {...state.renameAsset}
@@ -560,48 +496,6 @@ function GlobalDialogManager() {
           onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
             createCallback(state.renameAsset.onClose, dispatch)
           )}
-        />
-        {/* endregion */}
-
-        {/* region Copy Items */}
-        <CopyItemsDialog
-          {...state.copy}
-          onClose={createCallback(state.copy.onClose, dispatch)}
-          onClosed={createCallback(state.copy.onClosed, dispatch)}
-          onOk={createCallback(state.copy.onOk, dispatch)}
-        />
-        {/* endregion */}
-
-        {/* region Bulk Upload */}
-        <BulkUploadDialog
-          {...state.upload}
-          onClose={createCallback(state.upload.onClose, dispatch)}
-          onClosed={createCallback(state.upload.onClosed, dispatch)}
-          onFileAdded={createCallback(state.upload.onFileAdded, dispatch)}
-          onUploadSuccess={createCallback(state.upload.onUploadSuccess, dispatch)}
-        />
-        {/* endregion */}
-
-        {/* region Single File Upload */}
-        <SingleFileUploadDialog
-          {...state.singleFileUpload}
-          onClose={createCallback(state.singleFileUpload.onClose, dispatch)}
-          onClosed={createCallback(state.singleFileUpload.onClosed, dispatch)}
-          onUploadStart={createCallback(state.singleFileUpload.onUploadStart, dispatch)}
-          onUploadComplete={createCallback(state.singleFileUpload.onUploadComplete, dispatch)}
-          onUploadError={createCallback(state.singleFileUpload.onUploadError, dispatch)}
-        />
-        {/* endregion */}
-
-        {/* region PreviewDialog */}
-        <PreviewDialog
-          {...state.preview}
-          onMinimize={createCallback(state.preview.onMinimize, dispatch)}
-          onMaximize={createCallback(state.preview.onMaximize, dispatch)}
-          onClose={createCallback(state.preview.onClose, dispatch)}
-          onClosed={createCallback(state.preview.onClosed, dispatch)}
-          onFullScreen={createCallback(state.preview.onFullScreen, dispatch)}
-          onCancelFullScreen={createCallback(state.preview.onCancelFullScreen, dispatch)}
         />
         {/* endregion */}
 
@@ -644,12 +538,12 @@ function GlobalDialogManager() {
         {/* endregion */}
 
         {/* region Publishing Status Dialog */}
-        <PublishingStatusDialog
+        {/* <PublishingStatusDialog
           {...state.publishingStatus}
           onClose={createCallback(state.publishingStatus.onClose, dispatch)}
           onRefresh={createCallback(state.publishingStatus.onRefresh, dispatch)}
           onUnlock={createCallback(state.publishingStatus.onUnlock, dispatch)}
-        />
+        />*/}
         {/* endregion */}
 
         {/* region Unlock Publisher Dialog */}
@@ -658,19 +552,6 @@ function GlobalDialogManager() {
           onError={createCallback(state.unlockPublisher.onError, dispatch)}
           onCancel={createCallback(state.unlockPublisher.onCancel, dispatch)}
           onComplete={createCallback(state.unlockPublisher.onComplete, dispatch)}
-        />
-        {/* endregion */}
-
-        {/* region Widget Dialog */}
-        <WidgetDialog
-          {...state.widget}
-          onClose={createCallback(state.widget.onClose, dispatch)}
-          onMinimize={createCallback(state.widget.onMinimize, dispatch)}
-          onMaximize={createCallback(state.widget.onMaximize, dispatch)}
-          onClosed={createCallback(state.widget.onClosed, dispatch)}
-          onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
-            createCallback(state.widget.onClose, dispatch)
-          )}
         />
         {/* endregion */}
 
