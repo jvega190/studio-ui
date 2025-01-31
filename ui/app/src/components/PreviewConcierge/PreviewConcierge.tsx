@@ -82,7 +82,6 @@ import {
   fetchContentInstanceDescriptor,
   fetchItemsByPath,
   fetchSandboxItem as fetchSandboxItemService,
-  fetchWorkflowAffectedItems,
   insertComponent,
   insertInstance,
   insertItem,
@@ -146,8 +145,8 @@ import {
   showRtePickerActions,
   ShowRtePickerActionsPayload,
   showSingleFileUploadDialog,
-  showWorkflowCancellationDialog,
-  workflowCancellationDialogClosed
+  showViewPackagesDialog,
+  viewPackagesDialogClosed
 } from '../../state/actions/dialogs';
 import { UNDEFINED } from '../../utils/constants';
 import { useCurrentPreviewItem } from '../../hooks/useCurrentPreviewItem';
@@ -1108,18 +1107,16 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
           break;
         }
         case requestWorkflowCancellationDialog.type: {
-          fetchWorkflowAffectedItems(payload.siteId, payload.path).subscribe((items) => {
-            dispatch(
-              showWorkflowCancellationDialog({
-                items,
-                onClosed: batchActions([
-                  workflowCancellationDialogClosed(),
-                  requestWorkflowCancellationDialogOnResult({ type: 'close' })
-                ]),
-                onContinue: requestWorkflowCancellationDialogOnResult({ type: 'continue' })
-              })
-            );
-          });
+          dispatch(
+            showViewPackagesDialog({
+              item: payload.item,
+              onClosed: batchActions([
+                viewPackagesDialogClosed(),
+                requestWorkflowCancellationDialogOnResult({ type: 'close' })
+              ]),
+              onContinue: requestWorkflowCancellationDialogOnResult({ type: 'continue' })
+            })
+          );
           break;
         }
         case showItemMegaMenu.type: {

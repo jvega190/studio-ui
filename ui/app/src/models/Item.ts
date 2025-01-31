@@ -61,12 +61,10 @@ export type ItemActions =
   | 'deleteController'
   | 'deleteTemplate'
   | 'publish'
-  | 'approvePublish'
-  | 'schedulePublish'
-  | 'rejectPublish';
+  | 'schedulePublish';
 // endregion
 
-export type VirtualItemActions = 'preview' | 'copyWithChildren';
+export type VirtualItemActions = 'preview' | 'copyWithChildren' | 'viewPackages';
 
 // region export type AssessRemovalItemActions =
 export type AssessRemovalItemActions =

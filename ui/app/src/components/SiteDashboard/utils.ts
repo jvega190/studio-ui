@@ -18,7 +18,7 @@ import { PREVIEW_URL_PATH, UNDEFINED } from '../../utils/constants';
 import Person from '../../models/Person';
 import { Dispatch, SetStateAction, useMemo } from 'react';
 import useSpreadState from '../../hooks/useSpreadState';
-import { DetailedItem } from '../../models';
+import { DetailedItem, PagedArray, PublishPackage } from '../../models';
 import { AnyAction } from '@reduxjs/toolkit';
 import { changeCurrentUrl } from '../../state/actions/preview';
 import { getSystemLink } from '../../utils/system';
@@ -27,6 +27,7 @@ import { generateMultipleItemOptions, generateSingleItemOptions } from '../../ut
 import { actionsToBeShown } from '../DashletCard/dashletCommons';
 import { ActionsBarAction } from '../ActionsBar';
 import { isImage, isPdfDocument, isPreviewable, isVideo } from '../PathNavigator/utils';
+import { FetchPackagesResponse } from '../../services/publishing';
 
 export interface CommonDashletProps {
   contentHeight?: number | string;
@@ -48,6 +49,7 @@ export interface WithSelectedStateItem {
 
 export interface WithSelectedState<ItemType extends WithSelectedStateItem = { id: string | number }> {
   items: ItemType[];
+  publishingPackages?: Omit<PublishPackage, 'items'>[];
   isAllSelected: boolean;
   hasSelected: boolean;
   selected: Record<string | number, boolean>;
@@ -173,7 +175,19 @@ export function getCurrentPage(offset: number, limit: number) {
   return Math.ceil(offset / limit);
 }
 
-export function getValidatedSelectionState(items, selected, limit) {
+export function getPackagesValidatedSelectionState(packages: PagedArray<FetchPackagesResponse>, limit: number) {
+  const lastPageWithPackages = packages.length ? Math.ceil(packages.length / limit) - 1 : 0;
+  const currentPagePackages = packages.slice(lastPageWithPackages * limit, lastPageWithPackages * limit + limit);
+
+  return {
+    items: currentPagePackages,
+    offset: limit * lastPageWithPackages,
+    total: packages.total,
+    loading: false
+  };
+}
+
+export function getItemsValidatedSelectionState(items, selected, limit) {
   let newItemsById = {};
   // Verify if the number of pages changed
   const lastPageWithItems = items.length ? Math.ceil(items.length / limit) - 1 : 0;

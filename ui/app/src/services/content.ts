@@ -1499,15 +1499,6 @@ export function unlock(siteId: string, path: string): Observable<boolean> {
   );
 }
 
-export function fetchWorkflowAffectedItems(site: string, path: string): Observable<SandboxItem[]> {
-  return get(
-    `/studio/api/2/workflow/affected_paths${toQueryString({
-      siteId: site,
-      path
-    })}`
-  ).pipe(pluck('response', 'items'));
-}
-
 export function createFolder(site: string, path: string, name: string): Observable<unknown> {
   return post(`/studio/api/1/services/api/1/content/create-folder.json${toQueryString({ site, path, name })}`).pipe(
     pluck('response'),

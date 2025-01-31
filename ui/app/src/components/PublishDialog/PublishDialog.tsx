@@ -25,14 +25,7 @@ export function PublishDialog(props: PublishDialogProps) {
   return (
     <EnhancedDialog
       title={<FormattedMessage id="publishDialog.title" defaultMessage="Publish" />}
-      dialogHeaderProps={{
-        subtitle: (
-          <FormattedMessage
-            id="publishDialog.subtitle"
-            defaultMessage="Hard dependencies are automatically submitted with the main items. You may choose whether to submit or not soft dependencies"
-          />
-        )
-      }}
+      maxWidth="lg"
       {...rest}
       isSubmitting={isSubmitting}
     >

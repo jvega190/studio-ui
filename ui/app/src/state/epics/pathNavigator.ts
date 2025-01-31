@@ -66,7 +66,11 @@ import {
   moveContentEvent,
   pluginInstalled,
   publishEvent,
-  workflowEvent
+  workflowEventApprove,
+  workflowEventCancel,
+  workflowEventDirectPublish,
+  workflowEventReject,
+  workflowEventSubmit
 } from '../actions/system';
 
 export default [
@@ -517,7 +521,14 @@ export default [
   // region publishEvent, workflowEvent
   (action$, state$) =>
     action$.pipe(
-      ofType(publishEvent.type, workflowEvent.type),
+      ofType(
+        publishEvent.type,
+        workflowEventSubmit.type,
+        workflowEventDirectPublish.type,
+        workflowEventApprove.type,
+        workflowEventReject.type,
+        workflowEventCancel.type
+      ),
       throttleTime(500),
       withLatestFrom(state$),
       switchMap(([, state]) => {

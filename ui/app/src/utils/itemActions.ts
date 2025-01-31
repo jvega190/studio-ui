@@ -25,7 +25,6 @@ import {
   closeCreateFolderDialog,
   closeDeleteDialog,
   closePublishDialog,
-  closeRejectDialog,
   closeUploadDialog,
   showBrokenReferencesDialog,
   showChangeContentTypeDialog,
@@ -40,17 +39,11 @@ import {
   showNewContentDialog,
   showPreviewDialog,
   showPublishDialog,
-  showRejectDialog,
   showRenameAssetDialog,
   showUploadDialog,
-  showWorkflowCancellationDialog
+  showViewPackagesDialog
 } from '../state/actions/dialogs';
-import {
-  fetchItemsByPath,
-  fetchLegacyItemsTree,
-  fetchSandboxItem,
-  fetchWorkflowAffectedItems
-} from '../services/content';
+import { fetchItemsByPath, fetchLegacyItemsTree, fetchSandboxItem } from '../services/content';
 import {
   batchActions,
   changeContentType,
@@ -70,7 +63,6 @@ import {
   showDeleteItemSuccessNotification,
   showEditItemSuccessNotification,
   showPublishItemSuccessNotification,
-  showRejectItemSuccessNotification,
   unblockUI
 } from '../state/actions/system';
 import {
@@ -103,20 +95,20 @@ import {
   hasGetDependenciesAction,
   hasPasteAction,
   hasPublishAction,
-  hasPublishRejectAction,
   hasPublishRequestAction,
   hasReadAction,
   hasReadHistoryAction,
   hasRenameAction,
   hasSchedulePublishAction,
   hasUnlockAction,
-  hasUploadAction
+  hasUploadAction,
+  isInActiveWorkflow
 } from './content';
 import {
   getEditorMode,
-  isPdfDocument,
   isImage,
   isNavigable,
+  isPdfDocument,
   isPreviewable,
   isVideo
 } from '../components/PathNavigator/utils';
@@ -130,7 +122,7 @@ import SystemType from '../models/SystemType';
 import { fetchItemVersions } from '../state/actions/versions';
 import StandardAction from '../models/StandardAction';
 import { fetchDependant } from '../services/dependencies';
-import { parseLegacyItemToSandBoxItem } from '../utils/content';
+import { fetchAffectedPackages } from '../services/workflow';
 
 export type ContextMenuOptionDescriptor<ID extends string = string> = {
   id: ID;
@@ -216,14 +208,6 @@ const unparsedMenuOptions: Record<AllItemActions, ContextMenuOptionDescriptor<Al
     id: 'requestPublish',
     label: translations.publish
   },
-  approvePublish: {
-    id: 'approvePublish',
-    label: translations.publish
-  },
-  rejectPublish: {
-    id: 'rejectPublish',
-    label: translations.reject
-  },
   history: {
     id: 'history',
     label: translations.history
@@ -275,6 +259,10 @@ const unparsedMenuOptions: Record<AllItemActions, ContextMenuOptionDescriptor<Al
   preview: {
     id: 'preview',
     label: translations.preview
+  },
+  viewPackages: {
+    id: 'viewPackages',
+    label: translations.viewPackages
   }
   // endregion
 };
@@ -411,17 +399,12 @@ export function generateSingleItemOptions(
   if (
     (hasPublishAction(item.availableActions) && actionsToInclude.publish) ||
     (hasPublishRequestAction(item.availableActions) && actionsToInclude.requestPublish) ||
-    (hasApprovePublishAction(item.availableActions) && actionsToInclude.approvePublish) ||
     (hasSchedulePublishAction(item.availableActions) && actionsToInclude.schedulePublish)
   ) {
-    if (hasApprovePublishAction(item.availableActions) && actionsToInclude.approvePublish) {
-      sectionC.push(menuOptions.approvePublish);
-    } else {
-      sectionC.push(menuOptions.publish);
-    }
+    sectionC.push(menuOptions.publish);
   }
-  if (hasPublishRejectAction(item.availableActions) && actionsToInclude.rejectPublish) {
-    sectionC.push(menuOptions.rejectPublish);
+  if (isInActiveWorkflow(item)) {
+    sectionC.push(menuOptions.viewPackages);
   }
   // endregion
 
@@ -474,7 +457,6 @@ export function generateMultipleItemOptions(
   let approvePublish = true;
   let schedulePublish = true;
   let deleteItem = true;
-  let reject = true;
   let sections = [];
   const menuOptions = toContextMenuOptionsLookup(unparsedMenuOptions, formatMessage);
 
@@ -489,22 +471,13 @@ export function generateMultipleItemOptions(
     approvePublish = approvePublish && hasApprovePublishAction(item.availableActions);
     schedulePublish = schedulePublish && hasSchedulePublishAction(item.availableActions);
     deleteItem = deleteItem && hasContentDeleteAction(item.availableActions);
-    reject = reject && hasPublishRejectAction(item.availableActions);
   });
 
-  if (
-    (publish && actionsToInclude.publish) ||
-    (schedulePublish && actionsToInclude.schedulePublish) ||
-    (requestPublish && actionsToInclude.rejectPublish) ||
-    (approvePublish && actionsToInclude.approvePublish)
-  ) {
+  if ((publish && actionsToInclude.publish) || (schedulePublish && actionsToInclude.schedulePublish)) {
     sections.push(menuOptions.publish);
   }
   if (deleteItem && actionsToInclude.delete) {
     sections.push(menuOptions.delete);
-  }
-  if (reject && actionsToInclude.rejectPublish) {
-    sections.push(menuOptions.rejectPublish);
   }
 
   return sections;
@@ -554,23 +527,21 @@ export const itemActionDispatcher = ({
         //  we need the modelId that's not supplied to this function.
         // const src = `${defaultSrc}site=${site}&path=${embeddedParentPath}&isHidden=true&modelId=${modelId}&type=form`
         const path = item.path;
-        fetchWorkflowAffectedItems(site, path).subscribe((items) => {
-          let actionToDispatch = showEditDialog({
-            site,
-            path,
-            authoringBase,
-            onSaveSuccess: batchActions([
-              showEditItemSuccessNotification(),
-              ...(onActionSuccess ? [onActionSuccess] : [])
-            ]),
-            ...extraPayload
-          });
-          if (items?.length > 0) {
-            dispatch(showWorkflowCancellationDialog({ items, onContinue: actionToDispatch }));
-          } else {
-            dispatch(actionToDispatch);
-          }
+        const actionToDispatch = showEditDialog({
+          site,
+          path,
+          authoringBase,
+          onSaveSuccess: batchActions([
+            showEditItemSuccessNotification(),
+            ...(onActionSuccess ? [onActionSuccess] : [])
+          ]),
+          ...extraPayload
         });
+        if (isInActiveWorkflow(item)) {
+          dispatch(showViewPackagesDialog({ item, onContinue: actionToDispatch }));
+        } else {
+          dispatch(actionToDispatch);
+        }
         break;
       }
       case 'createFolder': {
@@ -757,18 +728,11 @@ export const itemActionDispatcher = ({
       }
       case 'paste': {
         if (clipboard.type === 'CUT') {
-          dispatch(
-            blockUI({
-              progress: 'indeterminate',
-              title: `${formatMessage(translations.processing)}...`
-            })
-          );
-          fetchWorkflowAffectedItems(site, clipboard.sourcePath).subscribe((items) => {
-            dispatch(unblockUI());
-            if (items?.length > 0) {
+          fetchSandboxItem(site, clipboard.sourcePath).subscribe((clipboardItem) => {
+            if (isInActiveWorkflow(clipboardItem)) {
               dispatch(
-                showWorkflowCancellationDialog({
-                  items,
+                showViewPackagesDialog({
+                  item: clipboardItem,
                   onContinue: pasteItem({ path: item.path })
                 })
               );
@@ -856,32 +820,20 @@ export const itemActionDispatcher = ({
         break;
       }
       case 'editCode': {
-        const path = item.path;
-        dispatch(
-          blockUI({
-            progress: 'indeterminate',
-            title: formatMessage(translations.verifyingAffectedWorkflows)
-          })
-        );
-        fetchWorkflowAffectedItems(site, path).subscribe((items) => {
-          const editorShowAction = showCodeEditorDialog({
-            path: item.path,
-            mode: getEditorMode(item)
-          });
-          if (items?.length > 0) {
-            dispatch(
-              batchActions([
-                unblockUI(),
-                showWorkflowCancellationDialog({
-                  items,
-                  onContinue: editorShowAction
-                })
-              ])
-            );
-          } else {
-            dispatch(batchActions([unblockUI(), editorShowAction]));
-          }
+        const editorShowAction = showCodeEditorDialog({
+          path: item.path,
+          mode: getEditorMode(item)
         });
+        if (isInActiveWorkflow(item)) {
+          dispatch(
+            showViewPackagesDialog({
+              item,
+              onContinue: editorShowAction
+            })
+          );
+        } else {
+          dispatch(editorShowAction);
+        }
         break;
       }
       case 'viewCode': {
@@ -925,6 +877,10 @@ export const itemActionDispatcher = ({
         dispatch(previewItem({ item: item, newTab: event.ctrlKey || event.metaKey }));
         break;
       }
+      case 'viewPackages': {
+        dispatch(showViewPackagesDialog({ item }));
+        break;
+      }
       default:
         break;
     }
@@ -953,7 +909,6 @@ export const itemActionDispatcher = ({
       dispatch(deleteTemplate({ item, onSuccess: onActionSuccess }));
       break;
     }
-    case 'approvePublish':
     case 'publish':
     case 'schedulePublish':
     case 'requestPublish': {
@@ -972,21 +927,6 @@ export const itemActionDispatcher = ({
             ...items.map((item) => reloadDetailedItem({ path: item.path })),
             closePublishDialog(),
             fetchPublishingStatus(),
-            ...(onActionSuccess ? [onActionSuccess] : [])
-          ])
-        })
-      );
-      break;
-    }
-    case 'rejectPublish': {
-      dispatch(
-        showRejectDialog({
-          items,
-          onRejectSuccess: batchActions([
-            showRejectItemSuccessNotification({
-              count: items.length
-            }),
-            closeRejectDialog(),
             ...(onActionSuccess ? [onActionSuccess] : [])
           ])
         })

@@ -22,7 +22,8 @@ import { SandboxItem } from '../models/Item';
 import { PagedArray } from '../models/PagedArray';
 import { createItemActionMap, createItemStateMap } from '../utils/content';
 import PaginationOptions from '../models/PaginationOptions';
-import { PublishingParams } from '../models/Publishing';
+import { PublishingPackageApproveParams, PublishPackage } from '../models/Publishing';
+import { ApiResponse } from '../models';
 
 export function fetchItemStates(
   siteId: string,
@@ -57,15 +58,20 @@ export interface StatesToUpdate {
   staged?: boolean;
 }
 
-export function setItemStates(siteId: string, items: string[], { ...rest }: StatesToUpdate) {
+export function setItemStates(siteId: string, items: string[], { ...rest }: StatesToUpdate): Observable<ApiResponse> {
   return postJSON('/studio/api/2/workflow/item_states', {
     siteId,
     items: items,
     ...rest
-  }).pipe(map(() => true));
+  }).pipe(map(({ response }) => response));
 }
 
-export function setItemStatesByQuery(siteId: string, states: number, update: StatesToUpdate, path?: string) {
+export function setItemStatesByQuery(
+  siteId: string,
+  states: number,
+  update: StatesToUpdate,
+  path?: string
+): Observable<ApiResponse> {
   return postJSON('/studio/api/2/workflow/update_item_states_by_query', {
     query: {
       siteId,
@@ -73,34 +79,40 @@ export function setItemStatesByQuery(siteId: string, states: number, update: Sta
       states
     },
     update
-  }).pipe(map(() => true));
+  }).pipe(map(({ response }) => response));
 }
 
-export function publish(siteId: string, data: PublishingParams): Observable<boolean> {
-  return postJSON('/studio/api/2/workflow/publish', {
-    siteId,
-    ...data
-  }).pipe(map(() => true));
+export function approve(
+  siteId: string,
+  packageId: number,
+  data: PublishingPackageApproveParams
+): Observable<ApiResponse> {
+  return postJSON(`/studio/api/2/workflow/${siteId}/package/${packageId}/approve`, data).pipe(
+    map(({ response }) => response)
+  );
 }
 
-export function requestPublish(siteId: string, data: PublishingParams): Observable<boolean> {
-  return postJSON('/studio/api/2/workflow/request_publish', {
-    siteId,
-    ...data
-  }).pipe(map(() => true));
-}
-
-export function approve(siteId: string, data: PublishingParams): Observable<boolean> {
-  return postJSON('/studio/api/2/workflow/approve', {
-    siteId,
-    ...data
-  }).pipe(map(() => true));
-}
-
-export function reject(siteId: string, items: string[], comment: string): Observable<boolean> {
-  return postJSON('/studio/api/2/workflow/reject', {
-    siteId,
-    items,
+export function reject(siteId: string, packageId: number, comment: string): Observable<ApiResponse> {
+  return postJSON(`/studio/api/2/workflow/${siteId}/package/${packageId}/reject`, {
     comment
-  }).pipe(map(() => true));
+  }).pipe(map(({ response }) => response));
+}
+
+export function cancelPackages(
+  siteId: string,
+  data: {
+    packageIds: number[];
+    comment: string;
+  }
+): Observable<ApiResponse> {
+  return postJSON(`/studio/api/2/workflow/${siteId}/cancel`, data).pipe(map(({ response }) => response));
+}
+
+export function fetchAffectedPackages(
+  siteId: string,
+  path: string,
+  includeChildren?: boolean
+): Observable<PublishPackage[]> {
+  const qs = toQueryString({ path, includeChildren });
+  return get(`/studio/api/2/workflow/${siteId}/affected_packages${qs}`).pipe(map(({ response }) => response.packages));
 }
