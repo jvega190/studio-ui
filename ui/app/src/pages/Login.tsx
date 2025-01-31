@@ -87,7 +87,10 @@ export default function Login(props: LoginViewProps) {
                 <ErrorState
                   title={supportError}
                   imageUrl="/studio/static-assets/images/warning_state.svg"
-                  sxs={{ title: { textAlign: 'center' }, image: { width: 250, marginBottom: 10, marginTop: 10 } }}
+                  sxs={{
+                    title: { textAlign: 'center' },
+                    image: { width: 250, marginBottom: '10px', marginTop: '10px' }
+                  }}
                 />
               </DialogContent>
             </Dialog>
