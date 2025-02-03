@@ -19,7 +19,7 @@ import { Typography } from '@mui/material';
 import { FormattedMessage } from 'react-intl';
 import Box from '@mui/material/Box';
 import { PersonAvatar } from '../DashletCard/dashletCommons';
-import { getPersonFullName } from '../SiteDashboard';
+import { getPersonFullName } from '../../utils/object';
 import ItemPublishingTargetIcon from '../ItemPublishingTargetIcon';
 import React from 'react';
 

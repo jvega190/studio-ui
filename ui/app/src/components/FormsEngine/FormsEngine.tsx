@@ -42,7 +42,7 @@ import React, {
   useRef,
   useState
 } from 'react';
-import { ContentTypeField, ContentTypeSection, SandboxItem } from '../../models';
+import { ContentTypeField, ContentTypeSection, PublishPackage, SandboxItem } from '../../models';
 import {
   FormRequirementsResponse,
   FormsEngineAtoms,
@@ -63,9 +63,9 @@ import {
   fetchContentXML,
   fetchDescriptorXML,
   fetchDetailedItem,
-  fetchWorkflowAffectedItems,
   lock,
-  unlock
+  unlock,
+  writeContent
 } from '../../services/content';
 import { fetchDetailedItemComplete } from '../../state/actions/content';
 import { catchError, forkJoin, map, Observable, of, Subject, switchMap } from 'rxjs';
@@ -148,7 +148,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Grow from '@mui/material/Grow';
 import { UIBlocker } from '../UIBlocker';
 import PrimaryButton from '../PrimaryButton';
-import { pushDialog } from '../../state/actions/dialogStack';
+import { popDialog, pushDialog } from '../../state/actions/dialogStack';
 import FieldEmptyStateIndicator from './common/FieldEmptyStateIndicator';
 import useFetchSandboxItems from '../../hooks/useFetchSandboxItems';
 import { buildFileUrl } from '../../services/plugin';
@@ -165,6 +165,10 @@ import usePreviousValue from '../../hooks/usePreviousValue';
 import { areTuplesEqual } from '../../utils/array';
 import { AjaxError } from 'rxjs/ajax';
 import { ErrorState } from '../ErrorState';
+import { AlertDialogProps } from '../AlertDialog';
+import { nanoid } from 'nanoid';
+import alertDialogUrl from '../../assets/warning.svg';
+import { fetchAffectedPackages } from '../../services/workflow';
 
 // TODO:
 //  - PathNav and other ares to open new edit form
@@ -354,9 +358,9 @@ const internalLockContentService: (siteId: string, path: string) => Observable<F
       return of({ locked: false, lockError: error.response?.response });
     }),
     switchMap((lockResult) =>
-      fetchWorkflowAffectedItems(siteId, path).pipe(
-        map((affectedItemsInWorkflow) => ({ ...lockResult, affectedItemsInWorkflow })),
-        catchError((error) => of({ ...lockResult, affectedItemsInWorkflow: null, lockError: error.response?.response }))
+      fetchAffectedPackages(siteId, path).pipe(
+        map((affectedPackages) => ({ ...lockResult, affectedPackages })),
+        catchError((error) => of({ ...lockResult, affectedPackages: null, lockError: error.response?.response }))
       )
     )
   );
@@ -410,7 +414,7 @@ const fetchRequirements: (args: {
   // requirements service.
   return (
     readonly
-      ? of({ locked: false, lockError: null, affectedItemsInWorkflow: null } as FormsEngineEditContextProps)
+      ? of({ locked: false, lockError: null, affectedPackages: null } as FormsEngineEditContextProps)
       : internalLockContentService(siteId, path)
   ).pipe(
     switchMap((lockResult) =>
@@ -449,7 +453,7 @@ const fetchRequirements: (args: {
         sourceMap,
         locked: lockResult.locked,
         lockError: lockResult.lockError,
-        affectedItemsInWorkflow: lockResult.affectedItemsInWorkflow,
+        affectedPackages: lockResult.affectedPackages,
         // If opening as readonly, lock result is of no consequence. If opened for edit, will set to readonly
         // if there was an error locking the content (the item is not locked).
         // readonly: readonly || !lockResult.locked,
@@ -596,7 +600,7 @@ const createFormStackData: (mixin?: Partial<StableFormContextProps>) => StableFo
 
 function Root(props: FormsEngineProps) {
   const store = useMemo(() => createStore(), []); // TODO: Use stable memo?
-  const stableGlobalContextRef = useRef<StableGlobalContextProps>();
+  const stableGlobalContextRef = useRef<StableGlobalContextProps>(undefined);
   if (!stableGlobalContextRef.current) {
     stableGlobalContextRef.current = {
       api: null,
@@ -815,7 +819,7 @@ function Prepper(props: FormsEngineProps) {
         const lockResultAtom = atom<FormsEngineEditContextProps>({
           locked: isParentLocked,
           lockError: parentLockResult.lockError,
-          affectedItemsInWorkflow: parentLockResult.affectedItemsInWorkflow
+          affectedPackages: parentLockResult.affectedPackages
         });
         const readonlyAtom = createReadonlyAtom(lockResultAtom);
         const atoms: FormsEngineAtoms = {
@@ -841,7 +845,9 @@ function Prepper(props: FormsEngineProps) {
           path: parentPath,
           sourceMap: null,
           pathInSite: parentPathInSite,
-          contentType: parentContentType
+          contentType: parentContentType,
+          // TODO: is this the right contentObject?
+          contentObject: values
         });
       } else if (
         // An embedded component is being opened as a stacked form.
@@ -871,11 +877,11 @@ function Prepper(props: FormsEngineProps) {
           atoms.valueByFieldId[fieldId] = valueAtom;
           atoms.validationByFieldId[fieldId] = validityAtom;
         });
-        const setStateValues = (locked: boolean, lockError: ApiResponse, affectedItemsInWorkflow: SandboxItem[]) => {
+        const setStateValues = (locked: boolean, lockError: ApiResponse, affectedPackages: PublishPackage[]) => {
           const lockResultAtom = atom<FormsEngineEditContextProps>({
             locked,
             lockError,
-            affectedItemsInWorkflow
+            affectedPackages
           });
           atoms.lockResult = lockResultAtom;
           atoms.readonly = createReadonlyAtom(lockResultAtom);
@@ -884,15 +890,17 @@ function Prepper(props: FormsEngineProps) {
             path: update.path,
             sourceMap: null,
             pathInSite: parentPathInSite,
-            contentType: contentType
+            contentType: contentType,
+            // TODO: source contentObject (from parent?)
+            contentObject: {}
           });
         };
 
         if (readonly === isParentReadonly) {
-          setStateValues(isParentLocked, parentLockResult.lockError, parentLockResult.affectedItemsInWorkflow);
+          setStateValues(isParentLocked, parentLockResult.lockError, parentLockResult.affectedPackages);
         } else {
           const sub = internalLockContentService(siteId, update.path).subscribe((result) => {
-            setStateValues(result.locked, result.lockError, result.affectedItemsInWorkflow);
+            setStateValues(result.locked, result.lockError, result.affectedPackages);
           });
           return () => sub.unsubscribe();
         }
@@ -910,7 +918,7 @@ function Prepper(props: FormsEngineProps) {
         const lockResultAtom = atom<FormsEngineEditContextProps>({
           locked: false,
           lockError: null,
-          affectedItemsInWorkflow: null
+          affectedPackages: null
         });
         const atoms: FormsEngineAtoms = {
           isSubmitting: atom(false),
@@ -920,19 +928,20 @@ function Prepper(props: FormsEngineProps) {
           lockResult: lockResultAtom,
           readonly: createReadonlyAtom(lockResultAtom)
         };
+        const contentObject: LookupTable<unknown> = {
+          [XmlKeys.modelId]: newModelId,
+          [XmlKeys.contentTypeId]: contentType.id,
+          [XmlKeys.displayTemplate]: contentType.displayTemplate,
+          [XmlKeys.templateNotRequired]: Boolean(contentType.displayTemplate ? 'false' : 'true'),
+          [XmlKeys.mergeStrategy]: 'inherit-levels',
+          createdDate: dateIsoString,
+          createdDate_dt: dateIsoString,
+          lastModifiedDate: dateIsoString,
+          lastModifiedDate_dt: dateIsoString
+        };
         const values = createCleanValuesObject(
           contentType.fields,
-          {
-            [XmlKeys.modelId]: newModelId,
-            [XmlKeys.contentTypeId]: contentType.id,
-            [XmlKeys.displayTemplate]: contentType.displayTemplate,
-            [XmlKeys.templateNotRequired]: Boolean(contentType.displayTemplate ? 'false' : 'true'),
-            [XmlKeys.mergeStrategy]: 'inherit-levels',
-            createdDate: dateIsoString,
-            createdDate_dt: dateIsoString,
-            lastModifiedDate: dateIsoString,
-            lastModifiedDate_dt: dateIsoString
-          },
+          contentObject,
           contentTypesById,
           (fieldId, value) => {
             createAtom(contentType, contentType.fields, fieldId, atoms, value);
@@ -945,7 +954,8 @@ function Prepper(props: FormsEngineProps) {
           // TODO: Sourcemap? How can we determine what would be inherited by this content? New API?
           sourceMap: null,
           pathInSite: create.path,
-          contentType
+          contentType,
+          contentObject
         });
       } /* if (isUpdateMode) */ else {
         const subscription = fetchRequirements({
@@ -977,7 +987,7 @@ function Prepper(props: FormsEngineProps) {
             const lockResultAtom = atom<FormsEngineEditContextProps>({
               locked: requirements.locked,
               lockError: requirements.lockError,
-              affectedItemsInWorkflow: requirements.affectedItemsInWorkflow
+              affectedPackages: requirements.affectedPackages
             });
             const atoms: FormsEngineAtoms = {
               isSubmitting: atom(false),
@@ -1001,7 +1011,8 @@ function Prepper(props: FormsEngineProps) {
               // TODO: Sourcemap? How can we determine what would be inherited by this content? New API?
               sourceMap: requirements.sourceMap,
               pathInSite: requirements.pathInSite,
-              contentType: requirements.contentType
+              contentType: requirements.contentType,
+              contentObject: requirements.contentObject
             });
           });
         return () => subscription.unsubscribe();
@@ -1093,7 +1104,7 @@ function Form(props: FormsEngineProps) {
   const activeSite = useActiveSite();
   const siteId = activeSite.id;
   const contentTypesById = useContentTypes();
-  const containerRef = useRef<HTMLDivElement>();
+  const containerRef = useRef<HTMLDivElement>(undefined);
   const [containerStats, setContainerStats] = useState<{
     // TODO: Not using all of this. Clean up.
     x: number;
@@ -1122,8 +1133,9 @@ function Form(props: FormsEngineProps) {
   const formContextApi = useContext(FormsEngineFormContextApi);
   const { fieldUpdates$, changedFieldIds, state: stateCache } = stableFormContext;
   const item = useContext(ItemContext);
-  const { id, contentType, sourceMap } = useContext(ItemMetaContext);
+  const { id, contentType, sourceMap, contentObject } = useContext(ItemMetaContext);
   const [isSubmitting, setIsSubmitting] = useAtom(stableFormContext.atoms.isSubmitting);
+  const [blockUI, setBlockUI] = useState(false);
   const [hasPendingChanges, setHasPendingChanges] = useAtom(stableFormContext.atoms.hasPendingChanges);
   const readonly = useAtomValue(stableFormContext.atoms.readonly);
   const [lockStatus, setLockStatus] = useAtom(stableFormContext.atoms.lockResult);
@@ -1286,7 +1298,7 @@ function Form(props: FormsEngineProps) {
   // top/bottom margins (2 top, 2 bottom). If not a dialog, take up the whole screen.
   const targetHeight = getTargetHeight(isDialog, isFullScreen, theme);
 
-  const affectsWorkflowItems = lockStatus.affectedItemsInWorkflow?.length > 0;
+  const affectsWorkflowItems = lockStatus.affectedPackages?.length > 0;
   const isEmbedded = Boolean(update?.modelId);
   const isCreateMode = Boolean(create?.path);
   const isRepeatMode = Boolean(repeat?.fieldId);
@@ -1377,35 +1389,84 @@ function Form(props: FormsEngineProps) {
   }
 
   const disableSave = isSubmitting || (affectsWorkflowItems && !acceptedWorkflowCancellation);
-  const handleSave: ButtonProps['onClick'] = (e) => {
+  const handleSave: ButtonProps['onClick'] = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    // TODO: Saving repeats & embedded
     setIsSubmitting(isSubmitting);
-    setTimeout(() => {
-      const values = extractValueAtoms(store, stableFormContext.atoms.valueByFieldId);
-      // Put system properties in xml before creating the XML
-      values[XmlKeys.contentTypeId] = contentType.id;
-      values[XmlKeys.displayTemplate] = contentType.displayTemplate;
-      values[XmlKeys.mergeStrategy] = null;
-      values[XmlKeys.modelId] = objectId;
-      values[XmlKeys.fileName] = null;
-      values[XmlKeys.folderName] = null;
-      values[XmlKeys.dateCreated] = null;
-      values[XmlKeys.dateModified] = null;
-      values[XmlKeys.dateCreated + '_dt'] = null;
-      values[XmlKeys.dateModified + '_dt'] = null;
-      const xml = buildContentXml(values, contentTypesById);
-      const dom = fromString(xml);
-      setIsSubmitting(false);
-      setHasPendingChanges(false);
-      formContextApi.setValuesCheckpoint(values);
-      const instructions = onSave?.({ dom, xml, values });
-      if (instructions?.close) {
-        setTimeout(() => {
-          // Executing the onClose without the timeout, causes values set at the control prior to closing to get lost somehow.
-          // Putting the timeout at the control works too, but prefer to simply it for controls and absorb the complexity here.
-          (isStackedForm ? onCloseProp : enhancedDialogOnClose)?.(e, null);
-        });
+    const values = extractValueAtoms(store, stableFormContext.atoms.valueByFieldId);
+    const date = new Date().toISOString();
+    // Put system properties in xml before creating the XML
+    values[XmlKeys.contentTypeId] = contentType.id;
+    values[XmlKeys.displayTemplate] = contentType.displayTemplate;
+    values[XmlKeys.mergeStrategy] = contentObject[XmlKeys.mergeStrategy];
+    values[XmlKeys.modelId] = objectId;
+    values[XmlKeys.fileName] = values[XmlKeys.fileName] ?? contentObject[XmlKeys.fileName];
+    values[XmlKeys.folderName] = values[XmlKeys.folderName] ?? contentObject[XmlKeys.folderName];
+    values[XmlKeys.dateCreated] = contentObject[XmlKeys.dateCreated] ?? date;
+    values[XmlKeys.dateCreated + '_dt'] = contentObject[XmlKeys.dateCreated + '_dt'] ?? date;
+    values[XmlKeys.dateModified] = date;
+    values[XmlKeys.dateModified + '_dt'] = date;
+    const xml = buildContentXml(values, contentTypesById);
+    let path: string;
+    if (isEmbedded) {
+      // TODO: Handle
+      return;
+    } else if (isRepeatMode) {
+      // TODO: Handle
+      return;
+    } else if (isCreateMode) {
+      path = create.path;
+    } /* is a plain update */ else {
+      path = update.path;
+    }
+    // path = '/site/website/fe2-save-result.xml';
+    writeContent(siteId, path, xml).subscribe({
+      next() {
+        setIsSubmitting(false);
+        setHasPendingChanges(false);
+        formContextApi.setValuesCheckpoint(values);
+        const dom = fromString(xml);
+        const instructions = onSave?.({ dom, xml, values });
+        if (instructions?.close) {
+          setTimeout(() => {
+            // Controls like the Item Selector use the onSave so that once the form saves, the control of the underlying form gets updated.
+            // Executing the onClose without the timeout, causes values set at the control prior to closing to get lost somehow.
+            // Putting the timeout at the control works too, but prefer to simply it for controls and absorb the complexity here.
+            (isStackedForm ? onCloseProp : enhancedDialogOnClose)?.(e, null);
+          });
+        }
+      },
+      error(error: AjaxError) {
+        setIsSubmitting(false);
+        const id = nanoid();
+        dispatch(
+          pushDialog({
+            id,
+            component: 'craftercms.components.AlertDialog',
+            allowFullScreen: false,
+            allowMinimize: false,
+            props: {
+              imageUrl: alertDialogUrl,
+              sxs: { image: { pb: 1 } },
+              children: (
+                <Box>
+                  <Typography marginBottom={1}>
+                    <FormattedMessage defaultMessage="An error occurred trying to save the form" />
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    {error.response.response?.message ?? error.response.message}
+                  </Typography>
+                </Box>
+              ),
+              buttons: (
+                <PrimaryButton fullWidth onClick={() => dispatch(popDialog({ id }))}>
+                  <FormattedMessage defaultMessage="Accept" />
+                </PrimaryButton>
+              )
+            } as AlertDialogProps
+          })
+        );
       }
-    }, 1000);
+    });
   };
 
   const updateEditEnablement = (enableEdit: boolean, callback?: (lockResult: FormsEngineEditContextProps) => void) => {
@@ -1423,7 +1484,7 @@ function Form(props: FormsEngineProps) {
         setLockStatus({
           locked: lockResult.locked,
           lockError: lockResult.lockError,
-          affectedItemsInWorkflow: lockResult?.affectedItemsInWorkflow ?? null
+          affectedPackages: lockResult?.affectedPackages ?? null
         });
         callback?.(lockResult);
       });
@@ -1470,6 +1531,7 @@ function Form(props: FormsEngineProps) {
       ) {
         doClose();
       } else {
+        setBlockUI(true);
         internalUnlockContentService(siteId, item.path).subscribe(() => {
           doClose();
         });
@@ -1494,7 +1556,7 @@ function Form(props: FormsEngineProps) {
         '.space-y-2 > :not([hidden]) ~ :not([hidden])': { mt: 2 }
       }}
     >
-      <UIBlocker open={isSubmitting} />
+      <UIBlocker open={isSubmitting || blockUI} />
       <Paper square component="header" data-area-id="formHeader" elevation={0}>
         <Box component={Container} display="flex" alignItems="center" justifyContent="space-between" pt={2}>
           <Typography variant="body2" color="textSecondary">
@@ -1587,7 +1649,7 @@ function Form(props: FormsEngineProps) {
                         dispatch(
                           pushDialog({
                             component: 'craftercms.components.WorkflowCancellationDialog',
-                            props: { items: lockStatus.affectedItemsInWorkflow } as WorkflowCancellationDialogProps
+                            props: { items: lockStatus.affectedPackages } as WorkflowCancellationDialogProps
                           })
                         );
                       }}
@@ -2285,7 +2347,11 @@ function EditModeHeader({
       <Container maxWidth="xl" sx={{ display: 'flex' }}>
         {isLargeContainer && (
           <Tooltip title={<FormattedMessage defaultMessage="Collapse table of contents" />}>
-            <IconButton size="small" onClick={() => setCollapsedToC(!useCollapsedToC)} sx={{ mr: 0.5 }}>
+            <IconButton
+              size="small"
+              onClick={() => setCollapsedToC(!useCollapsedToC)}
+              sx={{ mr: 0.5, visibility: activeTab === 0 ? undefined : 'hidden' }}
+            >
               <MenuOpenIcon
                 sx={{
                   // Add transform to rotate 180deg when collapsed
