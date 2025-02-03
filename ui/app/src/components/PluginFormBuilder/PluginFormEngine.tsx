@@ -17,8 +17,7 @@
 import React from 'react';
 import { MarketplacePluginParameter } from '../../models/MarketplacePlugin';
 import TextField from '@mui/material/TextField';
-import Grid from '@mui/material/Grid';
-import { makeStyles } from 'tss-react/mui';
+import Grid from '@mui/material/Grid2';
 import { defineMessages, useIntl } from 'react-intl';
 import PasswordTextField from '../PasswordTextField/PasswordTextField';
 
@@ -32,19 +31,6 @@ export interface PluginFormEngineProps {
   onKeyPress?(event: React.KeyboardEvent): any;
 }
 
-const useStyles = makeStyles()(() => ({
-  container: {
-    width: '100%',
-    paddingLeft: '24px',
-    '& .MuiGrid-item': {
-      paddingTop: '24px',
-      '&:last-child': {
-        paddingBottom: '12px'
-      }
-    }
-  }
-}));
-
 const messages = defineMessages({
   required: {
     id: 'createSiteDialog.required',
@@ -53,7 +39,6 @@ const messages = defineMessages({
 });
 
 export function PluginFormEngine(props: PluginFormEngineProps) {
-  const { classes } = useStyles();
   const { parameters, handleInputChange, submitted, fields, onKeyPress } = props;
   const { formatMessage } = useIntl();
 
@@ -74,7 +59,7 @@ export function PluginFormEngine(props: PluginFormEngineProps) {
   function renderParameters(parameters: [MarketplacePluginParameter]) {
     return parameters.map((parameter, index) => {
       return (
-        <Grid item xs={12} key={index} data-field-id={parameter.name}>
+        <Grid size={12} key={index} data-field-id={parameter.name} sx={{ pt: 3 }}>
           {parameter.type === 'STRING' ? (
             <TextField
               id={parameter.name}
@@ -121,7 +106,19 @@ export function PluginFormEngine(props: PluginFormEngineProps) {
   }
 
   return (
-    <Grid container spacing={0} className={classes.container}>
+    <Grid
+      container
+      spacing={0}
+      sx={{
+        px: 3,
+        width: '100%',
+        '& .MuiGrid-item': {
+          '&:last-child': {
+            paddingBottom: '12px'
+          }
+        }
+      }}
+    >
       {renderParameters(parameters)}
     </Grid>
   );

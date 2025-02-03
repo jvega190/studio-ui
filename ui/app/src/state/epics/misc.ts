@@ -21,12 +21,13 @@ import GlobalState from '../../models/GlobalState';
 import {
   batchActions,
   changeContentType as changeContentTypeAction,
+  createFile as createFileAction,
   editContentTypeTemplate,
   editController,
   editTemplate
 } from '../actions/misc';
-import { changeContentType, createFile, fetchWorkflowAffectedItems } from '../../services/content';
-import { showCodeEditorDialog, showEditDialog, showWorkflowCancellationDialog } from '../actions/dialogs';
+import { changeContentType, createFile, fetchSandboxItem } from '../../services/content';
+import { showCodeEditorDialog, showEditDialog, showViewPackagesDialog } from '../actions/dialogs';
 import { reloadDetailedItem } from '../actions/content';
 import { blockUI, showEditItemSuccessNotification, unblockUI } from '../actions/system';
 import { CrafterCMSEpic } from '../store';
@@ -35,6 +36,7 @@ import { showErrorDialog } from '../reducers/dialogs/error';
 import { getFileNameFromPath, getParentPath } from '../../utils/path';
 import { popPiece } from '../../utils/string';
 import { associateTemplate } from '../actions/preview';
+import { isInActiveWorkflow } from '../../utils/content';
 
 const epics = [
   (action$, state$: Observable<GlobalState>) =>
@@ -85,39 +87,38 @@ const epics = [
           mode = payload.mode;
           contentType = payload.contentType;
         }
+        const fileName = editContentTypeTemplate.type === type ? getFileNameFromPath(path) : payload.fileName;
+        const destinationPath = editContentTypeTemplate.type === type ? getParentPath(path) : payload.path;
         return merge(
           of(blockUI({ message: getIntl().formatMessage(translations.verifyingAffectedWorkflows) })),
-          fetchWorkflowAffectedItems(state.sites.active, path).pipe(
-            map((items) =>
-              items?.length > 0
-                ? batchActions([
-                    showWorkflowCancellationDialog({
-                      items,
-                      onContinue: showCodeEditorDialog({
+          fetchSandboxItem(state.sites.active, path).pipe(
+            map((item) =>
+              item
+                ? isInActiveWorkflow(item)
+                  ? batchActions([
+                      showViewPackagesDialog({
+                        item,
+                        onContinue: showCodeEditorDialog({
+                          path,
+                          mode,
+                          contentType
+                        })
+                      }),
+                      unblockUI()
+                    ])
+                  : batchActions([
+                      showCodeEditorDialog({
+                        site: state.sites.active,
                         path,
                         mode,
                         contentType
-                      })
-                    }),
-                    unblockUI()
-                  ])
-                : batchActions([
-                    showCodeEditorDialog({
-                      site: state.sites.active,
-                      path,
-                      mode,
-                      contentType
-                    }),
-                    unblockUI()
-                  ])
-            ),
-            catchError(({ response }) => {
-              if (response.response.code === 7000) {
-                const fileName = editContentTypeTemplate.type === type ? getFileNameFromPath(path) : payload.fileName;
-                const destinationPath = editContentTypeTemplate.type === type ? getParentPath(path) : payload.path;
-                return createFile(state.sites.active, destinationPath, fileName).pipe(
-                  map(() =>
-                    batchActions(
+                      }),
+                      unblockUI()
+                    ])
+                : createFileAction({
+                    path: destinationPath,
+                    fileName,
+                    onCreated: batchActions(
                       [
                         // Only editing templates should associate. Groovy controllers are not on the content type definition.
                         type !== editController.type &&
@@ -131,9 +132,9 @@ const epics = [
                         unblockUI()
                       ].filter(Boolean)
                     )
-                  )
-                );
-              }
+                  })
+            ),
+            catchError(({ response }) => {
               return of(
                 batchActions([
                   showErrorDialog({
@@ -145,6 +146,16 @@ const epics = [
             })
           )
         );
+      })
+    ),
+  (action$, state$) =>
+    action$.pipe(
+      ofType(createFileAction.type),
+      withLatestFrom(state$),
+      switchMap(([{ payload }, state]) => {
+        const path = payload.path;
+        const fileName = payload.fileName;
+        return createFile(state.sites.active, path, fileName).pipe(map(() => payload.onCreated));
       })
     )
 ] as CrafterCMSEpic[];

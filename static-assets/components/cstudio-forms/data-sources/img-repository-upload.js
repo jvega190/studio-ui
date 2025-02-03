@@ -45,6 +45,8 @@ YAHOO.extend(CStudioForms.Datasources.ImgRepoUpload, CStudioForms.CStudioFormDat
    */
   insertImageAction(insertCb) {
     var _self = this;
+    const control = insertCb.imagePicker;
+    const currentValue = control?.form.model[control.fieldDef.id] ?? '';
 
     if (this.useSearch) {
       var searchContext = {
@@ -69,13 +71,16 @@ YAHOO.extend(CStudioForms.Datasources.ImgRepoUpload, CStudioForms.CStudioFormDat
         searchContext.path = this.repoPath.endsWith('/') ? `${this.repoPath}.+` : `${this.repoPath}/.+`;
       }
 
+      searchContext.preselectedPaths = [currentValue].filter(Boolean);
+
       CStudioAuthoring.Operations.openSearch(
         searchContext,
         true,
         {
           success(searchId, selectedTOs) {
             var imageData = {};
-            var path = selectedTOs[0].path;
+            const filteredSelected = selectedTOs.filter((media) => media.path !== currentValue);
+            var path = filteredSelected[0].path;
             var url = this.context.createPreviewUrl(path);
             imageData.previewUrl = url;
             imageData.relativeUrl = path;
@@ -91,6 +96,7 @@ YAHOO.extend(CStudioForms.Datasources.ImgRepoUpload, CStudioForms.CStudioFormDat
     } else {
       CStudioAuthoring.Operations.openBrowseFilesDialog({
         path: _self.processPathsForMacros(_self.repoPath),
+        preselectedPaths: [currentValue],
         onSuccess: ({ path }) => {
           const imageData = {};
           imageData.previewUrl = _self.createPreviewUrl(path);

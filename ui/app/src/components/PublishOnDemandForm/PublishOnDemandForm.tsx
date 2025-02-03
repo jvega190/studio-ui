@@ -15,33 +15,18 @@
  */
 
 import * as React from 'react';
-import { makeStyles } from 'tss-react/mui';
 import FormControl from '@mui/material/FormControl';
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
 import TextField from '@mui/material/TextField';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import TextFieldWithMax from '../TextFieldWithMax/TextFieldWithMax';
-import Grid from '@mui/material/Grid';
+import Grid from '@mui/material/Grid2';
 import { PublishFormData, PublishingTarget, PublishOnDemandMode } from '../../models/Publishing';
 import ApiResponse from '../../models/ApiResponse';
 import Typography from '@mui/material/Typography';
 import InputLabel from '@mui/material/InputLabel';
-
-const useStyles = makeStyles()((theme) => ({
-  formHelperText: {
-    marginLeft: '5px'
-  },
-  environmentLoaderContainer: {
-    display: 'inline-flex'
-  },
-  environmentLoader: {
-    border: `1px solid ${theme.palette.divider}`,
-    padding: '15px',
-    borderRadius: theme.shape.borderRadius,
-    width: '100%'
-  }
-}));
+import Box from '@mui/material/Box';
 
 const messages = defineMessages({
   staging: { id: 'words.staging', defaultMessage: 'Staging' },
@@ -54,23 +39,11 @@ interface PublishOnDemandFormProps {
   setFormData(data: Partial<{ path: string; commitIds: string; environment: string; comment: string }>): void;
   publishingTargets: PublishingTarget[];
   publishingTargetsError: ApiResponse;
-  bulkPublishCommentRequired: boolean;
-  publishByCommitCommentRequired: boolean;
   disabled: boolean;
 }
 
 export function PublishOnDemandForm(props: PublishOnDemandFormProps) {
-  const {
-    mode,
-    formData,
-    disabled,
-    setFormData,
-    publishingTargets,
-    publishingTargetsError,
-    bulkPublishCommentRequired,
-    publishByCommitCommentRequired
-  } = props;
-  const { classes } = useStyles();
+  const { mode, formData, disabled, setFormData, publishingTargets, publishingTargetsError } = props;
   const { formatMessage } = useIntl();
   const handleFormChange = (name: string) => (event: React.ChangeEvent<{ value: unknown }> | SelectChangeEvent) => {
     const value = event.target.value as string;
@@ -80,7 +53,7 @@ export function PublishOnDemandForm(props: PublishOnDemandFormProps) {
     <form>
       <Grid container spacing={3}>
         {mode !== 'everything' && (
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             <FormControl fullWidth>
               <TextField
                 disabled={disabled}
@@ -107,7 +80,9 @@ export function PublishOnDemandForm(props: PublishOnDemandFormProps) {
                     />
                   )
                 }
-                FormHelperTextProps={{ className: classes.formHelperText }}
+                slotProps={{
+                  formHelperText: { sx: { marginLeft: '5px' } }
+                }}
                 onChange={handleFormChange(mode === 'studio' ? 'path' : 'commitIds')}
                 onBlur={
                   mode === 'studio'
@@ -120,7 +95,7 @@ export function PublishOnDemandForm(props: PublishOnDemandFormProps) {
             </FormControl>
           </Grid>
         )}
-        <Grid item xs={12} md={mode !== 'everything' ? 4 : 12}>
+        <Grid size={{ xs: 12, md: mode !== 'everything' ? 4 : 12 }}>
           {publishingTargets ? (
             <FormControl fullWidth variant="outlined" required disabled={disabled}>
               <InputLabel id="publishingTargetLabel">
@@ -142,11 +117,16 @@ export function PublishOnDemandForm(props: PublishOnDemandFormProps) {
             </FormControl>
           ) : (
             <FormControl fullWidth>
-              <div className={classes.environmentLoaderContainer}>
+              <Box sx={{ display: 'inline-flex' }}>
                 <Typography
                   variant="body1"
                   component="span"
-                  className={classes.environmentLoader}
+                  sx={(theme) => ({
+                    border: `1px solid ${theme.palette.divider}`,
+                    padding: '15px',
+                    borderRadius: theme.shape.borderRadius,
+                    width: '100%'
+                  })}
                   color={publishingTargetsError ? 'error' : 'initial'}
                 >
                   {publishingTargetsError ? (
@@ -158,11 +138,23 @@ export function PublishOnDemandForm(props: PublishOnDemandFormProps) {
                     </>
                   )}
                 </Typography>
-              </div>
+              </Box>
             </FormControl>
           )}
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={12}>
+          <TextField
+            autoFocus
+            fullWidth
+            sx={{ mb: 1 }}
+            name="packageTitle"
+            value={formData.title}
+            onChange={handleFormChange('title')}
+            label={<FormattedMessage defaultMessage="Package Title" />}
+            required
+          />
+        </Grid>
+        <Grid size={12}>
           <FormControl fullWidth>
             <TextFieldWithMax
               disabled={disabled}
@@ -171,7 +163,7 @@ export function PublishOnDemandForm(props: PublishOnDemandFormProps) {
               fullWidth
               multiline
               onChange={handleFormChange('comment')}
-              required={mode === 'studio' ? bulkPublishCommentRequired : publishByCommitCommentRequired}
+              required
             />
           </FormControl>
         </Grid>

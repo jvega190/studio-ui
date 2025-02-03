@@ -43,7 +43,16 @@ import { getSystemLink } from '../../utils/system';
 import useSpreadState from '../../hooks/useSpreadState';
 import ListItem from '@mui/material/ListItem';
 import PackageDetailsDialog from '../PackageDetailsDialog';
-import { contentEvent, deleteContentEvent, publishEvent, workflowEvent } from '../../state/actions/system';
+import {
+  contentEvent,
+  deleteContentEvent,
+  publishEvent,
+  workflowEventApprove,
+  workflowEventCancel,
+  workflowEventDirectPublish,
+  workflowEventReject,
+  workflowEventSubmit
+} from '../../state/actions/system';
 import { getHostToHostBus } from '../../utils/subjects';
 import { filter } from 'rxjs/operators';
 import Checkbox from '@mui/material/Checkbox';
@@ -67,7 +76,7 @@ interface MyRecentActivityDashletState {
   limit: number;
   offset: number;
   openPackageDetailsDialog: boolean;
-  selectedPackageId: string;
+  selectedPackageId: number;
 }
 
 export function MyRecentActivityDashlet(props: MyRecentActivityDashletProps) {
@@ -197,7 +206,16 @@ export function MyRecentActivityDashlet(props: MyRecentActivityDashletProps) {
 
   // region Item Updates Propagation
   useEffect(() => {
-    const events = [deleteContentEvent.type, workflowEvent.type, publishEvent.type, contentEvent.type];
+    const events = [
+      deleteContentEvent.type,
+      workflowEventSubmit.type,
+      workflowEventDirectPublish.type,
+      workflowEventApprove.type,
+      workflowEventReject.type,
+      workflowEventCancel.type,
+      publishEvent.type,
+      contentEvent.type
+    ];
     const hostToHost$ = getHostToHostBus();
     const subscription = hostToHost$.pipe(filter((e) => events.includes(e.type))).subscribe(({ type, payload }) => {
       dispatch(fetchSandboxItems({ paths: selectedPaths }));

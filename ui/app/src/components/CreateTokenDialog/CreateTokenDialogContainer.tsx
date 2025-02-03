@@ -15,7 +15,6 @@
  */
 
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
-import { makeStyles } from 'tss-react/mui';
 import React, { useEffect, useState } from 'react';
 import GlobalState from '../../models/GlobalState';
 import DialogBody from '../DialogBody/DialogBody';
@@ -25,7 +24,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import FormHelperText from '@mui/material/FormHelperText';
 import Collapse from '@mui/material/Collapse';
-import DateTimePicker from '../DateTimePicker/DateTimePicker';
+import DateTimeTimezonePicker from '../DateTimeTimezonePicker/DateTimeTimezonePicker';
 import DialogFooter from '../DialogFooter/DialogFooter';
 import SecondaryButton from '../SecondaryButton';
 import PrimaryButton from '../PrimaryButton';
@@ -35,6 +34,8 @@ import { createToken } from '../../services/tokens';
 import { showErrorDialog } from '../../state/reducers/dialogs/error';
 import { useDispatch } from 'react-redux';
 import useUpdateRefs from '../../hooks/useUpdateRefs';
+import { createAtLeastHalfHourInFutureDate } from '../../utils/datetime';
+import Box from '@mui/material/Box';
 
 const translations = defineMessages({
   placeholder: {
@@ -47,19 +48,10 @@ const translations = defineMessages({
   }
 });
 
-const useStyles = makeStyles()(() => ({
-  expiresWrapper: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between'
-  }
-}));
-
 export function CreateTokenDialogContainer(props: CreateTokenContainerProps) {
-  const { classes } = useStyles();
   const { isSubmitting, onCreated, onClose, onSubmittingAndOrPendingChange } = props;
   const [expires, setExpires] = useState(false);
-  const [expiresAt, setExpiresAt] = useState(new Date());
+  const [expiresAt, setExpiresAt] = useState(createAtLeastHalfHourInFutureDate());
   const [label, setLabel] = useState('');
   const { formatMessage } = useIntl();
   const dispatch = useDispatch();
@@ -118,7 +110,7 @@ export function CreateTokenDialogContainer(props: CreateTokenContainerProps) {
             setLabel(e.target.value);
           }}
         />
-        <section className={classes.expiresWrapper}>
+        <Box component="section" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <FormControlLabel
             control={<Switch checked={expires} color="primary" onChange={(e, checked) => setExpires(checked)} />}
             label={formatMessage(translations.expiresLabel)}
@@ -136,11 +128,11 @@ export function CreateTokenDialogContainer(props: CreateTokenContainerProps) {
               />
             )}
           </FormHelperText>
-        </section>
-        <Collapse in={expires}>
-          <DateTimePicker
-            onChange={(changes) => {
-              setExpiresAt(changes.date);
+        </Box>
+        <Collapse in={expires} mountOnEnter>
+          <DateTimeTimezonePicker
+            onChange={(date) => {
+              setExpiresAt(date);
             }}
             value={expiresAt}
             disablePast

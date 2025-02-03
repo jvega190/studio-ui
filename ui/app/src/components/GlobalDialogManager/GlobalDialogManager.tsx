@@ -44,24 +44,31 @@ import { DialogStackItem } from '../../models/GlobalState';
 import { nanoid } from 'nanoid';
 import { ConfirmDialogProps } from '../ConfirmDialog';
 import { popDialog, pushDialog, updateDialogState } from '../../state/actions/dialogStack';
+import AlertDialog from '../AlertDialog/AlertDialog';
+import PrimaryButton from '../PrimaryButton';
+import infoImgUrl from '../../assets/information.svg';
 
 // region const ... = lazy(() => import('...'));
 const ViewVersionDialog = lazy(() => import('../ViewVersionDialog'));
 const CompareVersionsDialog = lazy(() => import('../CompareVersionsDialog'));
-const RejectDialog = lazy(() => import('../RejectDialog'));
 const EditSiteDialog = lazy(() => import('../EditSiteDialog'));
 const ErrorDialog = lazy(() => import('../ErrorDialog'));
 const HistoryDialog = lazy(() => import('../HistoryDialog'));
 const DeleteDialog = lazy(() => import('../DeleteDialog'));
-const WorkflowCancellationDialog = lazy(() => import('../WorkflowCancellationDialog'));
 const LegacyFormDialog = lazy(() => import('../LegacyFormDialog'));
 const ItemMenu = lazy(() => import('../ItemActionsMenu'));
 const ItemMegaMenu = lazy(() => import('../ItemMegaMenu'));
 const AuthMonitor = lazy(() => import('../AuthMonitor'));
 const UIBlocker = lazy(() => import('../UIBlocker'));
-const UnlockPublisherDialog = lazy(() => import('../UnlockPublisherDialog'));
+const WidgetDialog = lazy(() => import('../WidgetDialog'));
 const CodeEditorDialog = lazy(() => import('../CodeEditorDialog'));
 const BrokenReferencesDialog = lazy(() => import('../BrokenReferencesDialog'));
+const PublishingPackageReviewDialog = lazy(() => import('../PublishPackageReviewDialog/PublishingPackageReviewDialog'));
+const PublishingPackageResubmitDialog = lazy(() => import('../PublishingPackageResubmitDialog'));
+const CancelPackageDialog = lazy(() => import('../CancelPackageDialog'));
+const BulkCancelPackageDialog = lazy(() => import('../BulkCancelPackageDialog'));
+const PackageDetailsDialog = lazy(() => import('../PackageDetailsDialog'));
+const ViewPackagesDialog = lazy(() => import('../ViewPackagesDialog'));
 // endregion
 
 // @formatter:off
@@ -129,11 +136,28 @@ export const displayWithPendingChangesConfirm = (
 function DialogStackItemContainer(props: DialogStackItem<EnhancedDialogProps>) {
   const { id, component, allowMinimize = false, allowFullScreen = false } = props;
   const dispatch = useDispatch();
-  const Dialog = useMemo(
-    () => (components.get(component as string) ?? component) as ElementType<EnhancedDialogProps>,
-    [component]
-  );
-
+  const Dialog = useMemo(() => {
+    if (typeof component === 'string') {
+      if (components.has(component)) {
+        return components.get(component);
+      } else {
+        return (props: EnhancedDialogProps) => (
+          <AlertDialog
+            open={props.open}
+            body={`Unknown component id "${component}". The component is not registered or the id is incorrect.`}
+            imageUrl={infoImgUrl}
+            buttons={
+              <PrimaryButton fullWidth onClick={(e) => props.onClose(e, undefined)}>
+                <FormattedMessage defaultMessage="Accept" />
+              </PrimaryButton>
+            }
+          />
+        );
+      }
+    } else {
+      return component as ElementType<EnhancedDialogProps>;
+    }
+  }, [component]);
   const onClose: EnhancedDialogProps['onClose'] = () => {
     dispatch(updateDialogState({ id, props: { open: false } }));
   };
@@ -181,7 +205,7 @@ function DialogStackItemContainer(props: DialogStackItem<EnhancedDialogProps>) {
   };
   return (
     <Dialog
-      {...props?.props}
+      {...props.props}
       onClose={onClose}
       onMaximize={onMaximize}
       onMinimize={onMinimize}
@@ -333,7 +357,7 @@ function GlobalDialogManager() {
     <>
       {stack.ids.map((id) => (
         <Suspense key={id} fallback={<UIBlocker open />}>
-          <DialogStackItemContainer {...stack.byId[id]} />
+          <DialogStackItemContainer {...(stack.byId[id] as DialogStackItem<EnhancedDialogProps>)} />
         </Suspense>
       ))}
       <Suspense fallback="">
@@ -369,6 +393,30 @@ function GlobalDialogManager() {
           onCancelFullScreen={createCallback(state.codeEditor.onCancelFullScreen, dispatch)}
           onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
             createCallback(state.codeEditor.onClose, dispatch)
+          )}
+        />
+        {/* endregion */}
+
+        {/* region Package Review */}
+        <PublishingPackageReviewDialog
+          {...state.publishingPackageApproval}
+          onClose={createCallback(state.publishingPackageApproval.onClose, dispatch)}
+          onClosed={createCallback(state.publishingPackageApproval.onClosed, dispatch)}
+          onSuccess={createCallback(state.publishingPackageApproval.onSuccess, dispatch)}
+          onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
+            createCallback(state.publishingPackageApproval.onClose, dispatch)
+          )}
+        />
+        {/* endregion */}
+
+        {/* region Package Resubmit */}
+        <PublishingPackageResubmitDialog
+          {...state.publishingPackageResubmit}
+          onClose={createCallback(state.publishingPackageResubmit.onClose, dispatch)}
+          onClosed={createCallback(state.publishingPackageResubmit.onClosed, dispatch)}
+          onSuccess={createCallback(state.publishingPackageResubmit.onSuccess, dispatch)}
+          onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
+            createCallback(state.publishingPackageResubmit.onClose, dispatch)
           )}
         />
         {/* endregion */}
@@ -436,16 +484,7 @@ function GlobalDialogManager() {
         <AuthMonitor />
         {/* endregion */}
 
-        {/* region Workflow Cancellation */}
-        <WorkflowCancellationDialog
-          {...state.workflowCancellation}
-          onClose={createCallback(state.workflowCancellation.onClose, dispatch)}
-          onClosed={createCallback(state.workflowCancellation.onClosed, dispatch)}
-          onContinue={createCallback(state.workflowCancellation.onContinue, dispatch)}
-        />
-        {/* endregion */}
-
-        {/* region Broken References */}
+        {/*  region Broken References */}
         <BrokenReferencesDialog
           {...state.brokenReferences}
           onClose={createCallback(state.brokenReferences.onClose, dispatch)}
@@ -454,17 +493,7 @@ function GlobalDialogManager() {
         />
         {/* endregion */}
 
-        {/* region Reject */}
-        <RejectDialog
-          {...state.reject}
-          onClose={createCallback(state.reject.onClose, dispatch)}
-          onClosed={createCallback(state.reject.onClosed, dispatch)}
-          onRejectSuccess={createCallback(state.reject.onRejectSuccess, dispatch)}
-          onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
-            createCallback(state.reject.onClose, dispatch)
-          )}
-        />
-        {/* endregion */}
+
 
         {/* region Rename Asset */}
         <RenameAssetDialog
@@ -516,12 +545,6 @@ function GlobalDialogManager() {
         />*/}
         {/* endregion */}
 
-        {/* region Unlock Publisher Dialog */}
-        <UnlockPublisherDialog
-          open={state.unlockPublisher.open}
-          onError={createCallback(state.unlockPublisher.onError, dispatch)}
-          onCancel={createCallback(state.unlockPublisher.onCancel, dispatch)}
-          onComplete={createCallback(state.unlockPublisher.onComplete, dispatch)}
         />
         {/* endregion */}
 
@@ -537,6 +560,41 @@ function GlobalDialogManager() {
           />
         ))}
         {/* endregion */}
+
+      {/* region Cancel Package Dialog */}
+      <CancelPackageDialog
+        {...state.cancelPackage}
+        onClose={createCallback(state.cancelPackage.onClose, dispatch)}
+        onClosed={createCallback(state.cancelPackage.onClosed, dispatch)}
+        onSuccess={createCallback(state.cancelPackage.onSuccess, dispatch)}
+      />
+      {/* endregion */}
+
+      {/* region Bulk Cancel Package Dialog */}
+      <BulkCancelPackageDialog
+        {...state.bulkCancelPackage}
+        onClose={createCallback(state.bulkCancelPackage.onClose, dispatch)}
+        onClosed={createCallback(state.bulkCancelPackage.onClosed, dispatch)}
+        onSuccess={createCallback(state.bulkCancelPackage.onSuccess, dispatch)}
+      />
+      {/* endregion */}
+
+      {/* region Package Details Dialog */}
+      <PackageDetailsDialog
+        {...state.packageDetails}
+        onClose={createCallback(state.packageDetails.onClose, dispatch)}
+        onClosed={createCallback(state.packageDetails.onClosed, dispatch)}
+      />
+      {/* endregion */}
+
+      {/* region View Packages Dialog */}
+      <ViewPackagesDialog
+        {...state.viewPackages}
+        onClose={createCallback(state.viewPackages.onClose, dispatch)}
+        onClosed={createCallback(state.viewPackages.onClosed, dispatch)}
+        onContinue={createCallback(state.viewPackages.onContinue, dispatch)}
+      />
+      {/* endregion */}
 
         {/* region UIBlocker */}
         <UIBlocker {...state.uiBlocker} />

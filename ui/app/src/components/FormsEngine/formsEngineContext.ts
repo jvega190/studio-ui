@@ -15,7 +15,7 @@
  */
 
 import { Context, createContext, useContext } from 'react';
-import { DetailedItem, SandboxItem } from '../../models';
+import { DetailedItem, PublishPackage, SandboxItem } from '../../models';
 import ContentType from '../../models/ContentType';
 import ApiResponse from '../../models/ApiResponse';
 import { FormsEngineProps } from './FormsEngine';
@@ -40,7 +40,7 @@ export interface FormsEngineFormApiContextProps {
 }
 
 export interface FormRequirementsResponse
-  extends Pick<FormsEngineItemMetaContextProps, 'sourceMap' | 'pathInSite' | 'contentType'>,
+  extends Pick<FormsEngineItemMetaContextProps, 'sourceMap' | 'pathInSite' | 'contentType' | 'contentObject'>,
     FormsEngineEditContextProps {
   item: DetailedItem;
   contentObject: LookupTable<unknown>;
@@ -56,12 +56,13 @@ export interface FormsEngineItemMetaContextProps {
   sourceMap: FormsEngineSourceMap;
   pathInSite: string;
   contentType: ContentType;
+  contentObject: LookupTable<unknown>;
 }
 
 export interface FormsEngineEditContextProps {
   locked: boolean;
   lockError: ApiResponse;
-  affectedItemsInWorkflow?: SandboxItem[];
+  affectedPackages?: PublishPackage[];
 }
 
 export interface FormsEngineAtoms {

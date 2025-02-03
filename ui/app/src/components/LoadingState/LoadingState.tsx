@@ -15,50 +15,14 @@
  */
 
 import React, { ElementType, PropsWithChildren, ReactNode, useEffect, useState } from 'react';
-import { makeStyles } from 'tss-react/mui';
 import Typography from '@mui/material/Typography';
 import Gears from '../Gears/Gears';
-import { CSSObject as CSSProperties } from 'tss-react';
-import Box from '@mui/material/Box';
+import { PartialSxRecord } from '../../models';
+import Box, { BoxProps } from '@mui/material/Box';
 import { SxProps } from '@mui/system';
 import { Theme } from '@mui/material/styles';
 
 type LoadingStateClassKey = 'root' | 'title' | 'subtitle' | 'graphic' | 'graphicRoot';
-
-type LoadingStateStyles = Partial<Record<LoadingStateClassKey, CSSProperties>>;
-
-const useStyles = makeStyles<LoadingStateStyles, LoadingStateClassKey>()(
-  (theme, { root, graphicRoot, title, subtitle, graphic } = {} as LoadingStateStyles) => ({
-    root: {
-      display: 'flex',
-      textAlign: 'center',
-      alignItems: 'center',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      margin: `${theme.spacing(2)} auto`,
-      minHeight: '100%',
-      ...root
-    },
-    graphicRoot: {
-      display: 'flex',
-      justifyContent: 'center',
-      ...graphicRoot
-    },
-    title: {
-      marginTop: '40px',
-      marginBottom: '15px',
-      ...title
-    },
-    subtitle: {
-      marginBottom: '10px',
-      ...subtitle
-    },
-    graphic: {
-      width: 120,
-      ...graphic
-    }
-  })
-);
 
 export interface LoadingStateProps {
   title?: ReactNode;
@@ -66,7 +30,7 @@ export interface LoadingStateProps {
   graphic?: ElementType;
   graphicProps?: any;
   classes?: Partial<Record<LoadingStateClassKey, string>>;
-  styles?: LoadingStateStyles;
+  sxs?: PartialSxRecord<LoadingStateClassKey>;
   sx?: SxProps<Theme>;
   revealTimeout?: number;
 }
@@ -74,8 +38,7 @@ export interface LoadingStateProps {
 export type ConditionalLoadingStateProps = LoadingStateProps & PropsWithChildren<{ isLoading: boolean }>;
 
 export function LoadingState(props: LoadingStateProps) {
-  const { classes, cx } = useStyles(props.styles);
-  const { graphic: Graphic = Gears, classes: propClasses, revealTimeout = 300 } = props;
+  const { graphic: Graphic = Gears, classes, revealTimeout = 300, sxs } = props;
   const [reveal, setReveal] = useState(revealTimeout === 0);
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -85,22 +48,57 @@ export function LoadingState(props: LoadingStateProps) {
   }, [revealTimeout]);
   return (
     <Box
-      className={cx(classes.root, propClasses?.root)}
-      sx={{ ...props.sx, visibility: reveal ? undefined : 'hidden' }}
+      className={classes?.root}
+      sx={{
+        display: 'flex',
+        textAlign: 'center',
+        alignItems: 'center',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        margin: (theme) => `${theme.spacing(2)} auto`,
+        minHeight: '100%',
+        ...sxs?.root,
+        ...props.sx,
+        visibility: reveal ? undefined : 'hidden'
+      }}
     >
       {props.title && (
-        <Typography variant="h6" component="h3" className={cx(classes.title, propClasses?.title)}>
+        <Typography
+          variant="h6"
+          component="h3"
+          className={classes?.title}
+          sx={{
+            marginTop: '40px',
+            marginBottom: '15px',
+            ...sxs?.title
+          }}
+        >
           {props.title}
         </Typography>
       )}
       {props.subtitle && (
-        <Typography variant="subtitle1" component="p" className={cx(classes.subtitle, propClasses?.subtitle)}>
+        <Typography
+          variant="subtitle1"
+          component="p"
+          className={classes?.subtitle}
+          sx={{
+            marginBottom: '10px',
+            ...sxs?.subtitle
+          }}
+        >
           {props.subtitle}
         </Typography>
       )}
-      <div className={cx(classes.graphicRoot, propClasses?.graphicRoot)}>
-        <Graphic className={cx(classes.graphic, propClasses?.graphic)} {...props.graphicProps} />
-      </div>
+      <Box
+        className={classes?.graphicRoot}
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          ...sxs?.graphicRoot
+        }}
+      >
+        <Graphic className={classes?.graphic} sxs={{ root: { width: 120, ...sxs?.graphic } }} {...props.graphicProps} />
+      </Box>
     </Box>
   );
 }

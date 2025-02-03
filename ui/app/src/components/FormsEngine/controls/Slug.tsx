@@ -21,7 +21,7 @@ import { FormsEngineField } from '../common/FormsEngineField';
 import InputAdornment from '@mui/material/InputAdornment';
 import { ControlProps } from '../types';
 import { useItemMetaContext, useStableFormContext } from '../formsEngineContext';
-import { useAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { PrimitiveAtom } from 'jotai/index';
 
 export interface SlugProps extends ControlProps {
@@ -38,12 +38,14 @@ export function Slug(props: SlugProps) {
   if (field.id === 'fileName') {
     throw new Error('Detected field ID "fileName" instead "file-name" at the "Slug" Control.');
   }
+  // It'd be better to avoid this. An specific control should refer to a specific field ID/property all the time.
   const fieldId = field.id === 'file-name' ? 'folder-name' : field.id;
-  // In some cases the values[fieldId] is null
   const [value, setValue] = useAtom(atoms.valueByFieldId[fieldId] as PrimitiveAtom<string>);
+  const validityState = useAtomValue(atoms.validationByFieldId[fieldId]);
   const handleChange: OutlinedInputProps['onChange'] = (e) => setValue(applyContentNameRules(e.currentTarget.value));
   return (
     <FormsEngineField
+      isValid={validityState.isValid}
       htmlFor={htmlId}
       field={field}
       min={field.validations.minValue?.value}

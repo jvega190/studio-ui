@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, { ComponentType, lazy, memo } from 'react';
+import React, { ComponentType, ElementType, lazy, memo } from 'react';
 import NonReactWidget from '../NonReactWidget/NonReactWidget';
 import { buildFileUrl, importPlugin } from '../../services/plugin';
 import { components } from '../../utils/constants';
@@ -23,6 +23,7 @@ import { defineMessages, useIntl } from 'react-intl';
 import ErrorState from '../ErrorState';
 import { isValidElementType } from 'react-is';
 import WidgetDescriptor from '../../models/WidgetDescriptor';
+import NonReactWidgetRecord from '../../models/NonReactWidgetRecord';
 
 export interface WidgetProps extends WidgetDescriptor {
   /** Props applied to all widgets; supersedes widget props. */
@@ -58,12 +59,12 @@ const Widget = memo<WidgetProps>(function (props) {
   const { formatMessage } = useIntl();
   if (record) {
     if (isValidElementType(record)) {
-      const Component = record;
+      const Component = record as ElementType;
       return <Component {...{ ...props.defaultProps, ...configuration, ...props.overrideProps }} />;
     } else {
       return (
         <NonReactWidget
-          widget={record}
+          widget={record as NonReactWidgetRecord}
           configuration={{ ...props.defaultProps, ...configuration, ...props.overrideProps }}
         />
       );
@@ -73,7 +74,7 @@ const Widget = memo<WidgetProps>(function (props) {
       <EmptyState
         title={formatMessage(messages.componentNotFoundTitle, { id })}
         subtitle={formatMessage(messages.componentNotFoundSubtitle)}
-        styles={{ image: { width: 100 } }}
+        sxs={{ image: { width: 100 } }}
       />
     );
   } else {
@@ -93,7 +94,7 @@ const Widget = memo<WidgetProps>(function (props) {
                   <EmptyState
                     title={formatMessage(messages.componentNotFoundTitle, { id })}
                     subtitle={formatMessage(messages.componentNotFoundSubtitle)}
-                    styles={{ image: { width: 100 } }}
+                    sxs={{ image: { width: 100 } }}
                   />
                 );
               }
@@ -105,7 +106,7 @@ const Widget = memo<WidgetProps>(function (props) {
               default: function ({ id, plugin }) {
                 return (
                   <ErrorState
-                    styles={{ image: { width: 100 } }}
+                    sxs={{ image: { width: 100 } }}
                     title={formatMessage(messages.pluginLoadFailedMessageTitle)}
                     message={formatMessage(messages.pluginLoadFailedMessageBody, {
                       id,

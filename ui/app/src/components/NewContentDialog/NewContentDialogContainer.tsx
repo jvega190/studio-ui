@@ -18,7 +18,6 @@ import { NewContentDialogContainerProps } from './utils';
 import { useActiveSiteId } from '../../hooks/useActiveSiteId';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { useDispatch } from 'react-redux';
-import useStyles from './styles';
 import { useSelection } from '../../hooks/useSelection';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { LegacyContentType } from '../../models/ContentType';
@@ -28,33 +27,40 @@ import { batchActions } from '../../state/actions/misc';
 import { closeNewContentDialog, newContentCreationComplete } from '../../state/actions/dialogs';
 import { fetchLegacyContentTypes } from '../../services/contentTypes';
 import { showErrorDialog } from '../../state/reducers/dialogs/error';
-import { useLogicResource } from '../../hooks/useLogicResource';
 import { useSubject } from '../../hooks/useSubject';
 import { debounceTime } from 'rxjs/operators';
 import DialogBody from '../DialogBody/DialogBody';
 import { Box, Checkbox, FormControlLabel } from '@mui/material';
 import SingleItemSelector from '../SingleItemSelector';
 import SearchBar from '../SearchBar/SearchBar';
-import { SuspenseWithEmptyState } from '../Suspencified/Suspencified';
 import DialogFooter from '../DialogFooter/DialogFooter';
 import ContentTypesFilter from '../ContentTypeFilter';
 import { ContentTypesGrid, ContentTypesLoader } from './NewContentDialog';
+import EmptyState from '../EmptyState';
 
 export function NewContentDialogContainer(props: NewContentDialogContainerProps) {
   const { item, onContentTypeSelected, compact = false, rootPath } = props;
   const site = useActiveSiteId();
   const { formatMessage } = useIntl();
   const dispatch = useDispatch();
-  const { classes } = useStyles();
   const authoringBase = useSelection<string>((state) => state.env.authoringBase);
 
   const [isCompact, setIsCompact] = useState(compact);
   const [openSelector, setOpenSelector] = useState(false);
   const [selectedItem, setSelectedItem] = useState(item);
   const [contentTypes, setContentTypes] = useState<LegacyContentType[]>();
+  const [isFetching, setIsFetching] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [debounceKeyword, setDebounceKeyword] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const filteredContentTypes = useMemo(() => {
+    const lowercaseKeyword = debounceKeyword.toLowerCase();
+    return contentTypes?.filter(
+      (contentType) =>
+        contentType.label.toLowerCase().includes(lowercaseKeyword) &&
+        (selectedFilter === 'all' || contentType.type === selectedFilter)
+    );
+  }, [contentTypes, debounceKeyword, selectedFilter]);
 
   const filters = [
     {
@@ -93,8 +99,10 @@ export function NewContentDialogContainer(props: NewContentDialogContainerProps)
           ? `${selectedItem.path}/`
           : selectedItem.path;
 
-      fetchLegacyContentTypes(site, path).subscribe({
+      setIsFetching(true);
+      const sub = fetchLegacyContentTypes(site, path).subscribe({
         next(response) {
+          setIsFetching(false);
           if (response.length === 1) {
             dispatch(closeNewContentDialog());
             onSelectedContentType(response[0]);
@@ -103,28 +111,15 @@ export function NewContentDialogContainer(props: NewContentDialogContainerProps)
           }
         },
         error(response) {
+          setIsFetching(false);
           dispatch(showErrorDialog({ error: response }));
         }
       });
+      return () => {
+        sub.unsubscribe();
+      };
     }
   }, [dispatch, selectedItem, site, onSelectedContentType]);
-
-  const resource = useLogicResource(
-    useMemo(() => ({ contentTypes, selectedFilter, debounceKeyword }), [contentTypes, selectedFilter, debounceKeyword]),
-    {
-      shouldResolve: ({ contentTypes }) => Boolean(contentTypes),
-      shouldReject: () => null,
-      shouldRenew: (source, resource) => resource.complete,
-      resultSelector: ({ contentTypes, debounceKeyword, selectedFilter }) => {
-        return contentTypes.filter(
-          (contentType) =>
-            contentType.label.toLowerCase().includes(debounceKeyword.toLowerCase()) &&
-            (selectedFilter === 'all' || contentType.type === selectedFilter)
-        );
-      },
-      errorSelector: () => null
-    }
-  );
 
   const onSearch$ = useSubject<string>();
 
@@ -141,7 +136,7 @@ export function NewContentDialogContainer(props: NewContentDialogContainerProps)
 
   return (
     <>
-      <DialogBody classes={{ root: classes.dialogContent }}>
+      <DialogBody sx={{ minHeight: 455 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
             <SingleItemSelector
@@ -158,32 +153,39 @@ export function NewContentDialogContainer(props: NewContentDialogContainerProps)
               }}
             />
           </Box>
-          <Box className={classes.searchBox}>
+          <Box sx={{ minWidth: '33%' }}>
             <SearchBar onChange={onSearch} keyword={keyword} autoFocus showActionButton={Boolean(keyword)} />
           </Box>
         </Box>
-        <SuspenseWithEmptyState
-          resource={resource}
-          suspenseProps={{
-            fallback: <ContentTypesLoader isCompact={isCompact} />
-          }}
-          withEmptyStateProps={{
-            emptyStateProps: {
-              classes: {
-                image: classes.emptyStateImg
-              },
-              title: (
+        {isFetching ? (
+          <ContentTypesLoader isCompact={isCompact} />
+        ) : filteredContentTypes ? (
+          filteredContentTypes.length > 0 ? (
+            <ContentTypesGrid
+              contentTypes={filteredContentTypes}
+              isCompact={isCompact}
+              onTypeOpen={onSelectedContentType}
+            />
+          ) : (
+            <EmptyState
+              title={
                 <FormattedMessage id="newContentDialog.emptyStateMessage" defaultMessage="No Content Types Found" />
-              )
-            }
-          }}
-        >
-          <ContentTypesGrid resource={resource} isCompact={isCompact} onTypeOpen={onSelectedContentType} />
-        </SuspenseWithEmptyState>
+              }
+              sxs={{
+                image: {
+                  width: 250,
+                  marginBottom: '17px'
+                }
+              }}
+            />
+          )
+        ) : (
+          <></>
+        )}
       </DialogBody>
       <DialogFooter>
         <FormControlLabel
-          className={classes.compact}
+          sx={{ marginRight: 'auto' }}
           control={<Checkbox checked={isCompact} onChange={() => setIsCompact(!isCompact)} color="primary" />}
           label={formatMessage(translations.compactInput)}
         />

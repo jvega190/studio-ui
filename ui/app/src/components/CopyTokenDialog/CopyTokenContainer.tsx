@@ -17,32 +17,19 @@
 import React, { useRef } from 'react';
 import { FormattedMessage } from 'react-intl';
 import DialogBody from '../DialogBody/DialogBody';
-import FormHelperText from '@mui/material/FormHelperText';
 import InputBase from '@mui/material/InputBase';
 import DialogFooter from '../DialogFooter/DialogFooter';
 import SecondaryButton from '../SecondaryButton';
 import PrimaryButton from '../PrimaryButton';
 import { CopyTokenContainerProps } from './utils';
-import { makeStyles } from 'tss-react/mui';
 import { copyToClipboard } from '../../utils/system';
 import useMount from '../../hooks/useMount';
-
-const useStyles = makeStyles()(() => ({
-  footer: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between'
-  },
-  input: {
-    marginTop: '16px',
-    marginBottom: '8px'
-  }
-}));
+import Alert from '@mui/material/Alert';
 
 export function CopyTokenContainer(props: CopyTokenContainerProps) {
   const { onClose, token, onCopy } = props;
-  const { classes } = useStyles();
-  const inputRef = useRef<HTMLInputElement>();
+  // TODO: Ref not in use. Remove?
+  const inputRef = useRef<HTMLInputElement>(undefined);
 
   const copyToken = () => {
     copyToClipboard(token.token).then(() => onCopy());
@@ -57,25 +44,28 @@ export function CopyTokenContainer(props: CopyTokenContainerProps) {
   return (
     <>
       <DialogBody>
-        <FormHelperText>
+        <Alert variant="outlined" severity="success">
           <FormattedMessage
             id="copyTokenDialog.helperText"
             defaultMessage="Token created successfully. Please copy the token and store it securely as you won’t be able to see it’s value again."
           />
-        </FormHelperText>
+        </Alert>
         <InputBase
           inputRef={inputRef}
           autoFocus
           value={token?.token ?? ''}
           readOnly
-          className={classes.input}
+          sx={{
+            marginTop: '16px',
+            marginBottom: '8px'
+          }}
           onClick={(e) => {
             (e.target as HTMLInputElement).select();
             copyToken();
           }}
         />
       </DialogBody>
-      <DialogFooter className={classes.footer}>
+      <DialogFooter sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <SecondaryButton onClick={() => copyToken()}>
           <FormattedMessage id="words.copy" defaultMessage="Copy" />
         </SecondaryButton>

@@ -82,7 +82,6 @@ import {
   fetchContentInstanceDescriptor,
   fetchItemsByPath,
   fetchSandboxItem as fetchSandboxItemService,
-  fetchWorkflowAffectedItems,
   insertComponent,
   insertInstance,
   insertItem,
@@ -106,6 +105,7 @@ import {
   getStoredEditModePadding,
   getStoredHighlightModeChoice,
   getStoredOutdatedXBValidationDate,
+  pickShowContentFormAction,
   removeStoredClipboard,
   setStoredOutdatedXBValidationDate
 } from '../../utils/state';
@@ -146,8 +146,8 @@ import {
   showRtePickerActions,
   ShowRtePickerActionsPayload,
   showSingleFileUploadDialog,
-  showWorkflowCancellationDialog,
-  workflowCancellationDialogClosed
+  showViewPackagesDialog,
+  viewPackagesDialogClosed
 } from '../../state/actions/dialogs';
 import { UNDEFINED } from '../../utils/constants';
 import { useCurrentPreviewItem } from '../../hooks/useCurrentPreviewItem';
@@ -329,7 +329,7 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
   const item = useCurrentPreviewItem();
   const { currentUrlPath } = usePreviewNavigation();
   const contentTypes = useContentTypes();
-  const contentTypes$Ref = useRef<BehaviorSubject<Record<string, ContentType>>>();
+  const contentTypes$Ref = useRef<BehaviorSubject<Record<string, ContentType>>>(undefined);
   const { authoringBase, guestBase, xsrfArgument } = useSelection((state) => state.env);
   const priorState = useRef({ site: siteId });
   const { enqueueSnackbar } = useSnackbar();
@@ -410,14 +410,18 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
         case 'E':
           upToDateRefs.current.item &&
             dispatch(
-              showEditDialog({
-                site: upToDateRefs.current.siteId,
-                path: upToDateRefs.current.guest.path,
-                readonly:
-                  !upToDateRefs.current.item.availableActionsMap.edit ||
-                  isItemLockedForMe(upToDateRefs.current.item, upToDateRefs.current.user.username),
-                authoringBase: upToDateRefs.current.authoringBase
-              })
+              pickShowContentFormAction(
+                false,
+                { update: { path: upToDateRefs.current.guest.path } },
+                {
+                  site: upToDateRefs.current.siteId,
+                  path: upToDateRefs.current.guest.path,
+                  readonly:
+                    !upToDateRefs.current.item.availableActionsMap.edit ||
+                    isItemLockedForMe(upToDateRefs.current.item, upToDateRefs.current.user.username),
+                  authoringBase: upToDateRefs.current.authoringBase
+                }
+              )
             );
           break;
         case 'a':
@@ -1107,18 +1111,16 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
           break;
         }
         case requestWorkflowCancellationDialog.type: {
-          fetchWorkflowAffectedItems(payload.siteId, payload.path).subscribe((items) => {
-            dispatch(
-              showWorkflowCancellationDialog({
-                items,
-                onClosed: batchActions([
-                  workflowCancellationDialogClosed(),
-                  requestWorkflowCancellationDialogOnResult({ type: 'close' })
-                ]),
-                onContinue: requestWorkflowCancellationDialogOnResult({ type: 'continue' })
-              })
-            );
-          });
+          dispatch(
+            showViewPackagesDialog({
+              item: payload.item,
+              onClosed: batchActions([
+                viewPackagesDialogClosed(),
+                requestWorkflowCancellationDialogOnResult({ type: 'close' })
+              ]),
+              onContinue: requestWorkflowCancellationDialogOnResult({ type: 'continue' })
+            })
+          );
           break;
         }
         case showItemMegaMenu.type: {

@@ -17,15 +17,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { defineMessages, useIntl } from 'react-intl';
 import MenuItem from '@mui/material/MenuItem';
-import { makeStyles } from 'tss-react/mui';
 import { contentTreeFieldSelected, setContentTypeFilter, setPreviewEditMode } from '../../state/actions/preview';
 import { useDispatch } from 'react-redux';
 import Suspencified from '../Suspencified/Suspencified';
 import ContentInstance from '../../models/ContentInstance';
-import LookupTable from '../../models/LookupTable';
 import SearchBar from '../SearchBar/SearchBar';
 import Select from '@mui/material/Select';
-import ListItem from '@mui/material/ListItem';
 import Avatar from '@mui/material/Avatar';
 import { getInitials } from '../../utils/string';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
@@ -33,11 +30,12 @@ import ListItemText from '@mui/material/ListItemText';
 import CircularProgress from '@mui/material/CircularProgress';
 import { getHostToGuestBus } from '../../utils/subjects';
 import EmptyState from '../EmptyState/EmptyState';
-import { Resource } from '../../models/Resource';
 import { useSelection } from '../../hooks/useSelection';
 import { usePreviewGuest } from '../../hooks/usePreviewGuest';
 import { useContentTypes } from '../../hooks/useContentTypes';
-import { useLogicResource } from '../../hooks/useLogicResource';
+import { LoadingState } from '../LoadingState';
+import ListItemButton from '@mui/material/ListItemButton';
+import Box from '@mui/material/Box';
 
 const translations = defineMessages({
   previewInPageInstancesPanel: {
@@ -58,32 +56,7 @@ const translations = defineMessages({
   }
 });
 
-const useStyles = makeStyles()(() => ({
-  search: {
-    padding: '15px 15px 0 15px'
-  },
-  Select: {
-    width: '100%',
-    marginTop: '15px'
-  },
-  noWrapping: {
-    overflow: 'hidden',
-    whiteSpace: 'nowrap',
-    textOverflow: 'ellipsis',
-    display: 'block'
-  },
-  selectProgress: {
-    position: 'absolute',
-    right: '28px'
-  },
-  emptyStateTitle: {
-    fontSize: '1em'
-  },
-  item: {}
-}));
-
 export function PreviewInPageInstancesPanel() {
-  const { classes } = useStyles();
   const { formatMessage } = useIntl();
   const dispatch = useDispatch();
   const contentTypeLookup = useContentTypes();
@@ -95,6 +68,9 @@ export function PreviewInPageInstancesPanel() {
   const models = useMemo(() => {
     return guest?.models;
   }, [guest]);
+  const filteredContentTypes = Object.values(models ?? {}).filter(
+    (model) => model.craftercms.contentTypeId === contentTypeFilter
+  );
 
   const selectedModels = useMemo(() => {
     return Object.values(models ?? []).filter((model) => {
@@ -127,25 +103,6 @@ export function PreviewInPageInstancesPanel() {
     };
   }, [models]);
 
-  const resource = useLogicResource<
-    ContentInstance[],
-    { models: LookupTable<ContentInstance>; contentTypeFilter: string }
-  >(
-    {
-      models,
-      contentTypeFilter
-    },
-    {
-      shouldRenew: (source, resource) => Boolean(contentTypeFilter) && !keyword && resource.complete,
-      shouldResolve: (source) => Boolean(source.models),
-      shouldReject: (source) => false,
-      errorSelector: (source) => null,
-      resultSelector: (source) => {
-        return Object.values(source.models)?.filter((model) => model.craftercms.contentTypeId === contentTypeFilter);
-      }
-    }
-  );
-
   const handleSearchKeyword = (keyword) => {
     setKeyword(keyword);
   };
@@ -175,7 +132,7 @@ export function PreviewInPageInstancesPanel() {
 
   return (
     <>
-      <div className={classes.search}>
+      <Box sx={{ padding: '15px 15px 0 15px' }}>
         <SearchBar
           showActionButton={Boolean(keyword)}
           onChange={handleSearchKeyword}
@@ -185,11 +142,11 @@ export function PreviewInPageInstancesPanel() {
         <Select
           value={contentTypes.length ? contentTypeFilter : ''}
           displayEmpty
-          className={classes.Select}
+          sx={{ width: '100%', marginTop: '15px' }}
           onChange={(event: any) => handleSelectChange(event.target.value)}
           endAdornment={
             contentTypes.length && contentTypeLookup ? null : (
-              <CircularProgress size={20} className={classes.selectProgress} />
+              <CircularProgress size={20} sx={{ position: 'absolute', right: '28px' }} />
             )
           }
         >
@@ -203,58 +160,58 @@ export function PreviewInPageInstancesPanel() {
               </MenuItem>
             ))}
         </Select>
-      </div>
+      </Box>
       <Suspencified>
-        <InPageInstancesUI
-          resource={resource}
-          selectedModels={selectedModels}
-          onItemClick={onItemClick}
-          contentTypeFilter={contentTypeFilter}
-        />
+        {filteredContentTypes ? (
+          <InPageInstancesUI
+            selectedModels={selectedModels}
+            onItemClick={onItemClick}
+            contentTypeFilter={contentTypeFilter}
+          />
+        ) : (
+          <LoadingState />
+        )}
       </Suspencified>
     </>
   );
 }
 
 interface InPageInstancesUIProps {
-  resource: Resource<ContentInstance[]>;
   selectedModels: ContentInstance[];
   contentTypeFilter: string;
   onItemClick(instance: ContentInstance): void;
 }
 
 function InPageInstancesUI(props: InPageInstancesUIProps) {
-  const { resource, selectedModels, onItemClick, contentTypeFilter } = props;
-  resource.read();
-  const { classes } = useStyles();
+  const { selectedModels, onItemClick, contentTypeFilter } = props;
   const { formatMessage } = useIntl();
 
   return (
     <>
       {selectedModels.length ? (
         selectedModels.map((instance: ContentInstance) => (
-          <ListItem
-            key={instance.craftercms.id}
-            className={classes.item}
-            button={true}
-            onClick={() => onItemClick(instance)}
-          >
+          <ListItemButton key={instance.craftercms.id} onClick={() => onItemClick(instance)}>
             <ListItemAvatar>
               <Avatar>{getInitials(instance.craftercms.label)}</Avatar>
             </ListItemAvatar>
             <ListItemText
               primary={instance.craftercms.label}
               secondary={instance.craftercms.contentTypeId}
-              classes={{ primary: classes.noWrapping, secondary: classes.noWrapping }}
+              primaryTypographyProps={{
+                sx: { overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', display: 'block' }
+              }}
+              secondaryTypographyProps={{
+                sx: { overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', display: 'block' }
+              }}
             />
-          </ListItem>
+          </ListItemButton>
         ))
       ) : (
         <EmptyState
           title={
             contentTypeFilter ? formatMessage(translations.noResults) : formatMessage(translations.chooseContentType)
           }
-          classes={{ title: classes.emptyStateTitle }}
+          sxs={{ title: { fontSize: '1em' } }}
         />
       )}
     </>

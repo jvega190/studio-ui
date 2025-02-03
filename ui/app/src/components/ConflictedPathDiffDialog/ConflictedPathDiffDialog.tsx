@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogHeader from '../DialogHeader';
 import DialogBody from '../DialogBody/DialogBody';
@@ -23,17 +23,16 @@ import { FormattedMessage, useIntl } from 'react-intl';
 import { diffConflictedFile } from '../../services/repositories';
 import ApiResponse from '../../models/ApiResponse';
 import { FileDiff } from '../../models/Repository';
-import { SuspenseWithEmptyState } from '../Suspencified';
 import ConflictedPathDiffDialogUI from './ConflictedPathDiffDialogUI';
 import SecondaryButton from '../SecondaryButton';
 import ConfirmDropdown from '../ConfirmDropdown';
 import { messages } from '../GitManagement/RepoStatus/translations';
-import { makeStyles } from 'tss-react/mui';
 
-import Tab from '@mui/material/Tab';
+import Tab, { tabClasses } from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import { useActiveSiteId } from '../../hooks/useActiveSiteId';
-import { useLogicResource } from '../../hooks/useLogicResource';
+import { ApiResponseErrorState } from '../ApiResponseErrorState';
+import { LoadingState } from '../LoadingState';
 
 export interface RemoteRepositoriesDiffDialogProps {
   open: boolean;
@@ -41,35 +40,6 @@ export interface RemoteRepositoriesDiffDialogProps {
   onResolveConflict(strategy: string, path: string): void;
   onClose(): void;
 }
-
-const useStyles = makeStyles()((theme) => ({
-  conflictActionButton: {
-    color: theme.palette.warning.dark,
-    borderColor: theme.palette.warning.main
-  },
-  dialogHeader: {
-    paddingBottom: 0
-  },
-  dialogHeaderChildren: {
-    padding: 0
-  },
-  dialogContent: {
-    padding: 0
-  },
-  tabs: {
-    minHeight: 'inherit'
-  },
-  tab: {
-    minWidth: '80px',
-    minHeight: '0',
-    padding: '0 0 5px 0',
-    marginRight: '20px',
-    opacity: 1,
-    '& span': {
-      textTransform: 'none'
-    }
-  }
-}));
 
 export function ConflictedPathDiffDialog(props: RemoteRepositoriesDiffDialogProps) {
   const { open, path, onResolveConflict, onClose } = props;
@@ -79,7 +49,6 @@ export function ConflictedPathDiffDialog(props: RemoteRepositoriesDiffDialogProp
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<ApiResponse>();
   const { formatMessage } = useIntl();
-  const { classes } = useStyles();
 
   useEffect(() => {
     if (path) {
@@ -101,17 +70,6 @@ export function ConflictedPathDiffDialog(props: RemoteRepositoriesDiffDialogProp
     setTab(newValue);
   };
 
-  const resource = useLogicResource<FileDiff, { fileDiff: FileDiff; error: ApiResponse; fetching: boolean }>(
-    useMemo(() => ({ fileDiff, error, fetching }), [fileDiff, error, fetching]),
-    {
-      shouldResolve: (source) => Boolean(source.fileDiff) && !fetching,
-      shouldReject: ({ error }) => Boolean(error),
-      shouldRenew: (source, resource) => fetching && resource.complete,
-      resultSelector: (source) => source.fileDiff,
-      errorSelector: () => error
-    }
-  );
-
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogHeader
@@ -121,9 +79,13 @@ export function ConflictedPathDiffDialog(props: RemoteRepositoriesDiffDialogProp
           </>
         }
         onCloseButtonClick={onClose}
-        classes={{
-          root: classes.dialogHeader,
-          subtitleWrapper: classes.dialogHeaderChildren
+        sxs={{
+          root: {
+            paddingBottom: 0
+          },
+          subtitleWrapper: {
+            padding: 0
+          }
         }}
       >
         <Tabs
@@ -131,28 +93,44 @@ export function ConflictedPathDiffDialog(props: RemoteRepositoriesDiffDialogProp
           indicatorColor="primary"
           textColor="primary"
           onChange={handleTabChange}
-          classes={{
-            root: classes.tabs
+          sx={{
+            minHeight: 'inherit',
+            [`& .${tabClasses.root}`]: {
+              minWidth: '80px',
+              minHeight: '0',
+              padding: '0 0 5px 0',
+              marginRight: '20px',
+              opacity: 1,
+              '& span': {
+                textTransform: 'none'
+              }
+            }
           }}
         >
-          <Tab label={<FormattedMessage id="words.diff" defaultMessage="Diff" />} className={classes.tab} />
-          <Tab
-            label={<FormattedMessage id="repositories.splitView" defaultMessage="Split View" />}
-            className={classes.tab}
-          />
+          <Tab label={<FormattedMessage id="words.diff" defaultMessage="Diff" />} />
+          <Tab label={<FormattedMessage id="repositories.splitView" defaultMessage="Split View" />} />
         </Tabs>
       </DialogHeader>
-      <DialogBody className={classes.dialogContent}>
-        <SuspenseWithEmptyState resource={resource}>
-          <ConflictedPathDiffDialogUI resource={resource} tab={tab} />
-        </SuspenseWithEmptyState>
+      <DialogBody sx={{ padding: 0 }}>
+        {error ? (
+          <ApiResponseErrorState error={error} />
+        ) : fetching ? (
+          <LoadingState />
+        ) : fileDiff ? (
+          <ConflictedPathDiffDialogUI fileDiff={fileDiff} tab={tab} />
+        ) : null}
       </DialogBody>
       <DialogFooter>
         <SecondaryButton onClick={onClose}>
           <FormattedMessage id="words.close" defaultMessage="Close" />
         </SecondaryButton>
         <ConfirmDropdown
-          classes={{ button: classes.conflictActionButton }}
+          sx={{
+            button: {
+              color: (theme) => theme.palette.warning.dark,
+              borderColor: (theme) => theme.palette.warning.main
+            }
+          }}
           text={formatMessage(messages.acceptRemote)}
           cancelText={formatMessage(messages.no)}
           confirmText={formatMessage(messages.yes)}
@@ -160,7 +138,12 @@ export function ConflictedPathDiffDialog(props: RemoteRepositoriesDiffDialogProp
           onConfirm={() => onResolveConflict('theirs', path)}
         />
         <ConfirmDropdown
-          classes={{ button: classes.conflictActionButton }}
+          sx={{
+            button: {
+              color: (theme) => theme.palette.warning.dark,
+              borderColor: (theme) => theme.palette.warning.main
+            }
+          }}
           text={formatMessage(messages.keepLocal)}
           cancelText={formatMessage(messages.no)}
           confirmText={formatMessage(messages.yes)}

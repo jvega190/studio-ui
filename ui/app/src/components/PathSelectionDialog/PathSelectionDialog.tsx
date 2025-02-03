@@ -16,7 +16,6 @@
 
 import React, { useState } from 'react';
 import Dialog, { DialogProps } from '@mui/material/Dialog';
-import { makeStyles } from 'tss-react/mui';
 import { withoutIndex } from '../../utils/path';
 import StandardAction from '../../models/StandardAction';
 import TranslationOrText from '../../models/TranslationOrText';
@@ -78,18 +77,6 @@ export function PathSelectionDialog(props: PathSelectionDialogProps) {
   );
 }
 
-const useStyles = makeStyles()(() => ({
-  dialogBody: {
-    minHeight: '60vh'
-  },
-  createFolderBtn: {
-    marginRight: 'auto'
-  },
-  treeViewRoot: {
-    marginTop: '15px'
-  }
-}));
-
 export function PathSelectionDialogContainer(props: PathSelectionDialogProps) {
   const {
     onClosed,
@@ -104,7 +91,6 @@ export function PathSelectionDialogContainer(props: PathSelectionDialogProps) {
   const [root, setRoot] = useState(rootPath);
   const [currentPath, setCurrentPath] = useState(initialPath ?? root);
   const [openCreateFolderDialog, setOpenCreateFolderDialog] = useState(false);
-  const { classes } = useStyles();
   const title = usePossibleTranslation(props.title);
   const createFolderState = useSelection((state) => state.dialogs.createFolder);
 
@@ -132,7 +118,7 @@ export function PathSelectionDialogContainer(props: PathSelectionDialogProps) {
         title={title ?? <FormattedMessage id="pathSelectionDialog.title" defaultMessage="Select Path" />}
         onCloseButtonClick={onClose}
       />
-      <DialogBody className={classes.dialogBody}>
+      <DialogBody sx={{ minHeight: '60vh' }}>
         {root && root !== '/' ? (
           <>
             <PathSelectionInput
@@ -176,7 +162,7 @@ export function PathSelectionDialogContainer(props: PathSelectionDialogProps) {
       </DialogBody>
       <DialogFooter>
         {showCreateFolderOption && (
-          <SecondaryButton onClick={onCreateFolder} className={classes.createFolderBtn}>
+          <SecondaryButton onClick={onCreateFolder} sx={{ marginRight: 'auto' }}>
             <FormattedMessage id="pathSelectionDialog.createFolderButtonLabel" defaultMessage="Create Folder" />
           </SecondaryButton>
         )}

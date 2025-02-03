@@ -21,7 +21,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { LegacyContentType } from '../../models/ContentType';
 import { fetchLegacyContentTypes } from '../../services/contentTypes';
 import { showErrorDialog } from '../../state/reducers/dialogs/error';
-import { useLogicResource } from '../../hooks/useLogicResource';
 import { useSubject } from '../../hooks/useSubject';
 import { debounceTime } from 'rxjs/operators';
 import DialogBody from '../DialogBody/DialogBody';
@@ -29,40 +28,26 @@ import { Box, Checkbox, FormControlLabel } from '@mui/material';
 import SingleItemSelector from '../SingleItemSelector';
 import { FormattedMessage } from 'react-intl';
 import SearchBar from '../SearchBar/SearchBar';
-import { SuspenseWithEmptyState } from '../Suspencified/Suspencified';
 import { ContentTypesGrid, ContentTypesLoader } from '../NewContentDialog';
 import DialogFooter from '../DialogFooter/DialogFooter';
-import { makeStyles } from 'tss-react/mui';
-
-const useStyles = makeStyles()(() => ({
-  compact: {
-    marginRight: 'auto',
-    paddingLeft: '20px'
-  },
-  dialogContent: {
-    minHeight: 455
-  },
-  searchBox: {
-    minWidth: '33%'
-  },
-  emptyStateImg: {
-    width: 250,
-    marginBottom: 17
-  }
-}));
+import EmptyState from '../EmptyState';
 
 export function ChangeContentTypeDialogContainer(props: ChangeContentTypeDialogContainerProps) {
   const { item, onContentTypeSelected, compact = false, rootPath, selectedContentType } = props;
   const site = useActiveSiteId();
   const dispatch = useDispatch();
-  const { classes } = useStyles();
 
   const [isCompact, setIsCompact] = useState(compact);
   const [openSelector, setOpenSelector] = useState(false);
   const [selectedItem, setSelectedItem] = useState(item);
   const [contentTypes, setContentTypes] = useState<LegacyContentType[]>();
+  const [isFetching, setIsFetching] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [debounceKeyword, setDebounceKeyword] = useState('');
+  const filteredContentTypes = useMemo(() => {
+    const lowercaseKeyword = debounceKeyword.toLowerCase();
+    return contentTypes?.filter((contentType) => contentType.label.toLowerCase().includes(lowercaseKeyword));
+  }, [contentTypes, debounceKeyword]);
 
   const onSelectedContentType = (contentType: LegacyContentType) => {
     onContentTypeSelected?.({
@@ -72,8 +57,10 @@ export function ChangeContentTypeDialogContainer(props: ChangeContentTypeDialogC
 
   useEffect(() => {
     if (selectedItem.path) {
-      fetchLegacyContentTypes(site, selectedItem.path).subscribe(
-        (response) => {
+      setIsFetching(true);
+      const sub = fetchLegacyContentTypes(site, selectedItem.path).subscribe({
+        next: (response) => {
+          setIsFetching(false);
           setContentTypes(
             response.filter(
               (contentType) =>
@@ -81,27 +68,16 @@ export function ChangeContentTypeDialogContainer(props: ChangeContentTypeDialogC
             )
           );
         },
-        (response) => {
+        error: (response) => {
+          setIsFetching(false);
           dispatch(showErrorDialog({ error: response }));
         }
-      );
+      });
+      return () => {
+        sub.unsubscribe();
+      };
     }
   }, [dispatch, selectedItem, site]);
-
-  const resource = useLogicResource(
-    useMemo(() => ({ contentTypes, debounceKeyword }), [contentTypes, debounceKeyword]),
-    {
-      shouldResolve: ({ contentTypes }) => Boolean(contentTypes),
-      shouldReject: () => null,
-      shouldRenew: (source, resource) => resource.complete,
-      resultSelector: ({ contentTypes, debounceKeyword }) => {
-        return contentTypes.filter((contentType) =>
-          contentType.label.toLowerCase().includes(debounceKeyword.toLowerCase())
-        );
-      },
-      errorSelector: () => null
-    }
-  );
 
   const onSearch$ = useSubject<string>();
 
@@ -118,7 +94,7 @@ export function ChangeContentTypeDialogContainer(props: ChangeContentTypeDialogC
 
   return (
     <>
-      <DialogBody classes={{ root: classes.dialogContent }}>
+      <DialogBody sx={{ minHeight: '455px' }}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
             <SingleItemSelector
@@ -134,40 +110,46 @@ export function ChangeContentTypeDialogContainer(props: ChangeContentTypeDialogC
               }}
             />
           </Box>
-          <Box className={classes.searchBox}>
+          <Box sx={{ minWidth: '33%' }}>
             <SearchBar onChange={onSearch} keyword={keyword} autoFocus showActionButton={Boolean(keyword)} />
           </Box>
         </Box>
-        <SuspenseWithEmptyState
-          resource={resource}
-          suspenseProps={{
-            fallback: <ContentTypesLoader numOfItems={6} isCompact={isCompact} />
-          }}
-          withEmptyStateProps={{
-            emptyStateProps: {
-              classes: {
-                image: classes.emptyStateImg
-              },
-              title: (
+        {isFetching ? (
+          <ContentTypesLoader numOfItems={6} isCompact={isCompact} />
+        ) : filteredContentTypes ? (
+          filteredContentTypes.length > 0 ? (
+            <ContentTypesGrid
+              contentTypes={filteredContentTypes}
+              isCompact={isCompact}
+              onTypeOpen={onSelectedContentType}
+              selectedContentType={selectedContentType}
+            />
+          ) : (
+            <EmptyState
+              title={
                 <FormattedMessage
                   id="changeContentTypeDialog.emptyStateMessage"
                   defaultMessage="No Content Types Found"
                 />
-              )
-            }
-          }}
-        >
-          <ContentTypesGrid
-            resource={resource}
-            isCompact={isCompact}
-            onTypeOpen={onSelectedContentType}
-            selectedContentType={selectedContentType}
-          />
-        </SuspenseWithEmptyState>
+              }
+              sxs={{
+                image: {
+                  width: '250px',
+                  marginBottom: '17px'
+                }
+              }}
+            />
+          )
+        ) : (
+          <></>
+        )}
       </DialogBody>
       <DialogFooter>
         <FormControlLabel
-          className={classes.compact}
+          sx={{
+            marginRight: 'auto',
+            paddingLeft: '20px'
+          }}
           control={<Checkbox checked={isCompact} onChange={() => setIsCompact(!isCompact)} color="primary" />}
           label={<FormattedMessage id="words.compact" defaultMessage="Compact" />}
         />

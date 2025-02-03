@@ -62,7 +62,7 @@ import { getSystemLink } from '../../utils/system';
 import { getStoredPathNavigator } from '../../utils/state';
 import { useActiveSite } from '../../hooks/useActiveSite';
 import { useActiveUser } from '../../hooks/useActiveUser';
-import { GetChildrenOptions } from '../../models';
+import { GetChildrenOptions, PartialSxRecord } from '../../models';
 
 interface Menu {
   path?: string;
@@ -74,6 +74,8 @@ interface Menu {
     message: string;
   };
 }
+
+export type PathNavigatorClassKey = 'root' | 'body' | 'searchRoot';
 
 export interface PathNavigatorProps {
   id: string;
@@ -89,7 +91,8 @@ export interface PathNavigatorProps {
   expandedIcon?: SystemIconDescriptor;
   collapsedIcon?: SystemIconDescriptor;
   container?: Partial<StateStylingProps>;
-  classes?: Partial<Record<'root' | 'body' | 'searchRoot', string>>;
+  classes?: Partial<Record<PathNavigatorClassKey, string>>;
+  sxs?: PartialSxRecord<PathNavigatorClassKey>;
   onItemClicked?(item: DetailedItem, event?: React.MouseEvent): void;
   computeActiveItems?: (items: DetailedItem[]) => string[];
   createItemClickedHandler?: (
@@ -147,7 +150,8 @@ export function PathNavigator(props: PathNavigatorProps) {
     createItemClickedHandler = (defaultHandler) => defaultHandler,
     computeActiveItems,
     sortStrategy,
-    order
+    order,
+    sxs
   } = props;
   // endregion
   const state = useSelection((state) => state.pathNavigator)[id];
@@ -400,6 +404,7 @@ export function PathNavigator(props: PathNavigatorProps) {
       <PathNavigatorUI
         state={state}
         classes={props.classes}
+        sxs={sxs}
         itemsByPath={itemsByPath}
         icon={expandedIcon && collapsedIcon ? (state.collapsed ? collapsedIcon : expandedIcon) : icon}
         container={container}

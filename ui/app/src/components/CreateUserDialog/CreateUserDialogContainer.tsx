@@ -25,8 +25,7 @@ import PasswordTextField from '../PasswordTextField/PasswordTextField';
 import DialogFooter from '../DialogFooter/DialogFooter';
 import SecondaryButton from '../SecondaryButton';
 import PrimaryButton from '../PrimaryButton';
-import { makeStyles } from 'tss-react/mui';
-import Grid from '@mui/material/Grid';
+import Grid from '@mui/material/Grid2';
 import UserGroupMembershipEditor from '../UserGroupMembershipEditor';
 import { map, switchMap } from 'rxjs/operators';
 import { forkJoin, of } from 'rxjs';
@@ -34,51 +33,22 @@ import { addUserToGroup } from '../../services/groups';
 import { useSpreadState } from '../../hooks/useSpreadState';
 import { CreateUserDialogContainerProps } from './utils';
 import {
-  USER_FIRST_NAME_MIN_LENGTH,
-  USER_USERNAME_MIN_LENGTH,
-  USER_LAST_NAME_MIN_LENGTH,
-  USER_EMAIL_MAX_LENGTH,
-  USER_FIRST_NAME_MAX_LENGTH,
-  USER_LAST_NAME_MAX_LENGTH,
-  USER_PASSWORD_MAX_LENGTH,
-  USER_USERNAME_MAX_LENGTH,
   isInvalidEmail,
   isInvalidUsername,
+  USER_EMAIL_MAX_LENGTH,
+  USER_FIRST_NAME_MAX_LENGTH,
+  USER_FIRST_NAME_MIN_LENGTH,
+  USER_LAST_NAME_MAX_LENGTH,
+  USER_LAST_NAME_MIN_LENGTH,
+  USER_PASSWORD_MAX_LENGTH,
+  USER_USERNAME_MAX_LENGTH,
+  USER_USERNAME_MIN_LENGTH,
   validateFieldMinLength
 } from '../UserManagement/utils';
 import useUpdateRefs from '../../hooks/useUpdateRefs';
 import { showSystemNotification } from '../../state/actions/system';
 import { PasswordStrengthDisplayPopper } from '../PasswordStrengthDisplayPopper';
-
-const useStyles = makeStyles()((theme) => ({
-  arrow: {
-    overflow: 'hidden',
-    position: 'absolute',
-    width: '1em',
-    height: '0.71em',
-    boxSizing: 'border-box',
-    color: theme.palette.background.paper,
-    '&::before': {
-      content: '""',
-      margin: 'auto',
-      display: 'block',
-      width: '100%',
-      height: '100%',
-      boxShadow: theme.shadows[1],
-      backgroundColor: 'currentColor',
-      transform: 'rotate(45deg)'
-    }
-  },
-  textField: {
-    marginBottom: theme.spacing(1)
-  },
-  form: {
-    display: 'contents'
-  },
-  dialogBody: {
-    overflow: 'auto'
-  }
-}));
+import Box from '@mui/material/Box';
 
 const translations = defineMessages({
   invalidMinLength: {
@@ -107,7 +77,6 @@ export function CreateUserDialogContainer(props: CreateUserDialogContainerProps)
   const [validPassword, setValidPassword] = useState(false);
   const [submitOk, setSubmitOk] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
-  const { classes, cx } = useStyles();
   const { formatMessage } = useIntl();
   const dispatch = useDispatch();
   const selectedGroupsRef = useRef([]);
@@ -213,15 +182,15 @@ export function CreateUserDialogContainer(props: CreateUserDialogContainerProps)
   }, [newUser, passwordConfirm, onSubmittingAndOrPendingChange, validPassword, refs]);
 
   return (
-    <form className={classes.form}>
-      <DialogBody className={classes.dialogBody}>
+    <Box component="form" sx={{ display: 'contents' }}>
+      <DialogBody sx={{ overflow: 'auto' }}>
         <Grid container spacing={2}>
-          <Grid item sm={6}>
+          <Grid size={{ sm: 6 }}>
             <Grid container spacing={2}>
-              <Grid item sm={6}>
+              <Grid size={{ sm: 6 }}>
                 <TextField
                   autoFocus
-                  className={cx(classes.textField)}
+                  sx={{ marginBottom: (theme) => theme.spacing(1) }}
                   label={<FormattedMessage id="createUserDialog.firstName" defaultMessage="First Name" />}
                   required
                   fullWidth
@@ -241,12 +210,14 @@ export function CreateUserDialogContainer(props: CreateUserDialogContainerProps)
                     ) : null
                   }
                   onChange={(e) => setNewUser({ firstName: e.target.value })}
-                  inputProps={{ maxLength: USER_FIRST_NAME_MAX_LENGTH }}
+                  slotProps={{
+                    htmlInput: { maxLength: USER_FIRST_NAME_MAX_LENGTH }
+                  }}
                 />
               </Grid>
-              <Grid item sm={6}>
+              <Grid size={{ sm: 6 }}>
                 <TextField
-                  className={cx(classes.textField)}
+                  sx={{ marginBottom: (theme) => theme.spacing(1) }}
                   label={<FormattedMessage id="createUserDialog.lastName" defaultMessage="Last Name" />}
                   required
                   fullWidth
@@ -266,12 +237,14 @@ export function CreateUserDialogContainer(props: CreateUserDialogContainerProps)
                     ) : null
                   }
                   onChange={(e) => setNewUser({ lastName: e.target.value })}
-                  inputProps={{ maxLength: USER_LAST_NAME_MAX_LENGTH }}
+                  slotProps={{
+                    htmlInput: { maxLength: USER_LAST_NAME_MAX_LENGTH }
+                  }}
                 />
               </Grid>
             </Grid>
             <TextField
-              className={classes.textField}
+              sx={{ marginBottom: (theme) => theme.spacing(1) }}
               label={<FormattedMessage id="words.email" defaultMessage="E-mail" />}
               required
               fullWidth
@@ -285,10 +258,12 @@ export function CreateUserDialogContainer(props: CreateUserDialogContainerProps)
                 ) : null
               }
               onChange={(e) => setNewUser({ email: e.target.value })}
-              inputProps={{ maxLength: USER_EMAIL_MAX_LENGTH }}
+              slotProps={{
+                htmlInput: { maxLength: USER_EMAIL_MAX_LENGTH }
+              }}
             />
             <TextField
-              className={classes.textField}
+              sx={{ marginBottom: (theme) => theme.spacing(1) }}
               label={<FormattedMessage id="words.username" defaultMessage="Username" />}
               required
               fullWidth
@@ -306,12 +281,14 @@ export function CreateUserDialogContainer(props: CreateUserDialogContainerProps)
                 ) : null
               }
               onChange={(e) => setNewUser({ username: e.target.value })}
-              inputProps={{ maxLength: USER_USERNAME_MAX_LENGTH }}
+              slotProps={{
+                htmlInput: { maxLength: USER_USERNAME_MAX_LENGTH }
+              }}
             />
             <Grid container spacing={2}>
-              <Grid item sm={6}>
+              <Grid size={{ sm: 6 }}>
                 <PasswordTextField
-                  className={classes.textField}
+                  sxs={{ root: { marginBottom: (theme) => theme.spacing(1) } }}
                   label={<FormattedMessage id="words.password" defaultMessage="Password" />}
                   required
                   fullWidth
@@ -327,15 +304,14 @@ export function CreateUserDialogContainer(props: CreateUserDialogContainerProps)
                   onChange={(e) => onChangeValue('password', e.target.value)}
                   onFocus={(e) => setAnchorEl(e.target.parentElement)}
                   onBlur={() => setAnchorEl(null)}
-                  inputProps={{
-                    maxLength: USER_PASSWORD_MAX_LENGTH,
-                    autoComplete: 'new-password'
+                  slotProps={{
+                    htmlInput: { maxLength: USER_PASSWORD_MAX_LENGTH, autoComplete: 'new-password' }
                   }}
                 />
               </Grid>
-              <Grid item sm={6}>
+              <Grid size={{ sm: 6 }}>
                 <PasswordTextField
-                  className={classes.textField}
+                  sxs={{ root: { marginBottom: (theme) => theme.spacing(1) } }}
                   label={
                     <FormattedMessage
                       id="createUserDialog.passwordVerification"
@@ -359,7 +335,7 @@ export function CreateUserDialogContainer(props: CreateUserDialogContainerProps)
               </Grid>
             </Grid>
           </Grid>
-          <Grid item sm={6}>
+          <Grid size={{ sm: 6 }}>
             <UserGroupMembershipEditor onChange={onSelectedGroupsChanged} />
           </Grid>
         </Grid>
@@ -380,7 +356,7 @@ export function CreateUserDialogContainer(props: CreateUserDialogContainerProps)
           <FormattedMessage id="words.submit" defaultMessage="Submit" />
         </PrimaryButton>
       </DialogFooter>
-    </form>
+    </Box>
   );
 }
 

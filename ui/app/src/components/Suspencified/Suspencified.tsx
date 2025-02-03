@@ -14,42 +14,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, { Fragment, PropsWithChildren, Suspense, SuspenseProps } from 'react';
+import React, { PropsWithChildren, Suspense, SuspenseProps } from 'react';
 import { ErrorBoundary, ErrorBoundaryProps } from '../ErrorBoundary/ErrorBoundary';
 import LoadingState, { LoadingStateProps } from '../LoadingState/LoadingState';
-import { Resource } from '../../models/Resource';
-import EmptyState, { EmptyStateProps } from '../EmptyState/EmptyState';
-import { FormattedMessage } from 'react-intl';
-
-export type PropsWithResource<ResourceType = unknown, Props = {}> = PropsWithChildren<
-  {
-    resource: Resource<ResourceType>;
-  } & Props
->;
-
-type SuspenseWithEmptyStateProps<ResourceType = unknown> = PropsWithChildren<
-  PropsWithResource<ResourceType> & {
-    isEmpty?(value: ResourceType): boolean;
-    emptyStateProps?: Partial<EmptyStateProps>;
-  }
->;
 
 type SuspencifiedProps = PropsWithChildren<{
   suspenseProps?: SuspenseProps;
   loadingStateProps?: LoadingStateProps;
   errorBoundaryProps?: ErrorBoundaryProps;
-  fallback: SuspenseProps['fallback'];
+  fallback?: SuspenseProps['fallback'];
 }>;
-
-export function WithEmptyState<ResourceType = unknown[]>(props: SuspenseWithEmptyStateProps<ResourceType>) {
-  const { children, isEmpty = (value: ResourceType) => (value as any).length === 0, resource, emptyStateProps } = props;
-  const value = resource.read();
-  const finalEmptyStateProps: EmptyStateProps = {
-    title: <FormattedMessage id="withEmptyState.defaultEmptyStateMessage" defaultMessage="No results found" />,
-    ...emptyStateProps
-  };
-  return <Fragment>{isEmpty(value) ? <EmptyState {...finalEmptyStateProps} /> : children}</Fragment>;
-}
 
 export function Suspencified(props: SuspencifiedProps) {
   const {
@@ -63,22 +37,6 @@ export function Suspencified(props: SuspencifiedProps) {
     <ErrorBoundary {...errorBoundaryProps}>
       <Suspense fallback={fallback} {...suspenseProps} children={children} />
     </ErrorBoundary>
-  );
-}
-
-export function SuspenseWithEmptyState<ResourceType = unknown>(
-  props: SuspencifiedProps & {
-    resource: Resource<ResourceType>;
-    withEmptyStateProps?: Partial<SuspenseWithEmptyStateProps<ResourceType>>;
-  }
-) {
-  const { children, withEmptyStateProps, resource } = props;
-  return (
-    <Suspencified {...props}>
-      <WithEmptyState resource={resource} {...withEmptyStateProps}>
-        {children}
-      </WithEmptyState>
-    </Suspencified>
   );
 }
 

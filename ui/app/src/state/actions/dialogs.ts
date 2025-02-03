@@ -24,7 +24,6 @@ import { ItemMenuStateProps } from '../../components/ItemActionsMenu';
 import { ItemMegaMenuStateProps } from '../../components/ItemMegaMenu';
 import { LauncherStateProps } from '../../components/Launcher';
 import { PublishingStatusDialogStateProps } from '../../components/PublishingStatusDialog';
-import { UnlockPublisherDialogStateProps } from '../../components/UnlockPublisherDialog';
 import { WidgetDialogStateProps } from '../../components/WidgetDialog/utils';
 import { CodeEditorDialogStateProps } from '../../components/CodeEditorDialog';
 import { PublishDialogStateProps } from '../../components/PublishDialog/utils';
@@ -37,8 +36,6 @@ import { ViewVersionDialogStateProps } from '../../components/ViewVersionDialog/
 import { CompareVersionsDialogStateProps } from '../../components/CompareVersionsDialog';
 import { ConfirmDialogStateProps } from '../../components/ConfirmDialog';
 import { ChangeContentTypeDialogStateProps } from '../../components/ChangeContentTypeDialog';
-import { WorkflowCancellationDialogStateProps } from '../../components/WorkflowCancellationDialog/utils';
-import { RejectDialogStateProps } from '../../components/RejectDialog/utils';
 import { CreateFileStateProps } from '../../components/CreateFileDialog';
 import { UploadDialogStateProps } from '../../components/UploadDialog/util';
 import { PreviewDialogStateProps } from '../../components/PreviewDialog/utils';
@@ -50,6 +47,11 @@ import { ContentTypeFieldValidation, DetailedItem } from '../../models';
 import { RenameAssetStateProps } from '../../components/RenameAssetDialog';
 import { AjaxError } from 'rxjs/ajax';
 import { BrokenReferencesDialogStateProps } from '../../components/BrokenReferencesDialog/types';
+import { PublishingPackageReviewDialogStateProps } from '../../components/PublishPackageReviewDialog/types';
+import { CancelPackageDialogProps } from '../../components/CancelPackageDialog';
+import { PublishingPackageResubmitDialogStateProps } from '../../components/PublishingPackageResubmitDialog/types';
+import { PackageDetailsDialogProps } from '../../components';
+import { ViewPackagesDialogProps } from '../../components/ViewPackagesDialog';
 
 // region History
 export const showHistoryDialog = /*#__PURE__*/ createAction<Partial<HistoryDialogStateProps>>('SHOW_HISTORY_DIALOG');
@@ -93,6 +95,34 @@ export const closePublishDialog = /*#__PURE__*/ createAction<StandardAction>('CL
 export const publishDialogClosed = /*#__PURE__*/ createAction('PUBLISH_DIALOG_CLOSED');
 // endregion
 
+// region Review
+export const showPublishingPackageReviewDialog = /*#__PURE__*/ createAction<
+  Partial<PublishingPackageReviewDialogStateProps>
+>('SHOW_PUBLISH_PACKAGE_REVIEW_DIALOG');
+export const updatePublishingPackageReviewDialog = /*#__PURE__*/ createAction<Partial<PublishDialogStateProps>>(
+  'UPDATE_PUBLISH_PACKAGE_REVIEW_DIALOG'
+);
+export const closePublishingPackageReviewDialog = /*#__PURE__*/ createAction<StandardAction>(
+  'CLOSE_PUBLISH_PACKAGE_REVIEW_DIALOG'
+);
+export const publishingPackageReviewDialogClosed = /*#__PURE__*/ createAction('PUBLISH_PACKAGE_REVIEW_DIALOG_CLOSED');
+// endregion
+
+// region Resubmit
+export const showPublishingPackageResubmitDialog = /*#__PURE__*/ createAction<
+  Partial<PublishingPackageResubmitDialogStateProps>
+>('SHOW_PUBLISHING_PACKAGE_RESUBMIT_DIALOG');
+export const updatePublishingPackageResubmitDialog = /*#__PURE__*/ createAction<Partial<PublishDialogStateProps>>(
+  'UPDATE_PUBLISHING_PACKAGE_RESUBMIT_DIALOG'
+);
+export const closePublishingPackageResubmitDialog = /*#__PURE__*/ createAction<StandardAction>(
+  'CLOSE_PUBLISHING_PACKAGE_RESUBMIT_DIALOG'
+);
+export const publishingPackageResubmitDialogClosed = /*#__PURE__*/ createAction(
+  'PUBLISHING_PACKAGE_RESUBMIT_DIALOG_CLOSED'
+);
+// endregion
+
 // region Delete
 export const showDeleteDialog = /*#__PURE__*/ createAction<Partial<DeleteDialogStateProps>>('SHOW_DELETE_DIALOG');
 export const updateDeleteDialog = /*#__PURE__*/ createAction<Partial<DeleteDialogStateProps>>('UPDATE_DELETE_DIALOG');
@@ -127,27 +157,6 @@ export const showDependenciesDialog =
   /*#__PURE__*/ createAction<Partial<DependenciesDialogStateProps>>('SHOW_DEPENDENCIES_DIALOG');
 export const closeDependenciesDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_DEPENDENCIES_DIALOG');
 export const dependenciesDialogClosed = /*#__PURE__*/ createAction('DEPENDENCIES_DIALOG_CLOSED');
-// endregion
-
-// region Workflow Cancellation
-
-export const showWorkflowCancellationDialog = /*#__PURE__*/ createAction<Partial<WorkflowCancellationDialogStateProps>>(
-  'SHOW_WORKFLOW_CANCELLATION_DIALOG'
-);
-
-export const closeWorkflowCancellationDialog = /*#__PURE__*/ createAction<StandardAction>(
-  'CLOSE_WORKFLOW_CANCELLATION_DIALOG'
-);
-
-export const workflowCancellationDialogClosed = /*#__PURE__*/ createAction('WORKFLOW_CANCELLATION_DIALOG_CLOSED');
-
-// endregion
-
-// region Reject
-export const showRejectDialog = /*#__PURE__*/ createAction<Partial<RejectDialogStateProps>>('SHOW_REJECT_DIALOG');
-export const closeRejectDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_REJECT_DIALOG');
-export const rejectDialogClosed = /*#__PURE__*/ createAction('REJECT_DIALOG_CLOSED');
-export const updateRejectDialog = /*#__PURE__*/ createAction<Partial<RejectDialogStateProps>>('UPDATE_REJECT_DIALOG');
 // endregion
 
 // region Legacy Form
@@ -274,12 +283,6 @@ export const showPublishingStatusDialog = /*#__PURE__*/ createAction<Partial<Pub
 export const closePublishingStatusDialog = /*#__PURE__*/ createAction('HIDE_PUBLISHING_STATUS_DIALOG');
 // endregion
 
-// region Unlock Publisher Dialog
-export const showUnlockPublisherDialog =
-  /*#__PURE__*/ createAction<Partial<UnlockPublisherDialogStateProps>>('SHOW_UNLOCK_PUBLISHER_DIALOG');
-export const closeUnlockPublisherDialog = /*#__PURE__*/ createAction('CLOSE_UNLOCK_PUBLISHER_DIALOG');
-// endregion
-
 // region Widget Dialog
 export const showWidgetDialog = /*#__PURE__*/ createAction<Partial<WidgetDialogStateProps>>('SHOW_WIDGET_DIALOG');
 export const closeWidgetDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_WIDGET_DIALOG');
@@ -324,5 +327,49 @@ export const fetchBrokenReferencesFailed = /*#__PURE__*/ createAction<AjaxError>
 export const updateBrokenReferencesDialog = /*#__PURE__*/ createAction<Partial<BrokenReferencesDialogStateProps>>(
   'UPDATE_BROKEN_REFERENCES_DIALOG'
 );
+
+// endregion
+
+// region Cancel Package
+export const showCancelPackageDialog =
+  /*#__PURE__*/ createAction<Partial<CancelPackageDialogProps>>('SHOW_CANCEL_PACKAGE_DIALOG');
+export const updateCancelPackageDialog =
+  /*#__PURE__*/ createAction<Partial<CancelPackageDialogProps>>('UPDATE_CANCEL_PACKAGE_DIALOG');
+export const closeCancelPackageDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_CANCEL_PACKAGE_DIALOG');
+export const cancelPackageDialogClosed = /*#__PURE__*/ createAction('CANCEL_PACKAGE_DIALOG_CLOSED');
+// endregion
+
+// region BulkCancelPackage
+export const showBulkCancelPackageDialog = /*#__PURE__*/ createAction<Partial<CancelPackageDialogProps>>(
+  'SHOW_BULK_CANCEL_PACKAGE_DIALOG'
+);
+export const updateBulkCancelPackageDialog = /*#__PURE__*/ createAction<Partial<CancelPackageDialogProps>>(
+  'UPDATE_BULK_CANCEL_PACKAGE_DIALOG'
+);
+export const closeBulkCancelPackageDialog = /*#__PURE__*/ createAction<StandardAction>(
+  'CLOSE_BULK_CANCEL_PACKAGE_DIALOG'
+);
+export const bulkCancelPackageDialogClosed = /*#__PURE__*/ createAction('BULK_CANCEL_PACKAGE_DIALOG_CLOSED');
+// endregion
+
+// region PackageDetailsDialog
+
+export const showPackageDetailsDialog =
+  /*#__PURE__*/ createAction<Partial<PackageDetailsDialogProps>>('SHOW_PACKAGE_DETAILS_DIALOG');
+
+export const closePackageDetailsDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_PACKAGE_DETAILS_DIALOG');
+
+export const packageDetailsDialogClosed = /*#__PURE__*/ createAction('PACKAGE_DETAILS_DIALOG_CLOSED');
+
+// endregion
+
+// region ViewPackagesDialog
+
+export const showViewPackagesDialog =
+  /*#__PURE__*/ createAction<Partial<ViewPackagesDialogProps>>('SHOW_VIEW_PACKAGES_DIALOG');
+
+export const closeViewPackagesDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_VIEW_PACKAGES_DIALOG');
+
+export const viewPackagesDialogClosed = /*#__PURE__*/ createAction('VIEW_PACKAGES_DIALOG_CLOSED');
 
 // endregion

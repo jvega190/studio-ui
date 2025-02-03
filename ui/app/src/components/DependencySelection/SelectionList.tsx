@@ -33,9 +33,9 @@ import { getItemStateText } from '../ItemDisplay/utils';
 import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
 import Button from '@mui/material/Button';
 import InfoIcon from '@mui/icons-material/InfoOutlined';
-import { makeStyles } from 'tss-react/mui';
 
 import LookupTable from '../../models/LookupTable';
+import ListItemButton from '@mui/material/ListItemButton';
 
 export interface SelectionListProps {
   title: ReactNode;
@@ -52,47 +52,6 @@ export interface SelectionListProps {
   onSelectAllClicked?(event: React.ChangeEvent, checked: boolean): void;
   onEditClick?(event: React.MouseEvent, path: string): void;
 }
-
-const useStyles = makeStyles()(() => ({
-  listTitle: {
-    display: 'flex !important',
-    alignItems: 'center',
-    whiteSpace: 'break-spaces'
-  },
-  selectionList: {
-    paddingTop: 0
-  },
-  publishingTargetIcon: {
-    fontSize: '1rem',
-    margin: '0 5px'
-  },
-  stateScheduledIcon: {
-    fontSize: '1em',
-    marginRight: '5px'
-  },
-  emptyDependencies: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '8px',
-    '& svg': {
-      marginRight: '8px'
-    }
-  },
-  selectAllBtn: {
-    marginLeft: 'auto',
-    fontWeight: 'bold',
-    verticalAlign: 'baseline'
-  },
-  overflowText: {
-    overflow: 'hidden',
-    whiteSpace: 'nowrap',
-    textOverflow: 'ellipsis'
-  },
-  itemText: {
-    textOverflow: 'ellipsis',
-    overflow: 'hidden'
-  }
-}));
 
 export function SelectionList(props: SelectionListProps) {
   // region const { ... } = props
@@ -111,7 +70,6 @@ export function SelectionList(props: SelectionListProps) {
   } = props;
   // endregion
 
-  const { classes } = useStyles();
   const locale = useLocale();
   const isAllChecked = useMemo(
     () => (selectedItems ? !paths?.some((path) => !selectedItems[path]) : null),
@@ -150,23 +108,20 @@ export function SelectionList(props: SelectionListProps) {
             </>
           }
           primaryTypographyProps={{
-            classes: { root: classes.listTitle }
+            sx: {
+              display: 'flex !important',
+              alignItems: 'center',
+              whiteSpace: 'break-spaces'
+            }
           }}
         />
       </ListItem>
       {items ? (
-        <List className={classes.selectionList}>
+        <List sx={{ paddingTop: 0 }}>
           {items.map((item) => {
             const labelId = `checkbox-list-label-${item.path}`;
-            return (
-              <ListItem
-                dense
-                key={item.path}
-                disabled={disabled || disabledPaths[item.path]}
-                // @ts-ignore
-                button={Boolean(onItemClicked)}
-                onClick={onItemClicked ? (e) => onItemClicked(e, item.path) : void 0}
-              >
+            const listItemComponentChildren = (
+              <>
                 {onItemClicked && (
                   <ListItemIcon>
                     <Checkbox
@@ -181,12 +136,25 @@ export function SelectionList(props: SelectionListProps) {
                   </ListItemIcon>
                 )}
                 <ListItemText id={labelId}>
-                  <Typography variant="subtitle1" className={classes.itemText} title={item.label}>
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ textOverflow: 'ellipsis', overflow: 'hidden' }}
+                    title={item.label}
+                  >
                     {item.label}
                   </Typography>
                   {(item.stateMap.submitted || item.stateMap.scheduled) && (
                     <Box display="flex" alignItems="center">
-                      <ItemStateIcon displayTooltip={false} className={classes.stateScheduledIcon} item={item} />
+                      <ItemStateIcon
+                        displayTooltip={false}
+                        sxs={{
+                          root: {
+                            fontSize: '1em',
+                            marginRight: '5px'
+                          }
+                        }}
+                        item={item}
+                      />
                       <Typography variant="body2" color="textSecondary">
                         {getDateScheduled(item) ? (
                           item.stateMap.submitted ? (
@@ -228,7 +196,12 @@ export function SelectionList(props: SelectionListProps) {
                       </Typography>
                       <ItemPublishingTargetIcon
                         displayTooltip={false}
-                        className={classes.publishingTargetIcon}
+                        sxs={{
+                          root: {
+                            fontSize: '1rem',
+                            margin: '0 5px'
+                          }
+                        }}
                         item={
                           {
                             stateMap: {
@@ -243,12 +216,31 @@ export function SelectionList(props: SelectionListProps) {
                       </Typography>
                     </Box>
                   )}
-                  <Typography variant="body2" color="textSecondary" className={classes.itemText} title={item.path}>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    sx={{ textOverflow: 'ellipsis', overflow: 'hidden' }}
+                    title={item.path}
+                  >
                     {item.path}
                   </Typography>
                 </ListItemText>
-              </ListItem>
+              </>
             );
+
+            if (onItemClicked) {
+              return (
+                <ListItemButton
+                  dense
+                  key={item.path}
+                  disabled={disabled || disabledPaths[item.path]}
+                  onClick={(e) => onItemClicked(e, item.path)}
+                  children={listItemComponentChildren}
+                />
+              );
+            } else {
+              return <ListItem dense key={item.path} children={listItemComponentChildren} />;
+            }
           })}
         </List>
       ) : (
@@ -256,15 +248,8 @@ export function SelectionList(props: SelectionListProps) {
           {paths.length ? (
             paths.map((path: string) => {
               const labelId = `checkbox-list-label-${path}`;
-              return (
-                <ListItem
-                  dense
-                  key={path}
-                  disabled={disabled || disabledPaths[path]}
-                  // @ts-ignore
-                  button={Boolean(onItemClicked)}
-                  onClick={onItemClicked ? (e) => onItemClicked(e, path) : null}
-                >
+              const listItemComponentChildren = (
+                <>
                   {onItemClicked && (
                     <ListItemIcon>
                       <Checkbox
@@ -283,7 +268,7 @@ export function SelectionList(props: SelectionListProps) {
                     primary={path}
                     primaryTypographyProps={{
                       title: path,
-                      classes: { root: classes.overflowText }
+                      sx: { overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }
                     }}
                   />
                   {onEditClick && isEditableAsset(path) && (
@@ -292,17 +277,44 @@ export function SelectionList(props: SelectionListProps) {
                         color="primary"
                         onClick={(e) => onEditClick(e, path)}
                         size="small"
-                        className={classes.selectAllBtn}
+                        sx={{
+                          marginLeft: 'auto',
+                          fontWeight: 'bold',
+                          verticalAlign: 'baseline'
+                        }}
                       >
                         <FormattedMessage id="words.edit" defaultMessage="Edit" />
                       </Button>
                     </ListItemSecondaryAction>
                   )}
-                </ListItem>
+                </>
               );
+
+              if (onItemClicked) {
+                return (
+                  <ListItemButton
+                    dense
+                    key={path}
+                    disabled={disabled || disabledPaths[path]}
+                    onClick={(e) => onItemClicked(e, path)}
+                    children={listItemComponentChildren}
+                  />
+                );
+              } else {
+                return <ListItem key={path} dense children={listItemComponentChildren} />;
+              }
             })
           ) : (
-            <Box className={classes.emptyDependencies}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '8px',
+                '& svg': {
+                  marginRight: '8px'
+                }
+              }}
+            >
               <InfoIcon color="action" fontSize="small" />
               <Typography variant="caption">{emptyMessage}</Typography>
             </Box>

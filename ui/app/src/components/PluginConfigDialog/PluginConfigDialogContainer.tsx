@@ -37,7 +37,7 @@ export function PluginConfigDialogContainer(props: PluginConfigDialogContainerPr
   const { pluginId, onSaved, isSubmitting, onClose, onSubmittingAndOrPendingChange } = props;
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState('');
-  const editorRef = useRef<any>();
+  const editorRef = useRef<any>(undefined);
   const dispatch = useDispatch();
   const [disabledSaveButton, setDisabledSaveButton] = useState(true);
   const { formatMessage } = useIntl();
@@ -128,7 +128,7 @@ export function PluginConfigDialogContainer(props: PluginConfigDialogContainerPr
   return (
     <>
       <DialogBody sx={{ height: '60vh', padding: 0 }}>
-        <ConditionalLoadingState isLoading={loading} styles={{ root: { flexGrow: 1 } }}>
+        <ConditionalLoadingState isLoading={loading} sxs={{ root: { flexGrow: 1 } }}>
           <AceEditor
             ref={editorRef}
             mode="ace/mode/xml"

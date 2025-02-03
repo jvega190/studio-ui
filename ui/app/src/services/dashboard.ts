@@ -153,7 +153,7 @@ export function fetchPublishingHistory(
 
 export function fetchPublishingHistoryPackageItems(
   siteId: string,
-  packageId: string,
+  packageId: number,
   options?: PaginationOptions
 ): Observable<PagedArray<SandboxItem>> {
   const qs = toQueryString({ siteId, ...options });

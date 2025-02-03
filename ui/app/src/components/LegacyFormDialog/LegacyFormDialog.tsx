@@ -20,8 +20,7 @@ import DialogHeader from '../DialogHeader';
 import { LegacyFormDialogProps } from './utils';
 import { EmbeddedLegacyContainer } from './EmbeddedLegacyContainer';
 import MinimizedBar from '../MinimizedBar';
-import Dialog from '@mui/material/Dialog';
-import { useStyles } from './styles';
+import Dialog, { dialogClasses } from '@mui/material/Dialog';
 import { translations } from './translations';
 import useEnhancedDialogState from '../../hooks/useEnhancedDialogState';
 import { RenameContentDialog } from '../RenameContentDialog';
@@ -36,12 +35,11 @@ const renameContentDialogDataInitialState = {
 
 export function LegacyFormDialog(props: LegacyFormDialogProps) {
   const { formatMessage } = useIntl();
-  const { classes } = useStyles();
   const { open, inProgress, isSubmitting, disableHeader, isMinimized, onMaximize, onMinimize, ...rest } = props;
   const renameContentDialogState = useEnhancedDialogState();
   const [renameContentDialogData, setRenameContentDialogData] = useState(renameContentDialogDataInitialState);
   const [iframeLoaded, setIframeLoaded] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>();
+  const iframeRef = useRef<HTMLIFrameElement>(undefined);
   const messages = fromEvent(window, 'message').pipe(filter((e: any) => e.data && e.data.type));
 
   const title = formatMessage(translations.title);
@@ -96,7 +94,11 @@ export function LegacyFormDialog(props: LegacyFormDialogProps) {
         keepMounted={isMinimized}
         fullWidth
         maxWidth="xl"
-        classes={{ paper: classes.dialog }}
+        sx={{
+          [`& .${dialogClasses.paper}`]: {
+            minHeight: '90vh'
+          }
+        }}
         onClose={onClose}
       >
         {!disableHeader && (

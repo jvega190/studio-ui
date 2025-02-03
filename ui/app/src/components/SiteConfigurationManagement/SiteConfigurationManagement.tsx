@@ -14,15 +14,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { fetchActiveEnvironment } from '../../services/environment';
 import { fetchConfigurationXML, fetchSiteConfigurationFiles, writeConfiguration } from '../../services/configuration';
 import { SiteConfigurationFileWithId } from '../../models/SiteConfigurationFile';
 import Box from '@mui/material/Box';
 import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemText from '@mui/material/ListItemText';
-import useStyles from './styles';
+import ListItemText, { listItemTextClasses } from '@mui/material/ListItemText';
 import ListSubheader from '@mui/material/ListSubheader';
 import { FormattedMessage, useIntl } from 'react-intl';
 import Skeleton from '@mui/material/Skeleton';
@@ -50,7 +48,7 @@ import { useDispatch } from 'react-redux';
 import { fetchItemVersions } from '../../state/actions/versions';
 import { fetchItemByPath } from '../../services/content';
 import SearchBar from '../SearchBar/SearchBar';
-import Alert from '@mui/material/Alert';
+import Alert, { alertClasses } from '@mui/material/Alert';
 import { closeConfirmDialog, showConfirmDialog, showHistoryDialog } from '../../state/actions/dialogs';
 import { batchActions, dispatchDOMEvent } from '../../state/actions/misc';
 import { capitalize, stripCData } from '../../utils/string';
@@ -76,30 +74,30 @@ import { MaxLengthCircularProgress } from '../MaxLengthCircularProgress';
 import useUnmount from '../../hooks/useUnmount';
 import useActiveUser from '../../hooks/useActiveUser';
 import { createCustomDocumentEventListener } from '../../utils/dom';
-import { useNavigate } from 'react-router-dom';
 import { ProjectToolsRoutes } from '../../env/routes';
+import ListItemButton from '@mui/material/ListItemButton';
+import { SiteToolsContext } from '../SiteTools/siteToolsContext';
 
 interface SiteConfigurationManagementProps {
   embedded?: boolean;
   showAppsButton?: boolean;
   isSubmitting?: boolean;
-  mountMode?: 'page' | 'dialog';
   onSubmittingAndOrPendingChange?(value: onSubmittingAndOrPendingChangeProps): void;
 }
 
 export function SiteConfigurationManagement(props: SiteConfigurationManagementProps) {
-  const { embedded, showAppsButton, onSubmittingAndOrPendingChange, isSubmitting, mountMode } = props;
+  const { embedded, showAppsButton, onSubmittingAndOrPendingChange, isSubmitting } = props;
   const site = useActiveSiteId();
   const { username } = useActiveUser();
   const sessionStorageKey = `craftercms.${username}.projectToolsConfigurationData.${site}`;
   const baseUrl = useSelection<string>((state) => state.env.authoringBase);
-  const { classes, cx: clsx } = useStyles();
   const { formatMessage } = useIntl();
   const [environment, setEnvironment] = useState<string>();
   const [files, setFiles] = useState<SiteConfigurationFileWithId[]>();
   const [selectedConfigFile, setSelectedConfigFile] = useState<SiteConfigurationFileWithId>(
     () => JSON.parse(sessionStorage.getItem(sessionStorageKey))?.selectedConfigFile ?? null
   );
+  const [changesRecoveredOnMount] = useState<boolean>(() => selectedConfigFile !== null);
   const ignoreEnv = selectedConfigFile?.path === 'site-policy-config.xml';
   const [selectedConfigFileXml, setSelectedConfigFileXml] = useState(null);
   const [configError, setConfigError] = useState(null);
@@ -116,9 +114,11 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
   const [confirmDialogProps, setConfirmDialogProps] = useState<ConfirmDialogProps>(null);
   const [keyword, setKeyword] = useState('');
   const dispatch = useDispatch();
+  const setTool = useContext(SiteToolsContext)?.setTool;
   const refs = useUpdateRefs({
     disabledSaveButton,
-    selectedConfigFile
+    selectedConfigFile,
+    setTool
   });
   const functionRefs = useUpdateRefs({
     onSubmittingAndOrPendingChange
@@ -127,9 +127,16 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
     container: null
   });
   const [contentSize, setContentSize] = useState(0);
-  const navigate = useNavigate();
 
   useMount(() => {
+    if (changesRecoveredOnMount) {
+      dispatch(
+        showSystemNotification({
+          message: formatMessage({ defaultMessage: 'Unsaved changes were restored on to the editor.' }),
+          options: { variant: 'info' }
+        })
+      );
+    }
     fetchActiveEnvironment().subscribe({
       next(env) {
         setEnvironment(env);
@@ -141,7 +148,7 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
   });
 
   useUnmount(() => {
-    if (!refs.current.disabledSaveButton && mountMode === 'page') {
+    if (!refs.current.disabledSaveButton) {
       sessionStorage.setItem(
         sessionStorageKey,
         JSON.stringify({
@@ -150,22 +157,37 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
         })
       );
       const eventId = 'unsavedConfigurationChangesConfirmation';
-      dispatch(
-        showConfirmDialog({
-          body: <FormattedMessage defaultMessage="You left unsaved changes. Go back and continue editing?" />,
-          onCancel: batchActions([closeConfirmDialog(), dispatchDOMEvent({ id: eventId, button: 'cancel' })]),
-          onOk: batchActions([closeConfirmDialog(), dispatchDOMEvent({ id: eventId, button: 'ok' })]),
-          okButtonText: <FormattedMessage defaultMessage="Continue editing" />,
-          cancelButtonText: <FormattedMessage defaultMessage="Discard changes" />
-        })
-      );
-      createCustomDocumentEventListener<{ button: 'ok' | 'cancel' }>(eventId, ({ button }) => {
-        if (button === 'ok') {
-          navigate(ProjectToolsRoutes.Configuration);
-        } else {
-          sessionStorage.removeItem(sessionStorageKey);
-        }
-      });
+      const title = getTranslation(refs.current.selectedConfigFile.title, translations, formatMessage);
+      if (refs.current.setTool) {
+        dispatch(
+          showConfirmDialog({
+            body: formatMessage({ defaultMessage: 'You left unsaved changes on "{title}"' }, { title }),
+            onCancel: batchActions([closeConfirmDialog(), dispatchDOMEvent({ id: eventId, button: 'cancel' })]),
+            onOk: batchActions([closeConfirmDialog(), dispatchDOMEvent({ id: eventId, button: 'ok' })]),
+            okButtonText: <FormattedMessage defaultMessage="Go back and recover changes" />,
+            cancelButtonText: <FormattedMessage defaultMessage="Discard changes" />
+          })
+        );
+        createCustomDocumentEventListener<{ button: 'ok' | 'cancel' }>(eventId, ({ button }) => {
+          if (button === 'ok') {
+            refs.current.setTool(ProjectToolsRoutes.Configuration);
+          } else {
+            sessionStorage.removeItem(sessionStorageKey);
+          }
+        });
+      } else {
+        dispatch(
+          showConfirmDialog({
+            body: formatMessage(
+              {
+                defaultMessage:
+                  'You left unsaved changes on "{title}". You may go back to configuration now if you wish to recover or ignore to discard changes.'
+              },
+              { title }
+            )
+          })
+        );
+      }
     }
   });
 
@@ -185,34 +207,35 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
   useEffect(() => {
     if (selectedConfigFile && environment) {
       setConfigError(null);
-      fetchConfigurationXML(
-        site,
-        selectedConfigFile.path,
-        selectedConfigFile.module,
-        ignoreEnv ? null : environment
-      ).subscribe({
-        next(xml) {
-          const sessionData = JSON.parse(sessionStorage.getItem(sessionStorageKey));
-          if (sessionData?.content) {
-            setSelectedConfigFileXml(sessionData.content);
-            setContentSize(sessionData.content.length);
-            setDisabledSaveButton(false);
-            sessionStorage.removeItem(sessionStorageKey);
-          } else {
+      const sessionData = JSON.parse(sessionStorage.getItem(sessionStorageKey));
+      if (sessionData?.content) {
+        setSelectedConfigFileXml(sessionData.content);
+        setContentSize(sessionData.content.length);
+        setDisabledSaveButton(false);
+        sessionStorage.removeItem(sessionStorageKey);
+        setLoadingXml(false);
+      } else {
+        fetchConfigurationXML(
+          site,
+          selectedConfigFile.path,
+          selectedConfigFile.module,
+          ignoreEnv ? null : environment
+        ).subscribe({
+          next(xml) {
             setSelectedConfigFileXml(xml ?? '');
             setContentSize(xml?.length ?? 0);
+            setLoadingXml(false);
+          },
+          error({ response }) {
+            if (response.response.code === 7000) {
+              setSelectedConfigFileXml('');
+            } else {
+              setConfigError(response.response);
+            }
+            setLoadingXml(false);
           }
-          setLoadingXml(false);
-        },
-        error({ response }) {
-          if (response.response.code === 7000) {
-            setSelectedConfigFileXml('');
-          } else {
-            setConfigError(response.response);
-          }
-          setLoadingXml(false);
-        }
-      });
+        });
+      }
     }
   }, [selectedConfigFile, environment, site, ignoreEnv, refs, sessionStorageKey]);
 
@@ -295,22 +318,30 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
       onClosed: onConfirmDialogClosed,
       imageUrl: informationGraphicUrl,
       children: (
-        <section className={classes.confirmDialogBody}>
-          <Typography className={classes.textMargin} variant="subtitle1">
-            {formatMessage(translations.encryptMarked)}
+        <Box
+          component="section"
+          sx={{
+            textAlign: 'left',
+            '& .text-margin': {
+              marginBottom: '1em'
+            }
+          }}
+        >
+          <Typography className="text-margin" variant="subtitle1">
+            {formatMessage(translations.encryptMarked)} asd
           </Typography>
-          <Typography className={classes.textMargin} variant="body2">
+          <Typography className="text-margin" variant="body2">
             {formatMessage(translations.encryptHintPt1)}
           </Typography>
           <Typography variant="body2">{formatMessage(translations.encryptHintPt2, bold)}</Typography>
-          <Typography className={classes.textMargin} variant="body2">
+          <Typography className="text-margin" variant="body2">
             {formatMessage(translations.encryptHintPt3, tags)}
           </Typography>
           <Typography variant="body2">{formatMessage(translations.encryptHintPt4, bold)}</Typography>
-          <Typography className={classes.textMargin} variant="body2">
+          <Typography className="text-margin" variant="body2">
             {formatMessage(translations.encryptHintPt5, tagsAndCurls)}
           </Typography>
-          <Typography className={classes.textMargin} variant="body2">
+          <Typography className="text-margin" variant="body2">
             {formatMessage(translations.encryptHintPt6)}
           </Typography>
           <ul>
@@ -324,7 +355,7 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
               <Typography variant="body2">{formatMessage(translations.encryptHintPt9)}</Typography>
             </li>
           </ul>
-        </section>
+        </Box>
       )
     });
   };
@@ -553,7 +584,15 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
   };
 
   return (
-    <section className={classes.root}>
+    <Box
+      component="section"
+      sx={{
+        display: 'flex',
+        height: '100%',
+        position: 'relative',
+        flexDirection: 'column'
+      }}
+    >
       {!embedded && (
         <GlobalAppToolbar
           title={<FormattedMessage id="siteConfigurationManagement.title" defaultMessage="Configuration" />}
@@ -564,15 +603,30 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
         belowToolbar
         open={openDrawer}
         width={width}
-        classes={{ drawerPaper: clsx(classes.drawerPaper, embedded && 'embedded') }}
+        sxs={{
+          drawerPaper: {
+            position: 'absolute',
+            ...(embedded ? { top: 0 } : {})
+          }
+        }}
         onWidthChange={setWidth}
       >
         <List
-          className={classes.list}
+          sx={{
+            width: '100%',
+            overflow: 'auto',
+            height: '100%'
+          }}
           component="nav"
           dense
           subheader={
-            <ListSubheader className={classes.listSubheader} component="div">
+            <ListSubheader
+              sx={(theme) => ({
+                background: theme.palette.background.paper,
+                padding: 0,
+                borderBottom: `1px solid ${theme.palette.divider}`
+              })}
+            >
               {environment ? (
                 <>
                   <Tooltip
@@ -585,7 +639,17 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
                       />
                     }
                   >
-                    <Alert severity="info" className={classes.alert} classes={{ message: classes.ellipsis }}>
+                    <Alert
+                      severity="info"
+                      sx={{
+                        borderRadius: 0,
+                        [`& .${alertClasses.message}`]: {
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }
+                      }}
+                    >
                       <FormattedMessage
                         id="siteConfigurationManagement.activeEnvironment"
                         defaultMessage="{environment} Environment"
@@ -594,7 +658,16 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
                     </Alert>
                   </Tooltip>
                   <SearchBar
-                    classes={{ root: classes.searchBarRoot }}
+                    sxs={{
+                      root: {
+                        borderRadius: '0 !important',
+                        border: 0,
+                        '&.focus': {
+                          border: '0 !important',
+                          boxShadow: 'none'
+                        }
+                      }
+                    }}
                     keyword={keyword}
                     onChange={setKeyword}
                     showActionButton={Boolean(keyword)}
@@ -602,10 +675,18 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
                   />
                 </>
               ) : (
-                <section className={classes.listSubheaderSkeleton}>
+                <Box
+                  component="section"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexDirection: 'column',
+                    padding: '10px'
+                  }}
+                >
                   <Skeleton height={34} width="100%" />
                   <Skeleton height={34} width="100%" />
-                </section>
+                </Box>
               )}
             </ListSubheader>
           }
@@ -619,7 +700,7 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
                     getTranslation(file.description, translations, formatMessage).toLowerCase().includes(keyword)
                 )
                 .map((file, i) => (
-                  <ListItem
+                  <ListItemButton
                     selected={file.id === selectedConfigFile?.id}
                     onClick={() => {
                       if (!disabledSaveButton && file.id !== selectedConfigFile?.id) {
@@ -628,13 +709,18 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
                         onListItemClick(file);
                       }
                     }}
-                    button
                     key={i}
                     dense
                     divider={i < files.length - 1}
                   >
                     <ListItemText
-                      classes={{ primary: classes.ellipsis, secondary: classes.ellipsis }}
+                      sx={{
+                        [`& .${listItemTextClasses.primary}, & .${listItemTextClasses.secondary}`]: {
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }
+                      }}
                       primaryTypographyProps={{ title: getTranslation(file.title, translations, formatMessage) }}
                       secondaryTypographyProps={{
                         title: getTranslation(file.description, translations, formatMessage)
@@ -642,23 +728,22 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
                       primary={getTranslation(file.title, translations, formatMessage)}
                       secondary={getTranslation(file.description, translations, formatMessage)}
                     />
-                  </ListItem>
+                  </ListItemButton>
                 ))
             : Array(15)
                 .fill(null)
                 .map((x, i) => (
-                  <ListItem button key={i} dense divider={i < Array.length - 1}>
+                  <ListItemButton key={i} dense divider={i < Array.length - 1}>
                     <ListItemText
                       primary={<Skeleton height={15} width="80%" />}
                       secondary={<Skeleton height={15} width="60%" />}
-                      primaryTypographyProps={{
-                        className: classes.itemSkeletonText
-                      }}
-                      secondaryTypographyProps={{
-                        className: classes.itemSkeletonText
+                      sx={{
+                        [`& .${listItemTextClasses.primary}, & .${listItemTextClasses.secondary}`]: {
+                          height: '20px'
+                        }
                       }}
                     />
-                  </ListItem>
+                  </ListItemButton>
                 ))}
         </List>
       </ResizeableDrawer>
@@ -670,16 +755,14 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
           paddingLeft={openDrawer ? `${width}px` : 0}
         >
           {configError ? (
-            <ApiResponseErrorState error={configError} classes={{ root: classes.errorState }} />
+            <ApiResponseErrorState error={configError} sxs={{ root: { height: 'calc(100% - 65px)' } }} />
           ) : loadingXml ? (
             <LoadingState />
           ) : nnou(selectedConfigFileXml) ? (
             <>
               <GlobalAppToolbar
-                classes={{
-                  appBar: classes.appBar
-                }}
-                styles={{
+                sxs={{
+                  appBar: { paddingRight: '14.4px' },
                   toolbar: { '& > section': {} }
                 }}
                 showHamburgerMenuButton={false}
@@ -693,7 +776,7 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
                 subtitle={getTranslation(selectedConfigFile.description, translations, formatMessage)}
                 rightContent={
                   <>
-                    <ButtonGroup variant="outlined" className={classes.buttonGroup}>
+                    <ButtonGroup variant="outlined" sx={{ marginRight: '15px' }}>
                       <SecondaryButton disabled={encrypting} onClick={onEncryptClick} loading={encrypting}>
                         {formatMessage(translations.encryptMarked)}
                       </SecondaryButton>
@@ -714,7 +797,7 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
               <Box display="flex" flexGrow={1}>
                 <AceEditor
                   ref={editorRef}
-                  styles={{
+                  sxs={{
                     root: {
                       display: 'flex',
                       width: leftEditorWidth ? `${leftEditorWidth}px` : 'auto',
@@ -723,8 +806,8 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
                     editorRoot: {
                       margin: 0,
                       opacity: encrypting ? 0.5 : 1,
-                      border: '0',
-                      borderRadius: '0'
+                      border: 0,
+                      borderRadius: 0
                     }
                   }}
                   mode="ace/mode/xml"
@@ -739,12 +822,33 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
                   <>
                     <ResizeBar onWidthChange={onEditorResize} element={editorRef.current.container} />
                     {sampleError ? (
-                      <ApiResponseErrorState error={sampleError} classes={{ root: classes.sampleErrorState }} />
+                      <ApiResponseErrorState
+                        error={sampleError}
+                        sxs={{
+                          root: {
+                            maxWidth: '50%',
+                            margin: '0 auto',
+                            '& p': {
+                              wordBreak: 'break-word'
+                            }
+                          }
+                        }}
+                      />
                     ) : loadingSampleXml ? (
                       <LoadingState />
                     ) : nnou(selectedSampleConfigFileXml) ? (
                       <AceEditor
-                        classes={{ root: classes.rootEditor, editorRoot: classes.editorRoot }}
+                        sxs={{
+                          root: {
+                            display: 'flex',
+                            flex: '1 1 auto'
+                          },
+                          editorRoot: {
+                            border: 0,
+                            borderRadius: 0,
+                            margin: 0
+                          }
+                        }}
                         mode="ace/mode/xml"
                         theme="ace/theme/textmate"
                         autoFocus={false}
@@ -758,7 +862,7 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
                 )}
               </Box>
               <DialogFooter>
-                <SecondaryButton disabled={encrypting} className={classes.historyButton} onClick={onShowHistory}>
+                <SecondaryButton disabled={encrypting} sx={{ marginRight: 'auto' }} onClick={onShowHistory}>
                   <FormattedMessage id="siteConfigurationManagement.history" defaultMessage="History" />
                 </SecondaryButton>
                 <SecondaryButton disabled={encrypting} onClick={onCancel}>
@@ -802,7 +906,7 @@ export function SiteConfigurationManagement(props: SiteConfigurationManagementPr
         </Box>
       )}
       <ConfirmDialog open={false} {...confirmDialogProps} />
-    </section>
+    </Box>
   );
 }
 

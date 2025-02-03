@@ -15,8 +15,7 @@
  */
 
 import React from 'react';
-import { useDeleteDialogUIStyles } from './styles';
-import Grid from '@mui/material/Grid';
+import Grid from '@mui/material/Grid2';
 import TextFieldWithMax from '../TextFieldWithMax/TextFieldWithMax';
 import { FormattedMessage } from 'react-intl';
 import { SelectionList } from '../DependencySelection/SelectionList';
@@ -28,7 +27,6 @@ import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import List from '@mui/material/List';
-import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import InfoIcon from '@mui/icons-material/InfoOutlined';
@@ -49,11 +47,15 @@ export function DeleteDialogUIBody(props: DeleteDialogContentUIProps) {
     onConfirmDeleteChange,
     onEditDependantClick
   } = props;
-  const { classes } = useDeleteDialogUIStyles();
   return (
     <Grid container spacing={3}>
-      <Grid item xs={12} sm={7} md={7} lg={7} xl={7}>
-        <div className={classes.depsContainer}>
+      <Grid size={{ xs: 12, sm: 7 }}>
+        <Box
+          sx={(theme) => ({
+            background: theme.palette.background.paper,
+            border: `1px solid ${theme.palette.divider}`
+          })}
+        >
           <SelectionList
             title={<FormattedMessage id="deleteDialog.deleteItems" defaultMessage="Delete Items" />}
             items={items}
@@ -78,19 +80,10 @@ export function DeleteDialogUIBody(props: DeleteDialogContentUIProps) {
             <List>
               {dependentItems.map((path) => {
                 return (
-                  <ListItem dense key={path}>
-                    <ListItemText
-                      primary={path}
-                      primaryTypographyProps={{
-                        title: path,
-                        sx: {
-                          overflow: 'hidden',
-                          whiteSpace: 'nowrap',
-                          textOverflow: 'ellipsis'
-                        }
-                      }}
-                    />
-                    <ListItemSecondaryAction>
+                  <ListItem
+                    dense
+                    key={path}
+                    secondaryAction={
                       <Button
                         color="primary"
                         onClick={(e) => onEditDependantClick(e, path)}
@@ -103,7 +96,19 @@ export function DeleteDialogUIBody(props: DeleteDialogContentUIProps) {
                       >
                         <FormattedMessage id="words.edit" defaultMessage="Edit" />
                       </Button>
-                    </ListItemSecondaryAction>
+                    }
+                  >
+                    <ListItemText
+                      primary={path}
+                      primaryTypographyProps={{
+                        title: path,
+                        sx: {
+                          overflow: 'hidden',
+                          whiteSpace: 'nowrap',
+                          textOverflow: 'ellipsis'
+                        }
+                      }}
+                    />
                   </ListItem>
                 );
               })}
@@ -132,10 +137,10 @@ export function DeleteDialogUIBody(props: DeleteDialogContentUIProps) {
             paths={childItems}
             displayItemTitle={false}
           />
-        </div>
+        </Box>
       </Grid>
-      <Grid item xs={12} sm={5} md={5} lg={5} xl={5}>
-        <form className={classes.submissionCommentField} noValidate autoComplete="off">
+      <Grid size={{ xs: 12, sm: 5 }}>
+        <form noValidate autoComplete="off">
           <TextFieldWithMax
             label={<FormattedMessage id="deleteDialog.submissionCommentLabel" defaultMessage="Submission Comment" />}
             multiline
@@ -143,10 +148,11 @@ export function DeleteDialogUIBody(props: DeleteDialogContentUIProps) {
             onChange={onCommentChange}
             required={isCommentRequired}
             disabled={isDisabled}
+            sx={{ width: '100%' }}
           />
           <Alert severity="warning" icon={false}>
             <FormControlLabel
-              className={classes.confirmCheck}
+              sx={{ margin: (theme) => `${theme.spacing()} 0` }}
               control={
                 <Checkbox
                   color="primary"

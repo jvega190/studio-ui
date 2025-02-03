@@ -36,8 +36,12 @@ import { getStoredBrowseDialogViewMode, setStoredBrowseDialogViewMode } from '..
 import useActiveUser from '../../hooks/useActiveUser';
 import { withIndex, withoutIndex } from '../../utils/path';
 import { MediaCardViewModes } from '../MediaCard';
+import { createPresenceTable } from '../../utils/array';
+import { createLookupTable } from '../../utils/object';
+import { prepareSearchParams } from '../Search/utils';
 
 const viewModes: MediaCardViewModes[] = ['card', 'compact', 'row'];
+const defaultPreselectedPaths = [];
 
 export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProps) {
   const {
@@ -49,7 +53,9 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
     contentTypes,
     numOfLoaderItems,
     allowUpload = true,
-    initialParameters: initialParametersProp
+    initialParameters: initialParametersProp,
+    preselectedPaths = defaultPreselectedPaths,
+    disableChangePreselected = true
   } = props;
   const [items, setItems] = useState<SearchItem[]>();
   const site = useActiveSiteId();
@@ -77,23 +83,42 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
   const [sortKeys, setSortKeys] = useState([]);
   const { username } = useActiveUser();
   const [viewMode, setViewMode] = useState<MediaCardViewModes>(getStoredBrowseDialogViewMode(username));
+  const [fetchingPreselectedItems, setFetchingPreselectedItems] = useState(false);
+  const disableSubmission = fetchingPreselectedItems || (!selectedArray.length && !selectedCard);
+  const preselectedLookup = createPresenceTable(preselectedPaths);
 
-  const fetchItems = useCallback(
-    () =>
-      // Since lookahead regex is not supported by opensearch, we are excluding the current path from the search using a
-      // negative filter in a query. This scenario only happens with pages, hence the `withIndex` function wrapping the
-      // current path.
-      search(site, {
-        ...searchParameters,
-        path: `${currentPath}/[^/]+(/index\\.xml)?`,
-        query: `-localId:"${withIndex(currentPath)}"`
-      }).subscribe((response) => {
-        setTotal(response.total);
-        setItems(response.items);
-        setSortKeys(response.facets.map((facet) => facet.name));
-      }),
-    [searchParameters, currentPath, site]
-  );
+  const fetchItems = useCallback(() => {
+    // Since lookahead regex is not supported by opensearch, we are excluding the current path from the search using a
+    // negative filter in a query. This scenario only happens with pages, hence the `withIndex` function wrapping the
+    // current path.
+    search(site, {
+      ...prepareSearchParams(searchParameters),
+      path: `${currentPath}/[^/]+(/index\\.xml)?`,
+      query: `-localId:"${withIndex(currentPath)}"`
+    }).subscribe((response) => {
+      setTotal(response.total);
+      setItems(response.items);
+      setSortKeys(response.facets.map((facet) => facet.name));
+    });
+  }, [searchParameters, currentPath, site]);
+
+  useEffect(() => {
+    const query = preselectedPaths?.map((path) => `localId:"${path}"`).join(' ');
+    setFetchingPreselectedItems(true);
+    search(site, { query }).subscribe({
+      next: ({ items }) => {
+        if (multiSelect) {
+          setSelectedLookup(createLookupTable(items, 'path'));
+        } else if (items.length) {
+          setSelectedCard(items[0]);
+        }
+        setFetchingPreselectedItems(false);
+      },
+      error: () => {
+        setFetchingPreselectedItems(false);
+      }
+    });
+  }, [site, preselectedPaths, multiSelect, setSelectedLookup]);
 
   useEffect(() => {
     let subscription;
@@ -226,10 +251,13 @@ export function BrowseFilesDialogContainer(props: BrowseFilesDialogContainerProp
       onRefresh={onRefresh}
       onUpload={onUpload}
       allowUpload={allowUpload}
+      preselectedLookup={preselectedLookup}
+      disableChangePreselected={disableChangePreselected}
+      disableSubmission={disableSubmission}
     />
   ) : (
     <EmptyState
-      styles={{ root: { height: '60vh' } }}
+      sxs={{ root: { height: '60vh' } }}
       title={
         <FormattedMessage
           id="browseFilesDialog.emptyStateMessage"

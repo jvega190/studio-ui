@@ -15,32 +15,62 @@
  */
 
 import React from 'react';
-import useStyles from './styles';
 import { WidgetDialogProps } from './utils';
 import EnhancedDialog from '../EnhancedDialog';
 import Suspencified from '../Suspencified/Suspencified';
 import { Widget } from '../Widget/Widget';
+import Box from '@mui/material/Box';
 
 export function WidgetDialog(props: WidgetDialogProps) {
   const { title, fullHeight = true, widget, onSubmittingAndOrPendingChange, isSubmitting, extraProps, ...rest } = props;
-  const { classes } = useStyles();
   return (
     <EnhancedDialog
       title={title}
       maxWidth="xl"
-      classes={{ ...(fullHeight && { paper: classes.widgetDialogPaper }) }}
+      PaperProps={{
+        sx: fullHeight && { minHeight: '90vh' }
+      }}
       isSubmitting={isSubmitting}
       updateSubmittingOrHasPendingChanges={onSubmittingAndOrPendingChange}
       {...rest}
     >
-      <section {...(fullHeight && { className: classes.widgetDialogBody })}>
-        <Suspencified loadingStateProps={{ styles: { graphicRoot: { minWidth: '350px', minHeight: '150px' } } }}>
+      <Box
+        component="section"
+        sx={(theme) => {
+          const toolbarMixin: any = theme.mixins.toolbar;
+          const key1 = '@media (min-width:0px)';
+          const key1a = '@media (orientation: landscape)';
+          const key2 = '@media (min-width:600px)';
+          if (fullHeight) {
+            if (!toolbarMixin[key1]?.[key1a] || !toolbarMixin[key2] || !toolbarMixin.minHeight) {
+              console.error('[WidgetDialog] MUI may have changed their toolbar mixin.', toolbarMixin);
+              return { overflow: 'auto', height: `calc(90vh - 57px)` };
+            } else {
+              return {
+                [key1]: {
+                  [key1a]: {
+                    height: `calc(90vh - ${toolbarMixin[key1].minHeight}px - 1px)`
+                  }
+                },
+                [key2]: {
+                  height: `calc(90vh - ${toolbarMixin[key2].minHeight}px - 1px)`
+                },
+                overflow: 'auto',
+                height: `calc(90vh - ${toolbarMixin.minHeight}px - 1px)`
+              };
+            }
+          } else {
+            return {};
+          }
+        }}
+      >
+        <Suspencified loadingStateProps={{ sxs: { graphicRoot: { minWidth: '350px', minHeight: '150px' } } }}>
           <Widget
             {...widget}
             overrideProps={{ onSubmittingAndOrPendingChange, isSubmitting, mountMode: 'dialog', ...extraProps }}
           />
         </Suspencified>
-      </section>
+      </Box>
     </EnhancedDialog>
   );
 }

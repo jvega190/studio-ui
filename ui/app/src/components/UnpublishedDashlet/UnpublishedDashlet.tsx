@@ -16,8 +16,8 @@
 
 import {
   CommonDashletProps,
+  getItemsValidatedSelectionState,
   getItemViewOption,
-  getValidatedSelectionState,
   isPage,
   previewPage,
   useSelectionOptions,
@@ -53,7 +53,16 @@ import { itemActionDispatcher } from '../../utils/itemActions';
 import { useDispatch } from 'react-redux';
 import { parseSandBoxItemToDetailedItem } from '../../utils/content';
 import ListItemButton from '@mui/material/ListItemButton';
-import { contentEvent, deleteContentEvent, publishEvent, workflowEvent } from '../../state/actions/system';
+import {
+  contentEvent,
+  deleteContentEvent,
+  publishEvent,
+  workflowEventApprove,
+  workflowEventCancel,
+  workflowEventDirectPublish,
+  workflowEventReject,
+  workflowEventSubmit
+} from '../../state/actions/system';
 import { getHostToHostBus } from '../../utils/subjects';
 import { filter } from 'rxjs/operators';
 import useUpdateRefs from '../../hooks/useUpdateRefs';
@@ -101,6 +110,7 @@ export function UnpublishedDashlet(props: UnpublishedDashletProps) {
   const isIndeterminate = hasSelected && !isAllSelected;
   const filterState = useDashletFilterState('unpublishedDashlet');
   const refs = useUpdateRefs({
+    items,
     currentPage,
     filterState,
     loadPagesUntil: null as (pageNumber: number, itemTypes?: Array<SystemType>, backgroundRefresh?: boolean) => void
@@ -135,7 +145,7 @@ export function UnpublishedDashlet(props: UnpublishedDashletProps) {
         offset: 0,
         itemType: refs.current.filterState.selectedTypes
       }).subscribe((unpublishedItems) => {
-        const validatedState = getValidatedSelectionState(unpublishedItems, selected, limit);
+        const validatedState = getItemsValidatedSelectionState(unpublishedItems, selected, limit);
         setItemsById(validatedState.itemsById);
         setState(validatedState.state);
       });
@@ -196,12 +206,24 @@ export function UnpublishedDashlet(props: UnpublishedDashletProps) {
   }, [loadPage, refs]);
 
   useEffect(() => {
-    refs.current.loadPagesUntil(refs.current.currentPage, filterState.selectedTypes);
+    // To avoid re-fetching when it first loads
+    if (refs.current.items) {
+      refs.current.loadPagesUntil(refs.current.currentPage, filterState.selectedTypes);
+    }
   }, [filterState?.selectedTypes, refs]);
 
   // region Item Updates Propagation
   useEffect(() => {
-    const events = [deleteContentEvent.type, workflowEvent.type, publishEvent.type, contentEvent.type];
+    const events = [
+      deleteContentEvent.type,
+      workflowEventSubmit.type,
+      workflowEventDirectPublish.type,
+      workflowEventApprove.type,
+      workflowEventReject.type,
+      workflowEventCancel.type,
+      publishEvent.type,
+      contentEvent.type
+    ];
     const hostToHost$ = getHostToHostBus();
     const subscription = hostToHost$.pipe(filter((e) => events.includes(e.type))).subscribe(({ type, payload }) => {
       loadPagesUntil(currentPage, filterState.selectedTypes, true);

@@ -16,11 +16,7 @@
 import { createReducer } from '@reduxjs/toolkit';
 import GlobalState from '../../../models/GlobalState';
 import { PublishingStatusDialogStateProps } from '../../../components/PublishingStatusDialog';
-import {
-  closePublishingStatusDialog,
-  showPublishingStatusDialog,
-  showUnlockPublisherDialog
-} from '../../actions/dialogs';
+import { closePublishingStatusDialog, showPublishingStatusDialog } from '../../actions/dialogs';
 import {
   fetchPublishingStatus,
   fetchPublishingStatusComplete,
@@ -30,20 +26,13 @@ import {
 import { commonDialogProps } from '../../../utils/state';
 const initialState: PublishingStatusDialogStateProps = commonDialogProps({
   open: false,
-  enabled: null,
-  status: null,
-  published: null,
   message: null,
-  lockOwner: null,
-  lockTTL: null,
   isFetching: false,
   onClose: closePublishingStatusDialog(),
   onRefresh: fetchPublishingStatus(),
-  onUnlock: null,
-  numberOfItems: null,
-  totalItems: null,
-  publishingTarget: null,
-  submissionId: null
+  enabled: null,
+  published: null,
+  currentTask: null
 });
 const publishingStatus = createReducer<GlobalState['dialogs']['publishingStatus']>(initialState, (builder) => {
   builder
@@ -52,8 +41,6 @@ const publishingStatus = createReducer<GlobalState['dialogs']['publishingStatus'
       return {
         ...state,
         ...data,
-        // Only show unlock if there is a lockOwner (i.e. if there's a lock)
-        onUnlock: data?.lockOwner ? showUnlockPublisherDialog({}) : null,
         open: true
       };
     })

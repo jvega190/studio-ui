@@ -16,10 +16,9 @@
 
 import React from 'react';
 import Card from '@mui/material/Card';
-import CardHeader, { CardHeaderProps, cardHeaderClasses } from '@mui/material/CardHeader';
+import CardHeader, { cardHeaderClasses, CardHeaderProps } from '@mui/material/CardHeader';
 import CardMedia, { cardMediaClasses } from '@mui/material/CardMedia';
 import CardActionArea, { CardActionAreaProps } from '@mui/material/CardActionArea';
-import { makeStyles } from 'tss-react/mui';
 import { MediaItem } from '../../models/Search';
 import FormGroup from '@mui/material/FormGroup';
 import Checkbox from '@mui/material/Checkbox';
@@ -27,54 +26,14 @@ import cardTitleStyles, { cardSubtitleStyles } from '../../styles/card';
 import palette from '../../styles/palette';
 import SystemIcon from '../SystemIcon';
 import Box from '@mui/material/Box';
-
-const useStyles = makeStyles()(() => ({
-  card: {
-    position: 'relative'
-  },
-  cardTitle: {
-    ...cardTitleStyles
-  },
-  cardSubtitle: {
-    ...cardSubtitleStyles,
-    WebkitLineClamp: 1
-  },
-  cardHeader: { alignSelf: 'center' },
-  media: {
-    height: 0,
-    paddingTop: '56.25%'
-  },
-  mediaIcon: {
-    paddingTop: '56.25%',
-    position: 'relative',
-    overflow: 'hidden',
-    '& .media-icon': {
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      color: palette.gray.medium4,
-      fontSize: '50px'
-    },
-    '&.list': {
-      height: '80px',
-      width: '80px',
-      paddingTop: '0',
-      order: -1
-    }
-  },
-  videoThumbnail: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: '100%'
-  }
-}));
+import { PartialSxRecord } from '../../models/CustomRecord';
+import { CSSSelectorObjectOrCssVariables } from '@mui/system/styleFunctionSx/styleFunctionSx';
 
 export type MediaCardViewModes = 'card' | 'compact' | 'row';
 
-interface MediaCardProps {
+type MediaCardClassKey = 'root' | 'checkbox' | 'media' | 'mediaIcon' | 'cardActionArea' | 'cardHeader';
+
+export interface MediaCardProps {
   item: MediaItem;
   showPath?: boolean;
   selected?: Array<string>;
@@ -82,7 +41,9 @@ interface MediaCardProps {
   viewMode?: MediaCardViewModes;
   action?: CardHeaderProps['action'];
   avatar?: CardHeaderProps['avatar'];
-  classes?: Partial<Record<'root' | 'checkbox' | 'media' | 'mediaIcon' | 'cardActionArea' | 'cardHeader', string>>;
+  disableSelection?: boolean;
+  classes?: Partial<Record<MediaCardClassKey, string>>;
+  sxs?: PartialSxRecord<MediaCardClassKey>;
   onClick?(e): void;
   onPreview?(e): any;
   onSelect?(path: string, selected: boolean): any;
@@ -92,7 +53,6 @@ interface MediaCardProps {
 }
 
 function MediaCard(props: MediaCardProps) {
-  const { classes, cx } = useStyles();
   // region const { ... } = props
   const {
     onSelect,
@@ -106,7 +66,9 @@ function MediaCard(props: MediaCardProps) {
     avatar,
     onDragStart,
     onDragEnd,
-    viewMode = 'card'
+    viewMode = 'card',
+    disableSelection,
+    sxs
   } = props;
   // endregion
   let { name, path, type } = item;
@@ -130,6 +92,7 @@ function MediaCard(props: MediaCardProps) {
   const cardActionAreaOrFragmentProps: CardActionAreaProps = onPreview
     ? {
         className: props.classes?.cardActionArea,
+        sx: sxs?.cardActionArea,
         disableRipple: Boolean(onDragStart || onDragEnd),
         onClick(e) {
           e.preventDefault();
@@ -141,30 +104,32 @@ function MediaCard(props: MediaCardProps) {
 
   return (
     <Card
-      className={cx(classes.card, props.classes?.root)}
+      className={props.classes?.root}
       draggable={Boolean(onDragStart || onDragEnd)}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onClick={onClick}
-      sx={
-        viewMode === 'row'
-          ? {
-              display: 'flex',
-              width: '100%',
-              [`& .${cardHeaderClasses.root}`]: { flexGrow: 1 },
-              [`& .${cardMediaClasses.root}`]: { paddingTop: '0 !important', height: '80px !important', width: '80px' }
-            }
-          : undefined
-      }
+      sx={[
+        { position: 'relative' },
+        viewMode === 'row' && {
+          display: 'flex',
+          width: '100%',
+          [`& .${cardHeaderClasses.root}`]: { flexGrow: 1 },
+          [`& .${cardMediaClasses.root}`]: { paddingTop: '0 !important', height: '80px !important', width: '80px' }
+        },
+        sxs?.root as CSSSelectorObjectOrCssVariables
+      ]}
     >
       <CardHeader
-        classes={{ action: classes.cardHeader, root: props.classes?.cardHeader }}
+        classes={{ root: props.classes?.cardHeader }}
+        sx={{ alignSelf: 'center', ...sxs?.cardHeader }}
         avatar={
           onSelect ? (
-            <FormGroup className={props.classes?.checkbox}>
+            <FormGroup className={props.classes?.checkbox} sx={sxs?.checkbox}>
               <Checkbox
                 checked={selected.includes(path)}
-                onClick={(e: any) => onSelect(path, e.target.checked)}
+                disabled={disableSelection}
+                onClick={(e: any) => !disableSelection && onSelect(path, e.target.checked)}
                 color="primary"
                 size="small"
               />
@@ -179,13 +144,18 @@ function MediaCard(props: MediaCardProps) {
         titleTypographyProps={{
           variant: 'subtitle2',
           component: 'h2',
-          className: classes.cardTitle,
+          sx: {
+            ...cardTitleStyles
+          },
           title: item.name
         }}
         subheaderTypographyProps={{
           variant: 'subtitle2',
           component: 'div',
-          className: classes.cardSubtitle,
+          sx: {
+            ...cardSubtitleStyles,
+            WebkitLineClamp: 1
+          },
           color: 'textSecondary',
           title: item.path
         }}
@@ -194,20 +164,52 @@ function MediaCard(props: MediaCardProps) {
         <CardActionAreaOrFragment {...cardActionAreaOrFragmentProps}>
           {type === 'Image' ? (
             <CardMedia
-              className={cx(classes.media, props.classes?.media)}
+              className={props.classes?.media}
               image={`${previewAppBaseUri}${path}`}
               title={name}
+              sx={{ height: 0, paddingTop: '56.25%', ...sxs?.media }}
             />
           ) : (
             <Box
-              className={cx(classes.mediaIcon, props.classes?.mediaIcon)}
-              sx={viewMode === 'row' ? { paddingTop: '0 !important', height: '80px', width: '80px' } : undefined}
+              className={props.classes?.mediaIcon}
+              sx={[
+                {
+                  paddingTop: '56.25%',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '& .media-icon': {
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    color: palette.gray.medium4,
+                    fontSize: '50px'
+                  },
+                  '&.list': {
+                    height: '80px',
+                    width: '80px',
+                    paddingTop: '0',
+                    order: -1
+                  }
+                },
+                viewMode === 'row' && { paddingTop: '0 !important', height: '80px', width: '80px' },
+                sxs?.mediaIcon as CSSSelectorObjectOrCssVariables
+              ]}
             >
               {type === 'Video' ? (
-                <video className={classes.videoThumbnail}>
+                <Box
+                  component="video"
+                  sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '100%'
+                  }}
+                >
                   <source src={path} type="video/mp4" />
                   {systemIcon}
-                </video>
+                </Box>
               ) : (
                 systemIcon
               )}

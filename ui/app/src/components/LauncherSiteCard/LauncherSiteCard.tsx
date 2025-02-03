@@ -17,16 +17,15 @@
 import React from 'react';
 import IconButton from '@mui/material/IconButton';
 import MoreVertIcon from '@mui/icons-material/MoreVertRounded';
-import { makeStyles } from 'tss-react/mui';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Link from '@mui/material/Link';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
-import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
 import { Site } from '../../models/Site';
 import SiteStatusIndicator from '../SiteStatusIndicator/SiteStatusIndicator';
 import ListItemButton from '@mui/material/ListItemButton';
+import { PartialSxRecord } from '../../models';
 
 export interface LauncherSiteCardOption {
   name: string;
@@ -34,10 +33,13 @@ export interface LauncherSiteCardOption {
   onClick?(site: string): void;
 }
 
+export type LauncherSiteCardClassKey = 'root' | 'siteName';
+
 export interface LauncherSiteCardProps {
   title: string;
   value?: string;
-  classes?: any;
+  classes?: Partial<Record<LauncherSiteCardClassKey, string>>;
+  sxs?: PartialSxRecord<'root' | 'siteName'>;
   options?: Array<LauncherSiteCardOption>;
   disabled?: boolean;
   selected?: boolean;
@@ -45,22 +47,9 @@ export interface LauncherSiteCardProps {
   onCardClick(id: string): any;
 }
 
-const useStyles = makeStyles()((theme) => ({
-  card: {
-    paddingTop: theme.spacing(2.5),
-    paddingBottom: theme.spacing(2.5),
-    borderRadius: 5,
-    backgroundColor: theme.palette.background.paper
-  },
-  siteName: {
-    fontWeight: 600
-  }
-}));
-
 function LauncherSiteCard(props: LauncherSiteCardProps) {
-  const { title, value, onCardClick, options, selected = false, state } = props;
+  const { title, value, onCardClick, options, selected = false, state, sxs } = props;
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const { classes, cx } = useStyles();
   const hasOptions = Boolean(options && options.length);
   const isSiteReady = state === 'READY';
 
@@ -82,27 +71,40 @@ function LauncherSiteCard(props: LauncherSiteCardProps) {
         selected={selected}
         component={ListItem}
         onClick={isSiteReady ? () => onCardClick(value) : undefined}
-        className={cx(classes.card, props.classes?.root)}
-        sx={{ position: 'relative' }}
+        className={props.classes?.root}
+        sx={{
+          position: 'relative',
+          paddingTop: (theme) => theme.spacing(2.5),
+          paddingBottom: (theme) => theme.spacing(2.5),
+          borderRadius: '5px',
+          backgroundColor: (theme) => theme.palette.background.paper,
+          ...sxs?.root
+        }}
         title={title}
-      >
-        <ListItemText
-          primary={title}
-          primaryTypographyProps={{ className: classes.siteName, noWrap: true }}
-          sx={isSiteReady ? undefined : { paddingRight: '35px' }}
-        />
-
-        {(!isSiteReady || hasOptions) && (
-          <ListItemSecondaryAction>
-            {isSiteReady ? (
+        secondaryAction={
+          !isSiteReady || hasOptions ? (
+            isSiteReady ? (
               <IconButton aria-label="settings" onClick={handleOptions} size="large">
                 <MoreVertIcon />
               </IconButton>
             ) : (
               <SiteStatusIndicator state={state} />
-            )}
-          </ListItemSecondaryAction>
-        )}
+            )
+          ) : null
+        }
+      >
+        <ListItemText
+          primary={title}
+          primaryTypographyProps={{
+            className: props.classes?.siteName,
+            sx: {
+              fontWeight: 600,
+              ...sxs?.siteName
+            },
+            noWrap: true
+          }}
+          sx={isSiteReady ? undefined : { paddingRight: '35px' }}
+        />
       </ListItemButton>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
         {hasOptions &&

@@ -21,7 +21,6 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
-import { makeStyles } from 'tss-react/mui';
 import {
   sendPasswordRecovery,
   setPassword as setPasswordService,
@@ -81,7 +80,7 @@ type SubViewProps = React.PropsWithChildren<{
   children: React.ReactNode;
   isFetching: boolean;
   onSubmit: React.Dispatch<React.SetStateAction<boolean>>;
-  classes: { [props: string]: string };
+  classes?: Partial<Record<any, string>>;
   formatMessage: Function;
   onSnack: React.Dispatch<React.SetStateAction<{ open: boolean; message: string }>>;
   setLanguage: React.Dispatch<React.SetStateAction<string>>;
@@ -137,53 +136,6 @@ const translations = defineMessages({
     defaultMessage: 'Try again {fullTime, select, true {{time}} other {in {time} seconds}}'
   }
 });
-
-const useStyles = makeStyles()((theme) => ({
-  dialogRoot: {
-    transition: 'all 600ms ease',
-    '& .MuiInput-input': { backgroundColor: theme.palette.background.paper },
-    '& .MuiFormControl-root, & .MuiButton-root': {
-      marginBottom: theme.spacing(1),
-      '&.last-before-button': { marginBottom: theme.spacing(2) }
-    }
-  },
-  dialogRootFetching: {
-    opacity: 0.2
-  },
-  dialogPaper: {
-    minWidth: 300,
-    overflow: 'visible',
-    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, .8)' : 'rgba(255, 255, 255, .8)'
-  },
-  logo: {
-    maxWidth: 250,
-    display: 'block',
-    margin: `${theme.spacing(2)} auto ${theme.spacing(1)}`
-  },
-  recoverInfoMessage: {
-    maxWidth: 300,
-    textAlign: 'center',
-    margin: `0 auto ${theme.spacing(1.5)}`
-  },
-  errorMessage: {
-    backgroundColor: palette.red.tint,
-    color: palette.white,
-    marginBottom: theme.spacing(1),
-    padding: theme.spacing(1),
-    borderRadius: theme.spacing(1),
-    border: `1px solid ${palette.red.main}`,
-    display: 'flex',
-    placeContent: 'center',
-    lineHeight: 1.7,
-    '& .MuiSvgIcon-root': {
-      marginRight: theme.spacing(0.5),
-      color: palette.white
-    }
-  },
-  resetPassword: {
-    marginBottom: 10
-  }
-}));
 
 const retrieveStoredLangPreferences = () =>
   Object.keys(window.localStorage).filter((key) => key.includes('_crafterStudioLanguage'));
@@ -327,7 +279,9 @@ function RecoverView(props: SubViewProps) {
           onChange={(e: any) => setUsername(e.target.value)}
           className={classes?.username}
           label={<FormattedMessage id="loginView.usernameTextFieldLabel" defaultMessage="Username" />}
-          inputProps={{ maxLength: USER_USERNAME_MAX_LENGTH }}
+          slotProps={{
+            htmlInput: { maxLength: USER_USERNAME_MAX_LENGTH }
+          }}
         />
         <Button
           type="submit"
@@ -440,7 +394,8 @@ function ResetView(props: SubViewProps) {
           error={isValid !== null && !isValid}
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
-          className={classes.resetPassword}
+          className={classes?.resetPassword}
+          sxs={{ root: { mb: 0 } }}
           placeholder={formatMessage(translations.resetPasswordFieldPlaceholderLabel)}
           onFocus={(e) => setAnchorEl(e.target)}
           onBlur={() => setAnchorEl(null)}
@@ -455,7 +410,8 @@ function ResetView(props: SubViewProps) {
           error={passwordsMismatch}
           value={newPasswordConfirm}
           onChange={(e) => setNewPasswordConfirm(e.target.value)}
-          className={classes.resetPassword}
+          className={classes?.resetPassword}
+          sxs={{ root: { mb: 0 } }}
           placeholder={formatMessage(translations.resetPasswordConfirmFieldPlaceholderLabel)}
         />
         {children}
@@ -471,7 +427,33 @@ function ResetView(props: SubViewProps) {
 
 function HeaderView({ error, introMessage, classes }: any) {
   return (
-    <Typography variant="body2" className={classes[error ? 'errorMessage' : 'recoverInfoMessage']}>
+    <Typography
+      variant="body2"
+      className={classes?.[error ? 'errorMessage' : 'recoverInfoMessage']}
+      sx={
+        error
+          ? (theme) => ({
+              backgroundColor: palette.red.tint,
+              color: palette.white,
+              marginBottom: theme.spacing(1),
+              padding: theme.spacing(1),
+              borderRadius: theme.spacing(1),
+              border: `1px solid ${palette.red.main}`,
+              display: 'flex',
+              placeContent: 'center',
+              lineHeight: 1.7,
+              '& .MuiSvgIcon-root': {
+                marginRight: theme.spacing(0.5),
+                color: palette.white
+              }
+            })
+          : {
+              maxWidth: 300,
+              textAlign: 'center',
+              margin: (theme) => `0 auto ${theme.spacing(1.5)}`
+            }
+      }
+    >
       {error ? (
         <>
           <WarningRounded /> {error}
@@ -483,11 +465,19 @@ function HeaderView({ error, introMessage, classes }: any) {
   );
 }
 
-function UnrecognizedView({ classes }: any) {
+function UnrecognizedView({ classes }: { classes?: SubViewProps['classes'] }) {
   return (
     <DialogContent>
-      <Typography variant="body2" className={classes.recoverInfoMessage}>
-        Unrecognized mode.
+      <Typography
+        variant="body2"
+        className={classes?.recoverInfoMessage}
+        sx={{
+          maxWidth: 300,
+          textAlign: 'center',
+          margin: (theme) => `0 auto ${theme.spacing(1.5)}`
+        }}
+      >
+        <FormattedMessage defaultMessage="Unrecognized mode." />
       </Typography>
     </DialogContent>
   );
@@ -495,7 +485,7 @@ function UnrecognizedView({ classes }: any) {
 
 function LanguageDropDown(props: LanguageDropDownProps) {
   const { formatMessage } = useIntl();
-  const buttonRef = useRef();
+  const buttonRef = useRef(undefined);
   const [openMenu, setOpenMenu] = useState(false);
   const { language, languages, onChange } = props;
   return (
@@ -533,7 +523,6 @@ function LanguageDropDown(props: LanguageDropDownProps) {
 
 export function LoginViewContainer(props: LoginViewProps) {
   const { formatMessage } = useIntl();
-  const { classes, cx } = useStyles();
   const token = queryString.parse(window.location.search).token as string;
   const { xsrfToken, xsrfParamName, passwordRequirementsMinComplexity, lockedErrorMessage, lockedTimeSeconds } = props;
 
@@ -553,7 +542,6 @@ export function LoginViewContainer(props: LoginViewProps) {
     language,
     formatMessage,
     isFetching,
-    classes,
     onSubmit,
     onSnack,
     passwordRequirementsMinComplexity,
@@ -612,12 +600,37 @@ export function LoginViewContainer(props: LoginViewProps) {
         fullWidth
         open={true}
         maxWidth="xs"
-        className={cx(classes.dialogRoot, isFetching && classes.dialogRootFetching)}
-        PaperProps={{ className: classes.dialogPaper }}
+        sx={(theme) => ({
+          transition: 'all 600ms ease',
+          '& .MuiInput-input': { backgroundColor: theme.palette.background.paper },
+          '& .MuiFormControl-root, & .MuiButton-root': {
+            marginBottom: theme.spacing(1),
+            '&.last-before-button': { marginBottom: theme.spacing(2) }
+          },
+          opacity: isFetching ? 0.2 : 1
+        })}
+        PaperProps={{
+          sx: {
+            minWidth: 300,
+            overflow: 'visible',
+            backgroundColor: (theme) =>
+              theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, .8)' : 'rgba(255, 255, 255, .8)'
+          }
+        }}
         aria-labelledby="loginDialog"
       >
         <DialogTitle id="loginDialog">
-          <CrafterCMSLogo className={classes.logo} width="auto" alt={formatMessage(translations.loginDialogTitle)} />
+          <CrafterCMSLogo
+            sxs={{
+              root: {
+                maxWidth: 250,
+                display: 'block',
+                margin: (theme) => `${theme.spacing(2)} auto ${theme.spacing(1)}`
+              }
+            }}
+            width="auto"
+            alt={formatMessage(translations.loginDialogTitle)}
+          />
         </DialogTitle>
         <CurrentView {...currentViewProps} />
         <LanguageDropDown language={language} languages={languages} onChange={setLanguage} />

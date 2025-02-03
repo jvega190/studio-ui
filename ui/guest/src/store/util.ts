@@ -71,7 +71,7 @@ export function beforeWrite$<T extends any = 'continue', S extends any = never>(
     switchMap(() => fetchSandboxItem(site, path)),
     switchMap((item) => {
       if (item.stateMap.submitted || item.stateMap.scheduled) {
-        post(requestWorkflowCancellationDialog({ path, siteId: site }));
+        post(requestWorkflowCancellationDialog({ item, siteId: site }));
         return message$.pipe(
           filter((e) => e.type === requestWorkflowCancellationDialogOnResult.type),
           take(1),
@@ -118,8 +118,9 @@ export const checkIfLockedOrModified = (state: GuestState, record: ElementRecord
   const parentModel = parentModelId ? getCachedModel(parentModelId) : null;
   const path = model.craftercms.path ?? parentModel.craftercms.path;
   const isLocked = Boolean(state.lockedPaths[path]);
+  const isLockedByCurrentUser = isLocked && state.lockedPaths[path].user.username === state.username;
   const isExternallyModified = Boolean(state.externallyModifiedPaths[path]);
-  return { isLocked, isExternallyModified, model, parentModelId, parentModel, path };
+  return { isLocked, isExternallyModified, model, parentModelId, parentModel, path, isLockedByCurrentUser };
 };
 
 /**

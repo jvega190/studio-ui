@@ -17,10 +17,10 @@ import { SHARED_WORKER_NAME, XSRF_TOKEN_HEADER_NAME } from './utils/constants';
 import { Client, StompSubscription } from '@stomp/stompjs';
 import {
   closeSiteSocket,
-  deleteContentEvents,
   configurationEvent,
   contentEvent,
   deleteContentEvent,
+  deleteContentEvents,
   emitSystemEvent,
   emitSystemEvents,
   globalSocketStatus,
@@ -30,7 +30,11 @@ import {
   publishEvent,
   repositoryEvent,
   siteSocketStatus,
-  workflowEvent
+  workflowEventApprove,
+  workflowEventCancel,
+  workflowEventDirectPublish,
+  workflowEventReject,
+  workflowEventSubmit
 } from './state/actions/system';
 import SocketEvent, {
   DeleteContentEventsPayload,
@@ -252,7 +256,11 @@ function openSocket({ site, xsrfToken }) {
             return `${keyBase}${event.targetPath}`;
           case publishEvent.type:
           case repositoryEvent.type:
-          case workflowEvent.type:
+          case workflowEventSubmit.type:
+          case workflowEventDirectPublish.type:
+          case workflowEventApprove.type:
+          case workflowEventReject.type:
+          case workflowEventCancel.type:
           default:
             return keyBase;
         }

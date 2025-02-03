@@ -31,6 +31,8 @@ export function BrowseFilesDialog(props: BrowseFilesDialogProps) {
     numOfLoaderItems,
     allowUpload,
     initialParameters,
+    preselectedPaths,
+    disableChangePreselected = true,
     ...rest
   } = props;
   return (
@@ -50,6 +52,8 @@ export function BrowseFilesDialog(props: BrowseFilesDialogProps) {
         onSuccess={onSuccess}
         numOfLoaderItems={numOfLoaderItems}
         initialParameters={initialParameters}
+        preselectedPaths={preselectedPaths}
+        disableChangePreselected={disableChangePreselected}
       />
     </EnhancedDialog>
   );

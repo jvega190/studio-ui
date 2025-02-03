@@ -28,13 +28,13 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import { assetsTypes, DependenciesDialogUIProps } from './utils';
 import Radio from '@mui/material/Radio';
-import { dependenciesDialogStyles } from './DependenciesDialog';
 import { ApiResponseErrorState } from '../ApiResponseErrorState';
 import { LoadingState } from '../LoadingState';
 import { EmptyState } from '../EmptyState';
 import { getRootPath } from '../../utils/path';
 import MoreVertIcon from '@mui/icons-material/MoreVertRounded';
 import IconButton from '@mui/material/IconButton';
+import Box from '@mui/material/Box';
 
 export function DependenciesDialogUI(props: DependenciesDialogUIProps) {
   const {
@@ -56,13 +56,12 @@ export function DependenciesDialogUI(props: DependenciesDialogUIProps) {
     handleContextMenuClose,
     error
   } = props;
-  const { classes } = dependenciesDialogStyles();
   const [openSelector, setOpenSelector] = useState(false);
 
   return (
     <>
-      <DialogBody className={classes.dialogBody}>
-        <div className={classes.selectionContent}>
+      <DialogBody sx={{ overflow: 'auto', minHeight: '50vh' }}>
+        <Box sx={{ marginBottom: '15px', display: 'flex' }}>
           <SingleItemSelector
             label={<FormattedMessage id="words.item" defaultMessage="Item" />}
             open={openSelector}
@@ -76,50 +75,57 @@ export function DependenciesDialogUI(props: DependenciesDialogUIProps) {
               setItem(item);
             }}
           />
-          <FormControl className={classes.formControl}>
+          <FormControl sx={{ minWidth: 120, marginLeft: 'auto' }}>
             <Select
               value={dependenciesShown ?? 'depends-on'}
               onChange={(event: SelectChangeEvent) => {
                 setDependenciesShown(event.target.value);
               }}
-              inputProps={{
-                className: classes.select
+              slotProps={{
+                input: {
+                  sx: {
+                    fontSize: '16px',
+                    border: 'none',
+                    background: 'none'
+                  }
+                }
               }}
             >
+              <MenuItem value="depends-on-me">
+                <FormattedMessage id="dependenciesDialog.dependsOnMe" defaultMessage="Dependencies of selected item" />
+              </MenuItem>
               <MenuItem value="depends-on">
                 <FormattedMessage
                   id="dependenciesDialog.dependsOn"
                   defaultMessage="Items that depend on selected item"
                 />
               </MenuItem>
-              <MenuItem value="depends-on-me">
-                <FormattedMessage id="dependenciesDialog.dependsOnMe" defaultMessage="Dependencies of selected item" />
-              </MenuItem>
             </Select>
           </FormControl>
-        </div>
+        </Box>
+
         {error ? (
           <ApiResponseErrorState error={error} />
         ) : !dependencies ? (
-          <LoadingState classes={{ root: classes.suspense }} />
+          <LoadingState sxs={{ root: { height: '100%', flexGrow: 1 } }} />
         ) : dependencies?.length === 0 ? (
           <EmptyState
+            sxs={{ root: { minHeight: 300, height: '100%' } }}
             title={
-              dependenciesShown === 'depends-on' ? (
+              dependenciesShown === 'depends-on-me' ? (
                 <FormattedMessage
                   id="dependenciesDialog.emptyDependantsMessage"
-                  defaultMessage={'{itemName} has no dependencies'}
+                  defaultMessage={'"{itemName}" has no dependencies'}
                   values={{ itemName: item?.label }}
                 />
               ) : (
                 <FormattedMessage
                   id="dependenciesDialog.emptyDependenciesMessage"
-                  defaultMessage={'Nothing depends on {itemName}'}
+                  defaultMessage={'Nothing depends on "{itemName}"'}
                   values={{ itemName: item?.label }}
                 />
               )
             }
-            classes={{ root: classes.suspense }}
           />
         ) : (
           <>
@@ -134,7 +140,7 @@ export function DependenciesDialogUI(props: DependenciesDialogUIProps) {
                     onClick={(e) => {
                       handleContextMenuClick(e, dependency);
                     }}
-                    className={classes.listEllipsis}
+                    sx={{ p: 1 }}
                     size="large"
                   >
                     <MoreVertIcon />
@@ -177,13 +183,9 @@ export function DependenciesDialogUI(props: DependenciesDialogUIProps) {
           </>
         )}
       </DialogBody>
-      <DialogFooter
-        classes={{
-          root: classes.dialogFooter
-        }}
-      >
+      <DialogFooter sx={(theme) => ({ paddingLeft: theme.spacing(2), paddingRight: theme.spacing(2) })}>
         <FormControlLabel
-          className={classes.compactViewAction}
+          sx={{ marginRight: 'auto' }}
           control={
             <Checkbox
               checked={compactView}
@@ -195,17 +197,38 @@ export function DependenciesDialogUI(props: DependenciesDialogUIProps) {
           }
           label="Compact"
         />
-        <FormControl className={classes.formControl}>
+        <FormControl sx={{ minWidth: 120, marginLeft: 'auto' }}>
           <Select
             value={showTypes}
             onChange={(event: SelectChangeEvent) => {
               setShowTypes(event.target.value);
             }}
-            inputProps={{
-              className: `${classes.select} ${classes.showTypesSelect}`
+            slotProps={{
+              input: {
+                sx: {
+                  fontSize: '16px',
+                  border: 'none',
+                  background: 'none',
+                  '& > .MuiRadio-root': {
+                    display: 'none'
+                  }
+                }
+              }
             }}
             MenuProps={{
-              className: classes.showTypesMenu,
+              sx: {
+                '& .MuiListItem-root': {
+                  padding: '0 10px',
+                  fontSize: '14px',
+                  '& > .MuiRadio-root': {
+                    padding: '6px',
+                    '& .MuiSvgIcon-root': {
+                      width: '16px',
+                      height: '16px'
+                    }
+                  }
+                }
+              },
               transformOrigin: {
                 vertical: 'bottom',
                 horizontal: 'left'

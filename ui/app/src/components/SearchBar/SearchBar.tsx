@@ -15,70 +15,13 @@
  */
 
 import React, { CSSProperties, useRef, useState } from 'react';
-import { makeStyles } from 'tss-react/mui';
 import IconButton from '@mui/material/IconButton';
-import InputBase, { InputBaseProps } from '@mui/material/InputBase';
+import InputBase, { inputBaseClasses, InputBaseProps } from '@mui/material/InputBase';
 import SearchIcon from '@mui/icons-material/SearchRounded';
 import CloseIcon from '@mui/icons-material/Close';
 import { defineMessages, useIntl } from 'react-intl';
 import Paper, { PaperProps } from '@mui/material/Paper';
-
-export type SearchBarClassKey = 'root' | 'searchIcon' | 'icon' | 'closeIcon' | 'inputRoot' | 'inputInput';
-
-const useStyles = makeStyles<{
-  background: string;
-  dense: boolean;
-  styles: Partial<Record<SearchBarClassKey, CSSProperties>>;
-}>()((theme, { background, dense, styles }) => ({
-  search: {
-    position: 'relative',
-    background: background ?? theme.palette.background.default,
-    display: 'flex',
-    alignItems: 'center',
-    padding: '0 12px',
-    borderRadius: '5px',
-    '&.focus': {
-      backgroundColor: theme.palette.background.paper,
-      border: '1px solid transparent'
-    },
-    '&.noPadded': {
-      padding: theme.spacing(0, 0.5, 0, 1.5)
-    },
-    ...styles?.root
-  },
-  searchIcon: {
-    // color: theme.palette.text.secondary,
-    ...styles?.searchIcon
-  },
-  icon: {
-    padding: '6px',
-    ...styles?.icon
-  },
-  closeIcon: {
-    // FE2 TODO: check impact of these styles removed
-    // color: theme.palette.text.secondary,
-    // cursor: 'pointer',
-    ...styles?.closeIcon
-  },
-  inputRoot: {
-    flexGrow: 1,
-    background: 'transparent',
-    '&:focus': {
-      backgroundColor: theme.palette.background.paper
-    },
-    ...styles?.inputRoot
-  },
-  inputInput: {
-    background: 'none',
-    border: 'none',
-    width: '100%',
-    padding: dense ? theme.spacing(0.7, 0.625) : theme.spacing(1.25, 0.625),
-    '&:focus': {
-      boxShadow: 'none'
-    },
-    ...styles?.inputInput
-  }
-}));
+import { PartialSxRecord } from '../../models';
 
 const messages = defineMessages({
   placeholder: {
@@ -86,6 +29,8 @@ const messages = defineMessages({
     defaultMessage: 'Filter...'
   }
 });
+
+export type SearchBarClassKey = 'root' | 'inputRoot' | 'inputInput' | 'actionIcon';
 
 interface SearchBarProps {
   sx?: PaperProps['sx'];
@@ -99,12 +44,8 @@ interface SearchBarProps {
   backgroundColor?: string;
   placeholder?: string;
   disabled?: boolean;
-  classes?: {
-    root?: any;
-    inputRoot?: any;
-    inputInput?: any;
-    actionIcon?: any;
-  };
+  classes?: Partial<Record<SearchBarClassKey, string>>;
+  sxs?: PartialSxRecord<SearchBarClassKey>;
   styles?: Partial<Record<SearchBarClassKey, CSSProperties>>;
   onBlur?(): void;
   onClick?(e: React.MouseEvent<HTMLDivElement, MouseEvent>): void;
@@ -116,7 +57,6 @@ interface SearchBarProps {
 }
 
 export function SearchBar(props: SearchBarProps) {
-  const { classes, cx } = useStyles({ background: props.backgroundColor, dense: props.dense, styles: props.styles });
   const {
     onChange,
     onKeyPress,
@@ -132,26 +72,44 @@ export function SearchBar(props: SearchBarProps) {
     onActionButtonClick,
     onDecoratorButtonClick,
     onBlur,
-    onClick
+    onClick,
+    sxs,
+    dense
   } = props;
   const [focus, setFocus] = useState(false);
   const { formatMessage } = useIntl();
   const finalPlaceholder = placeholder || formatMessage(messages.placeholder);
-  const inputRef = useRef<HTMLInputElement>();
+  const inputRef = useRef<HTMLInputElement>(undefined);
   return (
     <Paper
       sx={props.sx}
       onClick={onClick}
       variant={focus ? 'elevation' : 'outlined'}
       elevation={focus ? 4 : 0}
-      className={cx(classes.search, focus && 'focus', showActionButton && 'noPadded', props.classes?.root)}
+      className={[focus && 'focus', showActionButton && 'noPadded', props.classes?.root].filter(Boolean).join(' ')}
+      sx={{
+        position: 'relative',
+        background: (theme) => props.backgroundColor ?? theme.palette.background.default,
+        display: 'flex',
+        alignItems: 'center',
+        padding: '0 12px',
+        borderRadius: '5px',
+        '&.focus': {
+          backgroundColor: (theme) => theme.palette.background.paper,
+          border: '1px solid transparent'
+        },
+        '&.noPadded': {
+          padding: '0 0 0 12px'
+        },
+        ...sxs?.root
+      }}
     >
       {showDecoratorIcon && onDecoratorButtonClick ? (
         <IconButton onClick={onDecoratorButtonClick} size="large">
-          <DecoratorIcon className={classes.searchIcon} />
+          <DecoratorIcon sx={{ color: (theme) => theme.palette.text.secondary }} />
         </IconButton>
       ) : (
-        <DecoratorIcon className={classes.searchIcon} fontSize="small" />
+        <DecoratorIcon sx={{ color: (theme) => theme.palette.text.secondary }} fontSize="small" />
       )}
       <InputBase
         size="small"
@@ -168,10 +126,31 @@ export function SearchBar(props: SearchBarProps) {
         disabled={disabled}
         value={keyword}
         classes={{
-          root: cx(classes.inputRoot, props.classes?.inputRoot),
-          input: cx(classes.inputInput, props.classes?.inputInput)
+          root: props.classes?.inputRoot,
+          input: props.classes?.inputInput
         }}
-        inputProps={{ 'aria-label': finalPlaceholder, ref: inputRef }}
+        sx={{
+          flexGrow: 1,
+          background: 'transparent',
+          '&:focus': {
+            backgroundColor: (theme) => theme.palette.background.paper
+          },
+          ...sxs?.inputRoot,
+          [`& .${inputBaseClasses.input}`]: {
+            background: 'none',
+            border: 'none',
+            width: '100%',
+            padding: (theme) => (dense ? theme.spacing(0.7, 0.625) : theme.spacing(1.25, 0.625)),
+            '&:focus': {
+              boxShadow: 'none'
+            },
+            ...sxs?.inputInput
+          }
+        }}
+        inputProps={{
+          'aria-label': finalPlaceholder,
+          ref: inputRef
+        }}
       />
       {showActionButton && (
         <IconButton
@@ -184,10 +163,19 @@ export function SearchBar(props: SearchBarProps) {
               })
             )(e, inputRef.current);
           }}
-          className={classes.icon}
+          sx={{ padding: '6px' }}
           size="small"
         >
-          <ActionButtonIcon fontSize="small" className={cx(classes.closeIcon, props.classes?.actionIcon)} />
+          <ActionButtonIcon
+            fontSize="small"
+            className={props.classes?.actionIcon}
+            sx={{
+              fontSize: '25px',
+              color: (theme) => theme.palette.text.secondary,
+              cursor: 'pointer',
+              ...sxs?.actionIcon
+            }}
+          />
         </IconButton>
       )}
     </Paper>

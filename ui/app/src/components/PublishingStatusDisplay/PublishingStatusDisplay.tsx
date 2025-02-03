@@ -22,48 +22,23 @@ import Skeleton from '@mui/material/Skeleton';
 import * as React from 'react';
 import { useIntl } from 'react-intl';
 import { PublishingStatus } from '../../models/Publishing';
-import { getPublishingStatusMessage, publishingStatusMessages } from './utils';
+import { getPublishingStatusMessage, getPublishingStatusState } from './utils';
 
 export type PublishingStatusDisplayProps = PublishingStatus & {
   isFetching: boolean;
 };
 
 export function PublishingStatusDisplay(props: PublishingStatusDisplayProps) {
-  const { isFetching, status, enabled, lockOwner, lockTTL } = props;
+  const { isFetching, enabled, published, currentTask } = props;
   const { formatMessage } = useIntl();
+  const publishingStatusState = getPublishingStatusState({ enabled, published, currentTask });
   return (
     <>
       <ListItem component="div">
         <ListItemAvatar>
-          <PublishingStatusAvatar enabled={enabled} status={isFetching ? null : status} />
+          <PublishingStatusAvatar enabled={enabled} status={isFetching ? null : publishingStatusState} />
         </ListItemAvatar>
-        <ListItemText
-          primary={isFetching ? <Skeleton /> : getPublishingStatusMessage(props, formatMessage)}
-          secondary={
-            isFetching ? (
-              <Skeleton />
-            ) : (
-              <>
-                {lockOwner && (
-                  <>
-                    {formatMessage(publishingStatusMessages.lockOwner, { lockOwner })}
-                    <br />
-                  </>
-                )}
-                {lockTTL && (
-                  <>
-                    {formatMessage(publishingStatusMessages.lockTTL, { lockTTL })}
-                    <br />
-                  </>
-                )}
-                {status === 'readyWithErrors' &&
-                  formatMessage({
-                    defaultMessage: 'Last publish completed with errors, please see the logs for more information.'
-                  })}
-              </>
-            )
-          }
-        />
+        <ListItemText primary={isFetching ? <Skeleton /> : getPublishingStatusMessage(props, formatMessage)} />
       </ListItem>
     </>
   );

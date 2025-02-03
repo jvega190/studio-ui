@@ -23,7 +23,6 @@ import { useDispatch } from 'react-redux';
 import { useSelection } from '../../hooks/useSelection';
 import { useActiveSiteId } from '../../hooks/useActiveSiteId';
 import { useEnv } from '../../hooks/useEnv';
-import { useDetailedItems } from '../../hooks/useDetailedItems';
 import { ContextMenuOption } from '../ContextMenu';
 import { showEditDialog, showItemMegaMenu, showPreviewDialog, updatePreviewDialog } from '../../state/actions/dialogs';
 import { getNumOfMenuOptionsForItem, getSystemTypeFromPath } from '../../utils/content';
@@ -32,21 +31,24 @@ import { search } from '../../services/search';
 import { showErrorDialog } from '../../state/reducers/dialogs/error';
 import { translations } from './translations';
 import { ApiResponse } from '../../models/ApiResponse';
-import { contentEvent, deleteContentEvent } from '../../state/actions/system';
+import { contentEvent, deleteContentEvent, deleteContentEvents, moveContentEvent } from '../../state/actions/system';
 import { getHostToHostBus } from '../../utils/subjects';
 import { filter } from 'rxjs/operators';
 import { fetchContentXML } from '../../services/content';
 import { getPreviewURLFromPath } from '../../utils/path';
 import { IconButtonProps } from '@mui/material/IconButton';
+import useFetchSandboxItems from '../../hooks/useFetchSandboxItems';
 
 export const drawerWidth = 300;
+
+export const SORT_AUTO = '-AUTO-';
 
 export const initialSearchParameters: ElasticParams = {
   query: '',
   keywords: '',
   offset: 0,
   limit: 21,
-  sortBy: '_score',
+  sortBy: SORT_AUTO,
   sortOrder: 'desc',
   filters: {}
 };
@@ -55,7 +57,6 @@ export const actionsToBeShown: AllItemActions[] = [
   'edit',
   'delete',
   'publish',
-  'rejectPublish',
   'duplicate',
   'duplicateAsset',
   'dependencies',
@@ -80,6 +81,8 @@ export interface SearchParameters extends Partial<ElasticParams> {
 
 export interface SearchProps extends Partial<BaseSearchProps> {
   initialParameters?: SearchParameters;
+  preselectedPaths?: string[];
+  disableChangePreselected?: boolean;
 }
 
 export interface CheckedFilter {
@@ -152,8 +155,10 @@ export const deserializeSearchFilters = (filters) => {
   return deserializedFilters;
 };
 
-interface useSearchStateProps extends Pick<BaseSearchProps, 'onSelect'> {
+export interface UseSearchStateHookProps extends Pick<BaseSearchProps, 'onSelect'> {
   searchParameters: ElasticParams;
+  preselectedPaths?: string[];
+  disableChangePreselected?: SearchProps['disableChangePreselected'];
 }
 
 export interface UseSearchStateReturn {
@@ -180,16 +185,39 @@ export interface UseSearchStateReturn {
   handleChangeView(): void;
 }
 
-export const useSearchState = ({ searchParameters, onSelect }: useSearchStateProps): UseSearchStateReturn => {
+/**
+ * Encapsulates logic to pick sortBy depending on whether there's a keyword.
+ */
+export function prepareSearchParams(
+  searchParameters: UseSearchStateHookProps['searchParameters']
+): UseSearchStateHookProps['searchParameters'] {
+  if (!searchParameters.sortBy || searchParameters.sortBy === SORT_AUTO) {
+    return {
+      ...searchParameters,
+      sortBy: searchParameters.keywords ? '_score' : 'internalName',
+      sortOrder: searchParameters.keywords ? 'desc' : 'asc'
+    };
+  }
+  return searchParameters;
+}
+
+export const useSearchState = ({
+  searchParameters,
+  preselectedPaths = [],
+  disableChangePreselected = true,
+  onSelect
+}: UseSearchStateHookProps): UseSearchStateReturn => {
   const { formatMessage } = useIntl();
   const dispatch = useDispatch();
   const clipboard = useSelection((state) => state.content.clipboard);
   const site = useActiveSiteId();
   const { authoringBase, guestBase } = useEnv();
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(preselectedPaths);
   const [searchResults, setSearchResults] = useState<SearchResult>(null);
   const [selectedPath, setSelectedPath] = useState<string>(searchParameters.path ?? '');
-  const { itemsByPath, isFetching } = useDetailedItems(selected);
+  useFetchSandboxItems(selected);
+  const { itemsBeingFetchedByPath, itemsByPath } = useSelection((state) => state.content);
+  const isFetching = selected.some((path) => itemsBeingFetchedByPath[path]);
   const [drawerOpen, setDrawerOpen] = useState(window.innerWidth > 960);
   const [currentView, setCurrentView] = useState<'grid' | 'list'>('grid');
   const [error, setError] = useState<ApiResponse>(null);
@@ -275,7 +303,7 @@ export const useSearchState = ({ searchParameters, onSelect }: useSearchStatePro
   const refreshSearch = useCallback(() => {
     setError(null);
     setIsFetchingResults(true);
-    search(site, searchParameters).subscribe({
+    search(site, prepareSearchParams(searchParameters)).subscribe({
       next(result) {
         setSearchResults(result);
         setIsFetchingResults(false);
@@ -323,7 +351,8 @@ export const useSearchState = ({ searchParameters, onSelect }: useSearchStatePro
     if (checked) {
       let selectedItems: any[] = [];
       searchResults.items.forEach((item: any) => {
-        if (selected.indexOf(item.path) === -1) {
+        const allowSelect = disableChangePreselected ? !preselectedPaths.includes(item.path) : true;
+        if (allowSelect && !selected.includes(item.path)) {
           selectedItems.push(item.path);
           onSelect?.(item.path, true);
         }
@@ -333,7 +362,8 @@ export const useSearchState = ({ searchParameters, onSelect }: useSearchStatePro
       let newSelectedItems = [...selected];
       searchResults.items.forEach((item: any) => {
         let index = newSelectedItems.indexOf(item.path);
-        if (index >= 0) {
+        const allowUnselect = disableChangePreselected ? !preselectedPaths.includes(item.path) : true;
+        if (allowUnselect && index >= 0) {
           newSelectedItems.splice(index, 1);
           onSelect?.(item.path, false);
         }
@@ -446,7 +476,12 @@ export const useSearchState = ({ searchParameters, onSelect }: useSearchStatePro
   };
 
   useEffect(() => {
-    const eventsThatNeedReaction = [contentEvent.type, deleteContentEvent.type];
+    const eventsThatNeedReaction = [
+      contentEvent.type,
+      deleteContentEvent.type,
+      deleteContentEvents.type,
+      moveContentEvent.type
+    ];
     const hostToHost$ = getHostToHostBus();
     const subscription = hostToHost$.pipe(filter((e) => eventsThatNeedReaction.includes(e.type))).subscribe(() => {
       handleClearSelected();

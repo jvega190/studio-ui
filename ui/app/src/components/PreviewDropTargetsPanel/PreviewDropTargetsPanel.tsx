@@ -17,7 +17,6 @@
 import React, { useMemo, useState } from 'react';
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
 import { getHostToGuestBus } from '../../utils/subjects';
-import { makeStyles } from 'tss-react/mui';
 import { ContentTypeDropTarget } from '../../models/ContentTypeDropTarget';
 import ListItemText from '@mui/material/ListItemText';
 import List from '@mui/material/List';
@@ -32,11 +31,7 @@ import {
   scrollToDropTarget,
   setPreviewEditMode
 } from '../../state/actions/preview';
-import { Resource } from '../../models/Resource';
-import { SuspenseWithEmptyState } from '../Suspencified/Suspencified';
-import { LookupTable } from '../../models/LookupTable';
 import { useSelection } from '../../hooks/useSelection';
-import { useLogicResource } from '../../hooks/useLogicResource';
 import { useMount } from '../../hooks/useMount';
 import { getAvatarWithIconColors } from '../../utils/contentType';
 import { darken, useTheme } from '@mui/material/styles';
@@ -55,6 +50,7 @@ import HourglassEmptyRounded from '@mui/icons-material/HourglassEmptyRounded';
 import Alert from '@mui/material/Alert';
 import { EmptyState } from '../EmptyState';
 import FormHelperText from '@mui/material/FormHelperText';
+import { LoadingState } from '../LoadingState';
 
 const translations = defineMessages({
   dropTargetsPanel: {
@@ -75,18 +71,7 @@ const translations = defineMessages({
   }
 });
 
-const useStyles = makeStyles()(() => ({
-  select: {
-    width: '100%',
-    padding: '15px 15px 0',
-    '& > div': {
-      width: '100%'
-    }
-  }
-}));
-
 export function PreviewDropTargetsPanel() {
-  const { classes } = useStyles();
   const hostToGuest$ = getHostToGuestBus();
   const dropTargetsBranch = useSelection((state) => state.preview.dropTargets);
   const contentTypesBranch = useSelection((state) => state.contentTypes);
@@ -108,6 +93,15 @@ export function PreviewDropTargetsPanel() {
     });
     return allowedTypes;
   }, [allowedTypesData, contentTypes]);
+  const filteredDropTargets = useMemo(() => {
+    return dropTargetsBranch
+      ? dropTargetsBranch.byId
+        ? Object.values(dropTargetsBranch.byId).filter(
+            (dropTarget) => dropTarget.contentTypeId === dropTargetsBranch.selectedContentType
+          )
+        : []
+      : null;
+  }, [dropTargetsBranch]);
 
   useMount(() => {
     return () => {
@@ -137,22 +131,6 @@ export function PreviewDropTargetsPanel() {
     dispatch(clearDropTargets());
     hostToGuest$.next(clearHighlightedDropTargets());
   };
-
-  const dropTargetsResource = useLogicResource<
-    ContentTypeDropTarget[],
-    { selectedContentType: string; byId: LookupTable<ContentTypeDropTarget> }
-  >(dropTargetsBranch, {
-    shouldResolve: (source) => source.selectedContentType === null || Boolean(source.byId),
-    shouldReject: (source) => false,
-    shouldRenew: (source, resource) => resource.complete,
-    resultSelector: (source) =>
-      source.byId
-        ? Object.values(source.byId).filter(
-            (dropTarget) => dropTarget.contentTypeId === dropTargetsBranch.selectedContentType
-          )
-        : [],
-    errorSelector: (source) => null
-  });
 
   return awaitingGuestCheckIn ? (
     <Alert severity="info" variant="outlined" icon={<HourglassEmptyRounded />} sx={{ border: 0 }}>
@@ -188,7 +166,17 @@ export function PreviewDropTargetsPanel() {
           </>
         ) : (
           <>
-            <Box className={classes.select} display="flex" alignItems="center">
+            <Box
+              sx={{
+                width: '100%',
+                padding: '15px 15px 0',
+                '& > div': {
+                  width: '100%'
+                }
+              }}
+              display="flex"
+              alignItems="center"
+            >
               <FormControl>
                 <InputLabel>{formatMessage(translations.selectedContentType)}</InputLabel>
                 <Select
@@ -225,18 +213,23 @@ export function PreviewDropTargetsPanel() {
               )}
             </Box>
             <List>
-              <SuspenseWithEmptyState
-                resource={dropTargetsResource}
-                withEmptyStateProps={{
-                  emptyStateProps: {
-                    title: dropTargetsBranch.selectedContentType
-                      ? formatMessage(translations.noResults)
-                      : formatMessage(translations.chooseContentType)
-                  }
-                }}
-              >
-                <DropTargetsList resource={dropTargetsResource} onSelectedDropZone={onSelectedDropZone} />
-              </SuspenseWithEmptyState>
+              {dropTargetsBranch?.selectedContentType !== null && !Boolean(dropTargetsBranch?.byId) ? (
+                <LoadingState />
+              ) : filteredDropTargets ? (
+                filteredDropTargets.length > 0 ? (
+                  <DropTargetsList dropTargets={filteredDropTargets} onSelectedDropZone={onSelectedDropZone} />
+                ) : (
+                  <EmptyState
+                    title={
+                      dropTargetsBranch.selectedContentType
+                        ? formatMessage(translations.noResults)
+                        : formatMessage(translations.chooseContentType)
+                    }
+                  />
+                )
+              ) : (
+                <></>
+              )}
             </List>
           </>
         )
@@ -281,12 +274,12 @@ function ContentTypeItem(props: ContentTypeItemContentProps) {
 }
 
 interface DropTargetsListProps {
-  resource: Resource<ContentTypeDropTarget[]>;
+  dropTargets: ContentTypeDropTarget[];
   onSelectedDropZone(dropTarget: ContentTypeDropTarget): void;
 }
 
 function DropTargetsList(props: DropTargetsListProps) {
-  const dropTargets = props.resource.read();
+  const { dropTargets } = props;
   return dropTargets?.map((dropTarget: ContentTypeDropTarget) => (
     <ListItemButton key={dropTarget.id} onClick={() => props.onSelectedDropZone(dropTarget)}>
       <ListItemIcon>

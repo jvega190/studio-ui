@@ -25,16 +25,14 @@ export interface PublishingStatusBaseProps extends PublishingStatus {
 
 export interface PublishingStatusDialogProps extends PublishingStatusBaseProps, EnhancedDialogProps {
   onRefresh?(): void;
-  onUnlock?(): void;
   onStartStop?(): void;
 }
 
 export interface PublishingStatusDialogStateProps extends PublishingStatusBaseProps, EnhancedDialogState {
   onClose: StandardAction;
   onRefresh: StandardAction;
-  onUnlock: StandardAction;
 }
 
 export interface PublishingStatusDialogContainerProps
   extends PublishingStatusBaseProps,
-    Pick<PublishingStatusDialogProps, 'onClose' | 'onRefresh' | 'onUnlock' | 'onStartStop'> {}
+    Pick<PublishingStatusDialogProps, 'onClose' | 'onRefresh' | 'onStartStop'> {}

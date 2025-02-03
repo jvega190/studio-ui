@@ -14,17 +14,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import Grid from '@mui/material/Grid';
+import Grid from '@mui/material/Grid2';
 import React from 'react';
-import { Resource } from '../../models/Resource';
 import { Site } from '../../models/Site';
 import SiteCard from '../SiteCard/SiteCard';
-import { useSitesGridStyles } from './styles';
 import LookupTable from '../../models/LookupTable';
 import { PublishingStatus } from '../../models/Publishing';
+import Box from '@mui/material/Box';
 
 interface SitesGridProps {
-  resource: Resource<Site[]>;
+  sites: Site[];
   onSiteClick(site: Site): void;
   onDeleteSiteClick(site: Site): void;
   onEditSiteClick(site: Site): void;
@@ -40,7 +39,7 @@ interface SitesGridProps {
 
 export function SitesGrid(props: SitesGridProps) {
   const {
-    resource,
+    sites,
     onSiteClick,
     onDeleteSiteClick,
     onEditSiteClick,
@@ -49,13 +48,11 @@ export function SitesGrid(props: SitesGridProps) {
     onPublishButtonClick,
     disabledSitesLookup
   } = props;
-  const sites = resource.read();
-  const { classes } = useSitesGridStyles();
   return (
-    <section className={classes.root}>
+    <Box component="section" sx={{ display: 'flex', flexDirection: 'column', padding: '20px' }}>
       <Grid container spacing={3}>
         {sites.map((site) => (
-          <Grid item key={site.id}>
+          <Grid key={site.id}>
             <SiteCard
               site={site}
               onSiteClick={onSiteClick}
@@ -69,7 +66,7 @@ export function SitesGrid(props: SitesGridProps) {
           </Grid>
         ))}
       </Grid>
-    </section>
+    </Box>
   );
 }
 

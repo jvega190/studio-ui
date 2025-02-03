@@ -29,23 +29,26 @@ export enum XmlKeys {
   mergeStrategy = 'merge-strategy',
   fileName = 'file-name',
   folderName = 'folder-name',
-  internalName = 'internal-name'
+  internalName = 'internal-name',
+  templateNotRequired = 'no-template-required',
+  dateCreated = 'createdDate',
+  dateModified = 'lastModifiedDate'
 }
 
 // These are not in the content type definition
 export const systemFieldsNotInType = [
   XmlKeys.contentTypeId,
   XmlKeys.displayTemplate,
-  'no-template-required',
+  XmlKeys.templateNotRequired,
   XmlKeys.mergeStrategy,
   XmlKeys.modelId,
   XmlKeys.fileName,
   XmlKeys.folderName,
   XmlKeys.internalName,
-  'createdDate',
-  'createdDate_dt',
-  'lastModifiedDate',
-  'lastModifiedDate_dt'
+  XmlKeys.dateCreated,
+  `${XmlKeys.dateCreated}_dt`,
+  XmlKeys.dateModified,
+  `${XmlKeys.dateModified}_dt`
 ];
 
 export const validatorsMap: Record<BuiltInControlType, ElementType> = {
@@ -148,6 +151,14 @@ export function isEmptyValue(field: ContentTypeField, currentValue: unknown): bo
   );
 }
 
+/**
+ * Takes in the raw deserialized values from a content XML and returns a clean object with the values ran through the
+ * field's value retriever.
+ * @param contentTypeFields The fields of the content type
+ * @param xmlDeserializedValues The raw deserialized values from the content XML
+ * @param contentTypesLookup A lookup table of content types
+ * @param fieldCallback A callback to run for each field
+ **/
 export function createCleanValuesObject(
   contentTypeFields: LookupTable<ContentTypeField> | ContentTypeField[],
   xmlDeserializedValues: LookupTable<unknown>,

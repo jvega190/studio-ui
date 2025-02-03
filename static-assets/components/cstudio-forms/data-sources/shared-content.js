@@ -118,11 +118,18 @@ YAHOO.extend(CStudioForms.Datasources.SharedContent, CStudioForms.CStudioFormDat
     if (_self.browsePath != undefined && _self.browsePath != '') {
       browsePath = _self.browsePath;
     }
+    // Paths already in the control, by sending them to the Browse Dialog, it'll mark them as selected, and disable
+    // the actions for those paths.
+    const preselectedPaths = craftercms.utils.array
+      .asArray(control?.form.model[control.fieldDef.id])
+      .flatMap((item) => item.key || []);
+
     const multiSelect = _self.selectItemsCount === -1 || _self.selectItemsCount > 1;
     CStudioAuthoring.Operations.openBrowseFilesDialog({
       path: _self.processPathsForMacros(browsePath),
       multiSelect,
       allowUpload: false,
+      preselectedPaths,
       onSuccess: (result) => {
         const items = Array.isArray(result) ? result : [result];
         items.forEach(({ name, path }) => {
@@ -140,8 +147,6 @@ YAHOO.extend(CStudioForms.Datasources.SharedContent, CStudioForms.CStudioFormDat
       itemsPerPage: 12,
       keywords: '',
       filters: {},
-      sortBy: 'internalName',
-      sortOrder: 'asc',
       numFilters: 1,
       filtersShowing: 10,
       currentPage: 1,
@@ -159,6 +164,12 @@ YAHOO.extend(CStudioForms.Datasources.SharedContent, CStudioForms.CStudioFormDat
       const path = _self.processPathsForMacros(this.browsePath);
       searchContext.path = path.endsWith('/') ? `${path}.+` : `${path}/.+`;
     }
+
+    // Paths already in the control, by sending them to the Browse Dialog, it'll mark them as selected, and disable
+    // the actions for those paths.
+    searchContext.preselectedPaths = craftercms.utils.array
+      .asArray(control?.form.model[control.fieldDef.id])
+      .flatMap((item) => item.key || []);
 
     CStudioAuthoring.Operations.openSearch(
       searchContext,
@@ -267,6 +278,7 @@ YAHOO.extend(CStudioForms.Datasources.SharedContent, CStudioForms.CStudioFormDat
 
   edit: function (key, control, index, callback) {
     var _self = this;
+    craftercms.getStore().dispatch({ type: 'BLOCK_UI' });
     craftercms.services.content.fetchSandboxItem(CStudioAuthoringContext.site, key).subscribe({
       next(sandboxItem) {
         const readonly = !sandboxItem.availableActionsMap.edit;
@@ -274,6 +286,11 @@ YAHOO.extend(CStudioForms.Datasources.SharedContent, CStudioForms.CStudioFormDat
           readonly || !sandboxItem.availableActionsMap.edit
             ? CStudioAuthoring.Operations.viewContent
             : CStudioAuthoring.Operations.editContent;
+        // CStudioAuthoring.Operations.editContent shows the UI blocker too, so no point
+        // hiding it yet in the case of an edit.
+        if (action === CStudioAuthoring.Operations.viewContent) {
+          craftercms.getStore().dispatch({ type: 'UNBLOCK_UI' });
+        }
         action(
           sandboxItem.contentTypeId,
           CStudioAuthoringContext.siteId,

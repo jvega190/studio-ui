@@ -71,7 +71,11 @@ import {
   moveContentEvent,
   pluginInstalled,
   publishEvent,
-  workflowEvent
+  workflowEventApprove,
+  workflowEventCancel,
+  workflowEventDirectPublish,
+  workflowEventReject,
+  workflowEventSubmit
 } from '../actions/system';
 import StandardAction from '../../models/StandardAction';
 import { GetChildrenOptions, MarketplacePlugin, MoveContentEventPayload, SocketEventBase } from '../../models';
@@ -543,7 +547,14 @@ export default [
   // Can't be smart about these given the level of information the events provide.
   (action$, state$) =>
     action$.pipe(
-      ofType(workflowEvent.type, publishEvent.type),
+      ofType(
+        workflowEventSubmit.type,
+        workflowEventDirectPublish.type,
+        workflowEventApprove.type,
+        workflowEventReject.type,
+        workflowEventCancel.type,
+        publishEvent.type
+      ),
       throttleTime(500),
       withLatestFrom(state$),
       map(([, state]) =>

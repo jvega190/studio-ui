@@ -52,9 +52,16 @@ import { getSystemLink } from '../../utils/system';
 import { useDispatch } from 'react-redux';
 import { changeCurrentUrl } from '../../state/actions/preview';
 import PackageDetailsDialog from '../PackageDetailsDialog/PackageDetailsDialog';
-import InfiniteScroll from 'react-infinite-scroller';
-import Box from '@mui/material/Box';
-import { contentEvent, deleteContentEvent, publishEvent, workflowEvent } from '../../state/actions/system';
+import {
+  contentEvent,
+  deleteContentEvent,
+  publishEvent,
+  workflowEventApprove,
+  workflowEventCancel,
+  workflowEventDirectPublish,
+  workflowEventReject,
+  workflowEventSubmit
+} from '../../state/actions/system';
 import { getHostToHostBus } from '../../utils/subjects';
 import { filter } from 'rxjs/operators';
 import LoadingIconButton from '../LoadingIconButton';
@@ -68,13 +75,17 @@ import InputAdornment from '@mui/material/InputAdornment';
 import ReplyRounded from '@mui/icons-material/ReplyRounded';
 import ClearRounded from '@mui/icons-material/ClearRounded';
 import useEnhancedDialogContext from '../EnhancedDialog/useEnhancedDialogContext';
+import InfiniteLoader from 'react-window-infinite-loader';
+import { FixedSizeList as List } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
+import Box from '@mui/material/Box';
 
 export interface ActivityDashletProps extends Partial<DashletCardProps> {}
 
 interface ActivityDashletState {
   openRangePicker: boolean;
   openPackageDetailsDialog: boolean;
-  selectedPackageId: string;
+  selectedPackageId: number;
   feed: Activity[];
   usernames: string[];
   feedType: FeedTypes;
@@ -245,7 +256,7 @@ export function ActivityDashlet(props: ActivityDashletProps) {
     });
   }, [activities, dateFrom, dateTo, limit, setState, site, usernames]);
   // endregion
-  const listRef = useRef();
+  const listRef = useRef(undefined);
   const loadNextPage = () => {
     let newOffset = offset + limit;
     setState({ loadingChunk: true });
@@ -307,6 +318,18 @@ export function ActivityDashlet(props: ActivityDashletProps) {
   const onPackageClick = (pkg) => {
     setState({ openPackageDetailsDialog: true, selectedPackageId: pkg.id });
   };
+
+  const currentPage = offset / limit;
+  const totalPages = total ? Math.ceil(total / limit) : 0;
+  const hasNextPage = currentPage + 1 < totalPages;
+  // If there are more items to be loaded then add an extra row to hold a loading indicator.
+  const currentItemsCount = feed ? (hasNextPage ? feed.length + 1 : feed.length) : 0;
+  // Only load 1 page of items at a time.
+  // Pass an empty callback to InfiniteLoader in case it asks us to load more than once.
+  const loadMoreItems = loadingChunk ? () => {} : loadNextPage;
+  // Every row is loaded except for our loading indicator row.
+  const isItemLoaded = (index) => !hasNextPage || index < feed?.length;
+
   const hasMoreItemsToLoad = total > 0 && limit + offset < total;
   const isFetching = loadingChunk || loadingFeed;
   useEffect(() => {
@@ -315,7 +338,16 @@ export function ActivityDashlet(props: ActivityDashletProps) {
 
   // region Item Updates Propagation
   useEffect(() => {
-    const events = [deleteContentEvent.type, workflowEvent.type, publishEvent.type, contentEvent.type];
+    const events = [
+      deleteContentEvent.type,
+      workflowEventSubmit.type,
+      workflowEventDirectPublish.type,
+      workflowEventApprove.type,
+      workflowEventReject.type,
+      workflowEventCancel.type,
+      publishEvent.type,
+      contentEvent.type
+    ];
     const hostToHost$ = getHostToHostBus();
     const subscription = hostToHost$.pipe(filter((e) => events.includes(e.type))).subscribe(({ type, payload }) => {
       onRefresh();
@@ -329,8 +361,8 @@ export function ActivityDashlet(props: ActivityDashletProps) {
   // region author filter
   const [authorFilterOpen, setAuthorFilterOpen] = useState(false);
   const [authorFilterValue, setAuthorFilterValue] = useState('');
-  const authorFilterButtonRef = useRef<HTMLButtonElement>();
-  const authorFilterInputRef = useRef<HTMLInputElement>();
+  const authorFilterButtonRef = useRef<HTMLButtonElement>(undefined);
+  const authorFilterInputRef = useRef<HTMLInputElement>(undefined);
 
   const onAuthorFilterChange = (users) => {
     if (users.length === 0 && (usernames === null || usernames.length === 0)) return;
@@ -425,30 +457,32 @@ export function ActivityDashlet(props: ActivityDashletProps) {
               onChange={handleAuthorFilterInputChange}
               placeholder='e.g. "jon.doe, jdoe, jane@example.com"'
               onKeyUp={handleAuthorFilterKeyUp}
-              InputProps={{
-                inputRef: authorFilterInputRef,
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      disabled={isFetching}
-                      title={formatMessage({ defaultMessage: 'Submit' })}
-                      edge="end"
-                      onClick={submitAuthorFilterChanges}
-                      size="small"
-                    >
-                      <ReplyRounded sx={{ transform: 'scaleX(-1)' }} />
-                    </IconButton>
-                    <IconButton
-                      disabled={isFetching}
-                      title={formatMessage({ defaultMessage: 'Clear & close' })}
-                      edge="end"
-                      onClick={clearAuthorFilterValue}
-                      size="small"
-                    >
-                      <ClearRounded />
-                    </IconButton>
-                  </InputAdornment>
-                )
+              slotProps={{
+                input: {
+                  inputRef: authorFilterInputRef,
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        disabled={isFetching}
+                        title={formatMessage({ defaultMessage: 'Submit' })}
+                        edge="end"
+                        onClick={submitAuthorFilterChanges}
+                        size="small"
+                      >
+                        <ReplyRounded sx={{ transform: 'scaleX(-1)' }} />
+                      </IconButton>
+                      <IconButton
+                        disabled={isFetching}
+                        title={formatMessage({ defaultMessage: 'Clear & close' })}
+                        edge="end"
+                        onClick={clearAuthorFilterValue}
+                        size="small"
+                      >
+                        <ClearRounded />
+                      </IconButton>
+                    </InputAdornment>
+                  )
+                }
               }}
             />
           </Popover>
@@ -529,50 +563,69 @@ export function ActivityDashlet(props: ActivityDashletProps) {
         </Timeline>
       )}
       {Boolean(feed?.length) && (
-        <Timeline position="right">
+        <Timeline position="right" sx={{ flex: 1 }}>
           <CustomTimelineItem>
             <SizedTimelineSeparator>
               <TimelineDotWithoutAvatar />
             </SizedTimelineSeparator>
             <TimelineContent sx={emptyTimelineContentSx} />
           </CustomTimelineItem>
-          <InfiniteScroll
-            initialLoad={false}
-            pageStart={0}
-            loadMore={() => {
-              loadNextPage();
-            }}
-            hasMore={hasMoreItemsToLoad}
-            loader={<Box key="infiniteScrollLoaderSkeleton">{getSkeletonTimelineItems({ items: 3 })}</Box>}
-            useWindow={false}
-            getScrollParent={() => listRef.current}
-          >
-            {feed.map((activity) => (
-              <CustomTimelineItem key={activity.id}>
-                <SizedTimelineSeparator>
-                  <TimelineConnector />
-                  <TimelineDotWithAvatar>
-                    <PersonAvatar person={activity.person} />
-                  </TimelineDotWithAvatar>
-                  <TimelineConnector />
-                </SizedTimelineSeparator>
-                <TimelineContent sx={{ py: '12px', px: 2 }}>
-                  <PersonFullName person={activity.person} />
-                  <Typography>{renderActivity(activity, { formatMessage, onPackageClick, onItemClick })}</Typography>
-                  <Typography
-                    variant="caption"
-                    title={asLocalizedDateTime(
-                      activity.actionTimestamp,
-                      locale.localeCode,
-                      locale.dateTimeFormatOptions
-                    )}
-                  >
-                    {renderActivityTimestamp(activity.actionTimestamp, locale)}
-                  </Typography>
-                </TimelineContent>
-              </CustomTimelineItem>
-            ))}
-          </InfiniteScroll>
+          <InfiniteLoader isItemLoaded={isItemLoaded} loadMoreItems={loadMoreItems} itemCount={currentItemsCount}>
+            {({ onItemsRendered, ref }) => (
+              <Box sx={{ flex: 1 }}>
+                <AutoSizer>
+                  {({ height, width }) => (
+                    <List
+                      className="List"
+                      height={height}
+                      itemCount={currentItemsCount}
+                      itemSize={104}
+                      onItemsRendered={onItemsRendered}
+                      ref={ref}
+                      width={width}
+                    >
+                      {({ index, style }) => {
+                        let content;
+                        if (!isItemLoaded(index)) {
+                          content = <FormattedMessage defaultMessage="Loading..." />;
+                        } else {
+                          const activity = feed[index];
+                          content = (
+                            <CustomTimelineItem key={activity.id}>
+                              <SizedTimelineSeparator>
+                                <TimelineConnector />
+                                <TimelineDotWithAvatar>
+                                  <PersonAvatar person={activity.person} />
+                                </TimelineDotWithAvatar>
+                                <TimelineConnector />
+                              </SizedTimelineSeparator>
+                              <TimelineContent sx={{ py: '12px', px: 2 }}>
+                                <PersonFullName person={activity.person} />
+                                <Typography>
+                                  {renderActivity(activity, { formatMessage, onPackageClick, onItemClick })}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  title={asLocalizedDateTime(
+                                    activity.actionTimestamp,
+                                    locale.localeCode,
+                                    locale.dateTimeFormatOptions
+                                  )}
+                                >
+                                  {renderActivityTimestamp(activity.actionTimestamp, locale)}
+                                </Typography>
+                              </TimelineContent>
+                            </CustomTimelineItem>
+                          );
+                        }
+                        return <div style={style}>{content}</div>;
+                      }}
+                    </List>
+                  )}
+                </AutoSizer>
+              </Box>
+            )}
+          </InfiniteLoader>
           {!hasMoreItemsToLoad && (
             <CustomTimelineItem>
               <SizedTimelineSeparator>

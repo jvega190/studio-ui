@@ -18,7 +18,6 @@ import React, { ReactNode, useCallback, useReducer, useRef } from 'react';
 import Typography from '@mui/material/Typography';
 import IconButton, { IconButtonProps } from '@mui/material/IconButton';
 import { TypographyVariant as Variant } from '@mui/material/styles';
-import { makeStyles } from 'tss-react/mui';
 import { DetailedItem, SandboxItem } from '../../models/Item';
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
 import Popover from '@mui/material/Popover';
@@ -43,50 +42,15 @@ import { useActiveSiteId } from '../../hooks/useActiveSiteId';
 import ItemDisplay from '../ItemDisplay';
 import PathNavigatorSkeleton from '../PathNavigator/PathNavigatorSkeleton';
 import Tooltip from '@mui/material/Tooltip';
+import { PartialSxRecord } from '../../models';
+import Box from '@mui/material/Box';
 
-const useStyles = makeStyles()((theme) => ({
-  popoverRoot: {
-    minWidth: '200px',
-    maxWidth: '400px',
-    marginTop: '5px',
-    padding: '0 5px 5px 5px'
-  },
-  root: {
-    backgroundColor: theme.palette.background.paper,
-    display: 'flex',
-    paddingLeft: '15px',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginRight: 'auto',
-    maxWidth: '100%',
-    minWidth: '200px',
-    '&.disable': {
-      minWidth: 'auto',
-      backgroundColor: 'inherit'
-    }
-  },
-  selectedItem: {
-    marginLeft: 'auto',
-    display: 'flex',
-    minWidth: 0
-  },
-  title: {
-    fontWeight: 600,
-    marginRight: '30px'
-  },
-  changeBtn: {},
-  itemName: {},
-  selectIcon: {}
-}));
+export type SingleItemSelectorClassKey = 'root' | 'title' | 'selectIcon' | 'popoverRoot' | 'selectedItem' | 'changeBtn';
 
 interface SingleItemSelectorProps {
   selectIcon?: React.ElementType;
-  classes?: {
-    root?: string;
-    title?: string;
-    selectIcon?: string;
-    popoverRoot?: string;
-  };
+  classes?: Partial<Record<SingleItemSelectorClassKey, string>>;
+  sxs?: PartialSxRecord<SingleItemSelectorClassKey>;
   selectedItem?: DetailedItem;
   rootPath: string;
   label?: ReactNode;
@@ -258,7 +222,8 @@ export function SingleItemSelector(props: SingleItemSelectorProps) {
   // region const { ... } = props;
   const {
     selectIcon: SelectIcon = ExpandMoreRoundedIcon,
-    classes: propClasses,
+    classes,
+    sxs,
     titleVariant = 'body1',
     hideUI = false,
     disabled = false,
@@ -275,8 +240,7 @@ export function SingleItemSelector(props: SingleItemSelectorProps) {
     tooltip = ''
   } = props;
   // endregion
-  const { classes, cx } = useStyles();
-  const buttonElRef = useRef();
+  const buttonElRef = useRef(undefined);
   const [state, _dispatch] = useReducer(reducer, props, init);
   const site = useActiveSiteId();
 
@@ -401,7 +365,22 @@ export function SingleItemSelector(props: SingleItemSelectorProps) {
     ? {}
     : {
         elevation: 0,
-        className: cx(classes.root, !onDropdownClick && 'disable', propClasses?.root)
+        className: [onDropdownClick ? '' : 'disable', classes?.root].filter(Boolean).join(' '),
+        sx: {
+          backgroundColor: (theme) => theme.palette.background.paper,
+          display: 'flex',
+          paddingLeft: '15px',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginRight: 'auto',
+          maxWidth: '100%',
+          minWidth: '200px',
+          '&.disable': {
+            minWidth: 'auto',
+            backgroundColor: 'inherit'
+          },
+          ...sxs?.root
+        }
       };
 
   return (
@@ -409,34 +388,62 @@ export function SingleItemSelector(props: SingleItemSelectorProps) {
       {!hideUI && (
         <>
           {label && (
-            <Typography variant={titleVariant} className={cx(classes.title, propClasses?.title)}>
+            <Typography
+              variant={titleVariant}
+              className={classes?.title}
+              sx={{
+                fontWeight: 600,
+                marginRight: '30px',
+                ...sxs?.title
+              }}
+            >
               {label}
             </Typography>
           )}
           {selectedItem && (
-            <div className={classes.selectedItem}>
+            <Box
+              className={classes?.selectedItem}
+              sx={{
+                marginLeft: 'auto',
+                display: 'flex',
+                minWidth: 0,
+                ...sxs?.selectedItem
+              }}
+            >
               <ItemDisplay item={selectedItem} showNavigableAsLinks={false} />
-            </div>
+            </Box>
           )}
         </>
       )}
       {onDropdownClick && (
         <Tooltip title={tooltip}>
           <IconButton
-            className={classes.changeBtn}
+            className={classes?.changeBtn}
+            sx={sxs?.changeBtn}
             ref={buttonElRef}
             disabled={disabled}
             onClick={disabled ? null : () => handleDropdownClick(selectedItem)}
             size={buttonSize}
           >
-            <SelectIcon className={cx(classes.selectIcon, propClasses?.selectIcon)} />
+            <SelectIcon className={classes?.selectIcon} sx={sxs?.selectIcon} />
           </IconButton>
         </Tooltip>
       )}
       <Popover
         anchorEl={buttonElRef.current}
         open={open}
-        classes={{ paper: cx(classes.popoverRoot, propClasses?.popoverRoot) }}
+        classes={{ paper: classes?.popoverRoot }}
+        slotProps={{
+          paper: {
+            sx: {
+              minWidth: '200px',
+              maxWidth: '400px',
+              marginTop: '5px',
+              padding: '0 5px 5px 5px',
+              ...sxs?.popoverRoot
+            }
+          }
+        }}
         onClose={onClose}
         anchorOrigin={{
           vertical: 'bottom',

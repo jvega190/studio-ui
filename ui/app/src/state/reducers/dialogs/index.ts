@@ -23,17 +23,20 @@ import compareVersions from './compareVersions';
 import deleteDialog from './delete';
 import edit from './edit';
 import codeEditor from './codeEditor';
-import workflowCancellation from './workflowCancellation';
-import reject from './reject';
 import editSite from './editSite';
 import itemMenu from './itemMenu';
 import itemMegaMenu from './itemMegaMenu';
 import launcher from './launcher';
 import publishingStatus from './publishingStatus';
-import unlockPublisher from './unlockPublisher';
 import uiBlocker from './uiBlocker';
 import renameAsset from './renameAsset';
 import brokenReferences from './brokenReferences';
+import publishingPackageApproval from './publishingPackageReview';
+import cancelPackage from './cancelPackage';
+import bulkCancelPackage from './bulkCancelPackage';
+import publishingPackageResubmit from './publishingPackageResubmit';
+import packageDetails from './packageDetails';
+import viewPackages from './viewPackages';
 
 export default combineReducers({
   error,
@@ -41,18 +44,21 @@ export default combineReducers({
   history,
   viewVersion,
   compareVersions,
+  publishingPackageApproval,
+  publishingPackageResubmit,
   delete: deleteDialog,
   edit,
   codeEditor,
-  workflowCancellation,
-  reject,
   editSite,
   renameAsset,
   itemMenu,
   itemMegaMenu,
   launcher,
-  publishingStatus,
-  unlockPublisher,
+  publishingStatus.
   uiBlocker,
-  brokenReferences
+  brokenReferences,
+  cancelPackage,
+  bulkCancelPackage,
+  packageDetails,
+  viewPackages
 });
