@@ -54,7 +54,7 @@ export default combineReducers({
   itemMenu,
   itemMegaMenu,
   launcher,
-  publishingStatus.
+  publishingStatus,
   uiBlocker,
   brokenReferences,
   cancelPackage,

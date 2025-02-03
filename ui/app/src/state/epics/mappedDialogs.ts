@@ -34,7 +34,6 @@ import {
   closeSingleFileUploadDialog,
   closeUploadDialog,
   closeWidgetDialog,
-  closeWorkflowCancellationDialog,
   historyDialogUpdate,
   showChangeContentTypeDialog,
   showCompareVersionsDialog,
@@ -49,17 +48,14 @@ import {
   showPreviewDialog,
   showPublishDialog,
   showPublishingStatusDialog,
-  showRejectDialog,
   showSingleFileUploadDialog,
   showUploadDialog,
   showWidgetDialog,
-  showWorkflowCancellationDialog,
   updateCopyDialog,
   updateCreateFileDialog,
   updateCreateFolderDialog,
   updatePreviewDialog,
   updatePublishDialog,
-  updateRejectDialog,
   updateSingleFileUploadDialog,
   updateWidgetDialog
 } from '../actions/dialogs';
@@ -76,8 +72,6 @@ const dialogsMap = {
   [showNewContentDialog.type]: 'craftercms.components.NewContentDialog',
   [showChangeContentTypeDialog.type]: 'craftercms.components.ChangeContentTypeDialog',
   [showDependenciesDialog.type]: 'craftercms.components.DependenciesDialog',
-  [showWorkflowCancellationDialog.type]: 'craftercms.components.WorkflowCancellationDialog',
-  [showRejectDialog.type]: 'craftercms.components.RejectDialog',
   [showCreateFolderDialog.type]: 'craftercms.components.CreateFolderDialog',
   [showCreateFileDialog.type]: 'craftercms.components.CreateFileDialog',
   [showCopyDialog.type]: 'craftercms.components.CopyDialog',
@@ -104,8 +98,6 @@ const showDialogsEpics: CrafterCMSEpic[] = [
         showNewContentDialog.type,
         showChangeContentTypeDialog.type,
         showDependenciesDialog.type,
-        showWorkflowCancellationDialog.type, // TODO: testing pending
-        showRejectDialog.type, // TODO: testing pending
         showCreateFolderDialog.type,
         showCreateFileDialog.type,
         showCopyDialog.type,
@@ -148,7 +140,6 @@ const showDialogsEpics: CrafterCMSEpic[] = [
     action$.pipe(
       ofType(
         updatePublishDialog.type,
-        updateRejectDialog.type,
         updateCreateFolderDialog.type,
         updateCreateFileDialog.type,
         updateCopyDialog.type,
@@ -179,7 +170,6 @@ const showDialogsEpics: CrafterCMSEpic[] = [
         closeNewContentDialog.type,
         closeChangeContentTypeDialog.type,
         closeDependenciesDialog.type,
-        closeWorkflowCancellationDialog.type,
         closeCreateFolderDialog.type,
         closeCreateFileDialog.type,
         closeCopyDialog.type,

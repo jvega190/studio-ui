@@ -60,7 +60,6 @@ const ItemMenu = lazy(() => import('../ItemActionsMenu'));
 const ItemMegaMenu = lazy(() => import('../ItemMegaMenu'));
 const AuthMonitor = lazy(() => import('../AuthMonitor'));
 const UIBlocker = lazy(() => import('../UIBlocker'));
-const WidgetDialog = lazy(() => import('../WidgetDialog'));
 const CodeEditorDialog = lazy(() => import('../CodeEditorDialog'));
 const BrokenReferencesDialog = lazy(() => import('../BrokenReferencesDialog'));
 const PublishingPackageReviewDialog = lazy(() => import('../PublishPackageReviewDialog/PublishingPackageReviewDialog'));
@@ -493,8 +492,6 @@ function GlobalDialogManager() {
         />
         {/* endregion */}
 
-
-
         {/* region Rename Asset */}
         <RenameAssetDialog
           {...state.renameAsset}
@@ -545,9 +542,6 @@ function GlobalDialogManager() {
         />*/}
         {/* endregion */}
 
-        />
-        {/* endregion */}
-
         {/* region Minimized Tabs */}
         {Object.values(state.minimizedTabs).map((tab) => (
           <MinimizedBar
@@ -561,40 +555,40 @@ function GlobalDialogManager() {
         ))}
         {/* endregion */}
 
-      {/* region Cancel Package Dialog */}
-      <CancelPackageDialog
-        {...state.cancelPackage}
-        onClose={createCallback(state.cancelPackage.onClose, dispatch)}
-        onClosed={createCallback(state.cancelPackage.onClosed, dispatch)}
-        onSuccess={createCallback(state.cancelPackage.onSuccess, dispatch)}
-      />
-      {/* endregion */}
+        {/* region Cancel Package Dialog */}
+        <CancelPackageDialog
+          {...state.cancelPackage}
+          onClose={createCallback(state.cancelPackage.onClose, dispatch)}
+          onClosed={createCallback(state.cancelPackage.onClosed, dispatch)}
+          onSuccess={createCallback(state.cancelPackage.onSuccess, dispatch)}
+        />
+        {/* endregion */}
 
-      {/* region Bulk Cancel Package Dialog */}
-      <BulkCancelPackageDialog
-        {...state.bulkCancelPackage}
-        onClose={createCallback(state.bulkCancelPackage.onClose, dispatch)}
-        onClosed={createCallback(state.bulkCancelPackage.onClosed, dispatch)}
-        onSuccess={createCallback(state.bulkCancelPackage.onSuccess, dispatch)}
-      />
-      {/* endregion */}
+        {/* region Bulk Cancel Package Dialog */}
+        <BulkCancelPackageDialog
+          {...state.bulkCancelPackage}
+          onClose={createCallback(state.bulkCancelPackage.onClose, dispatch)}
+          onClosed={createCallback(state.bulkCancelPackage.onClosed, dispatch)}
+          onSuccess={createCallback(state.bulkCancelPackage.onSuccess, dispatch)}
+        />
+        {/* endregion */}
 
-      {/* region Package Details Dialog */}
-      <PackageDetailsDialog
-        {...state.packageDetails}
-        onClose={createCallback(state.packageDetails.onClose, dispatch)}
-        onClosed={createCallback(state.packageDetails.onClosed, dispatch)}
-      />
-      {/* endregion */}
+        {/* region Package Details Dialog */}
+        <PackageDetailsDialog
+          {...state.packageDetails}
+          onClose={createCallback(state.packageDetails.onClose, dispatch)}
+          onClosed={createCallback(state.packageDetails.onClosed, dispatch)}
+        />
+        {/* endregion */}
 
-      {/* region View Packages Dialog */}
-      <ViewPackagesDialog
-        {...state.viewPackages}
-        onClose={createCallback(state.viewPackages.onClose, dispatch)}
-        onClosed={createCallback(state.viewPackages.onClosed, dispatch)}
-        onContinue={createCallback(state.viewPackages.onContinue, dispatch)}
-      />
-      {/* endregion */}
+        {/* region View Packages Dialog */}
+        <ViewPackagesDialog
+          {...state.viewPackages}
+          onClose={createCallback(state.viewPackages.onClose, dispatch)}
+          onClosed={createCallback(state.viewPackages.onClosed, dispatch)}
+          onContinue={createCallback(state.viewPackages.onContinue, dispatch)}
+        />
+        {/* endregion */}
 
         {/* region UIBlocker */}
         <UIBlocker {...state.uiBlocker} />
