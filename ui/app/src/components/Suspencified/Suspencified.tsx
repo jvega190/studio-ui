@@ -22,7 +22,7 @@ type SuspencifiedProps = PropsWithChildren<{
   suspenseProps?: SuspenseProps;
   loadingStateProps?: LoadingStateProps;
   errorBoundaryProps?: ErrorBoundaryProps;
-  fallback: SuspenseProps['fallback'];
+  fallback?: SuspenseProps['fallback'];
 }>;
 
 export function Suspencified(props: SuspencifiedProps) {

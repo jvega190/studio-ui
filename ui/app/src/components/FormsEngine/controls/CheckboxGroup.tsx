@@ -88,7 +88,8 @@ export function CheckboxGroup(props: CheckboxGroupProps) {
   //  - Min selection
   const options = useKVPLoader(
     useActiveSiteId(),
-    field.properties.datasource?.value, // Checkbox Group supports only 1 datasource.
+    // Checkbox Group supports only 1 datasource.
+    useMemo(() => [field.properties.datasource?.value as string], [field.properties.datasource?.value]),
     contentType.dataSources
   )?.[0].items;
   const finalOptions = useMemo(() => {

@@ -51,17 +51,13 @@ function getTinyMceInitOptions(
   rteConfig: GlobalState['preview']['richTextEditor'], // GlobalState['preview']['richTextEditor']['']['']
   setup?: Editor['props']['init']['setup']
 ): Editor['props']['init'] {
-  const setupId: string = field.properties?.rteConfiguration?.value ?? 'generic';
+  const setupId: string = (field.properties?.rteConfiguration?.value as string) ?? 'generic';
   const tinymceOptions: Editor['props']['init'] = (
     rteConfig[setupId] ??
     Object.values(rteConfig)[0] ?? { id: '', tinymceOptions: {} }
   )?.tinymceOptions;
   const controlProps: Partial<Editor['props']['init']> = {};
-  if (field.properties?.forceRootBlockPTag === false) {
-    // FE2 TODO: Can't support anymore, tiny forces root block, one most be specified if config option is provide
-    controlProps.forced_root_block = 'div';
-  }
-  if (field.properties?.enableSpellCheck === false) {
+  if (field.properties?.enableSpellCheck?.value === false) {
     controlProps.browser_spellcheck = true;
   }
   const external: LookupTable<string> = {
@@ -394,7 +390,7 @@ function getTinyMceInitOptions(
 export function RichTextEditor(props: RichTextEditorProps) {
   const { field, value, setValue, readonly } = props;
   const rteConfig = useRTEConfig();
-  const editorRef = useRef<Editor>();
+  const editorRef = useRef<Editor>(undefined);
   const hasReceivedFocusRef = useRef(false);
 
   // region Initialize RTE config FE2 TODO: Move elsewhere

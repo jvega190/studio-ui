@@ -338,7 +338,7 @@ function NodeSelector(props: NodeSelectorProps) {
   const [pickerDialogOpen, setPickerDialogOpen] = useState(false);
   const [createPickerChoice, setCreatePickerChoice] = useState<CreateDataSourcePickerData>(null);
   const dispatch = useDispatch();
-  const addMenuButtonRef = useRef<HTMLButtonElement>();
+  const addMenuButtonRef = useRef<HTMLButtonElement>(undefined);
   const contentTypes = useContentTypes();
   const siteId = useActiveSiteId();
   // const saveRef = useRef(setValue);

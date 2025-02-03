@@ -40,7 +40,7 @@ export interface FormsEngineFormApiContextProps {
 }
 
 export interface FormRequirementsResponse
-  extends Pick<FormsEngineItemMetaContextProps, 'sourceMap' | 'pathInSite' | 'contentType'>,
+  extends Pick<FormsEngineItemMetaContextProps, 'sourceMap' | 'pathInSite' | 'contentType' | 'contentObject'>,
     FormsEngineEditContextProps {
   item: DetailedItem;
   contentObject: LookupTable<unknown>;
@@ -56,6 +56,7 @@ export interface FormsEngineItemMetaContextProps {
   sourceMap: FormsEngineSourceMap;
   pathInSite: string;
   contentType: ContentType;
+  contentObject: LookupTable<unknown>;
 }
 
 export interface FormsEngineEditContextProps {

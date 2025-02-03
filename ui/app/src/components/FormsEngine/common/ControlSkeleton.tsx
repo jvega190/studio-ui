@@ -24,7 +24,7 @@ export function ControlSkeleton({ label }: { label: string }) {
     <>
       <Box display="flex" justifyContent="space-between" alignItems="center" height={30}>
         <Box display="flex" alignItems="center" className="space-x">
-          {<FormLabel component="div">{label}</FormLabel> ?? <Skeleton variant="text" width={100} />}
+          {label ? <FormLabel component="div">{label}</FormLabel> : <Skeleton variant="text" width={100} />}
           <Skeleton variant="circular" />
         </Box>
         <Box display="flex" alignItems="center" className="space-x">
