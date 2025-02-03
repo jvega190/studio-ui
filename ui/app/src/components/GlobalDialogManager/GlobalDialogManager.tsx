@@ -50,34 +50,22 @@ const ViewVersionDialog = lazy(() => import('../ViewVersionDialog'));
 const CompareVersionsDialog = lazy(() => import('../CompareVersionsDialog'));
 const RejectDialog = lazy(() => import('../RejectDialog'));
 const EditSiteDialog = lazy(() => import('../EditSiteDialog'));
-const ConfirmDialog = lazy(() => import('../ConfirmDialog'));
 const ErrorDialog = lazy(() => import('../ErrorDialog'));
-const ChangeContentTypeDialog = lazy(() => import('../ChangeContentTypeDialog'));
 const HistoryDialog = lazy(() => import('../HistoryDialog'));
-const DependenciesDialog = lazy(() => import('../DependenciesDialog/DependenciesDialog'));
 const DeleteDialog = lazy(() => import('../DeleteDialog'));
 const WorkflowCancellationDialog = lazy(() => import('../WorkflowCancellationDialog'));
 const LegacyFormDialog = lazy(() => import('../LegacyFormDialog'));
-const CreateFolderDialog = lazy(() => import('../CreateFolderDialog'));
-const CopyItemsDialog = lazy(() => import('../CopyDialog'));
-const CreateFileDialog = lazy(() => import('../CreateFileDialog'));
-const BulkUploadDialog = lazy(() => import('../UploadDialog'));
-const SingleFileUploadDialog = lazy(() => import('../SingleFileUploadDialog'));
-const PreviewDialog = lazy(() => import('../PreviewDialog'));
 const ItemMenu = lazy(() => import('../ItemActionsMenu'));
 const ItemMegaMenu = lazy(() => import('../ItemMegaMenu'));
 const AuthMonitor = lazy(() => import('../AuthMonitor'));
-const PublishingStatusDialog = lazy(() => import('../PublishingStatusDialog'));
 const UIBlocker = lazy(() => import('../UIBlocker'));
-const PathSelectionDialog = lazy(() => import('../PathSelectionDialog'));
 const UnlockPublisherDialog = lazy(() => import('../UnlockPublisherDialog'));
-const WidgetDialog = lazy(() => import('../WidgetDialog'));
 const CodeEditorDialog = lazy(() => import('../CodeEditorDialog'));
 const BrokenReferencesDialog = lazy(() => import('../BrokenReferencesDialog'));
 // endregion
 
 // @formatter:off
-function createCallback(action: StandardAction, dispatch: Dispatch): (output?: unknown) => void {
+export function createCallback(action: StandardAction, dispatch: Dispatch): (output?: unknown) => void {
   // prettier-ignore
   return action ? (output: any) => {
     const hasPayload = Boolean(action.payload);
@@ -146,15 +134,6 @@ function DialogStackItemContainer(props: DialogStackItem<EnhancedDialogProps>) {
     [component]
   );
 
-  // Check if any of the props is an action
-  const dialogProps: DialogStackItem<EnhancedDialogProps>['props'] = { ...props.props };
-  Object.entries(props?.props ?? {}).forEach(([key, value]) => {
-    // TODO: By just having a type, can I say it is an action?
-    if (value.type) {
-      dialogProps[key] = createCallback(value, dispatch);
-    }
-  });
-
   const onClose: EnhancedDialogProps['onClose'] = () => {
     dispatch(updateDialogState({ id, props: { open: false } }));
   };
@@ -202,7 +181,7 @@ function DialogStackItemContainer(props: DialogStackItem<EnhancedDialogProps>) {
   };
   return (
     <Dialog
-      {...dialogProps}
+      {...props?.props}
       onClose={onClose}
       onMaximize={onMaximize}
       onMinimize={onMinimize}
@@ -509,15 +488,6 @@ function GlobalDialogManager() {
           onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
             createCallback(state.editSite.onClose, dispatch)
           )}
-        />
-        {/* endregion */}
-
-        {/* region Path Selection */}
-        <PathSelectionDialog
-          {...state.pathSelection}
-          onClose={createCallback(state.pathSelection.onClose, dispatch)}
-          onClosed={createCallback(state.pathSelection.onClosed, dispatch)}
-          onOk={createCallback(state.pathSelection.onOk, dispatch)}
         />
         {/* endregion */}
 

@@ -36,26 +36,23 @@ import {
   closeWidgetDialog,
   closeWorkflowCancellationDialog,
   historyDialogUpdate,
-  itemMegaMenuClosed,
   showChangeContentTypeDialog,
   showCompareVersionsDialog,
   showConfirmDialog,
   showCopyDialog,
   showCreateFileDialog,
   showCreateFolderDialog,
-  showDeleteDialog,
   showDependenciesDialog,
   showHistoryDialog,
-  showItemMegaMenu,
   showNewContentDialog,
   showPathSelectionDialog,
   showPreviewDialog,
   showPublishDialog,
   showPublishingStatusDialog,
   showRejectDialog,
-  showRenameAssetDialog,
   showSingleFileUploadDialog,
   showUploadDialog,
+  showWidgetDialog,
   showWorkflowCancellationDialog,
   updateCopyDialog,
   updateCreateFileDialog,
@@ -70,6 +67,8 @@ import { map, withLatestFrom } from 'rxjs/operators';
 import { popDialog, pushDialog, updateDialogState } from '../actions/dialogStack';
 import { generateDialogId } from '../../utils/dialogs';
 import { updatePublishingStatus } from '../actions/publishingStatus';
+import { DialogStackItem, StandardAction } from '../../models';
+import { createCallback, EnhancedDialogProps } from '../../components';
 
 const dialogsMap = {
   [showConfirmDialog.type]: 'craftercms.components.ConfirmDialog',
@@ -97,7 +96,7 @@ const allowFullScreenDialogs = [showPreviewDialog.type];
 
 const showDialogsEpics: CrafterCMSEpic[] = [
   // region showDialogs
-  (action$, state$) =>
+  (action$, state$, { store }) =>
     action$.pipe(
       ofType(
         showConfirmDialog.type,
@@ -118,22 +117,27 @@ const showDialogsEpics: CrafterCMSEpic[] = [
         showPublishingStatusDialog.type,
         // showCompareVersionsDialog.type, // TODO: versionsBranch undefined.
         // showRenameAssetDialog.type
-        // showPathSelectionDialog.type // TODO: this is not an EnhancedDialog, so the 'onTransitionExited' is not being called.
-        showDeleteDialog.type
+        showPathSelectionDialog.type
+        // showDeleteDialog.type
       ),
       withLatestFrom(state$),
       map(([{ payload, type }]) => {
-        if (type === showPathSelectionDialog.type) {
-          console.log('id', generateDialogId(type));
-        }
+        // const dispatch = useDispatch();
+
+        const dialogProps: DialogStackItem<EnhancedDialogProps>['props'] = { ...payload };
+        Object.entries((payload as EnhancedDialogProps) ?? {}).forEach(([key, value]) => {
+          // TODO: By just having a type, can I say it is an action?
+          if (value.type) {
+            dialogProps[key] = createCallback(value as StandardAction, store.dispatch);
+          }
+        });
+
         return pushDialog({
           id: generateDialogId(type),
           component: dialogsMap[type],
           allowMinimize: allowMinimizeDialogs.includes(type),
           allowFullScreen: allowFullScreenDialogs.includes(type),
-          props: {
-            ...payload
-          }
+          props: dialogProps
         });
       })
     ),

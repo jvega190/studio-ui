@@ -15,7 +15,7 @@
  */
 
 import React, { useState } from 'react';
-import Dialog from '@mui/material/Dialog';
+import Dialog, { DialogProps } from '@mui/material/Dialog';
 import { makeStyles } from 'tss-react/mui';
 import { withoutIndex } from '../../utils/path';
 import StandardAction from '../../models/StandardAction';
@@ -47,6 +47,7 @@ export interface PathSelectionDialogBaseProps {
   allowSwitchingRootPath?: boolean;
   showCreateFolderOption?: boolean;
   stripXmlIndex?: boolean;
+  onTransitionExited?: DialogProps['onTransitionExited'];
 }
 
 export interface PathSelectionDialogCallbacks {
@@ -65,7 +66,13 @@ export interface PathSelectionDialogStateProps extends PathSelectionDialogBasePr
 
 export function PathSelectionDialog(props: PathSelectionDialogProps) {
   return (
-    <Dialog open={props.open} onClose={props.onClose} fullWidth maxWidth="sm">
+    <Dialog
+      open={props.open}
+      onClose={props.onClose}
+      fullWidth
+      maxWidth="sm"
+      onTransitionExited={props.onTransitionExited}
+    >
       <PathSelectionDialogContainer {...props} />
     </Dialog>
   );
@@ -183,9 +190,9 @@ export function PathSelectionDialogContainer(props: PathSelectionDialogProps) {
       <CreateFolderDialog
         title={<FormattedMessage id="newFolder.title" defaultMessage="Create a New Folder" />}
         path={currentPath}
-        isSubmitting={createFolderState.isSubmitting}
-        hasPendingChanges={createFolderState.hasPendingChanges}
-        isMinimized={createFolderState.isMinimized}
+        isSubmitting={createFolderState?.isSubmitting}
+        hasPendingChanges={createFolderState?.hasPendingChanges}
+        isMinimized={createFolderState?.isMinimized}
         onWithPendingChangesCloseRequest={onWithPendingChangesCloseRequest}
         open={openCreateFolderDialog}
         onClose={onCloseCreateFolder}

@@ -26,10 +26,10 @@ import codeEditor from './codeEditor';
 import workflowCancellation from './workflowCancellation';
 import reject from './reject';
 import editSite from './editSite';
-import pathSelection from './pathSelection';
 import itemMenu from './itemMenu';
 import itemMegaMenu from './itemMegaMenu';
 import launcher from './launcher';
+import publishingStatus from './publishingStatus';
 import unlockPublisher from './unlockPublisher';
 import uiBlocker from './uiBlocker';
 import renameAsset from './renameAsset';
@@ -48,10 +48,10 @@ export default combineReducers({
   reject,
   editSite,
   renameAsset,
-  pathSelection,
   itemMenu,
   itemMegaMenu,
   launcher,
+  publishingStatus,
   unlockPublisher,
   uiBlocker,
   brokenReferences
