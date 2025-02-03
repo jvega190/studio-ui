@@ -16,8 +16,7 @@
 
 import { PublishingStatus, PublishingStatusCodes } from '../../models/Publishing';
 import { defineMessages, IntlShape } from 'react-intl';
-import { capitalize } from '@mui/material';
-import { nou } from '../../utils/object';
+import { nnou, nou } from '../../utils/object';
 
 export const publishingStatusMessages = defineMessages({
   ready: {
@@ -53,18 +52,9 @@ export const publishingStatusMessages = defineMessages({
     id: 'words.unknown',
     defaultMessage: 'Unknown'
   },
-  processingMessage: {
-    id: 'publishingStatusMessages.processingMessage',
-    defaultMessage: 'Preparing items for publishing. {numberOfItems} out of {totalItems} processed so far.'
-  },
   publishingMessage: {
     id: 'publishingStatusMessages.publishingMessage',
-    defaultMessage:
-      'Publishing items. Published {numberOfItems} {numberOfItems, plural, one {item} other {items}} out of {totalItems} to {publishingTarget}. Package id is {submissionId}.'
-  },
-  queuedMessage: {
-    id: 'publishingStatusMessages.queuedMessage',
-    defaultMessage: 'Items are scheduled for publishing.'
+    defaultMessage: 'Publishing items. Package id is {submissionId}.'
   },
   stoppedMessage: {
     id: 'publishingStatusMessages.stoppedMessage',
@@ -120,56 +110,50 @@ export const publishingStatusMessages = defineMessages({
   }
 });
 
-export function getPublishingStatusText(
-  status: Pick<PublishingStatus, 'status' | 'enabled'>,
-  formatMessage: IntlShape['formatMessage']
-): string {
+export function getPublishingStatusState(status: PublishingStatus): string {
+  let publishingStatusState: string;
+  if (nnou(status.currentTask)) {
+    publishingStatusState = 'publishing';
+  } else if (status.enabled) {
+    publishingStatusState = 'ready';
+  } else if (!status.enabled) {
+    publishingStatusState = 'stopped';
+  }
+  return publishingStatusState;
+}
+
+export function getPublishingStatusText(status: PublishingStatus, formatMessage: IntlShape['formatMessage']): string {
   if (!status.enabled) {
     return formatMessage(publishingStatusMessages.disabled);
   }
-  return formatMessage(publishingStatusMessages[status.status] ?? publishingStatusMessages.unknown);
+  const publishingStatusState = getPublishingStatusState(status);
+  return formatMessage(publishingStatusMessages[publishingStatusState] ?? publishingStatusMessages.unknown);
 }
 
-export function getPublishingStatusMessage(
-  props: Pick<
-    PublishingStatus,
-    'status' | 'numberOfItems' | 'totalItems' | 'publishingTarget' | 'submissionId' | 'enabled'
-  >,
-  formatMessage: IntlShape['formatMessage']
-): string {
+export function getPublishingStatusMessage(props: PublishingStatus, formatMessage: IntlShape['formatMessage']): string {
   if (nou(props.enabled)) {
     return formatMessage({ defaultMessage: 'The publisher status details did not load correctly.' });
-  } else if (!props.enabled) {
-    return formatMessage(publishingStatusMessages.disabledMessage);
   }
-  switch (props.status) {
+
+  const publishingStatusState = getPublishingStatusState(props);
+  switch (publishingStatusState) {
     case 'ready':
       return formatMessage(publishingStatusMessages.ready);
-    case 'processing':
-      return formatMessage(publishingStatusMessages.processingMessage, props);
     case 'publishing':
-      return formatMessage(publishingStatusMessages.publishingMessage, props);
-    case 'queued':
-      return formatMessage(publishingStatusMessages.queuedMessage);
+      return formatMessage(publishingStatusMessages.publishingMessage, {
+        submissionId: props.currentTask?.taskId?.packageId ?? 12
+      });
     case 'stopped':
       return formatMessage(publishingStatusMessages.stoppedMessage);
-    case 'error':
-      return formatMessage(publishingStatusMessages.errorMessage);
-    case 'readyWithErrors':
-      return formatMessage(publishingStatusMessages.readyWithErrors);
     default:
-      return capitalize(props.status);
+      return formatMessage(publishingStatusMessages.stoppedMessage);
   }
   // region Compiler hints
   // Var below is for typescript to complain if we ever add/remove codes.
   // eslint-disable-next-line no-unreachable,@typescript-eslint/no-unused-vars
   const control: Record<PublishingStatusCodes, any> = {
-    error: undefined,
-    processing: undefined,
     publishing: undefined,
-    queued: undefined,
     ready: undefined,
-    readyWithErrors: undefined,
     stopped: undefined
   };
   // endregion

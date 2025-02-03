@@ -445,6 +445,18 @@ export function removeStoredWidgetsAccordion(siteIdentifier: string, user: strin
   window.localStorage.removeItem(`craftercms.${user}.widgetsAccordion.${siteIdentifier}.${id}`);
 }
 
+export function setPublishingPackagePreferredView(username: string, value: 'tree' | 'list') {
+  window.localStorage.setItem(`craftercms.${username}.publishingPackagePreferredView`, value);
+}
+
+export function getPublishingPackagePreferredView(username: string): 'tree' | 'list' {
+  return window.localStorage.getItem(`craftercms.${username}.publishingPackagePreferredView`) as 'tree' | 'list';
+}
+
+export function removePublishingPackagePreferredView(username: string) {
+  window.localStorage.removeItem(`craftercms.${username}.publishingPackagePreferredView`);
+}
+
 export function pickShowContentFormAction(
   useLegacy: boolean,
   newProps: FormsEngineProps,

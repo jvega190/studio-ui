@@ -71,7 +71,7 @@ export function beforeWrite$<T extends any = 'continue', S extends any = never>(
     switchMap(() => fetchSandboxItem(site, path)),
     switchMap((item) => {
       if (item.stateMap.submitted || item.stateMap.scheduled) {
-        post(requestWorkflowCancellationDialog({ path, siteId: site }));
+        post(requestWorkflowCancellationDialog({ item, siteId: site }));
         return message$.pipe(
           filter((e) => e.type === requestWorkflowCancellationDialogOnResult.type),
           take(1),

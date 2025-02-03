@@ -16,19 +16,19 @@
 
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import Button from '@mui/material/Button';
-import React, { useState } from 'react';
+import React from 'react';
 import Popover from '@mui/material/Popover';
 import { defineMessages, useIntl } from 'react-intl';
 import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Radio from '@mui/material/Radio';
 import { CurrentFilters } from '../../models/Publishing';
-import SearchIcon from '@mui/icons-material/SearchRounded';
 import { Checkbox, FormGroup, Theme } from '@mui/material';
 import Box from '@mui/material/Box';
 import { SxProps } from '@mui/system';
+import { packageStatesMap } from '../PublishPackageReviewDialog/utils';
+import { allFiltersState } from './PublishingQueue';
 
 const messages: any = defineMessages({
   pathExpression: {
@@ -47,25 +47,45 @@ const messages: any = defineMessages({
     id: 'publishingDashboard.all',
     defaultMessage: 'All'
   },
-  READY_FOR_LIVE: {
-    id: 'publishingDashboard.READY_FOR_LIVE',
+  ready: {
+    id: 'publishingDashboard.ready',
     defaultMessage: 'Ready for Live'
   },
-  PROCESSING: {
-    id: 'publishingDashboard.PROCESSING',
+  processing: {
+    id: 'publishingDashboard.processing',
     defaultMessage: 'Processing'
   },
-  COMPLETED: {
-    id: 'publishingDashboard.COMPLETED',
+  liveSuccess: {
+    id: 'publishingDashboard.liveSuccess',
+    defaultMessage: 'Live Success'
+  },
+  liveCompletedWithErrors: {
+    id: 'publishingDashboard.liveCompletedWithErrors',
+    defaultMessage: 'Live Completed with Errors'
+  },
+  liveFailed: {
+    id: 'publishingDashboard.liveFailed',
+    defaultMessage: 'Live Failed'
+  },
+  stagingSuccess: {
+    id: 'publishingDashboard.stagingSuccess',
+    defaultMessage: 'Staging Success'
+  },
+  stagingCompletedWithErrors: {
+    id: 'publishingDashboard.stagingCompletedWithErrors',
+    defaultMessage: 'Staging Completed with Errors'
+  },
+  stagingFailed: {
+    id: 'publishingDashboard.stagingFailed',
+    defaultMessage: 'Staging Failed'
+  },
+  completed: {
+    id: 'publishingDashboard.completed',
     defaultMessage: 'Completed'
   },
-  CANCELLED: {
-    id: 'publishingDashboard.CANCELLED',
+  cancelled: {
+    id: 'publishingDashboard.cancelled',
     defaultMessage: 'Cancelled'
-  },
-  BLOCKED: {
-    id: 'publishingDashboard.BLOCKED',
-    defaultMessage: 'Blocked'
   }
 });
 
@@ -75,16 +95,12 @@ interface FilterDropdownProps {
   sx?: SxProps<Theme>;
   currentFilters: CurrentFilters;
   filters: any;
-
   handleFilterChange(event: any): any;
-
-  handleEnterKey(path: string): any;
 }
 
 export function FilterDropdown(props: FilterDropdownProps) {
   const [anchorEl, setAnchorEl] = React.useState(null);
-  const { text, className, handleFilterChange, handleEnterKey, currentFilters, filters, sx } = props;
-  const [path, setPath] = useState('');
+  const { text, className, handleFilterChange, currentFilters, filters, sx } = props;
   const { formatMessage } = useIntl();
 
   const handleClick = (event: any) => {
@@ -93,12 +109,6 @@ export function FilterDropdown(props: FilterDropdownProps) {
 
   const handleClose = () => {
     setAnchorEl(null);
-  };
-
-  const onKeyPress = (event: React.KeyboardEvent, path: string) => {
-    if (event.charCode === 13) {
-      handleEnterKey(path);
-    }
   };
 
   return (
@@ -131,68 +141,14 @@ export function FilterDropdown(props: FilterDropdownProps) {
             })}
           >
             <Typography variant="body1">
-              <strong>{formatMessage(messages.pathExpression)}</strong>
-            </Typography>
-          </Box>
-          <Box
-            sx={{
-              padding: '10px',
-              position: 'relative'
-            }}
-            display="flex"
-            alignItems="center"
-          >
-            <Box
-              sx={{
-                width: (theme) => theme.spacing(7),
-                color: '#828282',
-                height: '41px;',
-                position: 'absolute',
-                pointerEvents: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 1
-              }}
-            >
-              <SearchIcon />
-            </Box>
-            <TextField
-              id="path"
-              name="path"
-              sx={{
-                '& input': {
-                  paddingLeft: '50px'
-                }
-              }}
-              slotProps={{
-                inputLabel: { shrink: true }
-              }}
-              fullWidth
-              placeholder="e.g. /SOME/PATH/*"
-              onChange={(event) => setPath(event.target.value)}
-              onKeyPress={(event) => onKeyPress(event, path)}
-              value={path}
-            />
-          </Box>
-        </section>
-        <section>
-          <Box
-            component="header"
-            sx={(theme) => ({
-              background: theme.palette.mode === 'dark' ? theme.palette.background.default : theme.palette.grey['100'],
-              padding: '10px'
-            })}
-          >
-            <Typography variant="body1">
               <strong>{formatMessage(messages.environment)}</strong>
             </Typography>
           </Box>
           <Box sx={{ width: '100%', padding: '5px 15px 20px 15px' }}>
             <RadioGroup
               aria-label={formatMessage(messages.environment)}
-              name="environment"
-              value={currentFilters.environment}
+              name="target"
+              value={currentFilters.target}
               onChange={handleFilterChange}
             >
               <FormControlLabel value="" control={<Radio color="primary" />} label={formatMessage(messages.all)} />
@@ -220,9 +176,11 @@ export function FilterDropdown(props: FilterDropdownProps) {
                     color="primary"
                     value=""
                     indeterminate={
-                      currentFilters.state.length > 0 && currentFilters.state.length !== filters.states.length
+                      currentFilters.states !== null &&
+                      currentFilters.states !== 0 &&
+                      currentFilters.states !== allFiltersState
                     }
-                    checked={currentFilters.state.length === filters.states.length}
+                    checked={currentFilters.states === allFiltersState}
                     onChange={handleFilterChange}
                   />
                 }
@@ -231,21 +189,23 @@ export function FilterDropdown(props: FilterDropdownProps) {
           </Box>
           <Box sx={{ width: '100%', padding: '5px 15px 20px 15px' }}>
             <FormGroup>
-              {filters.states.map((filter: string, index: number) => (
-                <FormControlLabel
-                  key={index}
-                  value={filter}
-                  control={
-                    <Checkbox
-                      color="primary"
-                      value={filter}
-                      checked={currentFilters.state.includes(filter)}
-                      onChange={handleFilterChange}
-                    />
-                  }
-                  label={formatMessage(messages[filter])}
-                />
-              ))}
+              {Object.entries(packageStatesMap).map(([key, { mask, validation }]) => {
+                return (
+                  <FormControlLabel
+                    key={key}
+                    value={mask}
+                    control={
+                      <Checkbox
+                        color="primary"
+                        value={mask}
+                        checked={validation(currentFilters.states)}
+                        onChange={handleFilterChange}
+                      />
+                    }
+                    label={formatMessage(messages[key])}
+                  />
+                );
+              })}
             </FormGroup>
           </Box>
         </section>

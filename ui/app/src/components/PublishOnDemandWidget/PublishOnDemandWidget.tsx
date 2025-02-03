@@ -29,7 +29,7 @@ import PublishOnDemandForm from '../PublishOnDemandForm';
 import { PublishFormData, PublishOnDemandMode } from '../../models/Publishing';
 import { nnou, nou } from '../../utils/object';
 import Typography from '@mui/material/Typography';
-import { bulkGoLive, fetchPublishingTargets, publishAll, publishByCommits } from '../../services/publishing';
+import { fetchPublishingTargets, publish } from '../../services/publishing';
 import { showSystemNotification } from '../../state/actions/system';
 import { useDispatch } from 'react-redux';
 import {
@@ -88,17 +88,20 @@ const messages = defineMessages({
 const initialPublishStudioFormData = {
   path: '',
   publishingTarget: '',
+  title: '',
   comment: ''
 };
 
 const initialPublishGitFormData = {
   commitIds: '',
   publishingTarget: '',
+  title: '',
   comment: ''
 };
 
 const initialPublishEverythingFormData = {
   publishingTarget: '',
+  title: '',
   comment: ''
 };
 
@@ -131,26 +134,26 @@ export function PublishOnDemandWidget(props: PublishOnDemandWidgetProps) {
   const [initialPublishingTarget, setInitialPublishingTarget] = useState(null);
   const [publishingTargets, setPublishingTargets] = useState(null);
   const [publishingTargetsError, setPublishingTargetsError] = useState(null);
-  const { bulkPublishCommentRequired, publishByCommitCommentRequired, publishEverythingCommentRequired } = useSelection(
-    (state) => state.uiConfig.publishing
-  );
   const [publishGitFormData, setPublishGitFormData] = useSpreadState<PublishFormData>(initialPublishGitFormData);
   const publishGitFormValid =
     !isBlank(publishGitFormData.publishingTarget) &&
-    (!publishByCommitCommentRequired || !isBlank(publishGitFormData.comment)) &&
+    !isBlank(publishGitFormData.title) &&
+    !isBlank(publishGitFormData.comment) &&
     publishGitFormData.commitIds.replace(/\s/g, '') !== '';
   const [publishStudioFormData, setPublishStudioFormData] =
     useSpreadState<PublishFormData>(initialPublishStudioFormData);
   const publishStudioFormValid =
     !isBlank(publishStudioFormData.publishingTarget) &&
-    (!bulkPublishCommentRequired || !isBlank(publishStudioFormData.comment)) &&
+    !isBlank(publishStudioFormData.title) &&
+    !isBlank(publishStudioFormData.comment) &&
     publishStudioFormData.path.replace(/\s/g, '') !== '';
   const [publishEverythingFormData, setPublishEverythingFormData] = useSpreadState<PublishFormData>(
     initialPublishEverythingFormData
   );
   const publishEverythingFormValid =
     publishEverythingFormData.publishingTarget !== '' &&
-    (!publishEverythingCommentRequired || !isBlank(publishEverythingFormData.comment));
+    !isBlank(publishEverythingFormData.comment) &&
+    !isBlank(publishEverythingFormData.title);
   const fnRefs = useUpdateRefs({ onSubmittingAndOrPendingChange });
   // region currentFormData
   const currentFormData =
@@ -243,9 +246,15 @@ export function PublishOnDemandWidget(props: PublishOnDemandWidgetProps) {
 
   const onSubmitPublishBy = () => {
     setIsSubmitting(true);
-    const { commitIds, publishingTarget, comment } = publishGitFormData;
+    const { commitIds, publishingTarget, title, comment } = publishGitFormData;
     const ids = commitIds.replace(/\s/g, '').split(',');
-    publishByCommits(siteId, ids, publishingTarget, comment).subscribe({
+
+    publish(siteId, {
+      publishingTarget,
+      commitIds: ids,
+      title,
+      comment
+    }).subscribe({
       next() {
         setIsSubmitting(false);
         dispatch(
@@ -285,8 +294,14 @@ export function PublishOnDemandWidget(props: PublishOnDemandWidgetProps) {
     createCustomDocumentEventListener<{ button: 'ok' | 'cancel' }>(eventId, ({ button }) => {
       if (button === 'ok') {
         setIsSubmitting(true);
-        const { path, publishingTarget, comment } = publishStudioFormData;
-        bulkGoLive(siteId, path, publishingTarget, comment).subscribe({
+        const { path, publishingTarget, title, comment } = publishStudioFormData;
+
+        publish(siteId, {
+          publishingTarget,
+          paths: [{ path, includeChildren: true, includeSoftDeps: false }],
+          title,
+          comment
+        }).subscribe({
           next() {
             setIsSubmitting(false);
             setPublishStudioFormData({ ...initialPublishStudioFormData, publishingTarget });
@@ -314,8 +329,13 @@ export function PublishOnDemandWidget(props: PublishOnDemandWidgetProps) {
 
   const onSubmitPublishEverything = () => {
     setIsSubmitting(true);
-    const { publishingTarget, comment } = publishEverythingFormData;
-    publishAll(siteId, publishingTarget, comment).subscribe({
+    const { publishingTarget, title, comment } = publishEverythingFormData;
+    publish(siteId, {
+      publishingTarget,
+      publishAll: true,
+      title,
+      comment
+    }).subscribe({
       next() {
         setIsSubmitting(false);
         dispatch(
@@ -485,8 +505,6 @@ export function PublishOnDemandWidget(props: PublishOnDemandWidgetProps) {
                 mode={selectedMode}
                 publishingTargets={publishingTargets}
                 publishingTargetsError={publishingTargetsError}
-                bulkPublishCommentRequired={bulkPublishCommentRequired}
-                publishByCommitCommentRequired={publishByCommitCommentRequired}
               />
               {selectedMode !== 'everything' && (
                 <Box sx={{ textAlign: 'center', marginTop: '20px' }}>

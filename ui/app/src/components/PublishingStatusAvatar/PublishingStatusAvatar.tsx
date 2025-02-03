@@ -26,7 +26,8 @@ import { SystemStyleObject } from '@mui/system/styleFunctionSx/styleFunctionSx';
 
 export type PublishingStatusAvatarClassKey = 'root' | 'icon';
 
-export interface PublishingStatusAvatarProps extends Pick<PublishingStatus, 'enabled' | 'status'> {
+export interface PublishingStatusAvatarProps extends Pick<PublishingStatus, 'enabled'> {
+  status: string;
   className?: string;
   classes?: Partial<Record<PublishingStatusAvatarClassKey, string>>;
   sx?: SxProps<Theme>;
@@ -42,11 +43,14 @@ const targets: { [prop in PublishingStatusAvatarProps['variant']]: 'backgroundCo
 export const PublishingStatusAvatar = React.forwardRef<HTMLDivElement, PublishingStatusAvatarProps>((props, ref) => {
   const { status, enabled, variant = 'icon', sx, sxs } = props;
   const stylingTarget = targets[variant] ?? 'backgroundColor';
+
   return (
     <Avatar
       ref={ref}
       variant="circular"
-      className={[props.className, enabled ? status : enabled === false ? 'error' : '', props.classes?.root].join(' ')}
+      className={[props.className, enabled ? status : enabled === false ? 'stopped' : '', props.classes?.root].join(
+        ' '
+      )}
       sx={(theme) => ({
         ...(stylingTarget === 'color' && {
           background: 'none',
@@ -55,23 +59,11 @@ export const PublishingStatusAvatar = React.forwardRef<HTMLDivElement, Publishin
         '&.ready': {
           [stylingTarget]: getPublishingStatusCodeColor('ready', theme)
         },
-        '&.processing': {
-          [stylingTarget]: getPublishingStatusCodeColor('processing', theme)
-        },
         '&.publishing': {
           [stylingTarget]: getPublishingStatusCodeColor('publishing', theme)
         },
-        '&.queued': {
-          [stylingTarget]: getPublishingStatusCodeColor('queued', theme)
-        },
         '&.stopped': {
           [stylingTarget]: getPublishingStatusCodeColor('stopped', theme)
-        },
-        '&.error': {
-          [stylingTarget]: getPublishingStatusCodeColor('error', theme)
-        },
-        '&.readyWithErrors': {
-          [stylingTarget]: getPublishingStatusCodeColor('readyWithErrors', theme)
         },
         ...(sx as SystemStyleObject<Theme>),
         ...(sxs?.root as SystemStyleObject<Theme>)

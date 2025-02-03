@@ -39,22 +39,11 @@ interface PublishOnDemandFormProps {
   setFormData(data: Partial<{ path: string; commitIds: string; environment: string; comment: string }>): void;
   publishingTargets: PublishingTarget[];
   publishingTargetsError: ApiResponse;
-  bulkPublishCommentRequired: boolean;
-  publishByCommitCommentRequired: boolean;
   disabled: boolean;
 }
 
 export function PublishOnDemandForm(props: PublishOnDemandFormProps) {
-  const {
-    mode,
-    formData,
-    disabled,
-    setFormData,
-    publishingTargets,
-    publishingTargetsError,
-    bulkPublishCommentRequired,
-    publishByCommitCommentRequired
-  } = props;
+  const { mode, formData, disabled, setFormData, publishingTargets, publishingTargetsError } = props;
   const { formatMessage } = useIntl();
   const handleFormChange = (name: string) => (event: React.ChangeEvent<{ value: unknown }> | SelectChangeEvent) => {
     const value = event.target.value as string;
@@ -154,6 +143,18 @@ export function PublishOnDemandForm(props: PublishOnDemandFormProps) {
           )}
         </Grid>
         <Grid size={12}>
+          <TextField
+            autoFocus
+            fullWidth
+            sx={{ mb: 1 }}
+            name="packageTitle"
+            value={formData.title}
+            onChange={handleFormChange('title')}
+            label={<FormattedMessage defaultMessage="Package Title" />}
+            required
+          />
+        </Grid>
+        <Grid size={12}>
           <FormControl fullWidth>
             <TextFieldWithMax
               disabled={disabled}
@@ -162,7 +163,7 @@ export function PublishOnDemandForm(props: PublishOnDemandFormProps) {
               fullWidth
               multiline
               onChange={handleFormChange('comment')}
-              required={mode === 'studio' ? bulkPublishCommentRequired : publishByCommitCommentRequired}
+              required
             />
           </FormControl>
         </Grid>

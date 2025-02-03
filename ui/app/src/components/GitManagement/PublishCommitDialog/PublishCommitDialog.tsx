@@ -23,7 +23,7 @@ import { FormattedMessage } from 'react-intl';
 import PrimaryButton from '../../PrimaryButton';
 import DialogFooter from '../../DialogFooter';
 import { PublishFormData, PublishingTarget } from '../../../models';
-import { fetchPublishingTargets, publishByCommits } from '../../../services/publishing';
+import { fetchPublishingTargets, publish } from '../../../services/publishing';
 import useSpreadState from '../../../hooks/useSpreadState';
 import useSelection from '../../../hooks/useSelection';
 import useActiveSiteId from '../../../hooks/useActiveSiteId';
@@ -75,12 +75,12 @@ export function PublishCommitDialog(props: PublishCommitDialogProps) {
   const onPublish = () => {
     if (!isInvalid) {
       setState({ isSubmitting: true });
-      publishByCommits(
-        site,
-        data.commitIds.replace(/\s/g, '').split(',').filter(Boolean),
-        data.publishingTarget,
-        data.comment
-      ).subscribe({
+      publish(site, {
+        publishingTarget: data.publishingTarget,
+        commitIds: data.commitIds.replace(/\s/g, '').split(',').filter(Boolean),
+        title: 'Publish by commit ids', // TODO: title generation
+        comment: data.comment
+      }).subscribe({
         next() {
           setState({ isSubmitting: false, publishSuccessful: true });
           fnRefs.current.onSubmittingAndOrPendingChange({ hasPendingChanges: false });
@@ -165,8 +165,6 @@ export function PublishCommitDialog(props: PublishCommitDialogProps) {
               }}
               publishingTargets={state.publishingTargets}
               publishingTargetsError={null}
-              bulkPublishCommentRequired={false}
-              publishByCommitCommentRequired={publishByCommitCommentRequired}
               disabled={!state.publishingTargets || isSubmitting}
             />
           </DialogBody>

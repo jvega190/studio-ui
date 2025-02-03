@@ -41,7 +41,6 @@ import { PublishingStatusDialogStateProps } from '../components/PublishingStatus
 import { SystemIconDescriptor } from '../components/SystemIcon';
 import { AjaxError } from 'rxjs/ajax';
 import { PathNavigatorTreeStateProps } from '../components/PathNavigatorTree';
-import { UnlockPublisherDialogStateProps } from '../components/UnlockPublisherDialog';
 import { WidgetDialogStateProps } from '../components/WidgetDialog/utils';
 import { CodeEditorDialogStateProps } from '../components/CodeEditorDialog/utils';
 import { PublishDialogStateProps } from '../components/PublishDialog/utils';
@@ -53,8 +52,6 @@ import { ViewVersionDialogStateProps } from '../components/ViewVersionDialog/uti
 import { CompareVersionsDialogStateProps } from '../components/CompareVersionsDialog/utils';
 import { ConfirmDialogStateProps } from '../components/ConfirmDialog/utils';
 import { ChangeContentTypeDialogStateProps } from '../components/ChangeContentTypeDialog/utils';
-import { WorkflowCancellationDialogStateProps } from '../components/WorkflowCancellationDialog/utils';
-import { RejectDialogStateProps } from '../components/RejectDialog/utils';
 import { CreateFileStateProps } from '../components/CreateFileDialog/utils';
 import { UploadDialogStateProps } from '../components/UploadDialog/util';
 import { PreviewDialogStateProps } from '../components/PreviewDialog/utils';
@@ -69,6 +66,12 @@ import { BrokenReferencesDialogStateProps } from '../components/BrokenReferences
 import AllowedContentTypesData from './AllowedContentTypesData';
 import { Editor } from '@tinymce/tinymce-react';
 import { ElementType } from 'react';
+import { PublishingPackageReviewDialogStateProps } from '../components/PublishPackageReviewDialog/types';
+import { CancelPackageDialogStateProps } from '../components/CancelPackageDialog';
+import { BulkCancelPackageDialogStateProps } from '../components/BulkCancelPackageDialog';
+import { PublishingPackageResubmitDialogStateProps } from '../components/PublishingPackageResubmitDialog/types';
+import { PackageDetailsDialogStateProps } from '../components';
+import { ViewPackagesDialogStateProps } from '../components/ViewPackagesDialog';
 
 export type HighlightMode = 'all' | 'move';
 
@@ -238,12 +241,11 @@ export interface GlobalState {
     viewVersion: ViewVersionDialogStateProps;
     compareVersions: CompareVersionsDialogStateProps;
     publish: PublishDialogStateProps;
+    publishingPackageApproval: PublishingPackageReviewDialogStateProps;
     dependencies: DependenciesDialogStateProps;
     delete: DeleteDialogStateProps;
     edit: LegacyFormDialogStateProps;
     codeEditor: CodeEditorDialogStateProps;
-    workflowCancellation: WorkflowCancellationDialogStateProps;
-    reject: RejectDialogStateProps;
     createFolder: CreateFolderStateProps;
     createFile: CreateFileStateProps;
     renameAsset: RenameAssetStateProps;
@@ -258,10 +260,14 @@ export interface GlobalState {
     itemMegaMenu: ItemMegaMenuStateProps;
     launcher: LauncherStateProps;
     publishingStatus: PublishingStatusDialogStateProps;
-    unlockPublisher: UnlockPublisherDialogStateProps;
     widget: WidgetDialogStateProps;
     uiBlocker: UIBlockerStateProps;
     brokenReferences: BrokenReferencesDialogStateProps;
+    cancelPackage: CancelPackageDialogStateProps;
+    bulkCancelPackage: BulkCancelPackageDialogStateProps;
+    publishingPackageResubmit: PublishingPackageResubmitDialogStateProps;
+    packageDetails: PackageDetailsDialogStateProps;
+    viewPackages: ViewPackagesDialogStateProps;
   };
   uiConfig: {
     error: ApiResponse;

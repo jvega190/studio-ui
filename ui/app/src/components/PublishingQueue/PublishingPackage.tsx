@@ -17,19 +17,20 @@
 import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
-import React, { ChangeEvent, ReactNode, useRef, useState } from 'react';
+import React, { ChangeEvent, ReactNode, useRef } from 'react';
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
-import SelectButton from '../ConfirmDropdown';
 import Typography from '@mui/material/Typography';
-import { cancelPackage, fetchPackage } from '../../services/publishing';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
 import CircularProgress from '@mui/material/CircularProgress';
 import '../../styles/animations.scss';
-import { READY_FOR_LIVE } from './constants';
 import PrimaryButton from '../PrimaryButton';
 import Box from '@mui/material/Box';
 import { typographyClasses } from '@mui/material';
+import { ApiResponse, PublishPackage } from '../../models';
+import { getPackageStateLabel, isReady } from '../PublishPackageReviewDialog/utils';
+import Button from '@mui/material/Button';
+import { CancelPackageDialog } from '../CancelPackageDialog';
+import useEnhancedDialogState from '../../hooks/useEnhancedDialogState';
+import { PackageDetailsDialog } from '../PackageDetailsDialog';
 
 const translations = defineMessages({
   cancelText: {
@@ -47,10 +48,6 @@ const translations = defineMessages({
   confirmHelperText: {
     id: 'publishingDashboard.confirmHelperText',
     defaultMessage: 'Set item state to "Cancelled"?'
-  },
-  fetchPackagesFiles: {
-    id: 'publishingDashboard.fetchPackagesFiles',
-    defaultMessage: 'Fetch Packages Files'
   },
   status: {
     id: 'publishingDashboard.status',
@@ -108,60 +105,33 @@ const translations = defineMessages({
 
 interface PublishingPackageProps {
   siteId: string;
-  id: string;
-  schedule: string;
-  approver: string;
-  state: string;
-  environment: string;
-  comment: string;
-  selected: any;
-  pending: any;
-  filesPerPackage: {
-    [key: string]: any;
-  };
+  pkg: PublishPackage;
+  selected: Record<string, boolean>;
+  pending: Record<string, boolean>;
   readOnly?: boolean;
 
-  setSelected(selected: any): any;
+  setSelected(selected: Record<string, boolean>): void;
 
-  setApiState(state: any): any;
+  setApiState(state: { error: boolean; errorResponse: ApiResponse }): void;
 
-  setPending(pending: any): any;
+  setPending(pending: Record<string, boolean>): void;
 
-  getPackages(siteId: string, filters?: string): any;
-
-  setFilesPerPackage(filesPerPackage: any): any;
+  getPackages(siteId: string, filters?: string): void;
 }
 
 export function PublishingPackage(props: PublishingPackageProps) {
   const { formatMessage } = useIntl();
-  const {
-    id,
-    approver,
-    schedule,
-    state,
-    comment,
-    environment,
-    siteId,
-    selected,
-    setSelected,
-    pending,
-    setPending,
-    getPackages,
-    setApiState,
-    filesPerPackage,
-    setFilesPerPackage,
-    readOnly
-  } = props;
-  const [loading, setLoading] = useState(null);
+  const { pkg, siteId, selected, setSelected, pending, setPending, getPackages, readOnly } = props;
+  const { id, title, packageState: state, target, submitter, submittedOn, submitterComment } = pkg;
+  const username = submitter.username;
+  const comment = submitterComment;
+  const schedule = submittedOn;
+  const cancelPackageDialogState = useEnhancedDialogState();
+  const packageDetailsDialogState = useEnhancedDialogState();
 
   const { current: ref } = useRef<any>({});
 
-  ref.cancelComplete = (packageId: string) => {
-    setPending({ ...pending, [packageId]: false });
-    getPackages(siteId);
-  };
-
-  function onSelect(event: ChangeEvent, id: string, checked: boolean) {
+  function onSelect(event: ChangeEvent, id: number, checked: boolean) {
     if (checked) {
       setSelected({ ...selected, [id]: false });
     } else {
@@ -169,45 +139,21 @@ export function PublishingPackage(props: PublishingPackageProps) {
     }
   }
 
-  function handleCancel(packageId: string) {
+  function onCancel(packageId: number) {
     setPending({ ...pending, [packageId]: true });
-
-    cancelPackage(siteId, [packageId]).subscribe(
-      () => {
-        ref.cancelComplete(packageId);
-      },
-      ({ response }) => {
-        setApiState({ error: true, errorResponse: response });
-      }
-    );
+    cancelPackageDialogState.onOpen();
   }
 
-  function onFetchPackages(packageId: string) {
-    setLoading(true);
-    fetchPackage(siteId, packageId).subscribe({
-      next: (pkg) => {
-        setLoading(false);
-        setFilesPerPackage({ ...filesPerPackage, [packageId]: pkg.items });
-      },
-      error: ({ response }) => {
-        setApiState({ error: true, errorResponse: response });
-      }
-    });
-  }
+  const onCancelDialogSuccess = () => {
+    getPackages(siteId);
+  };
 
-  function renderFiles(files: [File]) {
-    return files.map((file: any, index: number) => {
-      return (
-        <ListItem key={index} divider>
-          <Typography variant="body2">{file.path}</Typography>
-          <Typography variant="body2" color="textSecondary">
-            {file.contentTypeClass in translations
-              ? formatMessage(translations[file.contentTypeClass])
-              : file.contentTypeClass}
-          </Typography>
-        </ListItem>
-      );
-    });
+  ref.onCancelDialogClosed = (packageId: string) => {
+    setPending({ ...pending, [packageId]: false });
+  };
+
+  function onShowPackageDetails() {
+    packageDetailsDialogState.onOpen();
   }
 
   const checked = selected[id] ? selected[id] : false;
@@ -268,7 +214,7 @@ export function PublishingPackage(props: PublishingPackageProps) {
               <strong>{id}</strong>
             </Typography>
           </header>
-        ) : state === READY_FOR_LIVE ? (
+        ) : isReady(state) ? (
           <FormGroup sx={{ marginRight: 'auto' }}>
             <FormControlLabel
               control={
@@ -279,41 +225,34 @@ export function PublishingPackage(props: PublishingPackageProps) {
                   disabled={readOnly}
                 />
               }
-              label={<strong>{id}</strong>}
+              label={
+                <strong>
+                  {id} - {title}
+                </strong>
+              }
             />
           </FormGroup>
         ) : (
           <Typography variant="body1">
-            <strong>{id}</strong>
+            <strong>
+              {id} - {title}
+            </strong>
           </Typography>
         )}
-        {state === READY_FOR_LIVE && (
-          <SelectButton
-            sx={{
-              button: {
-                paddingRight: '10px'
-              }
-            }}
-            text={formatMessage(translations.cancelText)}
-            cancelText={formatMessage(translations.cancel)}
-            confirmText={formatMessage(translations.confirm)}
-            confirmHelperText={formatMessage(translations.confirmHelperText)}
-            onConfirm={() => handleCancel(id)}
-            disabled={readOnly}
-            buttonProps={{
-              color: 'warning'
-            }}
-          />
+        {isReady(state) && (
+          <Button variant="outlined" color="warning" onClick={() => onCancel(id)} disabled={readOnly}>
+            <FormattedMessage defaultMessage="Cancel" />
+          </Button>
         )}
       </section>
       <div className="status">
         <Typography variant="body2">
           <FormattedMessage
             id="publishingDashboard.scheduled"
-            defaultMessage="Scheduled for <b>{schedule, date, medium} {schedule, time, short}</b> by <b>{approver}</b>"
+            defaultMessage="Scheduled for <b>{schedule, date, medium} {schedule, time, short}</b> by <b>{username}</b>"
             values={{
               schedule: new Date(schedule),
-              approver: approver,
+              username,
               b: (content: ReactNode[]) => (
                 <Box
                   component="strong"
@@ -334,8 +273,8 @@ export function PublishingPackage(props: PublishingPackageProps) {
         </Typography>
         <Typography variant="body2">
           {formatMessage(translations.status, {
-            state: <strong key={state}>{state}</strong>,
-            environment: <strong key={environment}>{environment}</strong>
+            state: <strong>{getPackageStateLabel(state)}</strong>,
+            environment: <strong key={target}>{target}</strong>
           })}
         </Typography>
       </div>
@@ -346,39 +285,23 @@ export function PublishingPackage(props: PublishingPackageProps) {
         </Typography>
       </div>
       <div className="files">
-        {filesPerPackage && filesPerPackage[id] && (
-          <List
-            aria-label={formatMessage(translations.filesList)}
-            sx={{
-              '& li': {
-                display: 'flex',
-                justifyContent: 'space-between'
-              }
-            }}
-          >
-            <ListItem
-              sx={{
-                background: (theme) => theme.palette.background.default,
-                [`& .${typographyClasses.root}`]: {
-                  fontWeight: 600
-                }
-              }}
-              divider
-            >
-              <Typography variant="caption">
-                {formatMessage(translations.item)} ({formatMessage(translations.path).toLowerCase()})
-              </Typography>
-              <Typography variant="caption">{formatMessage(translations.type)}</Typography>
-            </ListItem>
-            {renderFiles(filesPerPackage[id])}
-          </List>
-        )}
-        {(filesPerPackage === null || !filesPerPackage[id]) && (
-          <PrimaryButton variant="outlined" onClick={() => onFetchPackages(id)} disabled={!!loading} loading={loading}>
-            {formatMessage(translations.fetchPackagesFiles)}
-          </PrimaryButton>
-        )}
+        <PrimaryButton variant="outlined" onClick={() => onShowPackageDetails()}>
+          <FormattedMessage defaultMessage="Show package details" />
+        </PrimaryButton>
       </div>
+      <CancelPackageDialog
+        open={cancelPackageDialogState.open}
+        onSuccess={onCancelDialogSuccess}
+        onClose={cancelPackageDialogState.onClose}
+        onClosed={() => ref.onCancelDialogClosed(id)}
+        isSubmitting={cancelPackageDialogState.isSubmitting}
+        packageId={id}
+      />
+      <PackageDetailsDialog
+        open={packageDetailsDialogState.open}
+        onClose={packageDetailsDialogState.onClose}
+        packageId={id}
+      />
     </Box>
   );
 }

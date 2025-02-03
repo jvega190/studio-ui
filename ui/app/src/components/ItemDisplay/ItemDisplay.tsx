@@ -26,6 +26,8 @@ import ItemPublishingTargetIcon, { ItemPublishingTargetIconProps } from '../Item
 import { isInWorkflow } from './utils';
 import Box from '@mui/material/Box';
 import { PartialSxRecord } from '../../models';
+import { SxProps } from '@mui/system';
+import { Theme } from '@mui/material/styles';
 
 export type ItemDisplayClassKey = 'root' | 'label' | 'labelPreviewable' | 'icon' | 'typeIcon';
 
@@ -46,6 +48,8 @@ export interface ItemDisplayProps<LabelTypographyComponent extends React.Element
   stateIconProps?: Partial<ItemStateIconProps>;
   publishingTargetIconProps?: Partial<ItemPublishingTargetIconProps>;
   itemTypeIconProps?: Partial<ItemTypeIconProps>;
+  sx?: SxProps<Theme>;
+  component?: ElementType;
 }
 
 const ItemDisplay = forwardRef<HTMLSpanElement, ItemDisplayProps>((props, ref) => {
@@ -66,6 +70,7 @@ const ItemDisplay = forwardRef<HTMLSpanElement, ItemDisplayProps>((props, ref) =
     stateIconProps,
     publishingTargetIconProps,
     itemTypeIconProps,
+    component = 'span',
     classes,
     sxs,
     ...rest

@@ -26,7 +26,7 @@ import {
   SearchResult
 } from '../../models/Search';
 import { ContentTypeDropTarget } from '../../models/ContentTypeDropTarget';
-import { EditSelection, ContentEventPayload, WidgetDescriptor } from '../../models';
+import { ContentEventPayload, EditSelection, WidgetDescriptor } from '../../models';
 import LookupTable from '../../models/LookupTable';
 import { DetailedItem, SandboxItem } from '../../models/Item';
 import GlobalState, { HighlightMode } from '../../models/GlobalState';
@@ -179,7 +179,7 @@ export const hotKey =
 export const showEditDialog = /*#__PURE__*/ createAction('SHOW_EDIT_DIALOG');
 export const requestWorkflowCancellationDialog = /*#__PURE__*/ createAction<{
   siteId: string;
-  path: string;
+  item: SandboxItem;
 }>('REQUEST_WORKFLOW_CANCELLATION_DIALOG');
 export const requestWorkflowCancellationDialogOnResult = /*#__PURE__*/ createAction<{
   type: 'continue' | 'close';

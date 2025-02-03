@@ -18,7 +18,7 @@ import React, { ElementType, PropsWithChildren, ReactNode, useEffect, useState }
 import Typography from '@mui/material/Typography';
 import Gears from '../Gears/Gears';
 import { PartialSxRecord } from '../../models';
-import Box from '@mui/material/Box';
+import Box, { BoxProps } from '@mui/material/Box';
 import { SxProps } from '@mui/system';
 import { Theme } from '@mui/material/styles';
 

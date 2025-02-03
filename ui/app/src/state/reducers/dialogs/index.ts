@@ -27,8 +27,6 @@ import dependencies from './dependencies';
 import deleteDialog from './delete';
 import edit from './edit';
 import codeEditor from './codeEditor';
-import workflowCancellation from './workflowCancellation';
-import reject from './reject';
 import createFolder from './createFolder';
 import createFile from './createFile';
 import copy from './copy';
@@ -42,11 +40,16 @@ import itemMenu from './itemMenu';
 import itemMegaMenu from './itemMegaMenu';
 import launcher from './launcher';
 import publishingStatus from './publishingStatus';
-import unlockPublisher from './unlockPublisher';
 import widget from './widget';
 import uiBlocker from './uiBlocker';
 import renameAsset from './renameAsset';
 import brokenReferences from './brokenReferences';
+import publishingPackageApproval from './publishingPackageReview';
+import cancelPackage from './cancelPackage';
+import bulkCancelPackage from './bulkCancelPackage';
+import publishingPackageResubmit from './publishingPackageResubmit';
+import packageDetails from './packageDetails';
+import viewPackages from './viewPackages';
 
 export default combineReducers({
   confirm,
@@ -57,12 +60,12 @@ export default combineReducers({
   viewVersion,
   compareVersions,
   publish,
+  publishingPackageApproval,
+  publishingPackageResubmit,
   dependencies,
   delete: deleteDialog,
   edit,
   codeEditor,
-  workflowCancellation,
-  reject,
   editSite,
   createFolder,
   createFile,
@@ -77,8 +80,11 @@ export default combineReducers({
   itemMegaMenu,
   launcher,
   publishingStatus,
-  unlockPublisher,
   widget,
   uiBlocker,
-  brokenReferences
+  brokenReferences,
+  cancelPackage,
+  bulkCancelPackage,
+  packageDetails,
+  viewPackages
 });

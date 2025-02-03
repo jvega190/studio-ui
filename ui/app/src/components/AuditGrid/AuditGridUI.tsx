@@ -373,14 +373,14 @@ export function AuditGridUI(props: AuditGridUIProps) {
         slots={{
           columnMenu: onFilterSelected,
           noRowsOverlay: () => (
-            <Box height="100%">
+            <Box height="100%" minHeight="400px">
               <EmptyState
                 sxs={{
                   root: {
                     position: 'relative',
                     zIndex: 1,
-                    paddingTop: 10,
-                    paddingBottom: 10,
+                    paddingTop: '10px',
+                    paddingBottom: '10px',
                     margin: 0,
                     height: 'calc(100% - 10px)'
                   }

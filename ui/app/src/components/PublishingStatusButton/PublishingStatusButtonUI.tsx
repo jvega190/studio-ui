@@ -20,19 +20,23 @@ import IconButton, { IconButtonProps } from '@mui/material/IconButton';
 import { Badge, CircularProgress, Tooltip } from '@mui/material';
 import { PublishingStatus } from '../../models/Publishing';
 import { useIntl } from 'react-intl';
-import { getPublishingStatusText, publishingStatusMessages } from '../PublishingStatusDisplay';
+import {
+  getPublishingStatusState,
+  getPublishingStatusText,
+  publishingStatusMessages
+} from '../PublishingStatusDisplay';
 
 export interface PublishingStatusButtonUIProps extends IconButtonProps {
   isFetching: boolean;
-  enabled: boolean;
-  numberOfItems: number;
-  totalItems: number;
-  status: PublishingStatus['status'];
+  enabled: PublishingStatus['enabled'];
+  published: PublishingStatus['published'];
+  currentTask: PublishingStatus['currentTask'];
   variant?: PublishingStatusAvatarProps['variant'];
 }
 
 export const PublishingStatusButtonUI = forwardRef<HTMLButtonElement, PublishingStatusButtonUIProps>((props, ref) => {
-  const { enabled, numberOfItems, totalItems, status, isFetching, style, onClick, variant, ...rest } = props;
+  const { enabled, published, currentTask, isFetching, style, onClick, variant, ...rest } = props;
+  const status = getPublishingStatusState({ enabled, published, currentTask });
   const isInProgressPublishingStatus = status && ['publishing', 'processing'].includes(status);
   const { formatMessage } = useIntl();
   return (
@@ -72,7 +76,6 @@ export const PublishingStatusButtonUI = forwardRef<HTMLButtonElement, Publishing
               // size (which is this component's default) needs a larger spinner
               ['medium', void 0].includes(rest.size) ? 48 : void 0
             }
-            value={isInProgressPublishingStatus ? Math.round((numberOfItems / totalItems) * 100) : undefined}
             variant={isInProgressPublishingStatus ? 'determinate' : 'indeterminate'}
             style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}
           />
