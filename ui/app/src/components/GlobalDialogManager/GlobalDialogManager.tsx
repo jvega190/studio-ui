@@ -44,6 +44,9 @@ import { DialogStackItem } from '../../models/GlobalState';
 import { nanoid } from 'nanoid';
 import { ConfirmDialogProps } from '../ConfirmDialog';
 import { popDialog, pushDialog, updateDialogState } from '../../state/actions/dialogStack';
+import AlertDialog from '../AlertDialog/AlertDialog';
+import PrimaryButton from '../PrimaryButton';
+import infoImgUrl from '../../assets/information.svg';
 
 // region const ... = lazy(() => import('...'));
 const ViewVersionDialog = lazy(() => import('../ViewVersionDialog'));
@@ -143,10 +146,28 @@ export const displayWithPendingChangesConfirm = (
 function DialogStackItemContainer(props: DialogStackItem<EnhancedDialogProps>) {
   const { id, component, allowMinimize = false, allowFullScreen = false } = props;
   const dispatch = useDispatch();
-  const Dialog = useMemo(
-    () => (components.get(component as string) ?? component) as ElementType<EnhancedDialogProps>,
-    [component]
-  );
+  const Dialog = useMemo(() => {
+    if (typeof component === 'string') {
+      if (components.has(component)) {
+        return components.get(component);
+      } else {
+        return (props: EnhancedDialogProps) => (
+          <AlertDialog
+            open={props.open}
+            body={`Unknown component id "${component}". The component is not registered or the id is incorrect.`}
+            imageUrl={infoImgUrl}
+            buttons={
+              <PrimaryButton fullWidth onClick={(e) => props.onClose(e, undefined)}>
+                <FormattedMessage defaultMessage="Accept" />
+              </PrimaryButton>
+            }
+          />
+        );
+      }
+    } else {
+      return component as ElementType<EnhancedDialogProps>;
+    }
+  }, [component]);
   const onClose: EnhancedDialogProps['onClose'] = () => {
     dispatch(updateDialogState({ id, props: { open: false } }));
   };
@@ -346,7 +367,7 @@ function GlobalDialogManager() {
     <>
       {stack.ids.map((id) => (
         <Suspense key={id} fallback={<UIBlocker open />}>
-          <DialogStackItemContainer {...stack.byId[id]} />
+          <DialogStackItemContainer {...(stack.byId[id] as DialogStackItem<EnhancedDialogProps>)} />
         </Suspense>
       ))}
       <Suspense fallback="">

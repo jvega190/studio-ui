@@ -106,6 +106,7 @@ import {
   getStoredEditModePadding,
   getStoredHighlightModeChoice,
   getStoredOutdatedXBValidationDate,
+  pickShowContentFormAction,
   removeStoredClipboard,
   setStoredOutdatedXBValidationDate
 } from '../../utils/state';
@@ -410,14 +411,18 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
         case 'E':
           upToDateRefs.current.item &&
             dispatch(
-              showEditDialog({
-                site: upToDateRefs.current.siteId,
-                path: upToDateRefs.current.guest.path,
-                readonly:
-                  !upToDateRefs.current.item.availableActionsMap.edit ||
-                  isItemLockedForMe(upToDateRefs.current.item, upToDateRefs.current.user.username),
-                authoringBase: upToDateRefs.current.authoringBase
-              })
+              pickShowContentFormAction(
+                false,
+                { update: { path: upToDateRefs.current.guest.path } },
+                {
+                  site: upToDateRefs.current.siteId,
+                  path: upToDateRefs.current.guest.path,
+                  readonly:
+                    !upToDateRefs.current.item.availableActionsMap.edit ||
+                    isItemLockedForMe(upToDateRefs.current.item, upToDateRefs.current.user.username),
+                  authoringBase: upToDateRefs.current.authoringBase
+                }
+              )
             );
           break;
         case 'a':
