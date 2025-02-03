@@ -56,7 +56,6 @@ import {
   showRenameAssetDialog,
   showSingleFileUploadDialog,
   showUploadDialog,
-  showWidgetDialog,
   showWorkflowCancellationDialog,
   updateCopyDialog,
   updateCreateFileDialog,
