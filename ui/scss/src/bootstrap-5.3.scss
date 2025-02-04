@@ -14,15 +14,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-@import '../../static-assets/libs/bootstrap/scss/functions';
-@import '../../static-assets/libs/bootstrap/scss/mixins';
-@import '../../static-assets/libs/bootstrap/scss/variables';
-@import '../../static-assets/libs/bootstrap/scss/variables-dark';
-@import '../../static-assets/libs/bootstrap/scss/maps';
-@import '../../static-assets/libs/bootstrap/scss/root';
-@import '../../static-assets/libs/bootstrap/scss/tooltip';
-@import '../../static-assets/libs/bootstrap/scss/popover';
-@import '../../static-assets/libs/bootstrap/scss/modal';
+@use '../../../static-assets/libs/bootstrap/scss/functions';
+@use '../../../static-assets/libs/bootstrap/scss/mixins';
+@use '../../../static-assets/libs/bootstrap/scss/variables';
+@use '../../../static-assets/libs/bootstrap/scss/variables-dark';
+@use '../../../static-assets/libs/bootstrap/scss/maps';
+@use '../../../static-assets/libs/bootstrap/scss/root';
+@use '../../../static-assets/libs/bootstrap/scss/tooltip';
+@use '../../../static-assets/libs/bootstrap/scss/popover';
+@use '../../../static-assets/libs/bootstrap/scss/modal';
 
 .popover {
   &.show {

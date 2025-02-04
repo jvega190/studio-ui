@@ -14,56 +14,59 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-@import '../variables';
-@import '../util/animate';
+@use "sass:meta";
+@use '../variables';
+@use '../util/animate';
 
-@import 'elements';
+@use 'elements';
+@use "../../../../static-assets/libs/bootstrap-sass-official/assets/stylesheets/bootstrap/variables" as bootstrap-variables;
+
 // @import "foundation";
 
 /* Structural & Behavioural Styles */
 
 .studio-view {
-  font-family: $font-family-base;
-  font-size: $font-size-base;
-  line-height: $line-height-base;
-  color: $text-color;
+  font-family: bootstrap-variables.$font-family-base;
+  font-size: bootstrap-variables.$font-size-base;
+  line-height: bootstrap-variables.$line-height-base;
+  color: bootstrap-variables.$text-color;
 }
 
-.#{$ice-class-prefix}-overlay,
-.#{$ice-class-prefix}-indicator {
+.#{variables.$ice-class-prefix}-overlay,
+.#{variables.$ice-class-prefix}-indicator {
   cursor: pointer;
 }
 
-.#{$ice-class-prefix}-overlay {
+.#{variables.$ice-class-prefix}-overlay {
   @extend .craftercms-animated;
   position: absolute;
   border-style: solid;
   border-width: 2px;
 }
 
-.#{$ice-class-prefix}-indicator {
+.#{variables.$ice-class-prefix}-indicator {
   padding: 3px 0 0 3px;
   position: absolute;
   border-radius: 0 0 5px 0;
-  width: $ice-indicator-size;
-  height: $ice-indicator-size;
+  width: variables.$ice-indicator-size;
+  height: variables.$ice-indicator-size;
   background-repeat: no-repeat;
   background-position: 3px 3px;
 }
 
-.#{$ice-class-prefix}-indicator.lock {
+.#{variables.$ice-class-prefix}-indicator.lock {
   background-image: url('/studio/static-assets/themes/cstudioTheme/images/edit_block.png');
 }
 
 /* Look & feel / Theme Styles */
 
-.#{$ice-class-prefix}-overlay {
-  border-color: $brand-danger;
-  box-shadow: inset 0 0 10px 5px rgba($brand-danger, 0.4);
+.#{variables.$ice-class-prefix}-overlay {
+  border-color: bootstrap-variables.$brand-danger;
+  box-shadow: inset 0 0 10px 5px rgba(bootstrap-variables.$brand-danger, 0.4);
   z-index: 9999;
 }
 
-.#{$ice-class-prefix}-indicator {
+.#{variables.$ice-class-prefix}-indicator {
   background-color: rgba(#fff, 0.7);
   z-index: 9999;
   &.fa-spinner {
@@ -72,7 +75,7 @@
   }
 }
 
-.#{$class-prefix}-dnd-controller-overlay {
+.#{variables.$class-prefix}-dnd-controller-overlay {
   z-index: 100;
   display: none;
   position: fixed;
@@ -101,7 +104,7 @@
 body {
   transition: padding 0.5s, transform 0.5s;
 
-  &.#{$class-prefix}-dnd-enabled {
+  &.#{variables.$class-prefix}-dnd-enabled {
     padding-right: 265px !important;
   }
 }
@@ -118,7 +121,7 @@ body {
   color: #7e9dbb;
 }
 
-@import 'components-panel';
+@include meta.load-css('components-panel');
 
 $dark-mode-background-default: #212121;
 $dark-mode-background-paper: #424242;

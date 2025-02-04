@@ -1,7 +1,8 @@
-@import '../../static-assets/libs/bootstrap/scss/mixins';
+@use '../../../static-assets/libs/bootstrap/scss/mixins';
 
-@import 'variables';
-@import 'common';
+@use 'variables';
+@use 'common';
+@use "../../../static-assets/libs/bootstrap/scss/mixins/clearfix";
 
 body.state-loading * {
   cursor: wait;
@@ -481,7 +482,7 @@ div.ttTableGroup {
   padding-right: 15px;
   padding-left: 15px;
 
-  @include clearfix;
+  @include clearfix.clearfix;
 }
 
 .formBottomSpace {

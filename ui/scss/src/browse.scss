@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-@import 'util/util';
-@import 'variables';
+@use 'util/util';
+@use 'variables';
 
 * {
   box-sizing: border-box;
@@ -424,5 +424,5 @@ body {
 }
 
 .cstudio__loading-bar {
-  @include cstudioLoadingBar(3px, #2275d7);
+  @include util.cstudioLoadingBar(3px, #2275d7);
 }

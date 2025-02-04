@@ -14,9 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-@import 'variables';
-@import 'preview-dialog';
-@import '../../static-assets/libs/bootstrap-sass-official/assets/stylesheets/bootstrap/mixins';
+@use "sass:meta";
+@use 'variables';
+@use 'preview-dialog';
+@use '../../../static-assets/libs/bootstrap-sass-official/assets/stylesheets/bootstrap/mixins';
 
 #formContainer {
   padding: 20px 0 80px;
@@ -103,19 +104,19 @@ div.xdsoft_datetimepicker {
 
 // region Bootstrap 3.x
 // Reset and dependencies
-@import '../../static-assets/libs/bootstrap-sass-official/assets/stylesheets/bootstrap/normalize';
+@include meta.load-css('../../../static-assets/libs/bootstrap-sass-official/assets/stylesheets/bootstrap/normalize');
 
 // Core CSS
-@import '../../static-assets/libs/bootstrap-sass-official/assets/stylesheets/bootstrap/scaffolding';
-@import '../../static-assets/libs/bootstrap-sass-official/assets/stylesheets/bootstrap/grid';
-@import '../../static-assets/libs/bootstrap-sass-official/assets/stylesheets/bootstrap/buttons';
+@include meta.load-css('../../../static-assets/libs/bootstrap-sass-official/assets/stylesheets/bootstrap/scaffolding');
+@include meta.load-css('../../../static-assets/libs/bootstrap-sass-official/assets/stylesheets/bootstrap/grid');
+@include meta.load-css('../../../static-assets/libs/bootstrap-sass-official/assets/stylesheets/bootstrap/buttons');
 
 // Components
-@import '../../static-assets/libs/bootstrap-sass-official/assets/stylesheets/bootstrap/dropdowns';
-@import '../../static-assets/libs/bootstrap-sass-official/assets/stylesheets/bootstrap/panels';
+@include meta.load-css('../../../static-assets/libs/bootstrap-sass-official/assets/stylesheets/bootstrap/dropdowns');
+@include meta.load-css('../../../static-assets/libs/bootstrap-sass-official/assets/stylesheets/bootstrap/panels');
 
 // Utility classes
-@import '../../static-assets/libs/bootstrap-sass-official/assets/stylesheets/bootstrap/utilities';
+@include meta.load-css('../../../static-assets/libs/bootstrap-sass-official/assets/stylesheets/bootstrap/utilities');
 
 html {
   font-size: 16px;

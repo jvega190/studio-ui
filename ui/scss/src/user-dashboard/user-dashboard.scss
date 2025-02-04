@@ -14,21 +14,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-@import '../variables';
+@use '../variables';
 
 // bower:scss
-@import '../../../../static-assets/libs/bootstrap/scss/mixins';
+@use '../../../../static-assets/libs/bootstrap/scss/mixins';
 // endbower
 
-@import '../util/util';
+@use '../util/util';
 
-@import 'type';
-@import 'layout';
-@import 'navbar';
-@import '../repositories';
+@use 'type';
+@use 'layout';
+@use 'navbar';
+@use '../repositories';
 
-@import 'views';
-@import '../common';
+@use 'views';
+@use '../common';
 
 body,
 h1,

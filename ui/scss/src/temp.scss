@@ -14,8 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-@import 'variables';
-@import 'util/animate';
+@use "sass:color";
+@use "sass:meta";
+@use 'variables' as variables2;
+@use 'util/animate';
+@use "../../../static-assets/libs/bootstrap-sass-official/assets/stylesheets/bootstrap/variables";
+
 @import url('/studio/static-assets/themes/cstudioTheme/css/icons.css');
 
 #acnVersionWrapper,
@@ -2848,7 +2852,7 @@ span.acn-canned-search {
 
 #preview-tools-panel-container {
   border: none;
-  border-radius: $border-radius-base;
+  border-radius: variables.$border-radius-base;
 
   #ice-tools-panel-elem {
     .studio-view {
@@ -2866,7 +2870,7 @@ span.acn-canned-search {
     margin: 0;
     padding: 5px 10px;
     background: #efefef;
-    border-bottom: 1px solid darken(#efefef, 15%);
+    border-bottom: 1px solid color.adjust(#efefef, $lightness: -15%);
   }
 
   .acn-accordion-toggle {
@@ -3122,7 +3126,7 @@ span.acn-canned-search {
 
 #preview-tools-panel-container_c {
   .underlay {
-    border-radius: $border-radius-base;
+    border-radius: variables.$border-radius-base;
   }
 
   .yui-panel-container {
@@ -3461,9 +3465,9 @@ span.acn-canned-search {
   }
 }
 
-@import 'util/util';
-@import 'studio-view';
-@import 'cstudio-view';
-@import 'preview';
-@import 'navbar';
-@import 'preview-dialog';
+@include meta.load-css('util/util');
+@include meta.load-css('studio-view');
+@include meta.load-css('cstudio-view');
+@include meta.load-css('preview');
+@include meta.load-css('navbar');
+@include meta.load-css('preview-dialog');
