@@ -201,10 +201,10 @@ export function DialogHeader(props: DialogHeaderProps) {
             {onCloseButtonClick && (
               <Tooltip title={disabled ? '' : formatMessage(translations.dismiss)}>
                 <IconButton
-                  size="medium"
                   aria-label="close"
                   onClick={(event) => onCloseButtonClick(event, 'closeButton')}
                   disabled={disabled}
+                  size="medium"
                 >
                   <CloseIcon />
                 </IconButton>
