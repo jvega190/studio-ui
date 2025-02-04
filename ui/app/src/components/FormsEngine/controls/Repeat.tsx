@@ -28,7 +28,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import { FormattedMessage } from 'react-intl';
 import Tooltip from '@mui/material/Tooltip';
 import { lazy, MouseEvent as ReactMouseEvent, Suspense, useMemo, useState } from 'react';
-import Avatar from '@mui/material/Avatar';
+import Avatar, { avatarClasses } from '@mui/material/Avatar';
 import { StackedButton } from '../common/StackedButton';
 import { isTouchDevice } from '../common/util';
 import { DialogHeader } from '../../DialogHeader';
@@ -36,6 +36,7 @@ import Dialog from '@mui/material/Dialog';
 import SortableListSkeleton from '../common/SortableListSkeleton';
 import type { TItem } from '../common/SortableList';
 import FieldBox from '../common/FieldBox';
+import { buttonClasses } from '@mui/material/Button';
 
 export type RepeatItem = Record<string, unknown>;
 
@@ -79,13 +80,23 @@ export function Repeat(props: RepeatProps) {
   const handleEditItem = (event: ReactMouseEvent, item: RepeatItem, index: number) => {
     api.pushForm({
       repeat: { fieldId: field.id, values: item, index },
-      fieldsToRender: Object.values(field.fields)
+      fieldsToRender: Object.values(field.fields),
+      onSave(result) {
+        const nextValue = value.concat();
+        nextValue.splice(index, 1, result.values);
+        setValue(nextValue);
+        return { close: true };
+      }
     });
   };
   const handleAddItem: IconButtonProps['onClick'] = (e) => {
     api.pushForm({
       repeat: { fieldId: field.id },
-      fieldsToRender: Object.values(field.fields)
+      fieldsToRender: Object.values(field.fields),
+      onSave(result) {
+        setValue(value.concat(result.values));
+        return { close: true };
+      }
     });
   };
   const isAddDisabled = readonly || field.validations.maxCount?.value >= value;
@@ -162,7 +173,17 @@ export function Repeat(props: RepeatProps) {
             </List>
           ) : (
             <>
-              <StackedButton>
+              <StackedButton
+                onClick={handleAddItem}
+                disabled={isAddDisabled}
+                sx={{
+                  [`&.${buttonClasses.disabled} .${avatarClasses.root}`]: {
+                    opacity: 0.7,
+                    color: 'action.disabled',
+                    bgcolor: 'action.disabled'
+                  }
+                }}
+              >
                 <Avatar variant="circular">
                   <AddRounded />
                 </Avatar>

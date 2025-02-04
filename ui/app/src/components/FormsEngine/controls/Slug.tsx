@@ -38,7 +38,7 @@ export function Slug(props: SlugProps) {
   if (field.id === 'fileName') {
     throw new Error('Detected field ID "fileName" instead "file-name" at the "Slug" Control.');
   }
-  // It'd be better to avoid this. An specific control should refer to a specific field ID/property all the time.
+  // It'd be better to avoid this. A specific control should refer to a specific field ID/property all the time.
   const fieldId = field.id === 'file-name' ? 'folder-name' : field.id;
   const [value, setValue] = useAtom(atoms.valueByFieldId[fieldId] as PrimitiveAtom<string>);
   const validityState = useAtomValue(atoms.validationByFieldId[fieldId]);

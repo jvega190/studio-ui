@@ -120,11 +120,10 @@ import SystemType from '../models/SystemType';
 import { fetchItemVersions } from '../state/actions/versions';
 import StandardAction from '../models/StandardAction';
 import { fetchDependant } from '../services/dependencies';
-import { pickShowContentFormAction } from './state';
 import { NewContentDialogProps } from '../components/NewContentDialog/utils';
 import { nanoid } from 'nanoid';
 import { pushDialog, updateDialogState } from '../state/actions/dialogStack';
-import { fetchAffectedPackages } from '../services/workflow';
+import { pickShowContentFormAction } from './system';
 
 export type ContextMenuOptionDescriptor<ID extends string = string> = {
   id: ID;
@@ -521,16 +520,7 @@ export const itemActionDispatcher = ({
     switch (option) {
       case 'view': {
         const path = item.path;
-        dispatch(
-          pickShowContentFormAction(
-            false,
-            {
-              readonly: true,
-              update: { path }
-            },
-            { site, path, authoringBase, readonly: true }
-          )
-        );
+        dispatch(pickShowContentFormAction({ site, path, authoringBase, readonly: true }));
         break;
       }
       case 'edit': {
@@ -538,20 +528,16 @@ export const itemActionDispatcher = ({
         //  we need the modelId that's not supplied to this function.
         // const src = `${defaultSrc}site=${site}&path=${embeddedParentPath}&isHidden=true&modelId=${modelId}&type=form`
         const path = item.path;
-        const actionToDispatch = pickShowContentFormAction(
-          false,
-          { update: { path } },
-          {
-            site,
-            path,
-            authoringBase,
-            onSaveSuccess: batchActions([
-              showEditItemSuccessNotification(),
-              ...(onActionSuccess ? [onActionSuccess] : [])
-            ]),
-            ...extraPayload
-          }
-        );
+        const actionToDispatch = pickShowContentFormAction({
+          site,
+          path,
+          authoringBase,
+          onSaveSuccess: batchActions([
+            showEditItemSuccessNotification(),
+            ...(onActionSuccess ? [onActionSuccess] : [])
+          ]),
+          ...extraPayload
+        });
         if (isInActiveWorkflow(item)) {
           dispatch(showViewPackagesDialog({ item, onContinue: actionToDispatch }));
         } else {
@@ -609,13 +595,7 @@ export const itemActionDispatcher = ({
               rootPath: getRootPath(item.path),
               onContentTypeSelected(response) {
                 dispatch(updateDialogState({ id, props: { open: false } }));
-                dispatch(
-                  pickShowContentFormAction(
-                    false,
-                    { create: { path: response.path, contentTypeId: response.contentTypeId } },
-                    response
-                  )
-                );
+                dispatch(pickShowContentFormAction(response));
               }
             } as NewContentDialogProps
           })

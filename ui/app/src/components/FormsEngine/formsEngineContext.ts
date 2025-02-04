@@ -127,7 +127,7 @@ function createUseContextHook<T, K extends keyof T>(
   const contextName = context.displayName ?? name.replace('use', '');
   return () => {
     const instance = useContext(context);
-    if (!instance) {
+    if (instance === undefined) {
       throw new Error(`${name} must be used within a ${contextName}`);
     }
     return selector?.(instance) ?? instance;

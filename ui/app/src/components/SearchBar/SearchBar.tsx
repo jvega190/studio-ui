@@ -22,6 +22,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { defineMessages, useIntl } from 'react-intl';
 import Paper, { PaperProps } from '@mui/material/Paper';
 import { PartialSxRecord } from '../../models';
+import { consolidateSx } from '../../utils/system';
 
 const messages = defineMessages({
   placeholder: {
@@ -82,27 +83,29 @@ export function SearchBar(props: SearchBarProps) {
   const inputRef = useRef<HTMLInputElement>(undefined);
   return (
     <Paper
-      sx={props.sx}
       onClick={onClick}
       variant={focus ? 'elevation' : 'outlined'}
       elevation={focus ? 4 : 0}
       className={[focus && 'focus', showActionButton && 'noPadded', props.classes?.root].filter(Boolean).join(' ')}
-      sx={{
-        position: 'relative',
-        background: (theme) => props.backgroundColor ?? theme.palette.background.default,
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 12px',
-        borderRadius: '5px',
-        '&.focus': {
-          backgroundColor: (theme) => theme.palette.background.paper,
-          border: '1px solid transparent'
+      sx={consolidateSx(
+        {
+          position: 'relative',
+          background: (theme) => props.backgroundColor ?? theme.palette.background.default,
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 12px',
+          borderRadius: '5px',
+          '&.focus': {
+            backgroundColor: (theme) => theme.palette.background.paper,
+            border: '1px solid transparent'
+          },
+          '&.noPadded': {
+            padding: '0 0 0 12px'
+          },
+          ...sxs?.root
         },
-        '&.noPadded': {
-          padding: '0 0 0 12px'
-        },
-        ...sxs?.root
-      }}
+        props.sx
+      )}
     >
       {showDecoratorIcon && onDecoratorButtonClick ? (
         <IconButton onClick={onDecoratorButtonClick} size="large">
@@ -129,24 +132,30 @@ export function SearchBar(props: SearchBarProps) {
           root: props.classes?.inputRoot,
           input: props.classes?.inputInput
         }}
-        sx={{
-          flexGrow: 1,
-          background: 'transparent',
-          '&:focus': {
-            backgroundColor: (theme) => theme.palette.background.paper
-          },
-          ...sxs?.inputRoot,
-          [`& .${inputBaseClasses.input}`]: {
-            background: 'none',
-            border: 'none',
-            width: '100%',
-            padding: (theme) => (dense ? theme.spacing(0.7, 0.625) : theme.spacing(1.25, 0.625)),
+        sx={consolidateSx(
+          {
+            flexGrow: 1,
+            background: 'transparent',
             '&:focus': {
-              boxShadow: 'none'
-            },
-            ...sxs?.inputInput
+              backgroundColor: (theme) => theme.palette.background.paper
+            }
+          },
+          sxs?.inputRoot,
+          {
+            [`& .${inputBaseClasses.input}`]: consolidateSx(
+              {
+                background: 'none',
+                border: 'none',
+                width: '100%',
+                padding: (theme) => (dense ? theme.spacing(0.7, 0.625) : theme.spacing(1.25, 0.625)),
+                '&:focus': {
+                  boxShadow: 'none'
+                }
+              },
+              sxs?.inputInput
+            )
           }
-        }}
+        )}
         inputProps={{
           'aria-label': finalPlaceholder,
           ref: inputRef
@@ -169,12 +178,14 @@ export function SearchBar(props: SearchBarProps) {
           <ActionButtonIcon
             fontSize="small"
             className={props.classes?.actionIcon}
-            sx={{
-              fontSize: '25px',
-              color: (theme) => theme.palette.text.secondary,
-              cursor: 'pointer',
-              ...sxs?.actionIcon
-            }}
+            sx={consolidateSx(
+              {
+                fontSize: '25px',
+                color: (theme) => theme.palette.text.secondary,
+                cursor: 'pointer'
+              },
+              sxs?.actionIcon
+            )}
           />
         </IconButton>
       )}

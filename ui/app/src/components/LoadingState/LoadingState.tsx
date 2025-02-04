@@ -18,9 +18,10 @@ import React, { ElementType, PropsWithChildren, ReactNode, useEffect, useState }
 import Typography from '@mui/material/Typography';
 import Gears from '../Gears/Gears';
 import { PartialSxRecord } from '../../models';
-import Box, { BoxProps } from '@mui/material/Box';
+import Box from '@mui/material/Box';
 import { SxProps } from '@mui/system';
 import { Theme } from '@mui/material/styles';
+import { consolidateSx } from '../../utils/system';
 
 type LoadingStateClassKey = 'root' | 'title' | 'subtitle' | 'graphic' | 'graphicRoot';
 
@@ -49,18 +50,20 @@ export function LoadingState(props: LoadingStateProps) {
   return (
     <Box
       className={classes?.root}
-      sx={{
-        display: 'flex',
-        textAlign: 'center',
-        alignItems: 'center',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        margin: (theme) => `${theme.spacing(2)} auto`,
-        minHeight: '100%',
-        ...sxs?.root,
-        ...props.sx,
-        visibility: reveal ? undefined : 'hidden'
-      }}
+      sx={consolidateSx(
+        {
+          display: 'flex',
+          textAlign: 'center',
+          alignItems: 'center',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          margin: (theme) => `${theme.spacing(2)} auto`,
+          minHeight: '100%',
+          visibility: reveal ? undefined : 'hidden'
+        },
+        sxs?.root,
+        props.sx
+      )}
     >
       {props.title && (
         <Typography

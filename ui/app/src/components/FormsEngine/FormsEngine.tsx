@@ -142,7 +142,6 @@ import { Dispatch as ReduxDispatch } from 'redux';
 import { IntlShape } from 'react-intl/src/types';
 import { displayWithPendingChangesConfirm } from '../GlobalDialogManager';
 import AlertTitle from '@mui/material/AlertTitle';
-import { WorkflowCancellationDialogProps } from '../WorkflowCancellationDialog/utils';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Grow from '@mui/material/Grow';
@@ -169,6 +168,7 @@ import { AlertDialogProps } from '../AlertDialog';
 import { nanoid } from 'nanoid';
 import alertDialogUrl from '../../assets/warning.svg';
 import { fetchAffectedPackages } from '../../services/workflow';
+import { ViewPackagesDialogProps } from '../ViewPackagesDialog';
 
 // TODO:
 //  - PathNav and other ares to open new edit form
@@ -217,9 +217,11 @@ export interface BaseProps extends Partial<UpdateModeProps & RepeatModeProps & C
   /** The form will render only the specified fields from the main content type being worked with */
   fieldsToRender?: ContentTypeField[];
   onSave?(result: {
-    dom: Document | Element;
-    xml: string;
+    // The `dom` and `xml` properties are not applicable for repeat forms
+    dom?: Document | Element;
+    xml?: string;
     values: LookupTable<unknown>;
+    versionComment: string;
   }): Partial<{ close: boolean }> | undefined;
 }
 
@@ -687,7 +689,7 @@ function Prepper(props: FormsEngineProps) {
   const liveUpdatedItem = useSelection((state) =>
     // If we're in create mode, there's no item yet. If updating, we can get the path from props or parent props in the case of repeat mode.
     create
-      ? undefined
+      ? null
       : state.content.itemsByPath[props?.update?.path ?? formsStackData[stackIndex - 1]?.props?.update?.path]
   );
 
@@ -847,7 +849,7 @@ function Prepper(props: FormsEngineProps) {
           pathInSite: parentPathInSite,
           contentType: parentContentType,
           // TODO: is this the right contentObject?
-          contentObject: values
+          contentObject: null
         });
       } else if (
         // An embedded component is being opened as a stacked form.
@@ -934,10 +936,12 @@ function Prepper(props: FormsEngineProps) {
           [XmlKeys.displayTemplate]: contentType.displayTemplate,
           [XmlKeys.templateNotRequired]: Boolean(contentType.displayTemplate ? 'false' : 'true'),
           [XmlKeys.mergeStrategy]: 'inherit-levels',
-          createdDate: dateIsoString,
-          createdDate_dt: dateIsoString,
-          lastModifiedDate: dateIsoString,
-          lastModifiedDate_dt: dateIsoString
+          [XmlKeys.dateCreated]: dateIsoString,
+          [`${XmlKeys.dateCreated}_dt`]: dateIsoString,
+          [XmlKeys.dateModified]: dateIsoString,
+          // TODO: folderName?
+          [XmlKeys.folderName]: '',
+          [`${XmlKeys.dateModified}_dt`]: dateIsoString
         };
         const values = createCleanValuesObject(
           contentType.fields,
@@ -1193,14 +1197,15 @@ function Form(props: FormsEngineProps) {
       // String-type fields have auto-rollback detection; the fieldUpdates$ will emit anyway. Checking if the fieldId
       // emitted is in changedFieldIds should tell if the field was rolled back.
       setHasPendingChanges(changedFieldIds.size > 0);
-      const fieldsToRender = contentType.fields;
+      let fieldsToRender = contentType.fields;
       if (effectRefs.current.fieldsToRender) {
+        fieldsToRender = {};
         effectRefs.current.fieldsToRender.forEach((field) => {
           fieldsToRender[field.id] = field;
         });
       }
       const fieldsChanged = Array.from(changedFieldIds).flatMap(
-        (f) => fieldsToRender[f === 'folder-name' ? 'file-name' : f]?.name ?? []
+        (fieldId) => fieldsToRender[fieldId === 'folder-name' ? 'file-name' : fieldId]?.name ?? []
       );
       const currentMessage = store.get(versionCommentAtom).trim();
       const newMessage = produceMessage(fieldsChanged);
@@ -1298,7 +1303,7 @@ function Form(props: FormsEngineProps) {
   // top/bottom margins (2 top, 2 bottom). If not a dialog, take up the whole screen.
   const targetHeight = getTargetHeight(isDialog, isFullScreen, theme);
 
-  const affectsWorkflowItems = lockStatus.affectedPackages?.length > 0;
+  const affectedPackages = lockStatus.affectedPackages?.length > 0;
   const isEmbedded = Boolean(update?.modelId);
   const isCreateMode = Boolean(create?.path);
   const isRepeatMode = Boolean(repeat?.fieldId);
@@ -1388,11 +1393,23 @@ function Form(props: FormsEngineProps) {
     }
   }
 
-  const disableSave = isSubmitting || (affectsWorkflowItems && !acceptedWorkflowCancellation);
+  const disableSave = isSubmitting || (affectedPackages && !acceptedWorkflowCancellation);
   const handleSave: ButtonProps['onClick'] = (e?: React.MouseEvent<HTMLButtonElement>) => {
-    // TODO: Saving repeats & embedded
-    setIsSubmitting(isSubmitting);
     const values = extractValueAtoms(store, stableFormContext.atoms.valueByFieldId);
+    const closeInstruction = () =>
+      setTimeout(() => {
+        // Controls like the Item Selector use the onSave so that once the form saves, the control of the underlying form gets updated.
+        // Executing the onClose without the timeout, causes values set at the control prior to closing to get lost somehow.
+        // Putting the timeout at the control works too, but prefer to simply it for controls and absorb the complexity here.
+        (isStackedForm ? onCloseProp : enhancedDialogOnClose)?.(e, null);
+      });
+    // Repeat handled here. Execution ends inside if statement.
+    if (isRepeatMode) {
+      setHasPendingChanges(false);
+      const instructions = onSave?.({ values, versionComment });
+      if (instructions?.close) closeInstruction();
+      return;
+    }
     const date = new Date().toISOString();
     // Put system properties in xml before creating the XML
     values[XmlKeys.contentTypeId] = contentType.id;
@@ -1406,18 +1423,22 @@ function Form(props: FormsEngineProps) {
     values[XmlKeys.dateModified] = date;
     values[XmlKeys.dateModified + '_dt'] = date;
     const xml = buildContentXml(values, contentTypesById);
-    let path: string;
+    // Embedded handled here. Execution ends inside if statement.
     if (isEmbedded) {
-      // TODO: Handle
+      setHasPendingChanges(false);
+      const dom = fromString(xml);
+      const instructions = onSave?.({ dom, xml, values, versionComment });
+      if (instructions?.close) closeInstruction();
       return;
-    } else if (isRepeatMode) {
-      // TODO: Handle
-      return;
-    } else if (isCreateMode) {
+    }
+    setIsSubmitting(true);
+    let path: string;
+    if (isCreateMode) {
       path = create.path;
-    } /* is a plain update */ else {
+    } /* is a plain update (page or component) */ else {
       path = update.path;
     }
+    // TODO: Temporary playground save path. Remove.
     // path = '/site/website/fe2-save-result.xml';
     writeContent(siteId, path, xml).subscribe({
       next() {
@@ -1425,15 +1446,8 @@ function Form(props: FormsEngineProps) {
         setHasPendingChanges(false);
         formContextApi.setValuesCheckpoint(values);
         const dom = fromString(xml);
-        const instructions = onSave?.({ dom, xml, values });
-        if (instructions?.close) {
-          setTimeout(() => {
-            // Controls like the Item Selector use the onSave so that once the form saves, the control of the underlying form gets updated.
-            // Executing the onClose without the timeout, causes values set at the control prior to closing to get lost somehow.
-            // Putting the timeout at the control works too, but prefer to simply it for controls and absorb the complexity here.
-            (isStackedForm ? onCloseProp : enhancedDialogOnClose)?.(e, null);
-          });
-        }
+        const instructions = onSave?.({ dom, xml, values, versionComment });
+        if (instructions?.close) closeInstruction();
       },
       error(error: AjaxError) {
         setIsSubmitting(false);
@@ -1589,7 +1603,11 @@ function Form(props: FormsEngineProps) {
         {isRepeatMode ? (
           <Container sx={{ py: 1 }}>
             <Typography variant="h6" component="h3">
-              Item # {repeat.index + 1}
+              {repeat.index === undefined ? (
+                <FormattedMessage defaultMessage="New Repeat Item" />
+              ) : (
+                <FormattedMessage defaultMessage="Item # {number}" values={{ number: repeat.index + 1 }} />
+              )}
             </Typography>
             <Typography variant="body2" color="textSecondary">
               <FormattedMessage
@@ -1637,7 +1655,7 @@ function Form(props: FormsEngineProps) {
               </StickyBox>
             </Grid>
             <Grid size={useCollapsedToC ? 8.3 : 7} className="space-y" data-area-id="formBody">
-              {affectsWorkflowItems && (
+              {affectedPackages && (
                 <Alert
                   severity="warning"
                   variant="outlined"
@@ -1649,7 +1667,7 @@ function Form(props: FormsEngineProps) {
                         dispatch(
                           pushDialog({
                             component: 'craftercms.components.WorkflowCancellationDialog',
-                            props: { items: lockStatus.affectedPackages } as WorkflowCancellationDialogProps
+                            props: { item } as ViewPackagesDialogProps
                           })
                         );
                       }}
@@ -1754,7 +1772,7 @@ function Form(props: FormsEngineProps) {
                             onFocus={(e) => e.target.select()}
                           />
                           <div>
-                            {affectsWorkflowItems && (
+                            {affectedPackages && (
                               <FormControlLabel
                                 title={formatMessage({
                                   defaultMessage:
@@ -1802,18 +1820,21 @@ function Form(props: FormsEngineProps) {
                       <>
                         {/* For embedded components, only allow releasing the lock if it's the top form.
                         If is a stacked form, only release via the parent form. */}
-                        {!readonly && !(isEmbedded && isStackedForm) && (
-                          <SecondaryButton
-                            fullWidth
-                            variant="outlined"
-                            onClick={handleDisableEditing}
-                            loading={enablingEditInProgress}
-                          >
-                            <FormattedMessage defaultMessage="Unlock" />
-                          </SecondaryButton>
-                        )}
+                        {!readonly &&
+                          // No point in the "unlock" button for new repeat items
+                          (!isRepeatMode || (isRepeatMode && repeat.values)) &&
+                          !(isEmbedded && isStackedForm) && (
+                            <SecondaryButton
+                              fullWidth
+                              variant="outlined"
+                              onClick={handleDisableEditing}
+                              loading={enablingEditInProgress}
+                            >
+                              <FormattedMessage defaultMessage="Unlock" />
+                            </SecondaryButton>
+                          )}
                         {/* For embedded components, only allow publishing if it's the top form.
-                        If is a stacked form, publish via the parent form. */}
+                        If is a stacked form, publish via the parent form.
                         {!(isEmbedded && isStackedForm) && (
                           <>
                             <Button fullWidth variant="outlined">
@@ -1824,6 +1845,7 @@ function Form(props: FormsEngineProps) {
                             </Button>
                           </>
                         )}
+                        */}
                       </>
                     )}
                   </>
@@ -2246,7 +2268,7 @@ function EditModeHeader({
                     <FormattedMessage
                       defaultMessage="Created {when} by {who}"
                       values={{
-                        who: <em title={formattedCreator.tooltip}>{formattedCreator.display}</em>,
+                        who: () => <em title={formattedCreator.tooltip}>{formattedCreator.display}</em>,
                         when: formattedCreationDate
                       }}
                     />
@@ -2258,7 +2280,7 @@ function EditModeHeader({
                     <FormattedMessage
                       defaultMessage="Updated {when} by {who}"
                       values={{
-                        who: <em title={formattedModifier.tooltip}>{formattedModifier.display}</em>,
+                        who: () => <em title={formattedModifier.tooltip}>{formattedModifier.display}</em>,
                         when: formattedModifiedDate
                       }}
                     />
@@ -2273,19 +2295,11 @@ function EditModeHeader({
                 sx={{ flexWrap: 'wrap' }}
               >
                 <Box component="span" display="flex" alignItems="center" marginRight={1}>
-                  <ItemPublishingTargetIcon
-                    fontSize="inherit"
-                    styles={{ root: { marginRight: theme.spacing(0.25) } }}
-                    item={item}
-                  />{' '}
+                  <ItemPublishingTargetIcon fontSize="inherit" sxs={{ root: { marginRight: 0.25 } }} item={item} />{' '}
                   {getItemPublishingTargetText(item.stateMap)}
                 </Box>
                 <Box component="span" display="flex" alignItems="center">
-                  <ItemStateIcon
-                    fontSize="inherit"
-                    styles={{ root: { marginRight: theme.spacing(0.25) } }}
-                    item={item}
-                  />{' '}
+                  <ItemStateIcon fontSize="inherit" sxs={{ root: { mr: 0.25 } }} item={item} />{' '}
                   {getItemStateText(item.stateMap, { user: item.lockOwner?.username })}
                 </Box>
               </Typography>

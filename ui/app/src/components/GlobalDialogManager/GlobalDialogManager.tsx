@@ -152,7 +152,7 @@ function DialogStackItemContainer(props: DialogStackItem<EnhancedDialogProps>) {
   const Dialog = useMemo(() => {
     if (typeof component === 'string') {
       if (components.has(component)) {
-        return components.get(component);
+        return components.get(component) as ElementType<EnhancedDialogProps>;
       } else {
         return (props: EnhancedDialogProps) => (
           <AlertDialog
@@ -432,29 +432,29 @@ function GlobalDialogManager() {
         />
         {/* endregion */}
 
-      {/* region Package Review */}
-      <PublishingPackageReviewDialog
-        {...state.publishingPackageApproval}
-        onClose={createCallback(state.publishingPackageApproval.onClose, dispatch)}
-        onClosed={createCallback(state.publishingPackageApproval.onClosed, dispatch)}
-        onSuccess={createCallback(state.publishingPackageApproval.onSuccess, dispatch)}
-        onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
-          createCallback(state.publishingPackageApproval.onClose, dispatch)
-        )}
-      />
-      {/* endregion */}
+        {/* region Package Review */}
+        <PublishingPackageReviewDialog
+          {...state.publishingPackageApproval}
+          onClose={createCallback(state.publishingPackageApproval.onClose, dispatch)}
+          onClosed={createCallback(state.publishingPackageApproval.onClosed, dispatch)}
+          onSuccess={createCallback(state.publishingPackageApproval.onSuccess, dispatch)}
+          onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
+            createCallback(state.publishingPackageApproval.onClose, dispatch)
+          )}
+        />
+        {/* endregion */}
 
-      {/* region Package Resubmit */}
-      <PublishingPackageResubmitDialog
-        {...state.publishingPackageResubmit}
-        onClose={createCallback(state.publishingPackageResubmit.onClose, dispatch)}
-        onClosed={createCallback(state.publishingPackageResubmit.onClosed, dispatch)}
-        onSuccess={createCallback(state.publishingPackageResubmit.onSuccess, dispatch)}
-        onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
-          createCallback(state.publishingPackageResubmit.onClose, dispatch)
-        )}
-      />
-      {/* endregion */}
+        {/* region Package Resubmit */}
+        <PublishingPackageResubmitDialog
+          {...state.publishingPackageResubmit}
+          onClose={createCallback(state.publishingPackageResubmit.onClose, dispatch)}
+          onClosed={createCallback(state.publishingPackageResubmit.onClosed, dispatch)}
+          onSuccess={createCallback(state.publishingPackageResubmit.onSuccess, dispatch)}
+          onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
+            createCallback(state.publishingPackageResubmit.onClose, dispatch)
+          )}
+        />
+        {/* endregion */}
 
         {/* region Create Content */}
         <NewContentDialog
@@ -552,8 +552,6 @@ function GlobalDialogManager() {
           onContinue={createCallback(state.brokenReferences.onContinue, dispatch)}
         />
         {/* endregion */}
-
-
 
         {/* region Create Folder */}
         <CreateFolderDialog
@@ -677,7 +675,6 @@ function GlobalDialogManager() {
           {...state.publishingStatus}
           onClose={createCallback(state.publishingStatus.onClose, dispatch)}
           onRefresh={createCallback(state.publishingStatus.onRefresh, dispatch)}
-
         />
         {/* endregion */}
 
@@ -707,40 +704,40 @@ function GlobalDialogManager() {
         ))}
         {/* endregion */}
 
-      {/* region Cancel Package Dialog */}
-      <CancelPackageDialog
-        {...state.cancelPackage}
-        onClose={createCallback(state.cancelPackage.onClose, dispatch)}
-        onClosed={createCallback(state.cancelPackage.onClosed, dispatch)}
-        onSuccess={createCallback(state.cancelPackage.onSuccess, dispatch)}
-      />
-      {/* endregion */}
+        {/* region Cancel Package Dialog */}
+        <CancelPackageDialog
+          {...state.cancelPackage}
+          onClose={createCallback(state.cancelPackage.onClose, dispatch)}
+          onClosed={createCallback(state.cancelPackage.onClosed, dispatch)}
+          onSuccess={createCallback(state.cancelPackage.onSuccess, dispatch)}
+        />
+        {/* endregion */}
 
-      {/* region Bulk Cancel Package Dialog */}
-      <BulkCancelPackageDialog
-        {...state.bulkCancelPackage}
-        onClose={createCallback(state.bulkCancelPackage.onClose, dispatch)}
-        onClosed={createCallback(state.bulkCancelPackage.onClosed, dispatch)}
-        onSuccess={createCallback(state.bulkCancelPackage.onSuccess, dispatch)}
-      />
-      {/* endregion */}
+        {/* region Bulk Cancel Package Dialog */}
+        <BulkCancelPackageDialog
+          {...state.bulkCancelPackage}
+          onClose={createCallback(state.bulkCancelPackage.onClose, dispatch)}
+          onClosed={createCallback(state.bulkCancelPackage.onClosed, dispatch)}
+          onSuccess={createCallback(state.bulkCancelPackage.onSuccess, dispatch)}
+        />
+        {/* endregion */}
 
-      {/* region Package Details Dialog */}
-      <PackageDetailsDialog
-        {...state.packageDetails}
-        onClose={createCallback(state.packageDetails.onClose, dispatch)}
-        onClosed={createCallback(state.packageDetails.onClosed, dispatch)}
-      />
-      {/* endregion */}
+        {/* region Package Details Dialog */}
+        <PackageDetailsDialog
+          {...state.packageDetails}
+          onClose={createCallback(state.packageDetails.onClose, dispatch)}
+          onClosed={createCallback(state.packageDetails.onClosed, dispatch)}
+        />
+        {/* endregion */}
 
-      {/* region View Packages Dialog */}
-      <ViewPackagesDialog
-        {...state.viewPackages}
-        onClose={createCallback(state.viewPackages.onClose, dispatch)}
-        onClosed={createCallback(state.viewPackages.onClosed, dispatch)}
-        onContinue={createCallback(state.viewPackages.onContinue, dispatch)}
-      />
-      {/* endregion */}
+        {/* region View Packages Dialog */}
+        <ViewPackagesDialog
+          {...state.viewPackages}
+          onClose={createCallback(state.viewPackages.onClose, dispatch)}
+          onClosed={createCallback(state.viewPackages.onClosed, dispatch)}
+          onContinue={createCallback(state.viewPackages.onContinue, dispatch)}
+        />
+        {/* endregion */}
 
         {/* region UIBlocker */}
         <UIBlocker {...state.uiBlocker} />

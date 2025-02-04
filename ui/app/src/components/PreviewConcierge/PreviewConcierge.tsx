@@ -105,7 +105,6 @@ import {
   getStoredEditModePadding,
   getStoredHighlightModeChoice,
   getStoredOutdatedXBValidationDate,
-  pickShowContentFormAction,
   removeStoredClipboard,
   setStoredOutdatedXBValidationDate
 } from '../../utils/state';
@@ -189,6 +188,7 @@ import { Dispatch } from 'redux';
 import { ActionCreatorWithOptionalPayload } from '@reduxjs/toolkit';
 import { ItemMegaMenuStateProps } from '../ItemMegaMenu';
 import StandardAction from '../../models/StandardAction';
+import { pickShowContentFormAction } from '../../utils/system';
 
 const issueDescriptorRequest = (props: {
   site: string;
@@ -410,18 +410,14 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
         case 'E':
           upToDateRefs.current.item &&
             dispatch(
-              pickShowContentFormAction(
-                false,
-                { update: { path: upToDateRefs.current.guest.path } },
-                {
-                  site: upToDateRefs.current.siteId,
-                  path: upToDateRefs.current.guest.path,
-                  readonly:
-                    !upToDateRefs.current.item.availableActionsMap.edit ||
-                    isItemLockedForMe(upToDateRefs.current.item, upToDateRefs.current.user.username),
-                  authoringBase: upToDateRefs.current.authoringBase
-                }
-              )
+              pickShowContentFormAction({
+                site: upToDateRefs.current.siteId,
+                path: upToDateRefs.current.guest.path,
+                readonly:
+                  !upToDateRefs.current.item.availableActionsMap.edit ||
+                  isItemLockedForMe(upToDateRefs.current.item, upToDateRefs.current.user.username),
+                authoringBase: upToDateRefs.current.authoringBase
+              })
             );
           break;
         case 'a':

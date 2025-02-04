@@ -45,7 +45,7 @@ import { getNumOfMenuOptionsForItem, lookupItemByPath } from '../../utils/conten
 import { previewItem } from '../../state/actions/preview';
 import { getOffsetLeft, getOffsetTop } from '@mui/material/Popover';
 import { showItemMegaMenu, showPreviewDialog } from '../../state/actions/dialogs';
-import { getStoredPathNavigatorTree, pickShowContentFormAction } from '../../utils/state';
+import { getStoredPathNavigatorTree } from '../../utils/state';
 import GlobalState from '../../models/GlobalState';
 import PathNavigatorSkeleton from '../PathNavigator/PathNavigatorSkeleton';
 import { DetailedItem } from '../../models/Item';
@@ -62,6 +62,7 @@ import SystemType from '../../models/SystemType';
 import { PathNavigatorTreeItemProps } from './PathNavigatorTreeItem';
 import { UNDEFINED } from '../../utils/constants';
 import SimpleAjaxError from '../../models/SimpleAjaxError';
+import { pickShowContentFormAction } from '../../utils/system';
 
 export interface PathNavigatorTreeProps
   extends Pick<
@@ -309,13 +310,7 @@ export function PathNavigatorTree(props: PathNavigatorTreeProps) {
 
   const onPreview = (item: DetailedItem) => {
     if (isEditableViaFormEditor(item)) {
-      dispatch(
-        pickShowContentFormAction(
-          false,
-          { update: { path: item.path }, readonly: true },
-          { path: item.path, authoringBase, site: siteId, readonly: true }
-        )
-      );
+      dispatch(pickShowContentFormAction({ path: item.path, authoringBase, site: siteId, readonly: true }));
     } else if (isMediaContent(item.mimeType) || isPdfDocument(item.mimeType)) {
       dispatch(
         showPreviewDialog({
