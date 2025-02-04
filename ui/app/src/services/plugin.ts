@@ -92,7 +92,7 @@ export function importFile(
   file?: string,
   id?: string
 ): Promise<any> {
-  // @ts-ignore — methods share same signature
+  // @ts-expect-error — methods share same signature, this is fine.
   let url = buildFileUrl(...arguments);
   if (import.meta.env.DEV && !hasProtocol(url)) {
     url = `${origin}${url}`;

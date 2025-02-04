@@ -26,7 +26,7 @@ export const popDialog = /*#__PURE__*/ createAction<{ id: string }>('POP_DIALOG'
 
 export const updateDialogState = /*#__PURE__*/ createAction<{ id: string; props: unknown }>('UPDATE_DIALOG_STATE');
 
-// TODO: Perhaps discard these actions and leave the existing showWidgetDialog family of actions
+// FE2 TODO: Perhaps discard these actions and leave the existing showWidgetDialog family of actions
 export const pushNonDialog = /*#__PURE__*/ createAction<
   Partial<DialogStackItem & { dialogProps: EnhancedDialogProps }> & Pick<DialogStackItem, 'component'>
 >('PUSH_NON_DIALOG');

@@ -15,19 +15,22 @@
  */
 
 import Box, { BoxProps } from '@mui/material/Box';
+import { consolidateSx } from '../../../utils/system';
 
 export const FieldBox = ({ dashed, sx, ...boxProps }: BoxProps & { dashed?: boolean }) => (
   <Box
     {...boxProps}
-    sx={{
-      borderWidth: '1px',
-      borderStyle: dashed ? 'dashed' : 'solid',
-      display: 'flex',
-      borderColor: (theme) => theme.palette.divider,
-      borderRadius: 1,
-      flexDirection: 'column',
-      ...sx
-    }}
+    sx={consolidateSx(
+      {
+        borderWidth: '1px',
+        borderStyle: dashed ? 'dashed' : 'solid',
+        display: 'flex',
+        borderColor: (theme) => theme.palette.divider,
+        borderRadius: 1,
+        flexDirection: 'column'
+      },
+      sx
+    )}
   />
 );
 

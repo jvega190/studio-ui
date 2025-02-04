@@ -592,6 +592,7 @@ const epic = combineEpics<GuestStandardAction, GuestStandardAction, GuestState>(
                   ? models[getModelIdFromInheritedField(modelId, field.id)].craftercms.path
                   : path;
 
+                // FE2 TODO:
                 // return beforeWrite$({
                 //   path: pathToLock,
                 //   site: state.activeSite,

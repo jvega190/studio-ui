@@ -20,7 +20,7 @@ import { importFile } from '../services/plugin';
 
 type Return = { error: unknown; module: Partial<Record<'default' | string, unknown>> } | undefined;
 
-// TODO: backend does not support mjs extension
+// FE2 TODO: backend does not support mjs extension
 export function useImportFile(type: string, name: string, file?: string, id?: string): Return {
   const site = useActiveSiteId();
   const [value, setValue] = useState<Return>();
