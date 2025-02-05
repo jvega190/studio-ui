@@ -1748,7 +1748,9 @@ function Form(props: FormsEngineProps) {
                       borderBottomRightRadius: theme.shape.borderRadius
                     }}
                   >
-                    <AccordionSummary data-section-id={section.title}>{section.title}</AccordionSummary>
+                    <AccordionSummary data-section-id={section.title}>
+                      <Typography>{section.title}</Typography>
+                    </AccordionSummary>
                     <AccordionDetails className="space-y-2">
                       {section.fields.map((fieldId, fieldIndex) =>
                         renderFieldControl(
@@ -2392,7 +2394,7 @@ function EditModeHeader({
           </Box>
         </Box>
       </Container>
-      <Container maxWidth="xl" sx={{ display: 'flex' }}>
+      <Container maxWidth="xl" sx={{ display: isLargeContainer ? 'flex' : 'none', marginTop: '-20px' }}>
         {isLargeContainer && (
           <Tooltip title={<FormattedMessage defaultMessage="Collapse table of contents" />}>
             <IconButton
@@ -2413,6 +2415,8 @@ function EditModeHeader({
             </IconButton>
           </Tooltip>
         )}
+        {/*
+        Disabling Tabs. Future feature.
         <Tabs value={activeTab} onChange={handleTabChange} sx={{ minHeight: 0 }}>
           <DenseTab label={<FormattedMessage defaultMessage="Form" />} />
           <DenseTab label={<FormattedMessage defaultMessage="Preview" />} />
@@ -2422,6 +2426,7 @@ function EditModeHeader({
           <DenseTab label={<FormattedMessage defaultMessage="Controller" />} />
           <DenseTab label={<FormattedMessage defaultMessage="Settings" />} />
         </Tabs>
+        */}
       </Container>
     </>
   );
