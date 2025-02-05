@@ -32,7 +32,8 @@ export enum XmlKeys {
   internalName = 'internal-name',
   templateNotRequired = 'no-template-required',
   dateCreated = 'createdDate',
-  dateModified = 'lastModifiedDate'
+  dateModified = 'lastModifiedDate',
+  savedAsDraft = 'savedAsDraft'
 }
 
 // These are not in the content type definition

@@ -126,7 +126,7 @@ import { UnknownControl } from './common/UnknownControl';
 import LookupTable from '../../models/LookupTable';
 import { XMLBuilder } from 'fast-xml-parser';
 import { ControlProps } from './types';
-import { toColor } from '../../utils/string';
+import { ensureSingleSlash, toColor } from '../../utils/string';
 import { NodeSelectorItem } from './controls/NodeSelector';
 import { RepeatItem } from './controls/Repeat';
 import Chip, { chipClasses } from '@mui/material/Chip';
@@ -600,6 +600,38 @@ const createFormStackData: (mixin?: Partial<StableFormContextProps>) => StableFo
   return data;
 };
 
+// TODO: This is useful for the whole system. Move.
+function showAlert({
+  message,
+  children,
+  dispatch
+}: {
+  message?: string;
+  children?: ReactNode;
+  dispatch: ReduxDispatch;
+}) {
+  const id = nanoid();
+  dispatch(
+    pushDialog({
+      id,
+      component: 'craftercms.components.AlertDialog',
+      allowFullScreen: false,
+      allowMinimize: false,
+      props: {
+        body: message,
+        children,
+        imageUrl: alertDialogUrl,
+        sxs: { image: { pb: 1 } },
+        buttons: (
+          <PrimaryButton fullWidth autoFocus onClick={() => dispatch(popDialog({ id }))}>
+            <FormattedMessage defaultMessage="Accept" />
+          </PrimaryButton>
+        )
+      } as Partial<AlertDialogProps>
+    })
+  );
+}
+
 function Root(props: FormsEngineProps) {
   const store = useMemo(() => createStore(), []); // TODO: Use stable memo?
   const stableGlobalContextRef = useRef<StableGlobalContextProps>(undefined);
@@ -928,7 +960,7 @@ function Prepper(props: FormsEngineProps) {
           valueByFieldId: {},
           validationByFieldId: {},
           lockResult: lockResultAtom,
-          readonly: createReadonlyAtom(lockResultAtom)
+          readonly: atom(false)
         };
         const contentObject: LookupTable<unknown> = {
           [XmlKeys.modelId]: newModelId,
@@ -939,9 +971,10 @@ function Prepper(props: FormsEngineProps) {
           [XmlKeys.dateCreated]: dateIsoString,
           [`${XmlKeys.dateCreated}_dt`]: dateIsoString,
           [XmlKeys.dateModified]: dateIsoString,
-          // TODO: folderName?
+          [`${XmlKeys.dateModified}_dt`]: dateIsoString,
+          // TODO: folderName? fileName?
           [XmlKeys.folderName]: '',
-          [`${XmlKeys.dateModified}_dt`]: dateIsoString
+          [XmlKeys.fileName]: 'index.xml'
         };
         const values = createCleanValuesObject(
           contentType.fields,
@@ -1151,6 +1184,9 @@ function Form(props: FormsEngineProps) {
   const stackFormCount = useAtomValue(stackFormCountAtom);
   const isStackedForm = stackIndex > 0;
   const hasStackedForms = !isStackedForm && stackFormCount > 0;
+  const isEmbedded = Boolean(update?.modelId);
+  const isCreateMode = Boolean(create?.path);
+  const isRepeatMode = Boolean(repeat?.fieldId);
   const effectRefs = useUpdateRefs({
     store,
     contentTypesById,
@@ -1185,7 +1221,7 @@ function Form(props: FormsEngineProps) {
     };
   }, [contextApi, effectRefs, previousScrollTopPosition, stackIndex]);
 
-  // Version comment generator
+  // Version comment generator & change detection/tracking
   useEffect(() => {
     const produceMessage = (fieldsChanged: string[]) => {
       if (fieldsChanged.length === 0) return '';
@@ -1197,6 +1233,8 @@ function Form(props: FormsEngineProps) {
       // String-type fields have auto-rollback detection; the fieldUpdates$ will emit anyway. Checking if the fieldId
       // emitted is in changedFieldIds should tell if the field was rolled back.
       setHasPendingChanges(changedFieldIds.size > 0);
+      // No comment generation for content creation.
+      if (isCreateMode) return;
       let fieldsToRender = contentType.fields;
       if (effectRefs.current.fieldsToRender) {
         fieldsToRender = {};
@@ -1227,7 +1265,7 @@ function Form(props: FormsEngineProps) {
     return () => {
       sub.unsubscribe();
     };
-  }, [changedFieldIds, contentType.fields, effectRefs, setHasPendingChanges, fieldUpdates$, store]);
+  }, [changedFieldIds, contentType.fields, effectRefs, setHasPendingChanges, fieldUpdates$, store, isCreateMode]);
 
   const sourceMapPaths = useMemo(() => (sourceMap ? Object.values(sourceMap).map((path) => path) : []), [sourceMap]);
   useFetchSandboxItems(sourceMapPaths);
@@ -1304,9 +1342,6 @@ function Form(props: FormsEngineProps) {
   const targetHeight = getTargetHeight(isDialog, isFullScreen, theme);
 
   const affectedPackages = lockStatus.affectedPackages?.length > 0;
-  const isEmbedded = Boolean(update?.modelId);
-  const isCreateMode = Boolean(create?.path);
-  const isRepeatMode = Boolean(repeat?.fieldId);
   const isLargeContainer = containerStats?.isLargeContainer;
   const contentTypeFields = contentType.fields;
   const contentTypeSections = contentType.sections;
@@ -1395,6 +1430,7 @@ function Form(props: FormsEngineProps) {
 
   const disableSave = isSubmitting || (affectedPackages && !acceptedWorkflowCancellation);
   const handleSave: ButtonProps['onClick'] = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    // TODO: VALIDATIONS
     const values = extractValueAtoms(store, stableFormContext.atoms.valueByFieldId);
     const closeInstruction = () =>
       setTimeout(() => {
@@ -1412,16 +1448,26 @@ function Form(props: FormsEngineProps) {
     }
     const date = new Date().toISOString();
     // Put system properties in xml before creating the XML
+    values[XmlKeys.fileName] = values[XmlKeys.fileName] ?? contentObject[XmlKeys.fileName];
+    values[XmlKeys.folderName] = values[XmlKeys.folderName] ?? contentObject[XmlKeys.folderName];
+    if (
+      String(values[XmlKeys.internalName]).trim() === '' ||
+      String(values[XmlKeys.fileName]).trim() === '' ||
+      String(values[XmlKeys.folderName]).trim() === ''
+    ) {
+      return showAlert({ dispatch, message: 'You need a page url and internal name at a minimum to save content.' });
+    }
     values[XmlKeys.contentTypeId] = contentType.id;
     values[XmlKeys.displayTemplate] = contentType.displayTemplate;
     values[XmlKeys.mergeStrategy] = contentObject[XmlKeys.mergeStrategy];
     values[XmlKeys.modelId] = objectId;
-    values[XmlKeys.fileName] = values[XmlKeys.fileName] ?? contentObject[XmlKeys.fileName];
-    values[XmlKeys.folderName] = values[XmlKeys.folderName] ?? contentObject[XmlKeys.folderName];
     values[XmlKeys.dateCreated] = contentObject[XmlKeys.dateCreated] ?? date;
     values[XmlKeys.dateCreated + '_dt'] = contentObject[XmlKeys.dateCreated + '_dt'] ?? date;
     values[XmlKeys.dateModified] = date;
     values[XmlKeys.dateModified + '_dt'] = date;
+    values[XmlKeys.savedAsDraft] = Object.values(stableFormContext.atoms.validationByFieldId).some(
+      (data) => !store.get(data).isValid
+    );
     const xml = buildContentXml(values, contentTypesById);
     // Embedded handled here. Execution ends inside if statement.
     if (isEmbedded) {
@@ -1434,7 +1480,7 @@ function Form(props: FormsEngineProps) {
     setIsSubmitting(true);
     let path: string;
     if (isCreateMode) {
-      path = create.path;
+      path = ensureSingleSlash(`${create.path}/${values[XmlKeys.folderName]}/${values[XmlKeys.fileName]}`);
     } /* is a plain update (page or component) */ else {
       path = update.path;
     }
@@ -1451,34 +1497,19 @@ function Form(props: FormsEngineProps) {
       },
       error(error: AjaxError) {
         setIsSubmitting(false);
-        const id = nanoid();
-        dispatch(
-          pushDialog({
-            id,
-            component: 'craftercms.components.AlertDialog',
-            allowFullScreen: false,
-            allowMinimize: false,
-            props: {
-              imageUrl: alertDialogUrl,
-              sxs: { image: { pb: 1 } },
-              children: (
-                <Box>
-                  <Typography marginBottom={1}>
-                    <FormattedMessage defaultMessage="An error occurred trying to save the form" />
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    {error.response.response?.message ?? error.response.message}
-                  </Typography>
-                </Box>
-              ),
-              buttons: (
-                <PrimaryButton fullWidth onClick={() => dispatch(popDialog({ id }))}>
-                  <FormattedMessage defaultMessage="Accept" />
-                </PrimaryButton>
-              )
-            } as AlertDialogProps
-          })
-        );
+        showAlert({
+          dispatch,
+          children: (
+            <Box>
+              <Typography marginBottom={1}>
+                <FormattedMessage defaultMessage="An error occurred trying to save the form" />
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                {error.response.response?.message ?? error.response.message}
+              </Typography>
+            </Box>
+          )
+        });
       }
     });
   };
@@ -1759,63 +1790,66 @@ function Form(props: FormsEngineProps) {
                   </>
                 ) : (
                   <>
-                    {hasPendingChanges ? (
-                      <Grow in={hasPendingChanges}>
-                        <Paper sx={{ p: 1 }} className="space-y-half">
-                          <TextField
-                            size="small"
-                            multiline
-                            fullWidth
-                            label={<FormattedMessage defaultMessage="Version Comment" />}
-                            value={versionComment}
-                            onChange={(e) => setVersionComment(e.target.value)}
-                            onFocus={(e) => e.target.select()}
-                          />
-                          <div>
-                            {affectedPackages && (
-                              <FormControlLabel
-                                title={formatMessage({
-                                  defaultMessage:
-                                    'The item is part of a publishing package. Editing it will cancel the entire package.'
-                                })}
-                                label={<FormattedMessage defaultMessage="Accept publish cancellation" />}
-                                control={
-                                  <Checkbox
-                                    size="small"
-                                    checked={acceptedWorkflowCancellation}
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                      setAcceptedWorkflowCancellation(e.target.checked);
-                                    }}
-                                  />
-                                }
+                    <Paper sx={{ p: 1 }} className="space-y-half">
+                      <TextField
+                        size="small"
+                        multiline
+                        fullWidth
+                        label={<FormattedMessage defaultMessage="Version Comment" />}
+                        value={versionComment}
+                        onChange={(e) => setVersionComment(e.target.value)}
+                        onFocus={(e) => e.target.select()}
+                      />
+                      <div>
+                        {affectedPackages && (
+                          <FormControlLabel
+                            title={formatMessage({
+                              defaultMessage:
+                                'The item is part of a publishing package. Editing it will cancel the entire package.'
+                            })}
+                            label={<FormattedMessage defaultMessage="Accept publish cancellation" />}
+                            control={
+                              <Checkbox
+                                size="small"
+                                checked={acceptedWorkflowCancellation}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                                  setAcceptedWorkflowCancellation(e.target.checked);
+                                }}
                               />
-                            )}
-                            <FormControlLabel
-                              label={<FormattedMessage defaultMessage="Close after saving" />}
-                              control={<Checkbox size="small" checked={false} />}
+                            }
+                          />
+                        )}
+                        <FormControlLabel
+                          label={<FormattedMessage defaultMessage="Close after saving" />}
+                          control={
+                            <Checkbox
+                              size="small"
+                              checked={false}
+                              onClick={() => showAlert({ dispatch, message: 'Not implemented yet.' })}
                             />
-                          </div>
-                          <PrimaryButton
-                            fullWidth
-                            variant="contained"
-                            onClick={handleSave}
-                            disabled={disableSave}
-                            loading={isSubmitting}
-                          >
-                            <FormattedMessage defaultMessage="Save" />
-                          </PrimaryButton>
-                          {isStackedForm && isEmbedded && (
-                            <FormHelperText sx={{ textAlign: 'center' }}>
-                              <FormattedMessage defaultMessage="Changes are saved with the main item." />
-                            </FormHelperText>
-                          )}
-                        </Paper>
+                          }
+                        />
+                      </div>
+                      <PrimaryButton
+                        fullWidth
+                        variant="contained"
+                        onClick={handleSave}
+                        disabled={disableSave || !hasPendingChanges}
+                        loading={isSubmitting}
+                      >
+                        <FormattedMessage defaultMessage="Save" />
+                      </PrimaryButton>
+                      {isStackedForm && isEmbedded && (
+                        <FormHelperText sx={{ textAlign: 'center' }}>
+                          <FormattedMessage defaultMessage="Changes are saved with the main item." />
+                        </FormHelperText>
+                      )}
+                      <Grow in={!hasPendingChanges} appear unmountOnExit>
+                        <Alert severity="info" variant="outlined" sx={{ p: 0, border: 'none', placeContent: 'center' }}>
+                          <FormattedMessage defaultMessage="No changes detected" />
+                        </Alert>
                       </Grow>
-                    ) : (
-                      <Alert severity="info" variant="outlined">
-                        <FormattedMessage defaultMessage="No changes detected" />
-                      </Alert>
-                    )}
+                    </Paper>
                     {!isCreateMode && (
                       <>
                         {/* For embedded components, only allow releasing the lock if it's the top form.
@@ -1830,7 +1864,7 @@ function Form(props: FormsEngineProps) {
                               onClick={handleDisableEditing}
                               loading={enablingEditInProgress}
                             >
-                              <FormattedMessage defaultMessage="Unlock" />
+                              <FormattedMessage defaultMessage="Release Lock" />
                             </SecondaryButton>
                           )}
                         {/* For embedded components, only allow publishing if it's the top form.
