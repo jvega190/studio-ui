@@ -28,11 +28,8 @@ export function FormsEngineDialog(props: FormsEngineDialogProps) {
   return (
     <EnhancedDialog
       sx={{
-        // FE2 TODO:
-        // prettier-ignore
         [`& > .${dialogClasses.container} > .${dialogClasses.paper}`]: {
-          height: '100vh',
-          // overflow: 'hidden'
+          height: '100vh'
         }
       }}
       {...rest}

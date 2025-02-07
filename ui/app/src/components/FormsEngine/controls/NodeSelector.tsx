@@ -491,7 +491,7 @@ function NodeSelector(props: NodeSelectorProps) {
           const nextValue = value.concat();
           nextValue.splice(index, 1, newItem);
           setValue(nextValue);
-          return { close: true };
+          return Promise.resolve({ close: true });
         }
       });
     } else {
@@ -614,7 +614,7 @@ function NodeSelector(props: NodeSelectorProps) {
             const nextValue = value.concat();
             nextValue.push(newItem);
             setValue(nextValue);
-            return { close: true };
+            return Promise.resolve({ close: true });
           }
         });
         break;

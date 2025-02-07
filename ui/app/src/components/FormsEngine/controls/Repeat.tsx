@@ -85,7 +85,7 @@ export function Repeat(props: RepeatProps) {
         const nextValue = value.concat();
         nextValue.splice(index, 1, result.values);
         setValue(nextValue);
-        return { close: true };
+        return Promise.resolve({ close: true });
       }
     });
   };
@@ -95,7 +95,7 @@ export function Repeat(props: RepeatProps) {
       fieldsToRender: Object.values(field.fields),
       onSave(result) {
         setValue(value.concat(result.values));
-        return { close: true };
+        return Promise.resolve({ close: true });
       }
     });
   };

@@ -29,7 +29,6 @@ import React, {
   lazy,
   LazyExoticComponent,
   memo,
-  MutableRefObject,
   ReactNode,
   RefObject,
   SetStateAction,
@@ -204,6 +203,10 @@ const InvalidParamsError = Symbol('InvalidParamsError');
 const NoSiteIdError = Symbol('NoSiteIdError');
 const UnknownError = Symbol('UnknownError');
 
+export interface FormSavePromiseResult {
+  close: boolean;
+}
+
 export interface BaseProps extends Partial<UpdateModeProps & RepeatModeProps & CreateModeProps> {
   stackIndex?: number;
   stackTransitionEnded?: boolean;
@@ -216,13 +219,16 @@ export interface BaseProps extends Partial<UpdateModeProps & RepeatModeProps & C
   onCancelFullScreen?: EnhancedDialogProps['onCancelFullScreen'];
   /** The form will render only the specified fields from the main content type being worked with */
   fieldsToRender?: ContentTypeField[];
+  // Controls like the Item Selector and Repeat use the onSave to update once the form they opened is "saved".
+  // Executing the onClose without the "timeout", causes values set at the control prior to closing to get lost somehow.
+  // The promise works as a timeout and allows the control to do async operations before the form acts on its result.
   onSave?(result: {
     // The `dom` and `xml` properties are not applicable for repeat forms
     dom?: Document | Element;
     xml?: string;
     values: LookupTable<unknown>;
     versionComment: string;
-  }): Partial<{ close: boolean }> | undefined;
+  }): Promise<FormSavePromiseResult> | undefined;
 }
 
 export interface UpdateModeProps {
@@ -489,9 +495,7 @@ const DenseTab = styled(Tab)(({ theme }) => ({ minHeight: 0, padding: theme.spac
 
 const displayFormBeingSavedSnack = (dispatch: ReduxDispatch, formatMessage: IntlShape['formatMessage']) => {
   dispatch(
-    showSystemNotification({
-      message: formatMessage({ defaultMessage: 'Content is being saved, please wait...' })
-    })
+    showSystemNotification({ message: formatMessage({ defaultMessage: 'Content is being saved, please wait...' }) })
   );
 };
 
@@ -542,7 +546,6 @@ const renderFieldControl = (
 };
 
 const getFieldAtomValue = (atom: Atom<unknown>, store: JotaiStore) => store.get(atom);
-
 const stackFormCountAtom = atom(0);
 const versionCommentAtom = atom('');
 
@@ -576,6 +579,9 @@ function createValueAtoms(
 const createReadonlyAtom = (lockedResultAtom: Atom<FormsEngineEditContextProps>) =>
   atom((get) => !get(lockedResultAtom).locked);
 
+/**
+ * Retrieves the values from the form atoms and returns them in a lookup table.
+ */
 const extractValueAtoms: (store: JotaiStore, valueAtoms: LookupTable<Atom<unknown>>) => LookupTable<unknown> = (
   store,
   valueAtoms
@@ -632,6 +638,7 @@ function showAlert({
   );
 }
 
+// This is the entry point for the form engine. It sets up the Jotai store and the global form context.
 function Root(props: FormsEngineProps) {
   const store = useMemo(() => createStore(), []); // TODO: Use stable memo?
   const stableGlobalContextRef = useRef<StableGlobalContextProps>(undefined);
@@ -675,6 +682,7 @@ function Root(props: FormsEngineProps) {
   );
 }
 
+// This collects the requirements for the form and sets up various contexts.
 function Prepper(props: FormsEngineProps) {
   const { create, update, repeat, fieldsToRender, readonly: readonlyProp, stackIndex = 0, isDialog } = props;
   const siteId = useActiveSiteId();
@@ -907,6 +915,11 @@ function Prepper(props: FormsEngineProps) {
         };
         const values = update.values;
         Object.entries(values).forEach(([fieldId, value]) => {
+          if (!contentType.fields[fieldId]) {
+            // System fields (e.g. content-type, display-template, etc) are not part of the content type, but are part
+            // of the content object. We don't need atoms or validity checks for these.
+            return;
+          }
           const [valueAtom, validityAtom] = createValueAtoms(contentType.fields[fieldId], value, stableFormContextRef);
           atoms.valueByFieldId[fieldId] = valueAtom;
           atoms.validationByFieldId[fieldId] = validityAtom;
@@ -929,7 +942,6 @@ function Prepper(props: FormsEngineProps) {
             contentObject: {}
           });
         };
-
         if (readonly === isParentReadonly) {
           setStateValues(isParentLocked, parentLockResult.lockError, parentLockResult.affectedPackages);
         } else {
@@ -1172,7 +1184,6 @@ function Form(props: FormsEngineProps) {
   const item = useContext(ItemContext);
   const { id, contentType, sourceMap, contentObject } = useContext(ItemMetaContext);
   const [isSubmitting, setIsSubmitting] = useAtom(stableFormContext.atoms.isSubmitting);
-  const [blockUI, setBlockUI] = useState(false);
   const [hasPendingChanges, setHasPendingChanges] = useAtom(stableFormContext.atoms.hasPendingChanges);
   const readonly = useAtomValue(stableFormContext.atoms.readonly);
   const [lockStatus, setLockStatus] = useAtom(stableFormContext.atoms.lockResult);
@@ -1337,6 +1348,37 @@ function Form(props: FormsEngineProps) {
     }
   }, [isSubmitting, hasPendingChanges, isStackedForm, updateSubmittingOrHasPendingChanges]);
 
+  // Unlock content when the form is closed.
+  useEffect(() => {
+    return () => {
+      if (
+        !isRepeatMode &&
+        !isCreateMode &&
+        !readonly &&
+        // Note these "Or" statements below build on top of the previous one (i.e. it only gets to the next if the previous is false).
+        // If it's not embedded, unlock the item.
+        (!isEmbedded ||
+          // If is embedded but not stacked, unlock as the embedded is the root form.
+          !isStackedForm ||
+          // If the parent form is readonly, release the lock to put the parent back in sync with its readonly mode.
+          store.get(formsStackData[stackIndex - 1].atoms.readonly))
+      ) {
+        dispatch(unlockItem({ path: item['path'] }));
+      }
+    };
+  }, [
+    dispatch,
+    formsStackData,
+    isRepeatMode,
+    isCreateMode,
+    isEmbedded,
+    isStackedForm,
+    item,
+    readonly,
+    stackIndex,
+    store
+  ]);
+
   // If the form is rendered in/as a dialog, take up the whole screen minus
   // top/bottom margins (2 top, 2 bottom). If not a dialog, take up the whole screen.
   const targetHeight = getTargetHeight(isDialog, isFullScreen, theme);
@@ -1430,20 +1472,15 @@ function Form(props: FormsEngineProps) {
 
   const disableSave = isSubmitting || (affectedPackages && !acceptedWorkflowCancellation);
   const handleSave: ButtonProps['onClick'] = (e?: React.MouseEvent<HTMLButtonElement>) => {
-    // TODO: VALIDATIONS
+    // TODO: Run necessary validations to ensure the form is ready to be saved.
     const values = extractValueAtoms(store, stableFormContext.atoms.valueByFieldId);
-    const closeInstruction = () =>
-      setTimeout(() => {
-        // Controls like the Item Selector use the onSave so that once the form saves, the control of the underlying form gets updated.
-        // Executing the onClose without the timeout, causes values set at the control prior to closing to get lost somehow.
-        // Putting the timeout at the control works too, but prefer to simply it for controls and absorb the complexity here.
-        (isStackedForm ? onCloseProp : enhancedDialogOnClose)?.(e, null);
-      });
+    const onSavePromiseHandler = ({ close }: FormSavePromiseResult) => {
+      close && (isStackedForm ? onCloseProp : enhancedDialogOnClose)?.(e, null);
+    };
     // Repeat handled here. Execution ends inside if statement.
     if (isRepeatMode) {
       setHasPendingChanges(false);
-      const instructions = onSave?.({ values, versionComment });
-      if (instructions?.close) closeInstruction();
+      onSave?.({ values, versionComment })?.then(onSavePromiseHandler);
       return;
     }
     const date = new Date().toISOString();
@@ -1455,7 +1492,16 @@ function Form(props: FormsEngineProps) {
       String(values[XmlKeys.fileName]).trim() === '' ||
       String(values[XmlKeys.folderName]).trim() === ''
     ) {
-      return showAlert({ dispatch, message: 'You need a page url and internal name at a minimum to save content.' });
+      return showAlert({
+        dispatch,
+        message: formatMessage(
+          { defaultMessage: 'You need a {fileName} and {internalName} at a minimum to save content.' },
+          {
+            fileName: contentType.fields[XmlKeys.fileName].name,
+            internalName: contentType.fields[XmlKeys.internalName].name
+          }
+        )
+      });
     }
     values[XmlKeys.contentTypeId] = contentType.id;
     values[XmlKeys.displayTemplate] = contentType.displayTemplate;
@@ -1465,16 +1511,15 @@ function Form(props: FormsEngineProps) {
     values[XmlKeys.dateCreated + '_dt'] = contentObject[XmlKeys.dateCreated + '_dt'] ?? date;
     values[XmlKeys.dateModified] = date;
     values[XmlKeys.dateModified + '_dt'] = date;
-    values[XmlKeys.savedAsDraft] = Object.values(stableFormContext.atoms.validationByFieldId).some(
-      (data) => !store.get(data).isValid
-    );
+    values[XmlKeys.savedAsDraft] = Object.values(stableFormContext.atoms.validationByFieldId).some((data) => {
+      !store.get(data).isValid;
+    });
     const xml = buildContentXml(values, contentTypesById);
     // Embedded handled here. Execution ends inside if statement.
     if (isEmbedded) {
       setHasPendingChanges(false);
       const dom = fromString(xml);
-      const instructions = onSave?.({ dom, xml, values, versionComment });
-      if (instructions?.close) closeInstruction();
+      onSave?.({ dom, xml, values, versionComment })?.then(onSavePromiseHandler);
       return;
     }
     setIsSubmitting(true);
@@ -1492,8 +1537,7 @@ function Form(props: FormsEngineProps) {
         setHasPendingChanges(false);
         formContextApi.setValuesCheckpoint(values);
         const dom = fromString(xml);
-        const instructions = onSave?.({ dom, xml, values, versionComment });
-        if (instructions?.close) closeInstruction();
+        onSave?.({ dom, xml, values, versionComment })?.then(onSavePromiseHandler);
       },
       error(error: AjaxError) {
         setIsSubmitting(false);
@@ -1554,32 +1598,14 @@ function Form(props: FormsEngineProps) {
   };
 
   let handleClose: ButtonProps['onClick'];
+  // If not on a dialog or the prop is not provided, there's no need to handle the close. The form is running in a standalone mode.
   if (enhancedDialogOnClose || onCloseProp) {
     handleClose = (e) => {
-      const doClose = () => {
-        // Stacked forms receive the onClose prop from the parent form.
-        (isStackedForm ? onCloseProp : enhancedDialogOnClose)(e, null);
-      };
       if (isSubmitting) {
         displayFormBeingSavedSnack(dispatch, formatMessage);
-      } else if (hasPendingChanges) {
-        // This is assuming the EnhancedDialog will handle showing the close without saving confirm.
-        doClose();
-      } else if (
-        readonly ||
-        // If is an embedded component opened as a stacked form, unlocking is necessary only if the
-        // parent readonly status is different from that of the present component.
-        // Is embedded? Is stacked? The parent state matches readonly status.
-        (isEmbedded &&
-          isStackedForm &&
-          Boolean(readonly) === Boolean(store.get(formsStackData[stackIndex - 1].atoms.readonly)))
-      ) {
-        doClose();
       } else {
-        setBlockUI(true);
-        internalUnlockContentService(siteId, item.path).subscribe(() => {
-          doClose();
-        });
+        // If `hasPendingChanges`, we're still calling close assuming the EnhancedDialog will handle showing the close without saving confirm.
+        (isStackedForm ? onCloseProp : enhancedDialogOnClose)(e, null);
       }
     };
   }
@@ -1601,13 +1627,14 @@ function Form(props: FormsEngineProps) {
         '.space-y-2 > :not([hidden]) ~ :not([hidden])': { mt: 2 }
       }}
     >
-      <UIBlocker open={isSubmitting || blockUI} />
+      <UIBlocker open={isSubmitting} />
+      {/* Header */}
       <Paper square component="header" data-area-id="formHeader" elevation={0}>
         <Box component={Container} display="flex" alignItems="center" justifyContent="space-between" pt={2}>
           <Typography variant="body2" color="textSecondary">
             <span title={siteId}>{activeSite.name}</span> / <span title={contentType.id}>{contentType.name}</span>
           </Typography>
-          <div>
+          <Box sx={[isDialog && { position: 'absolute', top: theme.spacing(1), right: theme.spacing(1) }]}>
             {props.onMinimize && (
               <Tooltip title={<FormattedMessage defaultMessage="Miminize" />}>
                 <IconButton size="small" onClick={props.onMinimize}>
@@ -1629,7 +1656,7 @@ function Form(props: FormsEngineProps) {
                 </IconButton>
               </Tooltip>
             )}
-          </div>
+          </Box>
         </Box>
         {isRepeatMode ? (
           <Container sx={{ py: 1 }}>
@@ -1793,45 +1820,57 @@ function Form(props: FormsEngineProps) {
                 ) : (
                   <>
                     <Paper sx={{ p: 1 }} className="space-y-half">
-                      <TextField
-                        size="small"
-                        multiline
-                        fullWidth
-                        label={<FormattedMessage defaultMessage="Version Comment" />}
-                        value={versionComment}
-                        onChange={(e) => setVersionComment(e.target.value)}
-                        onFocus={(e) => e.target.select()}
-                      />
-                      <div>
-                        {affectedPackages && (
-                          <FormControlLabel
-                            title={formatMessage({
-                              defaultMessage:
-                                'The item is part of a publishing package. Editing it will cancel the entire package.'
-                            })}
-                            label={<FormattedMessage defaultMessage="Accept publish cancellation" />}
-                            control={
-                              <Checkbox
-                                size="small"
-                                checked={acceptedWorkflowCancellation}
-                                onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                  setAcceptedWorkflowCancellation(e.target.checked);
-                                }}
-                              />
-                            }
-                          />
-                        )}
-                        <FormControlLabel
-                          label={<FormattedMessage defaultMessage="Close after saving" />}
-                          control={
-                            <Checkbox
+                      {
+                        // TODO: Should embedded components get a version comment? How would that work?
+                        (!isEmbedded || !isStackedForm) && (
+                          <>
+                            <TextField
                               size="small"
-                              checked={false}
-                              onClick={() => showAlert({ dispatch, message: 'Not implemented yet.' })}
+                              multiline
+                              fullWidth
+                              label={<FormattedMessage defaultMessage="Version Comment" />}
+                              value={versionComment}
+                              onChange={(e) => setVersionComment(e.target.value)}
+                              onFocus={(e) => e.target.select()}
                             />
-                          }
-                        />
-                      </div>
+                            <div>
+                              {affectedPackages && (
+                                <FormControlLabel
+                                  title={formatMessage({
+                                    defaultMessage:
+                                      'The item is part of a publishing package. Editing it will cancel the entire package.'
+                                  })}
+                                  label={<FormattedMessage defaultMessage="Accept publish cancellation" />}
+                                  control={
+                                    <Checkbox
+                                      size="small"
+                                      checked={acceptedWorkflowCancellation}
+                                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                                        setAcceptedWorkflowCancellation(e.target.checked);
+                                      }}
+                                    />
+                                  }
+                                />
+                              )}
+                              <FormControlLabel
+                                label={<FormattedMessage defaultMessage="Close after saving" />}
+                                control={
+                                  <Checkbox
+                                    size="small"
+                                    checked={false}
+                                    onClick={() => showAlert({ dispatch, message: 'Not implemented yet.' })}
+                                  />
+                                }
+                              />
+                            </div>
+                          </>
+                        )
+                      }
+                      {/*
+                      TODO:
+                       - If validations aren't all passed, should read "Save Draft" and a different colour.
+                       - What about embedded drafts? Should they be allowed?
+                      */}
                       <PrimaryButton
                         fullWidth
                         variant="contained"
@@ -1839,7 +1878,11 @@ function Form(props: FormsEngineProps) {
                         disabled={disableSave || !hasPendingChanges}
                         loading={isSubmitting}
                       >
-                        <FormattedMessage defaultMessage="Save" />
+                        {isRepeatMode || (isEmbedded && isStackedForm) ? (
+                          <FormattedMessage defaultMessage="Done" />
+                        ) : (
+                          <FormattedMessage defaultMessage="Save" />
+                        )}
                       </PrimaryButton>
                       {isStackedForm && isEmbedded && (
                         <FormHelperText sx={{ textAlign: 'center' }}>
@@ -1869,19 +1912,6 @@ function Form(props: FormsEngineProps) {
                               <FormattedMessage defaultMessage="Release Lock" />
                             </SecondaryButton>
                           )}
-                        {/* For embedded components, only allow publishing if it's the top form.
-                        If is a stacked form, publish via the parent form.
-                        {!(isEmbedded && isStackedForm) && (
-                          <>
-                            <Button fullWidth variant="outlined">
-                              <FormattedMessage defaultMessage="Publish" />
-                            </Button>
-                            <Button fullWidth variant="outlined">
-                              <FormattedMessage defaultMessage="Unpublish" />
-                            </Button>
-                          </>
-                        )}
-                        */}
                       </>
                     )}
                   </>
@@ -2105,7 +2135,7 @@ function TableOfContents({
   fieldsToRender,
   atoms
 }: {
-  containerRef: MutableRefObject<HTMLDivElement>;
+  containerRef: RefObject<HTMLDivElement>;
   handleSectionExpandedChange(fieldId: string, expanded: boolean): void;
   contentTypeFields: LookupTable<ContentTypeField>;
   contentTypeSections: ContentTypeSection[];
@@ -2394,7 +2424,14 @@ function EditModeHeader({
           </Box>
         </Box>
       </Container>
-      <Container maxWidth="xl" sx={{ display: isLargeContainer ? 'flex' : 'none', marginTop: '-20px' }}>
+      <Container
+        maxWidth="xl"
+        sx={{
+          // TODO: Remove margin and display rule value condition once tabs get added.
+          display: isLargeContainer ? 'flex' : 'none',
+          marginTop: '-20px'
+        }}
+      >
         {isLargeContainer && (
           <Tooltip title={<FormattedMessage defaultMessage="Collapse table of contents" />}>
             <IconButton
@@ -2416,7 +2453,7 @@ function EditModeHeader({
           </Tooltip>
         )}
         {/*
-        Disabling Tabs. Future feature.
+        TODO: Disabling Tabs. Differed feature.
         <Tabs value={activeTab} onChange={handleTabChange} sx={{ minHeight: 0 }}>
           <DenseTab label={<FormattedMessage defaultMessage="Form" />} />
           <DenseTab label={<FormattedMessage defaultMessage="Preview" />} />
