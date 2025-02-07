@@ -66,7 +66,7 @@ import {
   unlock,
   writeContent
 } from '../../services/content';
-import { fetchDetailedItemComplete } from '../../state/actions/content';
+import { fetchDetailedItemComplete, unlockItem } from '../../state/actions/content';
 import { catchError, forkJoin, map, Observable, of, Subject, switchMap } from 'rxjs';
 import { deserialize, fromString, getInnerHtml } from '../../utils/xml';
 import LoadingState from '../LoadingState';
