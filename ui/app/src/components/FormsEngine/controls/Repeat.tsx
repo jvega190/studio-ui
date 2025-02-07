@@ -30,7 +30,7 @@ import Tooltip from '@mui/material/Tooltip';
 import { lazy, MouseEvent as ReactMouseEvent, Suspense, useMemo, useState } from 'react';
 import Avatar, { avatarClasses } from '@mui/material/Avatar';
 import { StackedButton } from '../common/StackedButton';
-import { isTouchDevice } from '../common/util';
+import { isTouchDevice } from '../common/sortableListUtil';
 import { DialogHeader } from '../../DialogHeader';
 import Dialog from '@mui/material/Dialog';
 import SortableListSkeleton from '../common/SortableListSkeleton';

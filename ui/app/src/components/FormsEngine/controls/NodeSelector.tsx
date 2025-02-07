@@ -82,7 +82,7 @@ import { XmlKeys } from '../validateFieldValue';
 import { ensureSingleSlash } from '../../../utils/string';
 import { popDialog, pushDialog, pushNonDialog } from '../../../state/actions/dialogStack';
 import FieldBox from '../common/FieldBox';
-import { isTouchDevice, KeyDownEvent, sortableListKeyDownHandler } from '../common/util';
+import { isTouchDevice, KeyDownEvent, sortableListKeyDownHandler } from '../common/sortableListUtil';
 import SortableListSkeleton from '../common/SortableListSkeleton';
 import { EmptyState } from '../../EmptyState';
 

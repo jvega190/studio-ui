@@ -15,7 +15,7 @@
  */
 
 import type { TItem } from './SortableList';
-import { sortableListActionProcessor, SortAction } from './util';
+import { sortableListActionProcessor, SortAction } from './sortableListUtil';
 import List from '@mui/material/List';
 import { ListItem } from '@mui/material';
 import ListItemText from '@mui/material/ListItemText';

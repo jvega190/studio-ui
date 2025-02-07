@@ -14,43 +14,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { styled, Theme, useTheme } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
-import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
-import useEnv from '../../hooks/useEnv';
+import { FormattedMessage, useIntl } from 'react-intl';
 import { useDispatch } from 'react-redux';
 import useActiveSite from '../../hooks/useActiveSite';
 import useContentTypes from '../../hooks/useContentTypes';
-import React, {
-  ChangeEvent,
-  ComponentType,
-  Dispatch as ReactDispatch,
-  ElementType,
-  lazy,
-  LazyExoticComponent,
-  memo,
-  ReactNode,
-  RefObject,
-  SetStateAction,
-  Suspense,
-  SyntheticEvent,
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState
-} from 'react';
-import { ContentTypeField, ContentTypeSection, PublishPackage, SandboxItem } from '../../models';
+import React, { ReactNode, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { ContentTypeField, PublishPackage } from '../../models';
 import {
-  FormRequirementsResponse,
   FormsEngineAtoms,
   FormsEngineEditContextProps,
   FormsEngineFormApiContextProps,
   FormsEngineFormContextApi,
   FormsEngineGlobalApiContextProps,
   FormsEngineItemMetaContextProps,
-  FormsEngineSourceMap,
   ItemContext,
   ItemMetaContext,
   StableFormContext,
@@ -58,17 +36,8 @@ import {
   StableGlobalContext,
   StableGlobalContextProps
 } from './formsEngineContext';
-import {
-  fetchContentXML,
-  fetchDescriptorXML,
-  fetchDetailedItem,
-  lock,
-  unlock,
-  writeContent
-} from '../../services/content';
 import { fetchDetailedItemComplete, unlockItem } from '../../state/actions/content';
-import { catchError, forkJoin, map, Observable, of, Subject, switchMap } from 'rxjs';
-import { deserialize, fromString, getInnerHtml } from '../../utils/xml';
+import { catchError, of, Subject } from 'rxjs';
 import LoadingState from '../LoadingState';
 import Paper, { paperClasses } from '@mui/material/Paper';
 import Container from '@mui/material/Container';
@@ -80,81 +49,35 @@ import MinimizeIconRounded from '@mui/icons-material/RemoveRounded';
 import MaximiseIcon from '@mui/icons-material/OpenInFullRounded';
 import CloseFullscreenOutlined from '@mui/icons-material/CloseFullscreenOutlined';
 import Close from '@mui/icons-material/Close';
-import ItemTypeIcon from '../ItemTypeIcon';
-import CalendarTodayRounded from '@mui/icons-material/CalendarTodayRounded';
-import ItemPublishingTargetIcon from '../ItemPublishingTargetIcon';
-import { getItemPublishingTargetText, getItemStateText } from '../ItemDisplay/utils';
-import ItemStateIcon from '../ItemStateIcon';
-import Tabs, { TabsProps } from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
-import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid2';
-import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView';
-import { TreeItem } from '@mui/x-tree-view/TreeItem';
-import { FieldRequiredStateIndicator } from './common/FieldRequiredStateIndicator';
 import Alert from '@mui/material/Alert';
 import { createErrorStatePropsFromApiResponse } from '../ApiResponseErrorState';
 import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
-import TextField from '@mui/material/TextField';
 import Button, { ButtonProps } from '@mui/material/Button';
-import IFrame from '../IFrame';
 import { StickyBox } from './common/StickyBox';
-import ContentCopyRounded from '@mui/icons-material/ContentCopyRounded';
-import { copyToClipboard } from '../../utils/system';
-import { BuiltInControlType, controlMap } from './controlMap';
 import MenuRounded from '@mui/icons-material/MenuRounded';
 import { EnhancedDialogProps } from '../EnhancedDialog';
 import useEnhancedDialogContext from '../EnhancedDialog/useEnhancedDialogContext';
-import useLocale from '../../hooks/useLocale';
 import { v4 as uuid } from 'uuid';
-import { prettyPrintPerson } from '../../utils/object';
-import { ArrowUpward, EditOffOutlined, EditOutlined } from '@mui/icons-material';
+import { ArrowUpward, EditOffOutlined } from '@mui/icons-material';
 import ContentType from '../../models/ContentType';
-import { SearchBar } from '../SearchBar';
-import validateFieldValue, {
-  createCleanValuesObject,
-  FieldValidityState,
-  isEmptyValue,
-  isFieldRequired,
-  systemFieldsNotInType,
-  XmlKeys
-} from './validateFieldValue';
-import { UnknownControl } from './common/UnknownControl';
+import { createCleanValuesObject, systemFieldsNotInType, XmlKeys } from './validateFieldValue';
 import LookupTable from '../../models/LookupTable';
-import { XMLBuilder } from 'fast-xml-parser';
-import { ControlProps } from './types';
-import { ensureSingleSlash, toColor } from '../../utils/string';
-import { NodeSelectorItem } from './controls/NodeSelector';
+import { toColor } from '../../utils/string';
 import { RepeatItem } from './controls/Repeat';
-import Chip, { chipClasses } from '@mui/material/Chip';
 import SecondaryButton from '../SecondaryButton';
 import Fab from '@mui/material/Fab';
-import useDebouncedInput from '../../hooks/useDebouncedInput';
-import MenuOpenIcon from '@mui/icons-material/MenuOpenRounded';
 import useUpdateRefs from '../../hooks/useUpdateRefs';
 import { Fade } from '@mui/material';
-import FormHelperText from '@mui/material/FormHelperText';
-import { showSystemNotification } from '../../state/actions/system';
-import { Dispatch as ReduxDispatch } from 'redux';
-import { IntlShape } from 'react-intl/src/types';
 import { displayWithPendingChangesConfirm } from '../GlobalDialogManager';
 import AlertTitle from '@mui/material/AlertTitle';
-import Checkbox from '@mui/material/Checkbox';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Grow from '@mui/material/Grow';
-import { UIBlocker } from '../UIBlocker';
-import PrimaryButton from '../PrimaryButton';
-import { popDialog, pushDialog } from '../../state/actions/dialogStack';
-import FieldEmptyStateIndicator from './common/FieldEmptyStateIndicator';
+import { pushDialog } from '../../state/actions/dialogStack';
 import useFetchSandboxItems from '../../hooks/useFetchSandboxItems';
-import { buildFileUrl } from '../../services/plugin';
-import { FormsEngineField } from './common/FormsEngineField';
 import ErrorBoundary from '../ErrorBoundary';
 import { debounceTime } from 'rxjs/operators';
-import { ControlSkeleton } from './common/ControlSkeleton';
-import { Atom, atom, createStore, Provider, useAtom, useAtomValue, useStore } from 'jotai';
+import { atom, createStore, Provider, useAtom, useAtomValue, useStore as useJotaiStore } from 'jotai';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
 import useSelection from '../../hooks/useSelection';
 import ApiResponse from '../../models/ApiResponse';
@@ -163,45 +86,35 @@ import usePreviousValue from '../../hooks/usePreviousValue';
 import { areTuplesEqual } from '../../utils/array';
 import { AjaxError } from 'rxjs/ajax';
 import { ErrorState } from '../ErrorState';
-import { AlertDialogProps } from '../AlertDialog';
-import { nanoid } from 'nanoid';
-import alertDialogUrl from '../../assets/warning.svg';
-import { fetchAffectedPackages } from '../../services/workflow';
 import { ViewPackagesDialogProps } from '../ViewPackagesDialog';
-
-// TODO:
-//  - PathNav and other ares to open new edit form
-//  - Edit template & controller
-//  - Update Audience Targeting panel to use new form engine controls
-//  - Store collapsed ToC state & add to preference manager
-//  - AI
-//  - Field diff & rollback
-//  - Edit template on form
-//  - View/edit content type?
-//  - Enabling editing (from read only to edit mode) for embedded components considering deeper nesting that 1 too
-//  - AI to summarise changes for the save comment
-//  - Control guidelines: autoFocus
-//  - API to retrieve inherited props from an item that doesn't yet exist (is being created)
-//  - Rollback confirm with diff
-//  - Docs notes:
-//    - Controls should manage autoFocus; make sure their internal controls reacts to changes in autoFocus or use effect to focus programmatically
-//    - Should test controls in a root form and in a nested form
-//  - Settings:
-//     - Enable tabbing through control menu button
-//     - Permanently hide ToC (though also controlled by the tab bar button)
-//     - Colour blind mode:
-//        - required field indicators to show check instead of asterisk when valid
-//     - Flush control cache?
-//     - Close after saving & options
-//     - Whether to open node selector items in edit if the main item area (instead of edit button) is clicked
-
-type JotaiStore = ReturnType<typeof createStore>;
-
-const ItemNotFoundError = Symbol('ItemNotFoundError');
-const ContentTypeNotFoundError = Symbol('ContentTypeNotFoundError');
-const InvalidParamsError = Symbol('InvalidParamsError');
-const NoSiteIdError = Symbol('NoSiteIdError');
-const UnknownError = Symbol('UnknownError');
+import {
+  buildSectionExpandedState,
+  createFieldAtoms,
+  createFormStackData,
+  createReadonlyAtom,
+  displayFormBeingSavedSnack,
+  fetchUpdateRequirements,
+  getScrollContainer,
+  getTargetHeight,
+  internalLockContentService,
+  internalUnlockContentService
+} from './common/formUtils';
+import { renderFieldControl } from './common/supportingControls';
+import {
+  ContentTypeNotFoundError,
+  InvalidParamsError,
+  ItemNotFoundError,
+  NoSiteIdError,
+  stackFormCountAtom,
+  UnknownError,
+  versionCommentAtom
+} from './common/formConsts';
+import FormLayout from './common/FormLayout';
+import TableOfContents from './common/TableOfContents';
+import CreateModeHeader from './common/CreateModeHeader';
+import RepeatModeHeader from './common/RepeatModeHeader';
+import EditModeHeader from './common/EditModeHeader';
+import SaveCard from './common/SaveCard';
 
 export interface FormSavePromiseResult {
   close: boolean;
@@ -255,388 +168,6 @@ export interface CreateModeProps {
 }
 
 export type FormsEngineProps = BaseProps & (UpdateModeProps | RepeatModeProps | CreateModeProps);
-
-/**
- * Formats a FormsEngine values object with "hints" for attributes or other specifics for the XML serialiser to serialise
- * the content as a CrafterCMS content xml.
- **/
-function prepareValuesForXmlSerialising(
-  fields: LookupTable<ContentTypeField>,
-  values: LookupTable<unknown>,
-  contentTypesLookup: LookupTable<ContentType>
-): LookupTable<unknown> {
-  const jObj = { ...values };
-  Object.entries(jObj).forEach(([id, value]) => {
-    const field = fields[id];
-    const fieldType = field?.type as BuiltInControlType;
-    switch (fieldType) {
-      case 'repeat':
-      case 'node-selector': {
-        const isRepeat = fieldType === 'repeat';
-        jObj[id] = {
-          '@:item-list': true,
-          item: isRepeat
-            ? (value as RepeatItem[]).map((item) =>
-                prepareValuesForXmlSerialising(field.fields, item, contentTypesLookup)
-              )
-            : (value as NodeSelectorItem[]).map((item) => {
-                if (item.component == null) {
-                  return item;
-                }
-                const contentType = contentTypesLookup[(item.component[XmlKeys.contentTypeId] as string)?.trim()];
-                if (!contentType) {
-                  console.error(`Content type not found for embedded component`, item.component);
-                  return item;
-                }
-                const component = prepareValuesForXmlSerialising(
-                  contentType.fields,
-                  item.component,
-                  contentTypesLookup
-                );
-                component['@:id'] = component[XmlKeys.modelId];
-                return { ...item, '@:inline': true, component };
-              })
-        };
-        break;
-      }
-      case 'rte': {
-        jObj[id] = { __cdata__: value };
-        break;
-      }
-      case 'checkbox-group': {
-        jObj[id] = { item: value };
-        break;
-      }
-      default:
-        break;
-    }
-  });
-  return jObj;
-}
-
-/**
- * Takes in a FormsEngine values object and creates the XML representation
- **/
-function buildContentXml(values: LookupTable<unknown>, contentTypesLookup: LookupTable<ContentType>): string {
-  const rootContentType: ContentType = contentTypesLookup[values[XmlKeys.contentTypeId] as string];
-  const rootObjectType = rootContentType.type;
-  const jObj = prepareValuesForXmlSerialising(rootContentType.fields, values, contentTypesLookup);
-  rootObjectType === 'component' && (jObj['@:id'] = jObj.objectId);
-  const builder = new XMLBuilder({
-    format: true,
-    indentBy: '\t',
-    ignoreAttributes: false,
-    attributeNamePrefix: '@:',
-    cdataPropName: '__cdata__',
-    suppressBooleanAttributes: false
-  });
-  const xml = builder.build({ [`${rootObjectType}`]: jObj });
-  return xml as string;
-}
-
-function getScrollContainer(container: HTMLElement): HTMLElement {
-  return container;
-}
-
-const buildSectionExpandedState = (contentTypeSections: ContentTypeSection[]) => {
-  return contentTypeSections.reduce(
-    (sectionExpandedState, section) => {
-      sectionExpandedState[section.title] = section.expandByDefault;
-      return sectionExpandedState;
-    },
-    {} as Record<string, boolean>
-  );
-};
-
-const internalLockContentService: (siteId: string, path: string) => Observable<FormsEngineEditContextProps> = (
-  siteId,
-  path
-) =>
-  lock(siteId, path).pipe(
-    map(() => ({ locked: true, lockError: null })),
-    catchError((error: AjaxError) => {
-      // switch (error.status) {
-      //   case 404: {
-      //     throw error;
-      //   }
-      //   case 409: {
-      //     // content already locked...
-      //   }
-      // }
-      return of({ locked: false, lockError: error.response?.response });
-    }),
-    switchMap((lockResult) =>
-      fetchAffectedPackages(siteId, path).pipe(
-        map((affectedPackages) => ({ ...lockResult, affectedPackages })),
-        catchError((error) => of({ ...lockResult, affectedPackages: null, lockError: error.response?.response }))
-      )
-    )
-  );
-
-const internalUnlockContentService: (siteId: string, path: string) => Observable<FormsEngineEditContextProps> = (
-  siteId: string,
-  path: string
-) =>
-  unlock(siteId, path).pipe(
-    map(() => ({ locked: false, lockError: null })),
-    catchError((error) => of({ locked: true, lockError: error.response?.response }))
-  );
-
-const deserializeContentDom = (contentDom: XMLDocument | Element) => {
-  if (!contentDom) return null;
-  return deserialize(contentDom, {
-    ignoreAttributes: true,
-    isArray(tagName: string, jPath: string) {
-      // Ideally, we would extract all collection types (item selector, repeat) that have
-      // this sort of syntax to avoid false positives.
-      // e.g.collectionFieldIds.map((fieldId) => `${rootTagName}.${fieldId}.item`).includes(jPath);
-      return jPath.endsWith('.item');
-    }
-  })[(contentDom as XMLDocument).documentElement?.tagName ?? (contentDom as Element).tagName];
-};
-
-const createSourceMap = (descriptorXml: string) => {
-  const descriptorDom = fromString(descriptorXml);
-  const sourceMap: FormsEngineSourceMap = {};
-  descriptorDom.querySelectorAll(':scope > [crafter-source]').forEach((element) => {
-    if (element.innerHTML.trim() === '') {
-      // Seen `folder-name` in the descriptor getting inherited in the case of Home.
-      // Home's <folder-name /> tag is empty and the merger puts in the level descriptor folder-name — despite it being emtpy too.
-      return;
-    }
-    sourceMap[element.tagName] = element.getAttribute('crafter-source');
-  });
-  return sourceMap;
-};
-
-const fetchRequirements: (args: {
-  siteId: string;
-  path: string;
-  modelId: string;
-  readonly: boolean;
-  contentTypesById: LookupTable<ContentType>;
-}) => Observable<FormRequirementsResponse> = ({ siteId, path, modelId, readonly, contentTypesById }) => {
-  // Good to start with the lock so that posterior fetch of the item comes with the lock status. If we need
-  // to fetch the content type, will need the item first to determine its content type id, but currently relying
-  // on a separate load for all content types. Alternatively, we could fetch all types here too if we get a form
-  // requirements service.
-  return (
-    readonly
-      ? of({ locked: false, lockError: null, affectedPackages: null } as FormsEngineEditContextProps)
-      : internalLockContentService(siteId, path)
-  ).pipe(
-    switchMap((lockResult) =>
-      forkJoin([
-        fetchDetailedItem(siteId, path),
-        of(lockResult),
-        fetchContentXML(siteId, path),
-        fetchDescriptorXML(siteId, path, { flatten: false })
-        // fetchConfigurationXML(siteId, `/content-types${item.contentTypeId}/form-definition.xml`, 'studio'),
-        // fetchContentType(siteId, item.contentTypeId),
-        // of(null)
-        // importPlugin({
-        //   site: siteId,
-        //   type: 'examples',
-        //   name: 'forms-engine',
-        //   file: 'index.js',
-        //   id: 'org.craftercms'
-        // }).catch(() => null)
-      ])
-    ),
-    map(([item, lockResult, contentXml, descriptorXml]) => {
-      let contentType = contentTypesById[item.contentTypeId];
-      if (!contentType) {
-        throw ContentTypeNotFoundError;
-      }
-      let contentDom: XMLDocument | Element = fromString(contentXml);
-      if (modelId) {
-        contentDom = contentDom.querySelector(`[id="${modelId}"]`);
-        contentType = contentTypesById[getInnerHtml(contentDom.querySelector(':scope > content-type'))];
-      }
-      const contentObject = deserializeContentDom(contentDom);
-      const sourceMap = createSourceMap(descriptorXml);
-      const props: FormRequirementsResponse = {
-        item,
-        contentObject,
-        sourceMap,
-        locked: lockResult.locked,
-        lockError: lockResult.lockError,
-        affectedPackages: lockResult.affectedPackages,
-        // If opening as readonly, lock result is of no consequence. If opened for edit, will set to readonly
-        // if there was an error locking the content (the item is not locked).
-        // readonly: readonly || !lockResult.locked,
-        contentType,
-        pathInSite: createPathInProject(path)
-      };
-      return props;
-    })
-  );
-};
-
-const createPathInProject = (fullPath: string) => {
-  /* Example:
-   *   item.path = '/site/website/headless-cms-solutions/enterprise/index.xml'
-   *   pieces = item.path.split('/').slice(3)
-   *     ==> ['headless-cms-solutions', 'enterprise', 'index.xml']
-   *   pieces.slice(0, result.length - 2)
-   *     ==> ['headless-cms-solutions'] */
-  const pieces = fullPath
-    .split('/')
-    // .slice(3) removes the first empty string created by the leading slash (''),
-    // 'site', and whatever comes after (e.g. 'components' in /site/components,
-    // or 'website' in /site/website).
-    .slice(3);
-  // .slice(0, length - 2) removes the folder name and file name.
-  // In the case of no folder name, it will return an empty string.
-  return `/${pieces.slice(0, pieces.length - 2).join('/')}/`.replace(/\/+/g, '/');
-};
-
-const DenseTab = styled(Tab)(({ theme }) => ({ minHeight: 0, padding: theme.spacing(1) }));
-
-const displayFormBeingSavedSnack = (dispatch: ReduxDispatch, formatMessage: IntlShape['formatMessage']) => {
-  dispatch(
-    showSystemNotification({ message: formatMessage({ defaultMessage: 'Content is being saved, please wait...' }) })
-  );
-};
-
-// Note: These persist past the closing of the form.
-const lazyControlMap = new Map<string, LazyExoticComponent<ComponentType>>();
-const addLazyControl = (url: string) => {
-  lazyControlMap.set(
-    url,
-    lazy(() =>
-      import(/* @vite-ignore */ url)
-        .then((m) => {
-          if (m.default) return m;
-          else return { default: ControlPluginNoDefaultError };
-        })
-        .catch((reason) => {
-          console.error(
-            // TODO: Docs or internal URL
-            `An error occurred loading the control. The form attempted to load the control from \`${url}\`. Forms Engine v1 controls are not compatible with this version. If you haven't migrated this control, please check the migration guide at https://docs.craftercms.org/.\n\n`,
-            reason
-          );
-          return { default: ControlPluginError };
-        })
-    )
-  );
-};
-
-const getTargetHeight = (isDialog: boolean, isFullScreen: boolean, theme: Theme) =>
-  isDialog ? `calc(100vh - ${isFullScreen ? 0 : theme.spacing(4)})` : '100%';
-
-const renderFieldControl = (
-  field: ContentTypeField,
-  atoms: FormsEngineAtoms['valueByFieldId'],
-  autoFocus: boolean,
-  readonly: boolean,
-  contentType: ContentType
-) => {
-  const fieldId = field.id;
-  return (
-    <ControlWrapper
-      key={fieldId}
-      field={field}
-      atom={atoms[fieldId]}
-      readonly={readonly}
-      autoFocus={autoFocus}
-      contentType={contentType}
-    />
-  );
-};
-
-const getFieldAtomValue = (atom: Atom<unknown>, store: JotaiStore) => store.get(atom);
-const stackFormCountAtom = atom(0);
-const versionCommentAtom = atom('');
-
-function createValueAtoms(
-  field: ContentTypeField,
-  initialValue: unknown,
-  formContextRef: RefObject<Pick<StableFormContextProps, 'fieldUpdates$' | 'changedFieldIds' | 'originalValues'>>
-): [PrimitiveAtom<unknown>, Atom<FieldValidityState>] {
-  let isInitialization = true;
-  const valueAtom = atom(initialValue);
-  return [
-    valueAtom,
-    atom((get) => {
-      // TODO: It would be best for this to be in a different place and be a sort of effect.
-      const value = get(valueAtom);
-      if (isInitialization) {
-        isInitialization = false;
-      } else {
-        if (value !== formContextRef.current.originalValues[field.id]) {
-          formContextRef.current.changedFieldIds.add(field.id);
-        } else {
-          formContextRef.current.changedFieldIds.delete(field.id);
-        }
-        formContextRef.current.fieldUpdates$.next(field.id);
-      }
-      return validateFieldValue(field, value);
-    })
-  ];
-}
-
-const createReadonlyAtom = (lockedResultAtom: Atom<FormsEngineEditContextProps>) =>
-  atom((get) => !get(lockedResultAtom).locked);
-
-/**
- * Retrieves the values from the form atoms and returns them in a lookup table.
- */
-const extractValueAtoms: (store: JotaiStore, valueAtoms: LookupTable<Atom<unknown>>) => LookupTable<unknown> = (
-  store,
-  valueAtoms
-) =>
-  Object.entries(valueAtoms).reduce((values, [fieldId, valueAtom]) => {
-    values[fieldId] = store.get(valueAtom);
-    return values;
-  }, {});
-
-const createFormStackData: (mixin?: Partial<StableFormContextProps>) => StableFormContextProps = (mixin) => {
-  const data: StableFormContextProps = {
-    atoms: null,
-    changedFieldIds: new Set<string>(),
-    fieldUpdates$: new Subject<string>(),
-    initialized: false,
-    itemMeta: null,
-    originalValues: null,
-    props: null,
-    state: null,
-    ...mixin
-  };
-  return data;
-};
-
-// TODO: This is useful for the whole system. Move.
-function showAlert({
-  message,
-  children,
-  dispatch
-}: {
-  message?: string;
-  children?: ReactNode;
-  dispatch: ReduxDispatch;
-}) {
-  const id = nanoid();
-  dispatch(
-    pushDialog({
-      id,
-      component: 'craftercms.components.AlertDialog',
-      allowFullScreen: false,
-      allowMinimize: false,
-      props: {
-        body: message,
-        children,
-        imageUrl: alertDialogUrl,
-        sxs: { image: { pb: 1 } },
-        buttons: (
-          <PrimaryButton fullWidth autoFocus onClick={() => dispatch(popDialog({ id }))}>
-            <FormattedMessage defaultMessage="Accept" />
-          </PrimaryButton>
-        )
-      } as Partial<AlertDialogProps>
-    })
-  );
-}
 
 // This is the entry point for the form engine. It sets up the Jotai store and the global form context.
 function Root(props: FormsEngineProps) {
@@ -693,7 +224,7 @@ function Prepper(props: FormsEngineProps) {
   const [itemMeta, setItemMeta] = useState<FormsEngineItemMetaContextProps>(formsStackData[stackIndex].itemMeta);
   const [ready, setReady] = useState(false);
   const [prepError, setPrepError] = useState<symbol>();
-  const store = useStore();
+  const store = useJotaiStore();
   const theme = useTheme();
   const { isFullScreen = false } = useEnhancedDialogContext() ?? {};
   const previousProps = usePreviousValue(props);
@@ -843,7 +374,7 @@ function Prepper(props: FormsEngineProps) {
             return;
           }
         }
-        const [valueAtom, validityAtom] = createValueAtoms(field, value, stableFormContextRef);
+        const [valueAtom, validityAtom] = createFieldAtoms(field, value, stableFormContextRef);
         atomsTarget.valueByFieldId[fieldId] = valueAtom;
         atomsTarget.validationByFieldId[fieldId] = validityAtom;
       };
@@ -920,7 +451,7 @@ function Prepper(props: FormsEngineProps) {
             // of the content object. We don't need atoms or validity checks for these.
             return;
           }
-          const [valueAtom, validityAtom] = createValueAtoms(contentType.fields[fieldId], value, stableFormContextRef);
+          const [valueAtom, validityAtom] = createFieldAtoms(contentType.fields[fieldId], value, stableFormContextRef);
           atoms.valueByFieldId[fieldId] = valueAtom;
           atoms.validationByFieldId[fieldId] = validityAtom;
         });
@@ -1007,7 +538,7 @@ function Prepper(props: FormsEngineProps) {
           contentObject
         });
       } /* if (isUpdateMode) */ else {
-        const subscription = fetchRequirements({
+        const subscription = fetchUpdateRequirements({
           siteId,
           path: update.path,
           modelId: update.modelId,
@@ -1148,7 +679,6 @@ function Form(props: FormsEngineProps) {
   // endregion
   const theme = useTheme();
   const { formatMessage } = useIntl();
-  const { guestBase } = useEnv();
   const dispatch = useDispatch();
   const activeSite = useActiveSite();
   const siteId = activeSite.id;
@@ -1174,30 +704,31 @@ function Form(props: FormsEngineProps) {
   } = useEnhancedDialogContext() ?? {};
   const [disableStackedFormDrawerAutoFocus, setDisableStackedFormDrawerAutoFocus] = useState(true);
   const [enablingEditInProgress, setEnablingEditInProgress] = useState(false);
-  const [acceptedWorkflowCancellation, setAcceptedWorkflowCancellation] = useState(false);
   const [collapsedToC, setCollapsedToC] = useState(false); // Controls the Table of Contents being collapsed under a drawer or visible
-  const store = useStore();
+  const store = useJotaiStore();
   const { api: contextApi, formsStackData } = useContext(StableGlobalContext);
   const stableFormContext = useContext(StableFormContext);
   const formContextApi = useContext(FormsEngineFormContextApi);
   const { fieldUpdates$, changedFieldIds, state: stateCache } = stableFormContext;
   const item = useContext(ItemContext);
-  const { id, contentType, sourceMap, contentObject } = useContext(ItemMetaContext);
-  const [isSubmitting, setIsSubmitting] = useAtom(stableFormContext.atoms.isSubmitting);
+  const { contentType, sourceMap } = useContext(ItemMetaContext);
+  const isSubmitting = useAtomValue(stableFormContext.atoms.isSubmitting);
   const [hasPendingChanges, setHasPendingChanges] = useAtom(stableFormContext.atoms.hasPendingChanges);
   const readonly = useAtomValue(stableFormContext.atoms.readonly);
   const [lockStatus, setLockStatus] = useAtom(stableFormContext.atoms.lockResult);
   const [sectionExpandedState, setSectionExpandedState] = useState<LookupTable<boolean>>(
     () => stateCache?.sectionExpandedState ?? buildSectionExpandedState(contentType.sections)
   );
-  const [activeTab, setActiveTab] = useState<number>(0);
-  const [versionComment, setVersionComment] = useAtom(versionCommentAtom);
   const stackFormCount = useAtomValue(stackFormCountAtom);
   const isStackedForm = stackIndex > 0;
   const hasStackedForms = !isStackedForm && stackFormCount > 0;
   const isEmbedded = Boolean(update?.modelId);
   const isCreateMode = Boolean(create?.path);
   const isRepeatMode = Boolean(repeat?.fieldId);
+  const affectedPackages = lockStatus.affectedPackages?.length > 0;
+  const isLargeContainer = containerStats?.isLargeContainer;
+  const contentTypeFields = contentType.fields;
+  const contentTypeSections = contentType.sections;
   const effectRefs = useUpdateRefs({
     store,
     contentTypesById,
@@ -1278,7 +809,7 @@ function Form(props: FormsEngineProps) {
     };
   }, [changedFieldIds, contentType.fields, effectRefs, setHasPendingChanges, fieldUpdates$, store, isCreateMode]);
 
-  const sourceMapPaths = useMemo(() => (sourceMap ? Object.values(sourceMap).map((path) => path) : []), [sourceMap]);
+  const sourceMapPaths = useMemo(() => Object.values(sourceMap ?? []).sort(), [sourceMap]);
   useFetchSandboxItems(sourceMapPaths);
 
   // Resize observer attached to the [scroll] container
@@ -1379,22 +910,8 @@ function Form(props: FormsEngineProps) {
     store
   ]);
 
-  // If the form is rendered in/as a dialog, take up the whole screen minus
-  // top/bottom margins (2 top, 2 bottom). If not a dialog, take up the whole screen.
-  const targetHeight = getTargetHeight(isDialog, isFullScreen, theme);
-
-  const affectedPackages = lockStatus.affectedPackages?.length > 0;
-  const isLargeContainer = containerStats?.isLargeContainer;
-  const contentTypeFields = contentType.fields;
-  const contentTypeSections = contentType.sections;
-  const objectId = id;
-
-  const handleSectionExpandedChange = (fieldId: string, expanded: boolean) => {
-    setSectionExpandedState({
-      ...sectionExpandedState,
-      [fieldId]: expanded
-    });
-  };
+  const handleSectionExpandedChange = (fieldId: string, expanded: boolean) =>
+    setSectionExpandedState({ ...sectionExpandedState, [fieldId]: expanded });
   const handleOpenDrawerSidebar = () => {
     const scroller = getScrollContainer(containerRef.current);
     scroller.style.setProperty('--scroll-top', `${containerRef.current.scrollTop}px`);
@@ -1447,7 +964,6 @@ function Form(props: FormsEngineProps) {
   const tableOfContents = (
     <TableOfContents
       handleSectionExpandedChange={handleSectionExpandedChange}
-      atoms={stableFormContext.atoms}
       fieldsToRender={fieldsToRender}
       containerRef={containerRef}
       contentTypeFields={contentTypeFields}
@@ -1470,98 +986,10 @@ function Form(props: FormsEngineProps) {
     }
   }
 
-  const disableSave = isSubmitting || (affectedPackages && !acceptedWorkflowCancellation);
-  const handleSave: ButtonProps['onClick'] = (e?: React.MouseEvent<HTMLButtonElement>) => {
-    // TODO: Run necessary validations to ensure the form is ready to be saved.
-    const values = extractValueAtoms(store, stableFormContext.atoms.valueByFieldId);
-    const onSavePromiseHandler = ({ close }: FormSavePromiseResult) => {
-      close && (isStackedForm ? onCloseProp : enhancedDialogOnClose)?.(e, null);
-    };
-    // Repeat handled here. Execution ends inside if statement.
-    if (isRepeatMode) {
-      setHasPendingChanges(false);
-      onSave?.({ values, versionComment })?.then(onSavePromiseHandler);
-      return;
-    }
-    const date = new Date().toISOString();
-    // Put system properties in xml before creating the XML
-    values[XmlKeys.fileName] = values[XmlKeys.fileName] ?? contentObject[XmlKeys.fileName];
-    values[XmlKeys.folderName] = values[XmlKeys.folderName] ?? contentObject[XmlKeys.folderName];
-    if (
-      String(values[XmlKeys.internalName]).trim() === '' ||
-      String(values[XmlKeys.fileName]).trim() === '' ||
-      String(values[XmlKeys.folderName]).trim() === ''
-    ) {
-      return showAlert({
-        dispatch,
-        message: formatMessage(
-          { defaultMessage: 'You need a {fileName} and {internalName} at a minimum to save content.' },
-          {
-            fileName: contentType.fields[XmlKeys.fileName].name,
-            internalName: contentType.fields[XmlKeys.internalName].name
-          }
-        )
-      });
-    }
-    values[XmlKeys.contentTypeId] = contentType.id;
-    values[XmlKeys.displayTemplate] = contentType.displayTemplate;
-    values[XmlKeys.mergeStrategy] = contentObject[XmlKeys.mergeStrategy];
-    values[XmlKeys.modelId] = objectId;
-    values[XmlKeys.dateCreated] = contentObject[XmlKeys.dateCreated] ?? date;
-    values[XmlKeys.dateCreated + '_dt'] = contentObject[XmlKeys.dateCreated + '_dt'] ?? date;
-    values[XmlKeys.dateModified] = date;
-    values[XmlKeys.dateModified + '_dt'] = date;
-    values[XmlKeys.savedAsDraft] = Object.values(stableFormContext.atoms.validationByFieldId).some((data) => {
-      !store.get(data).isValid;
-    });
-    const xml = buildContentXml(values, contentTypesById);
-    // Embedded handled here. Execution ends inside if statement.
-    if (isEmbedded) {
-      setHasPendingChanges(false);
-      const dom = fromString(xml);
-      onSave?.({ dom, xml, values, versionComment })?.then(onSavePromiseHandler);
-      return;
-    }
-    setIsSubmitting(true);
-    let path: string;
-    if (isCreateMode) {
-      path = ensureSingleSlash(`${create.path}/${values[XmlKeys.folderName]}/${values[XmlKeys.fileName]}`);
-    } /* is a plain update (page or component) */ else {
-      path = update.path;
-    }
-    // TODO: Temporary playground save path. Remove.
-    // path = '/site/website/fe2-save-result.xml';
-    writeContent(siteId, path, xml).subscribe({
-      next() {
-        setIsSubmitting(false);
-        setHasPendingChanges(false);
-        formContextApi.setValuesCheckpoint(values);
-        const dom = fromString(xml);
-        onSave?.({ dom, xml, values, versionComment })?.then(onSavePromiseHandler);
-      },
-      error(error: AjaxError) {
-        setIsSubmitting(false);
-        showAlert({
-          dispatch,
-          children: (
-            <Box>
-              <Typography marginBottom={1}>
-                <FormattedMessage defaultMessage="An error occurred trying to save the form" />
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                {error.response.response?.message ?? error.response.message}
-              </Typography>
-            </Box>
-          )
-        });
-      }
-    });
-  };
-
   const updateEditEnablement = (enableEdit: boolean, callback?: (lockResult: FormsEngineEditContextProps) => void) => {
     if (enablingEditInProgress || isCreateMode) return;
     const doEditEnablement = (restoreValues: boolean = false) => {
-      // TODO: Re-fetch content when enabling edit?
+      // TODO: Re-fetch content when enabling edit? Or monitor changes and auto-reload?
       setEnablingEditInProgress(true);
       const service = enableEdit ? internalLockContentService : internalUnlockContentService;
       service(siteId, item.path).subscribe((lockResult) => {
@@ -1589,354 +1017,214 @@ function Form(props: FormsEngineProps) {
     doEditEnablement();
   };
 
-  const handleEnableEditing: ButtonProps['onClick'] = () => {
-    updateEditEnablement(true);
-  };
-
-  const handleDisableEditing: ButtonProps['onClick'] = () => {
-    updateEditEnablement(false);
-  };
-
-  let handleClose: ButtonProps['onClick'];
   // If not on a dialog or the prop is not provided, there's no need to handle the close. The form is running in a standalone mode.
-  if (enhancedDialogOnClose || onCloseProp) {
-    handleClose = (e) => {
-      if (isSubmitting) {
-        displayFormBeingSavedSnack(dispatch, formatMessage);
-      } else {
-        // If `hasPendingChanges`, we're still calling close assuming the EnhancedDialog will handle showing the close without saving confirm.
-        (isStackedForm ? onCloseProp : enhancedDialogOnClose)(e, null);
-      }
-    };
-  }
+  const handleClose: ButtonProps['onClick'] = (e) => {
+    if (isSubmitting) {
+      displayFormBeingSavedSnack(dispatch, formatMessage);
+    } else {
+      // If `hasPendingChanges`, we're still calling close assuming the EnhancedDialog will handle showing the close without saving confirm.
+      (isStackedForm ? onCloseProp : enhancedDialogOnClose)?.(e, null);
+    }
+  };
 
   const bodyFragment = (
-    <Box
-      ref={containerRef}
-      data-model-id={objectId}
-      data-area-id="formContainer"
-      sx={{
-        display: 'flex',
-        height: targetHeight,
-        flexDirection: 'column',
-        position: 'relative',
-        overflow: 'auto',
-        '.space-y > :not([hidden]) ~ :not([hidden])': { mt: 1 },
-        '.space-y-half > :not([hidden]) ~ :not([hidden])': { mt: 0.5 },
-        '.space-x > :not([hidden]) ~ :not([hidden])': { ml: 1 },
-        '.space-y-2 > :not([hidden]) ~ :not([hidden])': { mt: 2 }
-      }}
-    >
-      <UIBlocker open={isSubmitting} />
-      {/* Header */}
-      <Paper square component="header" data-area-id="formHeader" elevation={0}>
-        <Box component={Container} display="flex" alignItems="center" justifyContent="space-between" pt={2}>
-          <Typography variant="body2" color="textSecondary">
-            <span title={siteId}>{activeSite.name}</span> / <span title={contentType.id}>{contentType.name}</span>
-          </Typography>
-          <Box sx={[isDialog && { position: 'absolute', top: theme.spacing(1), right: theme.spacing(1) }]}>
-            {props.onMinimize && (
-              <Tooltip title={<FormattedMessage defaultMessage="Miminize" />}>
-                <IconButton size="small" onClick={props.onMinimize}>
-                  <MinimizeIconRounded />
-                </IconButton>
-              </Tooltip>
-            )}
-            {(props.onCancelFullScreen || props.onFullScreen) && (
-              <Tooltip title={<FormattedMessage defaultMessage="Maximize" />}>
-                <IconButton size="small" onClick={isFullScreen ? props.onCancelFullScreen : props.onFullScreen}>
-                  {isFullScreen ? <CloseFullscreenOutlined /> : <MaximiseIcon fontSize="small" />}
-                </IconButton>
-              </Tooltip>
-            )}
-            {handleClose && (
-              <Tooltip title={<FormattedMessage defaultMessage="Close" />}>
-                <IconButton size="small" onClick={handleClose}>
-                  <Close />
-                </IconButton>
-              </Tooltip>
-            )}
-          </Box>
-        </Box>
-        {isRepeatMode ? (
-          <Container sx={{ py: 1 }}>
-            <Typography variant="h6" component="h3">
-              {repeat.index === undefined ? (
-                <FormattedMessage defaultMessage="New Repeat Item" />
-              ) : (
-                <FormattedMessage defaultMessage="Item # {number}" values={{ number: repeat.index + 1 }} />
-              )}
-            </Typography>
+    <FormLayout
+      containerRef={containerRef}
+      isLargeContainer={isLargeContainer}
+      // If the form is rendered in/as a dialog, take up the whole screen minus
+      // top/bottom margins (2 top, 2 bottom). If not a dialog, take up the whole screen.
+      targetHeight={getTargetHeight(isDialog, isFullScreen, theme)}
+      headerFragment={
+        <>
+          <Box component={Container} display="flex" alignItems="center" justifyContent="space-between" pt={2}>
             <Typography variant="body2" color="textSecondary">
-              <FormattedMessage
-                defaultMessage="{name} Repeat Group"
-                values={{ name: contentType.fields[repeat.fieldId].name }}
-              />
+              <span title={siteId}>{activeSite.name}</span> / <span title={contentType.id}>{contentType.name}</span>
             </Typography>
-          </Container>
-        ) : isCreateMode ? (
-          <CreateModeHeader contentType={contentType} path={create?.path} />
-        ) : (
-          <EditModeHeader
-            handleTabChange={(e, value) => setActiveTab(value)}
-            isLargeContainer={isLargeContainer}
-            useCollapsedToC={useCollapsedToC}
-            setCollapsedToC={setCollapsedToC}
-            isEmbedded={isEmbedded}
-            atoms={stableFormContext.atoms}
-            theme={theme}
-            objectId={objectId}
-            activeTab={activeTab}
-          />
-        )}
-        <Divider />
-      </Paper>
-      <Box
-        sx={{
-          display: activeTab === 0 ? 'inherit' : 'none',
-          px: 0,
-          py: 2,
-          backgroundColor: theme.palette.background.default
-        }}
-      >
-        <Container maxWidth={isLargeContainer ? 'xl' : undefined}>
-          <Grid container spacing={2}>
-            <Grid size={useCollapsedToC ? 'auto' : 'grow'}>
-              <StickyBox data-area-id="stickySidebar">
-                {useCollapsedToC ? (
-                  <IconButton size="small" onClick={handleOpenDrawerSidebar}>
-                    <MenuRounded />
+            <Box sx={[isDialog && { position: 'absolute', top: theme.spacing(1), right: theme.spacing(1) }]}>
+              {props.onMinimize && (
+                <Tooltip title={<FormattedMessage defaultMessage="Miminize" />}>
+                  <IconButton size="small" onClick={props.onMinimize}>
+                    <MinimizeIconRounded />
                   </IconButton>
-                ) : (
-                  tableOfContents
-                )}
-              </StickyBox>
-            </Grid>
-            <Grid size={useCollapsedToC ? 8.3 : 7} className="space-y" data-area-id="formBody">
-              {affectedPackages && (
-                <Alert
-                  severity="warning"
-                  variant="outlined"
-                  action={
-                    <Button
-                      color="inherit"
-                      size="small"
-                      onClick={() => {
-                        dispatch(
-                          pushDialog({
-                            component: 'craftercms.components.WorkflowCancellationDialog',
-                            props: { item } as ViewPackagesDialogProps
-                          })
-                        );
-                      }}
-                    >
-                      Review
-                    </Button>
-                  }
-                >
-                  <AlertTitle>
-                    <FormattedMessage defaultMessage="Publish Cancellation Warning" />
-                  </AlertTitle>
-                  <FormattedMessage defaultMessage="The item is part of a publishing package. Editing it will cancel the entire package." />
-                </Alert>
+                </Tooltip>
               )}
-              {lockStatus.lockError && (
-                <Alert severity="error">
-                  {createErrorStatePropsFromApiResponse(lockStatus.lockError, formatMessage).message}
-                </Alert>
+              {(props.onCancelFullScreen || props.onFullScreen) && (
+                <Tooltip title={<FormattedMessage defaultMessage="Maximize" />}>
+                  <IconButton size="small" onClick={isFullScreen ? props.onCancelFullScreen : props.onFullScreen}>
+                    {isFullScreen ? <CloseFullscreenOutlined /> : <MaximiseIcon fontSize="small" />}
+                  </IconButton>
+                </Tooltip>
               )}
-              {fieldsToRender ? (
-                <Paper sx={{ p: 2 }}>
-                  {fieldsToRender.map((field, index) =>
-                    renderFieldControl(
-                      field,
-                      stableFormContext.atoms.valueByFieldId,
-                      index === 0,
-                      readonly,
-                      contentType
-                    )
-                  )}
-                </Paper>
+              {handleClose && (
+                <Tooltip title={<FormattedMessage defaultMessage="Close" />}>
+                  <IconButton size="small" onClick={handleClose}>
+                    <Close />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </Box>
+          </Box>
+          {isRepeatMode ? (
+            <RepeatModeHeader repeat={repeat} />
+          ) : isCreateMode ? (
+            <CreateModeHeader path={create?.path} />
+          ) : (
+            <EditModeHeader
+              isLargeContainer={isLargeContainer}
+              useCollapsedToC={useCollapsedToC}
+              setCollapsedToC={setCollapsedToC}
+              isEmbedded={isEmbedded}
+            />
+          )}
+        </>
+      }
+      gridFragment={
+        <>
+          <Grid size={useCollapsedToC ? 'auto' : 'grow'}>
+            <StickyBox data-area-id="stickySidebar">
+              {useCollapsedToC ? (
+                <IconButton size="small" onClick={handleOpenDrawerSidebar}>
+                  <MenuRounded />
+                </IconButton>
               ) : (
-                contentTypeSections.map((section, sectionIndex) => (
-                  <Accordion
-                    key={sectionIndex}
-                    expanded={sectionExpandedState[section.title]}
-                    onChange={(event, expanded) => {
-                      handleSectionExpandedChange(event.currentTarget.getAttribute('data-section-id'), expanded);
-                    }}
-                    sx={{
-                      borderLeftColor: toColor(section.title, 0.7),
-                      borderLeftWidth: 5,
-                      borderLeftStyle: 'solid',
-                      borderTopLeftRadius: theme.shape.borderRadius,
-                      borderBottomLeftRadius: theme.shape.borderRadius,
-                      borderTopRightRadius: theme.shape.borderRadius,
-                      borderBottomRightRadius: theme.shape.borderRadius
+                tableOfContents
+              )}
+            </StickyBox>
+          </Grid>
+          <Grid size={useCollapsedToC ? 8.3 : 7} className="space-y" data-area-id="formBody">
+            {affectedPackages && (
+              <Alert
+                severity="warning"
+                variant="outlined"
+                action={
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() => {
+                      dispatch(
+                        pushDialog({
+                          component: 'craftercms.components.WorkflowCancellationDialog',
+                          props: { item } as ViewPackagesDialogProps
+                        })
+                      );
                     }}
                   >
-                    <AccordionSummary data-section-id={section.title}>
-                      <Typography>{section.title}</Typography>
-                    </AccordionSummary>
-                    <AccordionDetails className="space-y-2">
-                      {section.fields.map((fieldId, fieldIndex) =>
-                        renderFieldControl(
-                          contentTypeFields[fieldId],
-                          stableFormContext.atoms.valueByFieldId,
-                          sectionIndex === 0 && fieldIndex === 0,
-                          readonly,
-                          contentType
-                        )
-                      )}
-                    </AccordionDetails>
-                  </Accordion>
-                ))
-              )}
-              {/* Spacer */}
-              <Box minHeight={100} justifyContent="center" alignItems="center" display="flex">
-                <Tooltip title={<FormattedMessage defaultMessage="Back to top" />}>
-                  <Fab onClick={() => containerRef.current.scroll({ top: 0, behavior: 'smooth' })}>
-                    <ArrowUpward />
-                  </Fab>
-                </Tooltip>
-              </Box>
-            </Grid>
-            <Grid size="grow">
-              <StickyBox className="space-y">
-                {readonly ? (
-                  <>
-                    <Alert severity="info" variant="outlined" icon={<EditOffOutlined />}>
-                      <FormattedMessage defaultMessage="Readonly mode" />
-                    </Alert>
-                    <SecondaryButton
-                      fullWidth
-                      variant="outlined"
-                      onClick={handleEnableEditing}
-                      loading={enablingEditInProgress}
-                    >
-                      <FormattedMessage defaultMessage="Edit" />
-                    </SecondaryButton>
-                  </>
-                ) : (
-                  <>
-                    <Paper sx={{ p: 1 }} className="space-y-half">
-                      {
-                        // TODO: Should embedded components get a version comment? How would that work?
-                        (!isEmbedded || !isStackedForm) && (
-                          <>
-                            <TextField
-                              size="small"
-                              multiline
-                              fullWidth
-                              label={<FormattedMessage defaultMessage="Version Comment" />}
-                              value={versionComment}
-                              onChange={(e) => setVersionComment(e.target.value)}
-                              onFocus={(e) => e.target.select()}
-                            />
-                            <div>
-                              {affectedPackages && (
-                                <FormControlLabel
-                                  title={formatMessage({
-                                    defaultMessage:
-                                      'The item is part of a publishing package. Editing it will cancel the entire package.'
-                                  })}
-                                  label={<FormattedMessage defaultMessage="Accept publish cancellation" />}
-                                  control={
-                                    <Checkbox
-                                      size="small"
-                                      checked={acceptedWorkflowCancellation}
-                                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                        setAcceptedWorkflowCancellation(e.target.checked);
-                                      }}
-                                    />
-                                  }
-                                />
-                              )}
-                              <FormControlLabel
-                                label={<FormattedMessage defaultMessage="Close after saving" />}
-                                control={
-                                  <Checkbox
-                                    size="small"
-                                    checked={false}
-                                    onClick={() => showAlert({ dispatch, message: 'Not implemented yet.' })}
-                                  />
-                                }
-                              />
-                            </div>
-                          </>
-                        )
-                      }
-                      {/*
-                      TODO:
-                       - If validations aren't all passed, should read "Save Draft" and a different colour.
-                       - What about embedded drafts? Should they be allowed?
-                      */}
-                      <PrimaryButton
-                        fullWidth
-                        variant="contained"
-                        onClick={handleSave}
-                        disabled={disableSave || !hasPendingChanges}
-                        loading={isSubmitting}
-                      >
-                        {isRepeatMode || (isEmbedded && isStackedForm) ? (
-                          <FormattedMessage defaultMessage="Done" />
-                        ) : (
-                          <FormattedMessage defaultMessage="Save" />
-                        )}
-                      </PrimaryButton>
-                      {isStackedForm && isEmbedded && (
-                        <FormHelperText sx={{ textAlign: 'center' }}>
-                          <FormattedMessage defaultMessage="Changes are saved with the main item." />
-                        </FormHelperText>
-                      )}
-                      <Grow in={!hasPendingChanges} appear unmountOnExit>
-                        <Alert severity="info" variant="outlined" sx={{ p: 0, border: 'none', placeContent: 'center' }}>
-                          <FormattedMessage defaultMessage="No changes detected" />
-                        </Alert>
-                      </Grow>
-                    </Paper>
-                    {!isCreateMode && (
-                      <>
-                        {/* For embedded components, only allow releasing the lock if it's the top form.
-                        If is a stacked form, only release via the parent form. */}
-                        {!readonly &&
-                          // No point in the "unlock" button for new repeat items
-                          (!isRepeatMode || (isRepeatMode && repeat.values)) &&
-                          !(isEmbedded && isStackedForm) && (
-                            <SecondaryButton
-                              fullWidth
-                              variant="outlined"
-                              onClick={handleDisableEditing}
-                              loading={enablingEditInProgress}
-                            >
-                              <FormattedMessage defaultMessage="Release Lock" />
-                            </SecondaryButton>
-                          )}
-                      </>
-                    )}
-                  </>
-                )}
-                {handleClose && (
-                  <Button fullWidth variant="outlined" disabled={enablingEditInProgress} onClick={handleClose}>
-                    <FormattedMessage defaultMessage="Close" />
+                    Review
                   </Button>
+                }
+              >
+                <AlertTitle>
+                  <FormattedMessage defaultMessage="Publish Cancellation Warning" />
+                </AlertTitle>
+                <FormattedMessage defaultMessage="The item is part of a publishing package. Editing it will cancel the entire package." />
+              </Alert>
+            )}
+            {lockStatus.lockError && (
+              <Alert severity="error">
+                {createErrorStatePropsFromApiResponse(lockStatus.lockError, formatMessage).message}
+              </Alert>
+            )}
+            {fieldsToRender ? (
+              <Paper sx={{ p: 2 }}>
+                {fieldsToRender.map((field, index) =>
+                  renderFieldControl(field, stableFormContext.atoms.valueByFieldId, index === 0, readonly, contentType)
                 )}
-              </StickyBox>
-            </Grid>
+              </Paper>
+            ) : (
+              contentTypeSections.map((section, sectionIndex) => (
+                <Accordion
+                  key={sectionIndex}
+                  expanded={sectionExpandedState[section.title]}
+                  onChange={(event, expanded) => {
+                    handleSectionExpandedChange(event.currentTarget.getAttribute('data-section-id'), expanded);
+                  }}
+                  sx={{
+                    borderLeftColor: toColor(section.title, 0.7),
+                    borderLeftWidth: 5,
+                    borderLeftStyle: 'solid',
+                    borderTopLeftRadius: theme.shape.borderRadius,
+                    borderBottomLeftRadius: theme.shape.borderRadius,
+                    borderTopRightRadius: theme.shape.borderRadius,
+                    borderBottomRightRadius: theme.shape.borderRadius
+                  }}
+                >
+                  <AccordionSummary data-section-id={section.title}>
+                    <Typography>{section.title}</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails className="space-y-2">
+                    {section.fields.map((fieldId, fieldIndex) =>
+                      renderFieldControl(
+                        contentTypeFields[fieldId],
+                        stableFormContext.atoms.valueByFieldId,
+                        sectionIndex === 0 && fieldIndex === 0,
+                        readonly,
+                        contentType
+                      )
+                    )}
+                  </AccordionDetails>
+                </Accordion>
+              ))
+            )}
+            {/* Spacer */}
+            <Box minHeight={100} justifyContent="center" alignItems="center" display="flex">
+              <Tooltip title={<FormattedMessage defaultMessage="Back to top" />}>
+                <Fab onClick={() => containerRef.current.scroll({ top: 0, behavior: 'smooth' })}>
+                  <ArrowUpward />
+                </Fab>
+              </Tooltip>
+            </Box>
           </Grid>
-        </Container>
-      </Box>
-      {/* region Other tabs... */}
-      {/* TODO: All tabs other than 0 should be pluggable? */}
-      {activeTab === 1 && (
-        <IFrame
-          url={guestBase}
-          title="Preview"
-          sx={{ display: 'flex', flex: '1' }}
-          styles={{ iframe: { height: null } }}
-        />
-      )}
-      {/* endregion */}
+          <Grid size="grow">
+            <StickyBox className="space-y">
+              {readonly ? (
+                <>
+                  <Alert severity="info" variant="outlined" icon={<EditOffOutlined />}>
+                    <FormattedMessage defaultMessage="Readonly mode" />
+                  </Alert>
+                  <SecondaryButton
+                    fullWidth
+                    variant="outlined"
+                    onClick={() => updateEditEnablement(true)}
+                    loading={enablingEditInProgress}
+                  >
+                    <FormattedMessage defaultMessage="Edit" />
+                  </SecondaryButton>
+                </>
+              ) : (
+                <>
+                  <SaveCard
+                    createPath={create?.path}
+                    isEmbedded={isEmbedded}
+                    isStackedForm={isStackedForm}
+                    isRepeatMode={isRepeatMode}
+                    isCreateMode={isCreateMode}
+                    onSave={onSave}
+                    onClose={isStackedForm ? onCloseProp : enhancedDialogOnClose}
+                  />
+                  {!isCreateMode && // There's no locking on create mode
+                    (!isRepeatMode || (isRepeatMode && repeat.values)) && // No point in the "unlock" button for new repeat items
+                    !(isEmbedded && isStackedForm) && ( // For embedded components, only allow releasing the lock if it's the top form.
+                      <SecondaryButton
+                        fullWidth
+                        variant="outlined"
+                        onClick={() => updateEditEnablement(false)}
+                        loading={enablingEditInProgress}
+                      >
+                        <FormattedMessage defaultMessage="Release Lock" />
+                      </SecondaryButton>
+                    )}
+                </>
+              )}
+              {handleClose && (
+                <Button fullWidth variant="outlined" disabled={enablingEditInProgress} onClick={handleClose}>
+                  <FormattedMessage defaultMessage="Close" />
+                </Button>
+              )}
+            </StickyBox>
+          </Grid>
+        </>
+      }
+    >
       {/* region Stacked Form Drawer */}
       {stackIndex === 0 && (
         <Drawer
@@ -2023,7 +1311,7 @@ function Form(props: FormsEngineProps) {
         {tableOfContents}
       </Drawer>
       {/* endregion */}
-    </Box>
+    </FormLayout>
   );
 
   return (
@@ -2033,469 +1321,30 @@ function Form(props: FormsEngineProps) {
   );
 }
 
-interface ControlWrapperProps {
-  field: ContentTypeField;
-  autoFocus: boolean;
-  readonly: boolean;
-  contentType: ContentType;
-  atom: Atom<unknown>;
-}
-
-const ControlWrapper = memo(function (props: ControlWrapperProps) {
-  const siteId = useActiveSiteId();
-  const { field, autoFocus, readonly, contentType, atom } = props;
-  const [value, setValue] = useAtom(atom);
-  const fieldId = field.id;
-  let Control: ElementType<ControlProps>;
-  if (field.properties.plugin) {
-    const url = buildFileUrl(
-      siteId,
-      field.properties.plugin.type,
-      field.properties.plugin.name,
-      field.properties.plugin.filename,
-      field.properties.plugin.pluginId
-    );
-    if (!lazyControlMap.has(url)) addLazyControl(url);
-    Control = lazyControlMap.get(url);
-  } else {
-    Control = controlMap[field.type] ?? UnknownControl;
-  }
-  return (
-    <ErrorBoundary key={fieldId}>
-      <Suspense fallback={<ControlSkeleton label={field.name} />}>
-        <Control
-          // Only auto-focus on controls that are not readonly.
-          // Focus might not work consistently on disabled controls anyway.
-          autoFocus={autoFocus && !readonly}
-          value={value}
-          setValue={setValue}
-          field={field}
-          contentType={contentType}
-          readonly={readonly}
-        />
-      </Suspense>
-    </ErrorBoundary>
-  );
-});
-
-function ControlPluginError({ field }: ControlProps) {
-  return (
-    <FormsEngineField field={field} menu={false}>
-      <Alert
-        severity="error"
-        variant="standard"
-        sx={(theme) => ({ border: 'none', strong: { fontWeight: theme.typography.fontWeightMedium } })}
-      >
-        <FormattedMessage
-          defaultMessage="Unable to load the {name} ({id}) control. The control may be absent or contain errors in the code. Check the browser console for error details."
-          values={{
-            name: field.name,
-            id: field.id
-          }}
-        />
-      </Alert>
-    </FormsEngineField>
-  );
-}
-
-function ControlPluginNoDefaultError({ field }: ControlProps) {
-  return (
-    <FormsEngineField field={field} menu={false}>
-      <Alert
-        severity="error"
-        variant="standard"
-        sx={(theme) => ({ border: 'none', strong: { fontWeight: theme.typography.fontWeightMedium } })}
-      >
-        <FormattedMessage
-          defaultMessage="Unable to render {name} ({id}) control. No default export found. A control's JavaScript file should export a React component as `default`. Please check <docs>the documentation</docs>."
-          values={{
-            name: field.name,
-            id: field.id,
-            // TODO: Docs or internal link
-            docs: (str) => (
-              <a href="https://docs.craftercms.org" target="_blank">
-                {str}
-              </a>
-            )
-          }}
-        />
-      </Alert>
-    </FormsEngineField>
-  );
-}
-
-// region TableOfContents
-function TableOfContents({
-  containerRef,
-  handleSectionExpandedChange,
-  contentTypeFields,
-  contentTypeSections,
-  sectionExpandedState,
-  setOpenDrawerSidebar,
-  fieldsToRender,
-  atoms
-}: {
-  containerRef: RefObject<HTMLDivElement>;
-  handleSectionExpandedChange(fieldId: string, expanded: boolean): void;
-  contentTypeFields: LookupTable<ContentTypeField>;
-  contentTypeSections: ContentTypeSection[];
-  sectionExpandedState: LookupTable<boolean>;
-  // TODO: Should send the handleCloseDrawerSidebar instead of allowing direct access to setOpenDrawerSidebar. Consider scroll freeze.
-  setOpenDrawerSidebar: ReactDispatch<SetStateAction<boolean>>;
-  fieldsToRender: ContentTypeField[];
-  atoms: FormsEngineAtoms;
-}) {
-  const expandedSectionIds = useMemo(
-    () => Object.entries(sectionExpandedState).flatMap(([key, expanded]) => (expanded ? [key] : [])),
-    [sectionExpandedState]
-  );
-  const scrollToTarget = (target: Element) => {
-    // Wait for the drawer to hide so the transition focus doesn't impede the scrollIntoView.
-    // When the sidebar is a drawer, the hide transition is set to 0 for this to work with minimal timeout.
-    setTimeout(() => {
-      getScrollContainer(containerRef.current).style.overflowY = '';
-      target?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-    });
-  };
-  const handleSectionTreeItemClick = (event: SyntheticEvent) => {
-    setOpenDrawerSidebar(false);
-    const sectionId = event.currentTarget.parentElement.getAttribute('data-section-id');
-    if (!sectionExpandedState[sectionId]) {
-      handleSectionExpandedChange(sectionId, true);
-    }
-    scrollToTarget(containerRef.current.querySelector(`[data-area-id="formBody"] [data-section-id="${sectionId}"]`));
-  };
-  const handleFieldTreeItemClick = (event: SyntheticEvent) => {
-    setOpenDrawerSidebar(false);
-    const fieldId = event.currentTarget.parentElement.getAttribute('data-field-id');
-    scrollToTarget(containerRef.current.querySelector(`[data-area-id="formBody"] [data-field-id="${fieldId}"]`));
-  };
-  const handleItemExpansionToggleClick = (event: SyntheticEvent, itemId: string, expanded: boolean) => {
-    event.stopPropagation(); // Avoid accordion expansion
-    handleSectionExpandedChange(itemId, expanded);
-    setOpenDrawerSidebar(false);
-  };
-  const [searchFieldValue, setSearchFieldValue] = useState('');
-  const [filteredFields, setFilteredFields] = useState<ContentTypeField[]>(null);
-  const contentTypeFieldsArray = fieldsToRender ?? Object.values(contentTypeFields);
-  const onKeyword$ = useDebouncedInput((value) => {
-    if (!value?.trim()) {
-      return setFilteredFields(null);
-    }
-    const keyword = value.toLowerCase();
-    setFilteredFields(contentTypeFieldsArray.filter((field) => field.name.toLowerCase().includes(keyword)));
-  });
-  const createFieldTreeItem = (field: ContentTypeField) => {
-    const fieldId = field.id;
-    return (
-      <TreeItem
-        key={fieldId}
-        itemId={fieldId}
-        data-field-id={fieldId}
-        onClick={handleFieldTreeItemClick}
-        label={<TreeItemLabel field={field} atoms={atoms} />}
-      />
-    );
-  };
-  return (
-    <>
-      <SearchBar
-        dense
-        sx={{ mb: 1 }}
-        showActionButton={searchFieldValue !== ''}
-        keyword={searchFieldValue}
-        onChange={(value) => {
-          setSearchFieldValue(value);
-          onKeyword$.next(value);
-        }}
-      />
-      <SimpleTreeView
-        selectedItems={[]}
-        expansionTrigger="iconContainer"
-        onItemExpansionToggle={handleItemExpansionToggleClick}
-        expandedItems={expandedSectionIds}
-      >
-        {filteredFields?.map(createFieldTreeItem) ??
-          fieldsToRender?.map(createFieldTreeItem) ??
-          contentTypeSections.map((section) => (
-            <TreeItem
-              key={section.title}
-              itemId={section.title}
-              data-section-id={section.title}
-              label={section.title}
-              onClick={handleSectionTreeItemClick}
-              children={section.fields.map((fieldId) => createFieldTreeItem(contentTypeFields[fieldId]))}
-            />
-          ))}
-      </SimpleTreeView>
-      {/* Spacer: */}
-      <Box sx={{ minHeight: 50 }} />
-    </>
-  );
-}
-function TreeItemLabel({
-  field,
-  atoms
-}: {
-  field: ContentTypeField;
-  atoms: Pick<FormsEngineAtoms, 'valueByFieldId' | 'validationByFieldId'>;
-}) {
-  const value = useAtomValue(atoms.valueByFieldId[field.id]);
-  const validity = useAtomValue(atoms.validationByFieldId[field.id]);
-  const isRequired = isFieldRequired(field);
-  return (
-    <Box display="flex" justifyContent="space-between" alignItems="center">
-      <span>{field.name}</span>
-      {isRequired ? (
-        <FieldRequiredStateIndicator isValid={validity.isValid} />
-      ) : (
-        <FieldEmptyStateIndicator isEmpty={isEmptyValue(field, value)} />
-      )}
-    </Box>
-  );
-}
-// endregion
-
-// region EditModeHeader
-function EditModeHeader({
-  handleTabChange,
-  isEmbedded,
-  atoms,
-  theme,
-  objectId,
-  activeTab,
-  isLargeContainer,
-  useCollapsedToC,
-  setCollapsedToC
-}: {
-  handleTabChange: TabsProps['onChange'];
-  isEmbedded: boolean;
-  atoms: FormsEngineAtoms;
-  theme: Theme;
-  objectId: string;
-  activeTab: number;
-  isLargeContainer: boolean;
-  useCollapsedToC: boolean;
-  setCollapsedToC: ReactDispatch<SetStateAction<boolean>>;
-}) {
-  const item = useContext(ItemContext);
-  const store = useStore();
-  const readonly = useAtomValue(atoms.readonly);
-  const localeConf = useLocale();
-  const itemLabel = isEmbedded
-    ? (getFieldAtomValue(atoms.valueByFieldId[XmlKeys.internalName], store) as string)
-    : item.label;
-  const typeIconItem: Pick<SandboxItem, 'systemType' | 'mimeType'> = isEmbedded
-    ? { systemType: 'component', mimeType: 'application/xml' }
-    : item;
-  const formattedCreator = prettyPrintPerson(item.sandbox.creator);
-  const formattedCreationDate = new Intl.DateTimeFormat(localeConf.localeCode, {
-    dateStyle: 'short'
-  }).format(new Date(item.sandbox.dateCreated));
-  const formattedModifier = prettyPrintPerson(item.sandbox.modifier);
-  const formattedModifiedDate = new Intl.DateTimeFormat(localeConf.localeCode, {
-    dateStyle: 'short'
-  }).format(new Date(item.sandbox.dateModified));
-  return (
-    <>
-      <Container className="space-y" sx={{ py: 1 }}>
-        <Box display="flex" alignItems="end" justifyContent="space-between">
-          <Box className="space-y" sx={{ flexBasis: '50%' }}>
-            {/* Item display */}
-            <Box display="flex" alignItems="center" className="space-x">
-              <ItemTypeIcon item={typeIconItem} sx={{ color: 'info.main' }} />
-              <Typography>{itemLabel}</Typography>
-              {readonly && (
-                <Chip
-                  sx={{ [`.${chipClasses.label}`]: { display: 'flex', alignItems: 'center' } }}
-                  color="warning"
-                  variant="outlined"
-                  label={
-                    <>
-                      <FormattedMessage defaultMessage="Readonly" />
-                      <EditOffOutlined fontSize="small" sx={{ ml: 1 }} />
-                    </>
-                  }
-                />
-              )}
-            </Box>
-            {/* Item metadata */}
-            <div>
-              <Typography
-                variant="body2"
-                color="textSecondary"
-                display="flex"
-                alignItems="center"
-                sx={{ flexWrap: 'wrap', em: { fontWeight: 600 } }}
-              >
-                <Box component="span" display="flex" alignItems="center" marginRight={1}>
-                  <CalendarTodayRounded sx={{ mr: 0.25 }} fontSize="inherit" />
-                  <span>
-                    <FormattedMessage
-                      defaultMessage="Created {when} by {who}"
-                      values={{
-                        who: () => <em title={formattedCreator.tooltip}>{formattedCreator.display}</em>,
-                        when: formattedCreationDate
-                      }}
-                    />
-                  </span>
-                </Box>
-                <Box component="span" display="flex" alignItems="center">
-                  <EditOutlined sx={{ mr: 0.25 }} fontSize="inherit" />
-                  <span>
-                    <FormattedMessage
-                      defaultMessage="Updated {when} by {who}"
-                      values={{
-                        who: () => <em title={formattedModifier.tooltip}>{formattedModifier.display}</em>,
-                        when: formattedModifiedDate
-                      }}
-                    />
-                  </span>
-                </Box>
-              </Typography>
-              <Typography
-                variant="body2"
-                color="textSecondary"
-                display="flex"
-                alignItems="center"
-                sx={{ flexWrap: 'wrap' }}
-              >
-                <Box component="span" display="flex" alignItems="center" marginRight={1}>
-                  <ItemPublishingTargetIcon fontSize="inherit" sxs={{ root: { marginRight: 0.25 } }} item={item} />{' '}
-                  {getItemPublishingTargetText(item.stateMap)}
-                </Box>
-                <Box component="span" display="flex" alignItems="center">
-                  <ItemStateIcon fontSize="inherit" sxs={{ root: { mr: 0.25 } }} item={item} />{' '}
-                  {getItemStateText(item.stateMap, { user: item.lockOwner?.username })}
-                </Box>
-              </Typography>
-            </div>
-          </Box>
-          <Box className="space-y" display="flex" flexDirection="column" alignItems="end" sx={{ maxWidth: '50%' }}>
-            <Typography
-              component="span"
-              variant="body2"
-              color="textSecondary"
-              display="flex"
-              alignItems="center"
-              sx={{ overflow: 'hidden', maxWidth: '100%' }}
-            >
-              <Box
-                component="span"
-                title={item.path}
-                sx={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}
-              >
-                {item.path}
-                {/* Super-long test path: /Lorem/Ipsum/is/simply/dummy/text/of/the/printing/and/typesetting/industry/Lorem/Ipsum/has/been/the/industrys/standard/dummy/text/ever/since/the/1500s/when/an/unknown/printer/took/a/galley/of/type/and/scrambled/it/to/make/a/type/specimen/book.xml */}
-              </Box>
-              <Tooltip title={<FormattedMessage defaultMessage="Copy path to clipboard" />}>
-                <IconButton size="small" onClick={() => copyToClipboard(item.path)} sx={{ padding: '1px', ml: 1 }}>
-                  <ContentCopyRounded fontSize="inherit" sx={{ color: 'text.secondary' }} />
-                </IconButton>
-              </Tooltip>
-            </Typography>
-            <Typography
-              component="span"
-              variant="body2"
-              color="textSecondary"
-              display="flex"
-              alignItems="center"
-              sx={{ overflow: 'hidden', maxWidth: '100%' }}
-            >
-              <Box
-                component="span"
-                title={objectId}
-                sx={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}
-              >
-                {objectId}
-              </Box>
-              <Tooltip title={<FormattedMessage defaultMessage="Copy ID to clipboard" />}>
-                <IconButton
-                  size="small"
-                  sx={{ padding: '1px', ml: 1 }}
-                  onClick={() =>
-                    copyToClipboard(getFieldAtomValue(atoms.valueByFieldId[XmlKeys.modelId], store) as string)
-                  }
-                >
-                  <ContentCopyRounded fontSize="inherit" sx={{ color: 'text.secondary' }} />
-                </IconButton>
-              </Tooltip>
-            </Typography>
-          </Box>
-        </Box>
-      </Container>
-      <Container
-        maxWidth="xl"
-        sx={{
-          // TODO: Remove margin and display rule value condition once tabs get added.
-          display: isLargeContainer ? 'flex' : 'none',
-          marginTop: '-20px'
-        }}
-      >
-        {isLargeContainer && (
-          <Tooltip title={<FormattedMessage defaultMessage="Collapse table of contents" />}>
-            <IconButton
-              size="small"
-              onClick={() => setCollapsedToC(!useCollapsedToC)}
-              sx={{ mr: 0.5, visibility: activeTab === 0 ? undefined : 'hidden' }}
-            >
-              <MenuOpenIcon
-                sx={{
-                  // Add transform to rotate 180deg when collapsed
-                  transform: useCollapsedToC ? 'rotate(180deg)' : 'none',
-                  // Animate the rotation
-                  transition: theme.transitions.create('transform', {
-                    duration: theme.transitions.duration.shortest
-                  })
-                }}
-              />
-            </IconButton>
-          </Tooltip>
-        )}
-        {/*
-        TODO: Disabling Tabs. Differed feature.
-        <Tabs value={activeTab} onChange={handleTabChange} sx={{ minHeight: 0 }}>
-          <DenseTab label={<FormattedMessage defaultMessage="Form" />} />
-          <DenseTab label={<FormattedMessage defaultMessage="Preview" />} />
-          <DenseTab label={<FormattedMessage defaultMessage="History" />} />
-          <DenseTab label={<FormattedMessage defaultMessage="References" />} />
-          <DenseTab label={<FormattedMessage defaultMessage="Template" />} />
-          <DenseTab label={<FormattedMessage defaultMessage="Controller" />} />
-          <DenseTab label={<FormattedMessage defaultMessage="Settings" />} />
-        </Tabs>
-        */}
-      </Container>
-    </>
-  );
-}
-// endregion
-
-// region CreateModeHeader
-const itemTypeTranslations = defineMessages({
-  component: { defaultMessage: 'Component' },
-  page: { defaultMessage: 'Page' },
-  taxonomy: { defaultMessage: 'Taxonomy' }
-});
-function CreateModeHeader({ contentType, path }: { path: string; contentType: ContentType }) {
-  const { formatMessage } = useIntl();
-  const itemType = contentType.type;
-  return (
-    <Container sx={{ py: 1 }}>
-      <Typography variant="h6" component="h2" display="flex" alignItems="center">
-        <ItemTypeIcon item={{ systemType: itemType, mimeType: 'application/xml' }} sx={{ color: 'info.main', mr: 1 }} />
-        <FormattedMessage
-          defaultMessage='Create new "{name}" {type}'
-          values={{
-            name: contentType.name,
-            type:
-              itemType in itemTypeTranslations ? formatMessage(itemTypeTranslations[itemType]).toLowerCase() : itemType
-          }}
-        />
-      </Typography>
-      <Typography color="textSecondary" variant="body2" children={path} />
-    </Container>
-  );
-}
-// endregion
-
 export default Root;
+
+// TODO:
+//  - PathNav and other ares to open new edit form
+//  - Edit template & controller
+//  - Update Audience Targeting panel to use new form engine controls
+//  - Store collapsed ToC state & add to preference manager
+//  - AI
+//  - Field diff & rollback
+//  - Edit template on form
+//  - View/edit content type?
+//  - Enabling editing (from read only to edit mode) for embedded components considering deeper nesting that 1 too
+//  - AI to summarise changes for the save comment
+//  - Control guidelines: autoFocus
+//  - API to retrieve inherited props from an item that doesn't yet exist (is being created)
+//  - Rollback confirm with diff
+//  - Docs notes:
+//    - Controls should manage autoFocus; make sure their internal controls reacts to changes in autoFocus or use effect to focus programmatically
+//    - Should test controls in a root form and in a nested form
+//  - Settings:
+//     - Enable tabbing through control menu button
+//     - Permanently hide ToC (though also controlled by the tab bar button)
+//     - Colour blind mode:
+//        - required field indicators to show check instead of asterisk when valid
+//     - Flush control cache?
+//     - Close after saving & options
+//     - Whether to open node selector items in edit if the main item area (instead of edit button) is clicked
