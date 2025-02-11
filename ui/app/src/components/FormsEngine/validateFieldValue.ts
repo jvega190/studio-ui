@@ -21,36 +21,7 @@ import ContentType from '../../models/ContentType';
 import LookupTable from '../../models/LookupTable';
 import { NodeSelectorItem } from './controls/NodeSelector';
 import { RepeatItem } from './controls/Repeat';
-
-export enum XmlKeys {
-  modelId = 'objectId',
-  contentTypeId = 'content-type',
-  displayTemplate = 'display-template',
-  mergeStrategy = 'merge-strategy',
-  fileName = 'file-name',
-  folderName = 'folder-name',
-  internalName = 'internal-name',
-  templateNotRequired = 'no-template-required',
-  dateCreated = 'createdDate',
-  dateModified = 'lastModifiedDate',
-  savedAsDraft = 'savedAsDraft'
-}
-
-// These are not in the content type definition
-export const systemFieldsNotInType = [
-  XmlKeys.contentTypeId,
-  XmlKeys.displayTemplate,
-  XmlKeys.templateNotRequired,
-  XmlKeys.mergeStrategy,
-  XmlKeys.modelId,
-  XmlKeys.fileName,
-  XmlKeys.folderName,
-  XmlKeys.internalName,
-  XmlKeys.dateCreated,
-  `${XmlKeys.dateCreated}_dt`,
-  XmlKeys.dateModified,
-  `${XmlKeys.dateModified}_dt`
-];
+import { systemFieldsNotInType, XmlKeys } from './common/formConsts';
 
 export const validatorsMap: Record<BuiltInControlType, ElementType> = {
   repeat: null,

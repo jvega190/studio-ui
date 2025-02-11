@@ -78,13 +78,13 @@ import useItemsByPath from '../../../hooks/useItemsByPath';
 import ItemDisplay from '../../ItemDisplay';
 import useActiveUser from '../../../hooks/useActiveUser';
 import { processPathMacros } from '../../../utils/path';
-import { XmlKeys } from '../validateFieldValue';
 import { ensureSingleSlash } from '../../../utils/string';
 import { popDialog, pushDialog, pushNonDialog } from '../../../state/actions/dialogStack';
 import FieldBox from '../common/FieldBox';
 import { isTouchDevice, KeyDownEvent, sortableListKeyDownHandler } from '../common/sortableListUtil';
 import SortableListSkeleton from '../common/SortableListSkeleton';
 import { EmptyState } from '../../EmptyState';
+import { XmlKeys } from '../common/formConsts';
 
 const SortableList = lazy(() => import('../common/SortableList'));
 const TouchSortableList = lazy(() => import('../common/TouchSortableList'));

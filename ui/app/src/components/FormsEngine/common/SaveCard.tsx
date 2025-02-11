@@ -6,8 +6,7 @@ import useActiveSiteId from '../../../hooks/useActiveSiteId';
 import React, { ChangeEvent, useContext, useState } from 'react';
 import { FormsEngineFormContextApi, ItemMetaContext, StableFormContext } from '../formsEngineContext';
 import { ButtonProps } from '@mui/material/Button';
-import { XmlKeys } from '../validateFieldValue';
-import { buildContentXml, extractValueAtoms, showAlert } from './formUtils';
+import { buildContentXml, createObjectWithSystemProps, extractValueAtoms, showAlert } from './formUtils';
 import { fromString } from '../../../utils/xml';
 import { ensureSingleSlash } from '../../../utils/string';
 import { writeContent } from '../../../services/content';
@@ -23,7 +22,7 @@ import FormHelperText from '@mui/material/FormHelperText';
 import Grow from '@mui/material/Grow';
 import Alert from '@mui/material/Alert';
 import { FormSavePromiseResult, FormsEngineProps } from '../FormsEngine';
-import { versionCommentAtom } from './formConsts';
+import { XmlKeys } from './formConsts';
 
 export interface SaveCardProps {
   createPath?: string;
@@ -48,26 +47,39 @@ export function SaveCard(props: SaveCardProps) {
   const formContextApi = useContext(FormsEngineFormContextApi);
   const { affectedPackages } = useAtomValue(stableFormContext.atoms.lockResult);
   const [isSubmitting, setIsSubmitting] = useAtom(stableFormContext.atoms.isSubmitting);
-  const [versionComment, setVersionComment] = useAtom(versionCommentAtom);
+  const [versionComment, setVersionComment] = useAtom(stableFormContext.atoms.versionComment);
   const [hasPendingChanges, setHasPendingChanges] = useAtom(stableFormContext.atoms.hasPendingChanges);
   const [acceptedWorkflowCancellation, setAcceptedWorkflowCancellation] = useState(false);
-  const disableSave = isSubmitting || (affectedPackages && !acceptedWorkflowCancellation);
+  const hasAffectedPackages = Boolean(affectedPackages?.length > 0);
+  const disableSave = isSubmitting || !hasPendingChanges || (hasAffectedPackages && !acceptedWorkflowCancellation);
   const handleSave: ButtonProps['onClick'] = (e?: React.MouseEvent<HTMLButtonElement>) => {
     // TODO: Run necessary validations to ensure the form is ready to be saved.
     const values = extractValueAtoms(jotai, stableFormContext.atoms.valueByFieldId);
     const onSavePromiseHandler = ({ close }: FormSavePromiseResult) => {
       close && onClose?.(e, null);
     };
-    // Repeat handled here. Execution ends inside if statement.
+    // Repeat handled here. If true, execution ends inside if statement.
     if (isRepeatMode) {
       setHasPendingChanges(false);
       onSave?.({ values, versionComment })?.then(onSavePromiseHandler);
       return;
     }
-    const date = new Date().toISOString();
-    // Put system properties in xml before creating the XML
-    values[XmlKeys.fileName] = values[XmlKeys.fileName] ?? contentObject[XmlKeys.fileName];
-    values[XmlKeys.folderName] = values[XmlKeys.folderName] ?? contentObject[XmlKeys.folderName];
+    // Put system properties in before creating the XML
+    Object.assign(
+      values,
+      createObjectWithSystemProps(contentType, {
+        [XmlKeys.modelId]: id,
+        [XmlKeys.internalName]: values[XmlKeys.internalName] as string,
+        [XmlKeys.fileName]: (values[XmlKeys.fileName] ?? contentObject[XmlKeys.fileName]) as string,
+        [XmlKeys.folderName]: (values[XmlKeys.folderName] ?? contentObject[XmlKeys.folderName]) as string,
+        [XmlKeys.dateCreated]: contentObject[XmlKeys.dateCreated] as string,
+        [XmlKeys.dateCreatedDt]: contentObject[XmlKeys.dateCreatedDt] as string,
+        [XmlKeys.savedAsDraft]: Object.values(stableFormContext.atoms.validationByFieldId).some(
+          (validityDataAtom) => !jotai.get(validityDataAtom).isValid
+        )
+      })
+    );
+    // Validate minimum requirements to save as draft. Execution stops if minimum reqs aren't fulfilled.
     if (
       String(values[XmlKeys.internalName]).trim() === '' ||
       String(values[XmlKeys.fileName]).trim() === '' ||
@@ -84,19 +96,8 @@ export function SaveCard(props: SaveCardProps) {
         )
       });
     }
-    values[XmlKeys.contentTypeId] = contentType.id;
-    values[XmlKeys.displayTemplate] = contentType.displayTemplate;
-    values[XmlKeys.mergeStrategy] = contentObject[XmlKeys.mergeStrategy];
-    values[XmlKeys.modelId] = id;
-    values[XmlKeys.dateCreated] = contentObject[XmlKeys.dateCreated] ?? date;
-    values[XmlKeys.dateCreated + '_dt'] = contentObject[XmlKeys.dateCreated + '_dt'] ?? date;
-    values[XmlKeys.dateModified] = date;
-    values[XmlKeys.dateModified + '_dt'] = date;
-    values[XmlKeys.savedAsDraft] = Object.values(stableFormContext.atoms.validationByFieldId).some(
-      (validityDataAtom) => !jotai.get(validityDataAtom).isValid
-    );
     const xml = buildContentXml(values, store.getState().contentTypes.byId);
-    // Embedded handled here. Execution ends inside if statement.
+    // Embedded handled here. If true, execution ends inside if statement.
     if (isEmbedded) {
       setHasPendingChanges(false);
       const dom = fromString(xml);
@@ -140,64 +141,51 @@ export function SaveCard(props: SaveCardProps) {
   };
   return (
     <Paper sx={{ p: 1 }} className="space-y-half">
-      {
-        // TODO: Should embedded components get a version comment? How would that work?
-        (!isEmbedded || !isStackedForm) && (
-          <>
-            <TextField
+      {(!isEmbedded || !isStackedForm) && !isRepeatMode && (
+        // TODO: Should embedded components and repeats get a version comment? How would that work?
+        <TextField
+          size="small"
+          multiline
+          fullWidth
+          label={<FormattedMessage defaultMessage="Version Comment" />}
+          value={versionComment}
+          onChange={(e) => setVersionComment(e.target.value)}
+          onFocus={(e) => e.target.select()}
+        />
+      )}
+      {hasAffectedPackages && (
+        <FormControlLabel
+          title={formatMessage({
+            defaultMessage: 'The item is part of a publishing package. Editing it will cancel the entire package.'
+          })}
+          label={<FormattedMessage defaultMessage="Accept publish cancellation" />}
+          control={
+            <Checkbox
               size="small"
-              multiline
-              fullWidth
-              label={<FormattedMessage defaultMessage="Version Comment" />}
-              value={versionComment}
-              onChange={(e) => setVersionComment(e.target.value)}
-              onFocus={(e) => e.target.select()}
+              checked={acceptedWorkflowCancellation}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                setAcceptedWorkflowCancellation(e.target.checked);
+              }}
             />
-            <div>
-              {affectedPackages && (
-                <FormControlLabel
-                  title={formatMessage({
-                    defaultMessage:
-                      'The item is part of a publishing package. Editing it will cancel the entire package.'
-                  })}
-                  label={<FormattedMessage defaultMessage="Accept publish cancellation" />}
-                  control={
-                    <Checkbox
-                      size="small"
-                      checked={acceptedWorkflowCancellation}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                        setAcceptedWorkflowCancellation(e.target.checked);
-                      }}
-                    />
-                  }
-                />
-              )}
-              <FormControlLabel
-                label={<FormattedMessage defaultMessage="Close after saving" />}
-                control={
-                  <Checkbox
-                    size="small"
-                    checked={false}
-                    onClick={() => showAlert({ dispatch, message: 'Not implemented yet.' })}
-                  />
-                }
-              />
-            </div>
-          </>
-        )
-      }
+          }
+        />
+      )}
+      <FormControlLabel
+        label={<FormattedMessage defaultMessage="Close after saving" />}
+        control={
+          <Checkbox
+            size="small"
+            checked={false}
+            onClick={() => showAlert({ dispatch, message: 'Not implemented yet.' })}
+          />
+        }
+      />
       {/*
       TODO:
        - If validations aren't all passed, should read "Save Draft" and a different colour.
        - What about embedded drafts? Should they be allowed?
       */}
-      <PrimaryButton
-        fullWidth
-        variant="contained"
-        onClick={handleSave}
-        disabled={disableSave || !hasPendingChanges}
-        loading={isSubmitting}
-      >
+      <PrimaryButton fullWidth variant="contained" onClick={handleSave} disabled={disableSave} loading={isSubmitting}>
         {isRepeatMode || (isEmbedded && isStackedForm) ? (
           <FormattedMessage defaultMessage="Done" />
         ) : (

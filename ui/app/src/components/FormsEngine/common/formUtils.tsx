@@ -20,10 +20,11 @@ import ContentType from '../../../models/ContentType';
 import { BuiltInControlType } from '../controlMap';
 import { RepeatItem } from '../controls/Repeat';
 import { NodeSelectorItem } from '../controls/NodeSelector';
-import validateFieldValue, { FieldValidityState, XmlKeys } from '../validateFieldValue';
+import validateFieldValue, { FieldValidityState } from '../validateFieldValue';
 import { catchError, forkJoin, map, Observable, of, Subject, switchMap } from 'rxjs';
 import {
   FormRequirementsResponse,
+  FormsEngineAtoms,
   FormsEngineEditContextProps,
   FormsEngineSourceMap,
   StableFormContextProps
@@ -46,7 +47,8 @@ import { FormattedMessage } from 'react-intl';
 import { AlertDialogProps } from '../../AlertDialog';
 import { Theme } from '@mui/material/styles';
 import { JotaiStore } from '../types';
-import { ContentTypeNotFoundError } from './formConsts';
+import { ContentTypeNotFoundError, systemFieldsNotInType, XmlKeys } from './formConsts';
+import { v4 as uuid } from 'uuid';
 
 /**
  * Formats a FormsEngine values object with "hints" for attributes or other specifics for the XML serialiser to serialise
@@ -403,4 +405,86 @@ export function fetchUpdateRequirements({
       return props;
     })
   );
+}
+
+/**
+ * Creates a FormsEngineAtoms object with default values. Allows overriding defaults via `mixin` argument.
+ **/
+export function createFormsEngineAtoms(mixin?: Partial<FormsEngineAtoms>): FormsEngineAtoms {
+  const atoms: FormsEngineAtoms = {
+    isSubmitting: atom(false),
+    hasPendingChanges: atom(false),
+    valueByFieldId: {},
+    validationByFieldId: {},
+    lockResult: null,
+    readonly: null,
+    versionComment: atom(''),
+    ...mixin
+  };
+  return atoms;
+}
+
+/**
+ * Creates the value and validity atoms for a field and sets them on to the target object.
+ **/
+export function setFieldAtoms(
+  stableFormContextRef: RefObject<StableFormContextProps>,
+  contentType: ContentType,
+  fieldLookup: LookupTable<ContentTypeField>,
+  fieldId: string,
+  atomsTarget: FormsEngineAtoms,
+  value: unknown
+): void {
+  let field = fieldLookup[fieldId];
+  if (!field) {
+    // TODO: Discuss `folder-name`. When should it be here, when not? Could/should we remove?
+    if (fieldId === 'folder-name') {
+      field = {
+        defaultValue: undefined,
+        description: '',
+        fields: undefined,
+        helpText: '',
+        properties: undefined,
+        sortable: false,
+        type: '',
+        validations: undefined,
+        values: undefined,
+        id: 'folder-name',
+        name: 'Folder Name'
+      };
+    } else {
+      !systemFieldsNotInType.includes(fieldId) &&
+        console.warn(`Field ${fieldId} not found in content type "${contentType.name}" (${contentType.id})`);
+      return;
+    }
+  }
+  const [valueAtom, validityAtom] = createFieldAtoms(field, value, stableFormContextRef);
+  atomsTarget.valueByFieldId[fieldId] = valueAtom;
+  atomsTarget.validationByFieldId[fieldId] = validityAtom;
+}
+
+export type SystemPropsObject = Record<XmlKeys, string | boolean>;
+
+export function createObjectWithSystemProps(
+  contentType: ContentType,
+  mixin?: Partial<SystemPropsObject>
+): SystemPropsObject {
+  const dateIsoString = new Date().toISOString();
+  const contentObject: SystemPropsObject = {
+    [XmlKeys.modelId]: mixin?.[XmlKeys.modelId] ?? uuid(),
+    [XmlKeys.internalName]: mixin?.[XmlKeys.internalName] ?? '',
+    [XmlKeys.contentTypeId]: contentType.id,
+    [XmlKeys.displayTemplate]: contentType.displayTemplate ?? '',
+    [XmlKeys.templateNotRequired]: contentType.displayTemplate ? 'false' : 'true',
+    [XmlKeys.mergeStrategy]: contentType.mergeStrategy ?? 'inherit-levels',
+    [XmlKeys.dateCreated]: mixin?.[XmlKeys.dateCreated] ?? dateIsoString,
+    [XmlKeys.dateCreatedDt]: mixin?.[XmlKeys.dateCreatedDt] ?? dateIsoString,
+    [XmlKeys.dateModified]: mixin?.[XmlKeys.dateModified] ?? dateIsoString,
+    [XmlKeys.dateModifiedDt]: mixin?.[XmlKeys.dateModifiedDt] ?? dateIsoString,
+    [XmlKeys.savedAsDraft]: mixin?.[XmlKeys.savedAsDraft] ?? 'false',
+    // // TODO: folderName? fileName?
+    [XmlKeys.folderName]: mixin?.[XmlKeys.folderName] ?? '',
+    [XmlKeys.fileName]: mixin?.[XmlKeys.fileName] ?? 'index.xml'
+  };
+  return contentObject;
 }

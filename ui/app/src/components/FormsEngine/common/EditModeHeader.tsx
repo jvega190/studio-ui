@@ -4,7 +4,6 @@ import { ItemContext, ItemMetaContext, StableFormContext } from '../formsEngineC
 import { useAtomValue, useStore as useJotaiStore } from 'jotai/index';
 import useLocale from '../../../hooks/useLocale';
 import { getFieldAtomValue } from './formUtils';
-import { XmlKeys } from '../validateFieldValue';
 import { SandboxItem } from '../../../models';
 import { prettyPrintPerson } from '../../../utils/object';
 import Container from '@mui/material/Container';
@@ -23,6 +22,7 @@ import IconButton from '@mui/material/IconButton';
 import { copyToClipboard } from '../../../utils/system';
 import ContentCopyRounded from '@mui/icons-material/ContentCopyRounded';
 import MenuOpenIcon from '@mui/icons-material/MenuOpenRounded';
+import { XmlKeys } from './formConsts';
 
 export function EditModeHeader({
   isEmbedded,

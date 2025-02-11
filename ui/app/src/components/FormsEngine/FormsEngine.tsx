@@ -60,10 +60,9 @@ import { StickyBox } from './common/StickyBox';
 import MenuRounded from '@mui/icons-material/MenuRounded';
 import { EnhancedDialogProps } from '../EnhancedDialog';
 import useEnhancedDialogContext from '../EnhancedDialog/useEnhancedDialogContext';
-import { v4 as uuid } from 'uuid';
 import { ArrowUpward, EditOffOutlined } from '@mui/icons-material';
 import ContentType from '../../models/ContentType';
-import { createCleanValuesObject, systemFieldsNotInType, XmlKeys } from './validateFieldValue';
+import { createCleanValuesObject } from './validateFieldValue';
 import LookupTable from '../../models/LookupTable';
 import { toColor } from '../../utils/string';
 import { RepeatItem } from './controls/Repeat';
@@ -90,14 +89,17 @@ import { ViewPackagesDialogProps } from '../ViewPackagesDialog';
 import {
   buildSectionExpandedState,
   createFieldAtoms,
+  createFormsEngineAtoms,
   createFormStackData,
+  createObjectWithSystemProps,
   createReadonlyAtom,
   displayFormBeingSavedSnack,
   fetchUpdateRequirements,
   getScrollContainer,
   getTargetHeight,
   internalLockContentService,
-  internalUnlockContentService
+  internalUnlockContentService,
+  setFieldAtoms
 } from './common/formUtils';
 import { renderFieldControl } from './common/supportingControls';
 import {
@@ -107,7 +109,7 @@ import {
   NoSiteIdError,
   stackFormCountAtom,
   UnknownError,
-  versionCommentAtom
+  XmlKeys
 } from './common/formConsts';
 import FormLayout from './common/FormLayout';
 import TableOfContents from './common/TableOfContents';
@@ -169,7 +171,7 @@ export interface CreateModeProps {
 
 export type FormsEngineProps = BaseProps & (UpdateModeProps | RepeatModeProps | CreateModeProps);
 
-// This is the entry point for the form engine. It sets up the Jotai store and the global form context.
+// Entry point for the form engine. It sets up the Jotai store and the global form context.
 function Root(props: FormsEngineProps) {
   const store = useMemo(() => createStore(), []); // TODO: Use stable memo?
   const stableGlobalContextRef = useRef<StableGlobalContextProps>(undefined);
@@ -213,7 +215,7 @@ function Root(props: FormsEngineProps) {
   );
 }
 
-// This collects the requirements for the form and sets up various contexts.
+// Collects the requirements for the form and sets up various contexts.
 function Prepper(props: FormsEngineProps) {
   const { create, update, repeat, fieldsToRender, readonly: readonlyProp, stackIndex = 0, isDialog } = props;
   const siteId = useActiveSiteId();
@@ -344,40 +346,6 @@ function Prepper(props: FormsEngineProps) {
         setItemMeta(stableFormContextRef.current.itemMeta);
         setReady(true);
       };
-      const createAtom = (
-        contentType: ContentType,
-        fieldLookup: LookupTable<ContentTypeField>,
-        fieldId: string,
-        atomsTarget: FormsEngineAtoms,
-        value: unknown
-      ) => {
-        let field = fieldLookup[fieldId];
-        if (!field) {
-          // TODO: Discuss `folder-name`. When should it be here, when not? Could/should we remove?
-          if (fieldId === 'folder-name') {
-            field = {
-              defaultValue: undefined,
-              description: '',
-              fields: undefined,
-              helpText: '',
-              properties: undefined,
-              sortable: false,
-              type: '',
-              validations: undefined,
-              values: undefined,
-              id: 'folder-name',
-              name: 'Folder Name'
-            };
-          } else {
-            !systemFieldsNotInType.includes(fieldId) &&
-              console.warn(`Field ${fieldId} not found in content type "${contentType.name}" (${contentType.id})`);
-            return;
-          }
-        }
-        const [valueAtom, validityAtom] = createFieldAtoms(field, value, stableFormContextRef);
-        atomsTarget.valueByFieldId[fieldId] = valueAtom;
-        atomsTarget.validationByFieldId[fieldId] = validityAtom;
-      };
       if (
         // A repeat group is being opened as a stacked form.
         isChildForm &&
@@ -394,17 +362,19 @@ function Prepper(props: FormsEngineProps) {
           lockError: parentLockResult.lockError,
           affectedPackages: parentLockResult.affectedPackages
         });
-        const readonlyAtom = createReadonlyAtom(lockResultAtom);
-        const atoms: FormsEngineAtoms = {
-          isSubmitting: atom(false),
-          hasPendingChanges: atom(false),
-          valueByFieldId: {},
-          validationByFieldId: {},
+        const atoms = createFormsEngineAtoms({
           lockResult: lockResultAtom,
-          readonly: readonlyAtom
-        };
+          readonly: createReadonlyAtom(lockResultAtom)
+        });
         const atomValueCreator: Parameters<typeof createCleanValuesObject>[3] = (fieldId, value) => {
-          createAtom(contentType, contentType.fields[repeat.fieldId].fields, fieldId, atoms, value);
+          setFieldAtoms(
+            stableFormContextRef,
+            contentType,
+            contentType.fields[repeat.fieldId].fields,
+            fieldId,
+            atoms,
+            value
+          );
         };
         const values =
           repeat.values ??
@@ -436,14 +406,7 @@ function Prepper(props: FormsEngineProps) {
         const isParentLocked = parentLockResult.locked;
         const isParentReadonly = store.get(parentAtoms.readonly);
         const readonly = readonlyProp ?? isParentReadonly;
-        const atoms: FormsEngineAtoms = {
-          isSubmitting: atom(false),
-          hasPendingChanges: atom(false),
-          valueByFieldId: {},
-          validationByFieldId: {},
-          lockResult: null,
-          readonly: null
-        };
+        const atoms = createFormsEngineAtoms();
         const values = update.values;
         Object.entries(values).forEach(([fieldId, value]) => {
           if (!contentType.fields[fieldId]) {
@@ -486,8 +449,6 @@ function Prepper(props: FormsEngineProps) {
         create
       ) {
         // Create mode
-        const dateIsoString = new Date().toISOString();
-        const newModelId = uuid();
         const contentType = effectRefs.current.contentTypesById[create.contentTypeId];
         if (!contentType) {
           return setPrepError(ContentTypeNotFoundError);
@@ -497,39 +458,19 @@ function Prepper(props: FormsEngineProps) {
           lockError: null,
           affectedPackages: null
         });
-        const atoms: FormsEngineAtoms = {
-          isSubmitting: atom(false),
-          hasPendingChanges: atom(false),
-          valueByFieldId: {},
-          validationByFieldId: {},
-          lockResult: lockResultAtom,
-          readonly: atom(false)
-        };
-        const contentObject: LookupTable<unknown> = {
-          [XmlKeys.modelId]: newModelId,
-          [XmlKeys.contentTypeId]: contentType.id,
-          [XmlKeys.displayTemplate]: contentType.displayTemplate,
-          [XmlKeys.templateNotRequired]: Boolean(contentType.displayTemplate ? 'false' : 'true'),
-          [XmlKeys.mergeStrategy]: 'inherit-levels',
-          [XmlKeys.dateCreated]: dateIsoString,
-          [`${XmlKeys.dateCreated}_dt`]: dateIsoString,
-          [XmlKeys.dateModified]: dateIsoString,
-          [`${XmlKeys.dateModified}_dt`]: dateIsoString,
-          // TODO: folderName? fileName?
-          [XmlKeys.folderName]: '',
-          [XmlKeys.fileName]: 'index.xml'
-        };
+        const atoms: FormsEngineAtoms = createFormsEngineAtoms({ lockResult: lockResultAtom });
+        const contentObject = createObjectWithSystemProps(contentType);
         const values = createCleanValuesObject(
           contentType.fields,
           contentObject,
           contentTypesById,
           (fieldId, value) => {
-            createAtom(contentType, contentType.fields, fieldId, atoms, value);
+            setFieldAtoms(stableFormContextRef, contentType, contentType.fields, fieldId, atoms, value);
           }
         );
         initializeState(atoms, values, {
-          id: newModelId,
-          // TODO: Should/can we somehow deduce the target path?
+          id: contentObject[XmlKeys.modelId] as string,
+          // TODO: Should/could we somehow deduce the target path?
           path: null,
           // TODO: Sourcemap? How can we determine what would be inherited by this content? New API?
           sourceMap: null,
@@ -569,20 +510,23 @@ function Prepper(props: FormsEngineProps) {
               lockError: requirements.lockError,
               affectedPackages: requirements.affectedPackages
             });
-            const atoms: FormsEngineAtoms = {
-              isSubmitting: atom(false),
-              hasPendingChanges: atom(false),
-              valueByFieldId: {},
-              validationByFieldId: {},
+            const atoms = createFormsEngineAtoms({
               lockResult: lockResultAtom,
               readonly: createReadonlyAtom(lockResultAtom)
-            };
+            });
             const values = createCleanValuesObject(
               requirements.contentType.fields,
               requirements.contentObject,
               contentTypesById,
               (fieldId, value) => {
-                createAtom(requirements.contentType, requirements.contentType.fields, fieldId, atoms, value);
+                setFieldAtoms(
+                  stableFormContextRef,
+                  requirements.contentType,
+                  requirements.contentType.fields,
+                  fieldId,
+                  atoms,
+                  value
+                );
               }
             );
             initializeState(atoms, values, {
@@ -735,7 +679,8 @@ function Form(props: FormsEngineProps) {
     stackIndex,
     fieldsToRender,
     sectionExpandedState,
-    collapsedToC
+    collapsedToC,
+    versionCommentAtom: stableFormContext.atoms.versionComment
   });
 
   // Restore previous scroll position if provided.
@@ -787,6 +732,7 @@ function Form(props: FormsEngineProps) {
       const fieldsChanged = Array.from(changedFieldIds).flatMap(
         (fieldId) => fieldsToRender[fieldId === 'folder-name' ? 'file-name' : fieldId]?.name ?? []
       );
+      const versionCommentAtom = effectRefs.current.versionCommentAtom;
       const currentMessage = store.get(versionCommentAtom).trim();
       const newMessage = produceMessage(fieldsChanged);
       if (
@@ -1125,12 +1071,14 @@ function Form(props: FormsEngineProps) {
               </Alert>
             )}
             {fieldsToRender ? (
+              // Renders the specified set of fields only
               <Paper sx={{ p: 2 }}>
                 {fieldsToRender.map((field, index) =>
                   renderFieldControl(field, stableFormContext.atoms.valueByFieldId, index === 0, readonly, contentType)
                 )}
               </Paper>
             ) : (
+              // Renders the full form, all sections
               contentTypeSections.map((section, sectionIndex) => (
                 <Accordion
                   key={sectionIndex}
@@ -1165,7 +1113,7 @@ function Form(props: FormsEngineProps) {
                 </Accordion>
               ))
             )}
-            {/* Spacer */}
+            {/* Spacer & back to top */}
             <Box minHeight={100} justifyContent="center" alignItems="center" display="flex">
               <Tooltip title={<FormattedMessage defaultMessage="Back to top" />}>
                 <Fab onClick={() => containerRef.current.scroll({ top: 0, behavior: 'smooth' })}>
@@ -1286,7 +1234,7 @@ function Form(props: FormsEngineProps) {
         </Drawer>
       )}
       {/* endregion */}
-      {/* region Sidebar Drawer */}
+      {/* region ToC Drawer */}
       <Drawer
         open={openDrawerSidebar}
         variant="temporary"
@@ -1324,6 +1272,7 @@ function Form(props: FormsEngineProps) {
 export default Root;
 
 // TODO:
+//  - Implement the various constraints/validation checks
 //  - PathNav and other ares to open new edit form
 //  - Edit template & controller
 //  - Update Audience Targeting panel to use new form engine controls
