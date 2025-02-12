@@ -26,7 +26,7 @@ export type EnhancedDialogContextProps = EnhancedDialogState & {
 export const EnhancedDialogContext = createContext<EnhancedDialogContextProps>(void 0);
 
 export function useEnhancedDialogContext() {
-  return useContext(EnhancedDialogContext);
+	return useContext(EnhancedDialogContext);
 }
 
 export default useEnhancedDialogContext;
