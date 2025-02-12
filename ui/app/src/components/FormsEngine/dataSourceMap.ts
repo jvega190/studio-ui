@@ -14,8 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { ElementType, lazy } from 'react';
+import { ElementType } from 'react';
 
+// TODO: Currently not in use with the approach take for data sources
 export const dataSourceMap: Record<string, ElementType> = {
 	'S3-repo': null,
 	'S3-upload': null,

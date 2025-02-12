@@ -279,10 +279,6 @@ function Prepper(props: FormsEngineProps) {
 
 	// Fetch/prepare requirements
 	useEffect(() => {
-		// TODO:
-		//  - Content type not found
-		//  - Item/Content not found
-		//  - Invalid params (e.g. create mode without a content type id)
 		// TODO: Consider backend that provides all form requirements: form def xml, context xml, sandbox/detailed item, affected workflow, lock(?)
 		const previousProps = effectRefs.current.previousProps;
 		if (!siteId) {
@@ -566,7 +562,7 @@ function Prepper(props: FormsEngineProps) {
 
 	if (prepError) {
 		let error: ReactNode;
-		// TODO: Improve errors
+		// TODO: Should errors allow parameters? e.g. show the path that wasn't found, or the type id?
 		switch (prepError) {
 			case ItemNotFoundError:
 				error = <FormattedMessage defaultMessage="The item was not found" />;

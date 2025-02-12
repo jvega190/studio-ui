@@ -37,7 +37,7 @@ export function TouchSortableList({ items, onChange }: TouchSortableListProps) {
 	const handleMove = (action: SortAction, moveToEdge: boolean, index: number) =>
 		sortableListActionProcessor(action, moveToEdge, items, index, onChange);
 	return (
-		<List sx={{}}>
+		<List>
 			{items.map((item, index) => (
 				<ListItem key={index} sx={{ display: 'flex' }}>
 					<ListItemText
