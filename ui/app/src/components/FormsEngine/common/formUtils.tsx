@@ -49,6 +49,8 @@ import { Theme } from '@mui/material/styles';
 import { JotaiStore } from '../types';
 import { ContentTypeNotFoundError, systemFieldsNotInType, XmlKeys } from './formConsts';
 import { v4 as uuid } from 'uuid';
+import { atomWithStorage } from 'jotai/utils';
+import { useDispatch } from 'react-redux';
 
 /**
  * Formats a FormsEngine values object with "hints" for attributes or other specifics for the XML serialiser to serialise
@@ -135,15 +137,15 @@ export function getScrollContainer(container: HTMLElement): HTMLElement {
 }
 
 /**
- * Creates a lookup table of section expanded state (true | false), indexed by section name (e.g. `{ "Hero": true, "SEO": false }`)
+ * Creates a lookup table of section expanded state atoms, indexed by section name (e.g. `{ "Hero": atom(true), "SEO": atom(false) }`)
  */
-export const buildSectionExpandedState = (contentTypeSections: ContentTypeSection[]) => {
+export const buildSectionExpandedStateAtoms = (contentTypeSections: ContentTypeSection[]) => {
   return contentTypeSections.reduce(
     (sectionExpandedState, section) => {
-      sectionExpandedState[section.title] = section.expandByDefault;
+      sectionExpandedState[section.title] = atom(section.expandByDefault);
       return sectionExpandedState;
     },
-    {} as Record<string, boolean>
+    {} as Record<string, PrimitiveAtom<boolean>>
   );
 };
 
@@ -318,6 +320,11 @@ export function showAlert({
   );
 }
 
+export function useShowAlert() {
+  const dispatch = useDispatch();
+  return (props: Parameters<typeof showAlert>[0]) => showAlert({ ...props, dispatch });
+}
+
 /** Retrieves the value of an atom from the supplied jotai store */
 export const getFieldAtomValue = (atom: Atom<unknown>, store: JotaiStore) => store.get(atom);
 
@@ -365,6 +372,7 @@ export function fetchUpdateRequirements({
         of(lockResult),
         fetchContentXML(siteId, path),
         fetchDescriptorXML(siteId, path, { flatten: false })
+        // TODO: Assess removal:
         // fetchConfigurationXML(siteId, `/content-types${item.contentTypeId}/form-definition.xml`, 'studio'),
         // fetchContentType(siteId, item.contentTypeId),
         // of(null)
@@ -419,6 +427,10 @@ export function createFormsEngineAtoms(mixin?: Partial<FormsEngineAtoms>): Forms
     lockResult: null,
     readonly: null,
     versionComment: atom(''),
+    // @ts-expect-error - atomWithStorage typing conflicts with the usage we're doing of it where there's no async anywhere.
+    collapsedToC: atomWithStorage('craftercms.formsEngine.collapsedToC', false, undefined, { getOnInit: true }),
+    expandedStateBySectionId: {},
+    tableOfContentsDrawerOpen: atom(false),
     ...mixin
   };
   return atoms;
@@ -487,4 +499,11 @@ export function createObjectWithSystemProps(
     [XmlKeys.fileName]: mixin?.[XmlKeys.fileName] ?? 'index.xml'
   };
   return contentObject;
+}
+
+export function produceChangedFieldsMessage(changedFieldNames: string[]): string {
+  if (changedFieldNames.length === 0) return '';
+  return changedFieldNames.length > 1
+    ? `Updated ${changedFieldNames.slice(0, -1).join(', ')} and ${changedFieldNames[changedFieldNames.length - 1]}`
+    : `Updated ${changedFieldNames[changedFieldNames.length - 1]}`;
 }

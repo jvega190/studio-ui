@@ -20,12 +20,13 @@ import ContentType from '../../models/ContentType';
 import ApiResponse from '../../models/ApiResponse';
 import { FormsEngineProps } from './FormsEngine';
 import LookupTable from '../../models/LookupTable';
-import { Atom, PrimitiveAtom } from 'jotai';
+import type { Atom, PrimitiveAtom } from 'jotai';
 import { FieldValidityState } from './validateFieldValue';
 import { Subject } from 'rxjs';
 
 export type FormsEngineSourceMap = LookupTable<string>;
 
+// Provides an API global to the form(s) to manage & operate the forms stack
 export interface FormsEngineGlobalApiContextProps {
   updateProps(stackIndex: number, formProps: FormsEngineProps): void;
   setStateCache(stackIndex: number, state: FormsEngineCachedStackedFormState): void;
@@ -33,6 +34,7 @@ export interface FormsEngineGlobalApiContextProps {
   popForm(): void;
 }
 
+// Provides an API of operations that concern the state of the form values
 export interface FormsEngineFormApiContextProps {
   rollback(): void;
   rollbackField(fieldId: string): void;
@@ -46,25 +48,25 @@ export interface FormRequirementsResponse
   contentObject: LookupTable<unknown>;
 }
 
-export interface FormsEngineContextProps extends FormsEngineItemMetaContextProps, FormsEngineEditContextProps {
-  item: DetailedItem;
-}
-
+// Contains the information related to the form's content item
 export interface FormsEngineItemMetaContextProps {
   id: string;
   path: string;
   sourceMap: FormsEngineSourceMap;
   pathInSite: string;
   contentType: ContentType;
+  /** The raw deserialised XML content document */
   contentObject: LookupTable<unknown>;
 }
 
+// Contains information related to lock status and whether packages are affected by editing the content item
 export interface FormsEngineEditContextProps {
   locked: boolean;
   lockError: ApiResponse;
   affectedPackages?: PublishPackage[];
 }
 
+// Contains the various state atoms of a form
 export interface FormsEngineAtoms {
   isSubmitting: PrimitiveAtom<boolean>;
   hasPendingChanges: PrimitiveAtom<boolean>;
@@ -73,25 +75,34 @@ export interface FormsEngineAtoms {
   valueByFieldId: LookupTable<PrimitiveAtom<unknown>>;
   validationByFieldId: LookupTable<Atom<FieldValidityState>>;
   versionComment: PrimitiveAtom<string>;
+  collapsedToC: PrimitiveAtom<boolean>; // Note: uses atomWithStorage
+  // Gets populated as the sections get rendered
+  expandedStateBySectionId: LookupTable<PrimitiveAtom<boolean>>;
+  tableOfContentsDrawerOpen: PrimitiveAtom<boolean>;
 }
 
+// Contains information to restore the state of a form when it comes back to being the active form on the stack
 export interface FormsEngineCachedStackedFormState {
   collapsedToC: boolean;
   previousScrollTopPosition: number;
+  // TODO: Having moved this to Jotai, it might not be required to be here.
+  //  Because everything is on the same jotai store, two content types with the same section name could collide.
   sectionExpandedState: LookupTable<boolean>;
 }
 
+// Context global/available to the entire forms stack. Once initialised, it won't change (won't cause re-renders)
 export interface StableGlobalContextProps {
   formsStackData: StableFormContextProps[];
   api: FormsEngineGlobalApiContextProps;
 }
 
+// Consolidated base data store for the form instance (single form/item). Once initialised, it won't change (won't cause re-renders).
 export interface StableFormContextProps {
   atoms: FormsEngineAtoms;
   changedFieldIds: Set<string>;
   fieldUpdates$: Subject<string>;
   initialized: boolean;
-  itemMeta: FormsEngineItemMetaContextProps;
+  itemMeta: FormsEngineItemMetaContextProps; // TODO: There's a dedicated ItemMetaContext; why have here too?
   originalValues: LookupTable<unknown>;
   props: FormsEngineProps;
   state: FormsEngineCachedStackedFormState;

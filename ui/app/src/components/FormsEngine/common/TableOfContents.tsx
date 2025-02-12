@@ -1,48 +1,36 @@
-import React, {
-  Dispatch as ReactDispatch,
-  RefObject,
-  SetStateAction,
-  SyntheticEvent,
-  useContext,
-  useMemo,
-  useState
-} from 'react';
-import LookupTable from '../../../models/LookupTable';
-import { ContentTypeField, ContentTypeSection } from '../../../models';
-import { FormsEngineAtoms, StableFormContext } from '../formsEngineContext';
+import React, { RefObject, SyntheticEvent, useContext, useMemo, useState } from 'react';
+import { ContentTypeField } from '../../../models';
+import { FormsEngineAtoms, ItemMetaContext, StableFormContext } from '../formsEngineContext';
 import { getScrollContainer } from './formUtils';
 import useDebouncedInput from '../../../hooks/useDebouncedInput';
 import { TreeItem } from '@mui/x-tree-view/TreeItem';
-import { SearchBar } from '../../SearchBar';
+import SearchBar from '../../SearchBar';
 import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView';
 import Box from '@mui/material/Box';
-import { useAtomValue } from 'jotai/index';
+import { useAtomValue, useSetAtom, useStore as useJotaiStore } from 'jotai/index';
 import { isEmptyValue, isFieldRequired } from '../validateFieldValue';
 import FieldEmptyStateIndicator from './FieldEmptyStateIndicator';
 import FieldRequiredStateIndicator from './FieldRequiredStateIndicator';
+import { atom } from 'jotai';
 
-export function TableOfContents({
-  containerRef,
-  handleSectionExpandedChange,
-  contentTypeFields,
-  contentTypeSections,
-  sectionExpandedState,
-  setOpenDrawerSidebar,
-  fieldsToRender
-}: {
+export interface TableOfContentsProps {
   containerRef: RefObject<HTMLDivElement>;
-  handleSectionExpandedChange(fieldId: string, expanded: boolean): void;
-  contentTypeFields: LookupTable<ContentTypeField>;
-  contentTypeSections: ContentTypeSection[];
-  sectionExpandedState: LookupTable<boolean>;
-  // TODO: Should send the handleCloseDrawerSidebar instead of allowing direct access to setOpenDrawerSidebar. Consider scroll freeze.
-  setOpenDrawerSidebar: ReactDispatch<SetStateAction<boolean>>;
   fieldsToRender: ContentTypeField[];
-}) {
-  const { atoms } = useContext(StableFormContext);
-  const expandedSectionIds = useMemo(
-    () => Object.entries(sectionExpandedState).flatMap(([key, expanded]) => (expanded ? [key] : [])),
-    [sectionExpandedState]
+}
+
+export function TableOfContents({ containerRef, fieldsToRender }: TableOfContentsProps) {
+  const store = useJotaiStore();
+  const atoms = useContext(StableFormContext).atoms;
+  const contentType = useContext(ItemMetaContext).contentType;
+  const contentTypeFields = contentType.fields;
+  const contentTypeSections = contentType.sections;
+  const setOpenDrawerSidebar = useSetAtom(atoms.tableOfContentsDrawerOpen);
+  const expandedStateAtoms = atoms.expandedStateBySectionId;
+  const expandedSectionIds = useAtomValue(
+    useMemo(
+      () => atom((get) => Object.entries(expandedStateAtoms).flatMap(([key, atom]) => (get(atom) ? [key] : []))),
+      [expandedStateAtoms]
+    )
   );
   const scrollToTarget = (target: Element) => {
     // Wait for the drawer to hide so the transition focus doesn't impede the scrollIntoView.
@@ -52,22 +40,24 @@ export function TableOfContents({
       target?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
     });
   };
-  const handleSectionTreeItemClick = (event: SyntheticEvent) => {
+  const handleSectionClick = (event: SyntheticEvent) => {
     setOpenDrawerSidebar(false);
     const sectionId = event.currentTarget.parentElement.getAttribute('data-section-id');
-    if (!sectionExpandedState[sectionId]) {
-      handleSectionExpandedChange(sectionId, true);
+    if (!store.get(expandedStateAtoms[sectionId])) {
+      store.set(expandedStateAtoms[sectionId], true);
     }
     scrollToTarget(containerRef.current.querySelector(`[data-area-id="formBody"] [data-section-id="${sectionId}"]`));
   };
-  const handleFieldTreeItemClick = (event: SyntheticEvent) => {
+  const handleFieldClick = (event: SyntheticEvent) => {
+    // TODO: When filtering and clicked, the section may be collapsed. Through DOM, we can't
+    //  get the section id since sections aren't rendered when filtering. How do we get to the section to expand it?
     setOpenDrawerSidebar(false);
     const fieldId = event.currentTarget.parentElement.getAttribute('data-field-id');
     scrollToTarget(containerRef.current.querySelector(`[data-area-id="formBody"] [data-field-id="${fieldId}"]`));
   };
-  const handleItemExpansionToggleClick = (event: SyntheticEvent, itemId: string, expanded: boolean) => {
+  const handleSectionExpansionToggleClick = (event: SyntheticEvent, itemId: string, expanded: boolean) => {
     event.stopPropagation(); // Avoid accordion expansion
-    handleSectionExpandedChange(itemId, expanded);
+    store.set(expandedStateAtoms[itemId], expanded);
     setOpenDrawerSidebar(false);
   };
   const [searchFieldValue, setSearchFieldValue] = useState('');
@@ -87,7 +77,7 @@ export function TableOfContents({
         key={fieldId}
         itemId={fieldId}
         data-field-id={fieldId}
-        onClick={handleFieldTreeItemClick}
+        onClick={handleFieldClick}
         label={<TreeItemLabel field={field} atoms={atoms} />}
       />
     );
@@ -107,7 +97,7 @@ export function TableOfContents({
       <SimpleTreeView
         selectedItems={[]}
         expansionTrigger="iconContainer"
-        onItemExpansionToggle={handleItemExpansionToggleClick}
+        onItemExpansionToggle={handleSectionExpansionToggleClick}
         expandedItems={expandedSectionIds}
       >
         {filteredFields?.map(createFieldTreeItem) ??
@@ -118,7 +108,7 @@ export function TableOfContents({
               itemId={section.title}
               data-section-id={section.title}
               label={section.title}
-              onClick={handleSectionTreeItemClick}
+              onClick={handleSectionClick}
               children={section.fields.map((fieldId) => createFieldTreeItem(contentTypeFields[fieldId]))}
             />
           ))}

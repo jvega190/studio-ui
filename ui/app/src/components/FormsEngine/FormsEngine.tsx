@@ -52,9 +52,6 @@ import Close from '@mui/icons-material/Close';
 import Grid from '@mui/material/Grid2';
 import Alert from '@mui/material/Alert';
 import { createErrorStatePropsFromApiResponse } from '../ApiResponseErrorState';
-import Accordion from '@mui/material/Accordion';
-import AccordionSummary from '@mui/material/AccordionSummary';
-import AccordionDetails from '@mui/material/AccordionDetails';
 import Button, { ButtonProps } from '@mui/material/Button';
 import { StickyBox } from './common/StickyBox';
 import MenuRounded from '@mui/icons-material/MenuRounded';
@@ -64,7 +61,6 @@ import { ArrowUpward, EditOffOutlined } from '@mui/icons-material';
 import ContentType from '../../models/ContentType';
 import { createCleanValuesObject } from './validateFieldValue';
 import LookupTable from '../../models/LookupTable';
-import { toColor } from '../../utils/string';
 import { RepeatItem } from './controls/Repeat';
 import SecondaryButton from '../SecondaryButton';
 import Fab from '@mui/material/Fab';
@@ -87,7 +83,7 @@ import { AjaxError } from 'rxjs/ajax';
 import { ErrorState } from '../ErrorState';
 import { ViewPackagesDialogProps } from '../ViewPackagesDialog';
 import {
-  buildSectionExpandedState,
+  buildSectionExpandedStateAtoms,
   createFieldAtoms,
   createFormsEngineAtoms,
   createFormStackData,
@@ -99,6 +95,7 @@ import {
   getTargetHeight,
   internalLockContentService,
   internalUnlockContentService,
+  produceChangedFieldsMessage,
   setFieldAtoms
 } from './common/formUtils';
 import { renderFieldControl } from './common/supportingControls';
@@ -117,6 +114,8 @@ import CreateModeHeader from './common/CreateModeHeader';
 import RepeatModeHeader from './common/RepeatModeHeader';
 import EditModeHeader from './common/EditModeHeader';
 import SaveCard from './common/SaveCard';
+import SectionAccordion from './common/SectionAccordion';
+import { useSaveForm } from './common/useSaveForm';
 
 export interface FormSavePromiseResult {
   close: boolean;
@@ -364,7 +363,8 @@ function Prepper(props: FormsEngineProps) {
         });
         const atoms = createFormsEngineAtoms({
           lockResult: lockResultAtom,
-          readonly: createReadonlyAtom(lockResultAtom)
+          readonly: createReadonlyAtom(lockResultAtom),
+          expandedStateBySectionId: buildSectionExpandedStateAtoms(contentType.sections)
         });
         const atomValueCreator: Parameters<typeof createCleanValuesObject>[3] = (fieldId, value) => {
           setFieldAtoms(
@@ -406,7 +406,9 @@ function Prepper(props: FormsEngineProps) {
         const isParentLocked = parentLockResult.locked;
         const isParentReadonly = store.get(parentAtoms.readonly);
         const readonly = readonlyProp ?? isParentReadonly;
-        const atoms = createFormsEngineAtoms();
+        const atoms = createFormsEngineAtoms({
+          expandedStateBySectionId: buildSectionExpandedStateAtoms(contentType.sections)
+        });
         const values = update.values;
         Object.entries(values).forEach(([fieldId, value]) => {
           if (!contentType.fields[fieldId]) {
@@ -458,7 +460,10 @@ function Prepper(props: FormsEngineProps) {
           lockError: null,
           affectedPackages: null
         });
-        const atoms: FormsEngineAtoms = createFormsEngineAtoms({ lockResult: lockResultAtom });
+        const atoms: FormsEngineAtoms = createFormsEngineAtoms({
+          lockResult: lockResultAtom,
+          expandedStateBySectionId: buildSectionExpandedStateAtoms(contentType.sections)
+        });
         const contentObject = createObjectWithSystemProps(contentType);
         const values = createCleanValuesObject(
           contentType.fields,
@@ -512,7 +517,8 @@ function Prepper(props: FormsEngineProps) {
             });
             const atoms = createFormsEngineAtoms({
               lockResult: lockResultAtom,
-              readonly: createReadonlyAtom(lockResultAtom)
+              readonly: createReadonlyAtom(lockResultAtom),
+              expandedStateBySectionId: buildSectionExpandedStateAtoms(requirements.contentType.sections)
             });
             const values = createCleanValuesObject(
               requirements.contentType.fields,
@@ -626,7 +632,6 @@ function Form(props: FormsEngineProps) {
   const dispatch = useDispatch();
   const activeSite = useActiveSite();
   const siteId = activeSite.id;
-  const contentTypesById = useContentTypes();
   const containerRef = useRef<HTMLDivElement>(undefined);
   const [containerStats, setContainerStats] = useState<{
     // TODO: Not using all of this. Clean up.
@@ -640,7 +645,6 @@ function Form(props: FormsEngineProps) {
     left: number;
     isLargeContainer: boolean;
   }>(null);
-  const [openDrawerSidebar, setOpenDrawerSidebar] = useState(false);
   const {
     isFullScreen = false,
     updateSubmittingOrHasPendingChanges,
@@ -653,16 +657,14 @@ function Form(props: FormsEngineProps) {
   const { api: contextApi, formsStackData } = useContext(StableGlobalContext);
   const stableFormContext = useContext(StableFormContext);
   const formContextApi = useContext(FormsEngineFormContextApi);
-  const { fieldUpdates$, changedFieldIds, state: stateCache } = stableFormContext;
+  const { fieldUpdates$, changedFieldIds } = stableFormContext;
   const item = useContext(ItemContext);
   const { contentType, sourceMap } = useContext(ItemMetaContext);
+  const [openDrawerSidebar, setOpenDrawerSidebar] = useAtom(stableFormContext.atoms.tableOfContentsDrawerOpen);
   const isSubmitting = useAtomValue(stableFormContext.atoms.isSubmitting);
   const [hasPendingChanges, setHasPendingChanges] = useAtom(stableFormContext.atoms.hasPendingChanges);
   const readonly = useAtomValue(stableFormContext.atoms.readonly);
   const [lockStatus, setLockStatus] = useAtom(stableFormContext.atoms.lockResult);
-  const [sectionExpandedState, setSectionExpandedState] = useState<LookupTable<boolean>>(
-    () => stateCache?.sectionExpandedState ?? buildSectionExpandedState(contentType.sections)
-  );
   const stackFormCount = useAtomValue(stackFormCountAtom);
   const isStackedForm = stackIndex > 0;
   const hasStackedForms = !isStackedForm && stackFormCount > 0;
@@ -673,49 +675,16 @@ function Form(props: FormsEngineProps) {
   const isLargeContainer = containerStats?.isLargeContainer;
   const contentTypeFields = contentType.fields;
   const contentTypeSections = contentType.sections;
+  const useCollapsedToC = isLargeContainer ? collapsedToC : true;
+  const tableOfContents = <TableOfContents fieldsToRender={fieldsToRender} containerRef={containerRef} />;
   const effectRefs = useUpdateRefs({
     store,
-    contentTypesById,
-    stackIndex,
     fieldsToRender,
-    sectionExpandedState,
-    collapsedToC,
     versionCommentAtom: stableFormContext.atoms.versionComment
   });
 
-  // Restore previous scroll position if provided.
-  const previousScrollTopPosition = stateCache?.previousScrollTopPosition;
-  useLayoutEffect(() => {
-    // Only a single stacked form is rendered at a time, so the scroll position of stacked forms is stored before opening a new one for later restoration here.
-    if (containerRef.current != null && previousScrollTopPosition != null) {
-      // Restore the previous scroll position
-      const container: HTMLElement = getScrollContainer(containerRef.current);
-      container.scrollTop = previousScrollTopPosition;
-    }
-    // Once mounted back, clean the state cache. Assumes everything should have grabbed the cached values by now.
-    // contextApi.deleteStateCache(stackIndex);
-    return () => {
-      // Getting the count directly from the store provides the latest value. React may not have been updated `stackFormCount` yet.
-      const currentCount = effectRefs.current.store.get(stackFormCountAtom);
-      // If the count is greater than the stackIndex, a new form is being opened, so store the scroll position before dismounting.
-      if (currentCount > stackIndex) {
-        contextApi.setStateCache(stackIndex, {
-          collapsedToC: effectRefs.current.collapsedToC,
-          previousScrollTopPosition: getScrollContainer(containerRef.current).scrollTop,
-          sectionExpandedState: effectRefs.current.sectionExpandedState
-        });
-      }
-    };
-  }, [contextApi, effectRefs, previousScrollTopPosition, stackIndex]);
-
   // Version comment generator & change detection/tracking
   useEffect(() => {
-    const produceMessage = (fieldsChanged: string[]) => {
-      if (fieldsChanged.length === 0) return '';
-      return fieldsChanged.length > 1
-        ? `Updated ${fieldsChanged.slice(0, -1).join(', ')} and ${fieldsChanged[fieldsChanged.length - 1]}`
-        : `Updated ${fieldsChanged[fieldsChanged.length - 1]}`;
-    };
     const sub = fieldUpdates$.pipe(debounceTime(300)).subscribe(() => {
       // String-type fields have auto-rollback detection; the fieldUpdates$ will emit anyway. Checking if the fieldId
       // emitted is in changedFieldIds should tell if the field was rolled back.
@@ -730,11 +699,11 @@ function Form(props: FormsEngineProps) {
         });
       }
       const fieldsChanged = Array.from(changedFieldIds).flatMap(
-        (fieldId) => fieldsToRender[fieldId === 'folder-name' ? 'file-name' : fieldId]?.name ?? []
+        (fieldId) => fieldsToRender[fieldId === XmlKeys.folderName ? XmlKeys.fileName : fieldId]?.name ?? []
       );
       const versionCommentAtom = effectRefs.current.versionCommentAtom;
       const currentMessage = store.get(versionCommentAtom).trim();
-      const newMessage = produceMessage(fieldsChanged);
+      const newMessage = produceChangedFieldsMessage(fieldsChanged);
       if (
         // If message is blank, no point in checking if the user has altered the message.
         currentMessage !== '' &&
@@ -743,7 +712,7 @@ function Form(props: FormsEngineProps) {
           // The version comment hasn't been manually altered by the user (i.e. if the current message is the same
           // as the message generated without the last field added to changedFieldIds, we can assume the message
           // has not been altered by user input)
-          currentMessage !== produceMessage(fieldsChanged.slice(0, -1)))
+          currentMessage !== produceChangedFieldsMessage(fieldsChanged.slice(0, -1)))
       ) {
         // Do not set a new message
         return;
@@ -797,26 +766,6 @@ function Form(props: FormsEngineProps) {
     isFullScreen
   ]);
 
-  // Freeze/manage scroll when stacked forms are open, and set the --scroll-top css property for stacked
-  // forms to position themselves at the right position.
-  useLayoutEffect(() => {
-    if (hasStackedForms) {
-      const scrollContainer = getScrollContainer(containerRef.current);
-      // Store the current scroll position to restore
-      const scrollTop = scrollContainer.scrollTop;
-      const scrollLeft = scrollContainer.scrollLeft;
-      // Disable scrolling
-      scrollContainer.style.overflow = 'hidden';
-      // Restore the scroll position
-      scrollContainer.scrollTop = scrollTop;
-      scrollContainer.scrollLeft = scrollLeft;
-      scrollContainer.style.setProperty('--scroll-top', `${scrollTop}px`);
-      return () => {
-        scrollContainer.style.overflow = '';
-      };
-    }
-  }, [hasStackedForms]);
-
   // If rendered in a dialog, update the dialog's isSubmitting and hasPendingChanges. Only the root form.
   // Stacked forms have their own changes and submit state management.
   useEffect(() => {
@@ -856,8 +805,6 @@ function Form(props: FormsEngineProps) {
     store
   ]);
 
-  const handleSectionExpandedChange = (fieldId: string, expanded: boolean) =>
-    setSectionExpandedState({ ...sectionExpandedState, [fieldId]: expanded });
   const handleOpenDrawerSidebar = () => {
     const scroller = getScrollContainer(containerRef.current);
     scroller.style.setProperty('--scroll-top', `${containerRef.current.scrollTop}px`);
@@ -905,20 +852,6 @@ function Form(props: FormsEngineProps) {
       doClose();
     }
   };
-  // region const tableOfContents = (...)
-  const useCollapsedToC = isLargeContainer ? collapsedToC : true;
-  const tableOfContents = (
-    <TableOfContents
-      handleSectionExpandedChange={handleSectionExpandedChange}
-      fieldsToRender={fieldsToRender}
-      containerRef={containerRef}
-      contentTypeFields={contentTypeFields}
-      contentTypeSections={contentTypeSections}
-      sectionExpandedState={sectionExpandedState}
-      setOpenDrawerSidebar={setOpenDrawerSidebar}
-    />
-  );
-  // endregion
 
   const currentStackedFormProps = hasStackedForms ? formsStackData[formsStackData.length - 1].props : null;
   let stackedFormKey = undefined;
@@ -963,19 +896,32 @@ function Form(props: FormsEngineProps) {
     doEditEnablement();
   };
 
+  const onCloseHandler = isStackedForm ? onCloseProp : enhancedDialogOnClose;
+
+  const saveFn = useSaveForm({
+    onSave,
+    isEmbedded,
+    isCreateMode,
+    isRepeatMode,
+    createPath: create?.path,
+    onClose: () => onCloseHandler(null, null)
+  });
+
   // If not on a dialog or the prop is not provided, there's no need to handle the close. The form is running in a standalone mode.
   const handleClose: ButtonProps['onClick'] = (e) => {
     if (isSubmitting) {
       displayFormBeingSavedSnack(dispatch, formatMessage);
     } else {
       // If `hasPendingChanges`, we're still calling close assuming the EnhancedDialog will handle showing the close without saving confirm.
-      (isStackedForm ? onCloseProp : enhancedDialogOnClose)?.(e, null);
+      onCloseHandler?.(e, null);
     }
   };
 
   const bodyFragment = (
     <FormLayout
+      stackIndex={stackIndex}
       containerRef={containerRef}
+      hasStackedForms={hasStackedForms}
       isLargeContainer={isLargeContainer}
       // If the form is rendered in/as a dialog, take up the whole screen minus
       // top/bottom margins (2 top, 2 bottom). If not a dialog, take up the whole screen.
@@ -1024,7 +970,7 @@ function Form(props: FormsEngineProps) {
           )}
         </>
       }
-      gridFragment={
+      mainContentGrid={
         <>
           <Grid size={useCollapsedToC ? 'auto' : 'grow'}>
             <StickyBox data-area-id="stickySidebar">
@@ -1080,37 +1026,19 @@ function Form(props: FormsEngineProps) {
             ) : (
               // Renders the full form, all sections
               contentTypeSections.map((section, sectionIndex) => (
-                <Accordion
+                <SectionAccordion
                   key={sectionIndex}
-                  expanded={sectionExpandedState[section.title]}
-                  onChange={(event, expanded) => {
-                    handleSectionExpandedChange(event.currentTarget.getAttribute('data-section-id'), expanded);
-                  }}
-                  sx={{
-                    borderLeftColor: toColor(section.title, 0.7),
-                    borderLeftWidth: 5,
-                    borderLeftStyle: 'solid',
-                    borderTopLeftRadius: theme.shape.borderRadius,
-                    borderBottomLeftRadius: theme.shape.borderRadius,
-                    borderTopRightRadius: theme.shape.borderRadius,
-                    borderBottomRightRadius: theme.shape.borderRadius
-                  }}
-                >
-                  <AccordionSummary data-section-id={section.title}>
-                    <Typography>{section.title}</Typography>
-                  </AccordionSummary>
-                  <AccordionDetails className="space-y-2">
-                    {section.fields.map((fieldId, fieldIndex) =>
-                      renderFieldControl(
-                        contentTypeFields[fieldId],
-                        stableFormContext.atoms.valueByFieldId,
-                        sectionIndex === 0 && fieldIndex === 0,
-                        readonly,
-                        contentType
-                      )
-                    )}
-                  </AccordionDetails>
-                </Accordion>
+                  section={section}
+                  renderControl={(fieldId, fieldIndex) =>
+                    renderFieldControl(
+                      contentTypeFields[fieldId],
+                      stableFormContext.atoms.valueByFieldId,
+                      sectionIndex === 0 && fieldIndex === 0,
+                      readonly,
+                      contentType
+                    )
+                  }
+                />
               ))
             )}
             {/* Spacer & back to top */}
@@ -1141,13 +1069,10 @@ function Form(props: FormsEngineProps) {
               ) : (
                 <>
                   <SaveCard
-                    createPath={create?.path}
                     isEmbedded={isEmbedded}
                     isStackedForm={isStackedForm}
                     isRepeatMode={isRepeatMode}
-                    isCreateMode={isCreateMode}
-                    onSave={onSave}
-                    onClose={isStackedForm ? onCloseProp : enhancedDialogOnClose}
+                    onSave={() => saveFn()}
                   />
                   {!isCreateMode && // There's no locking on create mode
                     (!isRepeatMode || (isRepeatMode && repeat.values)) && // No point in the "unlock" button for new repeat items
@@ -1272,6 +1197,7 @@ function Form(props: FormsEngineProps) {
 export default Root;
 
 // TODO:
+//  - Russ: "Some people push the save button just to have the modified date changed"
 //  - Implement the various constraints/validation checks
 //  - PathNav and other ares to open new edit form
 //  - Edit template & controller
