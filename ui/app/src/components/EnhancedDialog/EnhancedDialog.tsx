@@ -27,117 +27,117 @@ import Suspencified from '../Suspencified';
 import useUpdateRefs from '../../hooks/useUpdateRefs';
 
 export interface EnhancedDialogProps extends Omit<MuiDialogProps, 'title'>, EnhancedDialogState {
-  title?: ReactNode;
-  subtitle?: ReactNode;
-  onMinimize?(): void;
-  onMaximize?(): void;
-  onClosed?(): void;
-  onFullScreen?(): void;
-  onCancelFullScreen?(): void;
-  onWithPendingChangesCloseRequest?: MuiDialogProps['onClose'];
-  updateSubmittingOrHasPendingChanges?(changes: onSubmittingAndOrPendingChangeProps): void;
-  omitHeader?: boolean;
-  dialogHeaderProps?: Partial<DialogHeaderProps>;
+	title?: ReactNode;
+	subtitle?: ReactNode;
+	onMinimize?(): void;
+	onMaximize?(): void;
+	onClosed?(): void;
+	onFullScreen?(): void;
+	onCancelFullScreen?(): void;
+	onWithPendingChangesCloseRequest?: MuiDialogProps['onClose'];
+	updateSubmittingOrHasPendingChanges?(changes: onSubmittingAndOrPendingChangeProps): void;
+	omitHeader?: boolean;
+	dialogHeaderProps?: Partial<DialogHeaderProps>;
 }
 
 export function EnhancedDialog(props: EnhancedDialogProps) {
-  // region const { ... } = props
-  const {
-    id,
-    open,
-    isSubmitting = false,
-    hasPendingChanges = false,
-    isMinimized = false,
-    isFullScreen = false,
-    title,
-    subtitle,
-    onClosed,
-    onMinimize,
-    onMaximize,
-    onWithPendingChangesCloseRequest,
-    updateSubmittingOrHasPendingChanges,
-    children,
-    dialogHeaderProps,
-    omitHeader = false,
-    onFullScreen,
-    onCancelFullScreen,
-    ...dialogProps
-  } = props;
-  // endregion
-  const onClose = useOnClose({
-    onClose(e, reason) {
-      if (hasPendingChanges) {
-        onWithPendingChangesCloseRequest?.(e, reason);
-      } else if (!isSubmitting) {
-        dialogProps.onClose?.(e, reason);
-      }
-    },
-    disableBackdropClick: isSubmitting,
-    disableEscapeKeyDown: isSubmitting
-  });
-  const callbackRefs = useUpdateRefs({ onClose, updateSubmittingOrHasPendingChanges });
-  const stableRefs = useRef({
-    // When context is recreated, `stableRefs` remain stable and won't trigger
-    // effects or have closure issues on the consumer components.
-    onClose(e, reason) {
-      callbackRefs.current.onClose?.(e, reason);
-    },
-    updateSubmittingOrHasPendingChanges(changes: onSubmittingAndOrPendingChangeProps) {
-      callbackRefs.current.updateSubmittingOrHasPendingChanges?.(changes);
-    }
-  });
-  const context = useMemo<EnhancedDialogContextProps>(
-    () => ({
-      open,
-      isMinimized,
-      isFullScreen,
-      isSubmitting,
-      hasPendingChanges,
-      onClose: stableRefs.current.onClose,
-      updateSubmittingOrHasPendingChanges: stableRefs.current.updateSubmittingOrHasPendingChanges
-    }),
-    [hasPendingChanges, isFullScreen, isMinimized, isSubmitting, open]
-  );
-  return (
-    <EnhancedDialogContext.Provider value={context}>
-      <MuiDialog
-        open={open && !isMinimized}
-        keepMounted={isMinimized}
-        fullWidth
-        maxWidth="md"
-        fullScreen={isFullScreen}
-        {...dialogProps}
-        onClose={onClose}
-      >
-        {!omitHeader && (
-          <DialogHeader
-            {...dialogHeaderProps}
-            title={title ?? dialogHeaderProps?.title}
-            subtitle={subtitle ?? dialogHeaderProps?.subtitle}
-            disabled={isSubmitting}
-            onMinimizeButtonClick={onMinimize}
-            onFullScreenButtonClick={isFullScreen ? onCancelFullScreen : onFullScreen}
-            onCloseButtonClick={(e) => onClose(e, null)}
-          />
-        )}
-        <Suspencified>
-          {React.Children.map(children, (child) =>
-            React.cloneElement(
-              child as React.ReactElement<{ onClose(event, reason: 'backdropClick' | 'escapeKeyDown'): void }>,
-              { onClose }
-            )
-          )}
-        </Suspencified>
-        <OnClosedInvoker onClosed={onClosed} />
-      </MuiDialog>
-      <MinimizedBar open={isMinimized} onMaximize={onMaximize} title={title} />
-    </EnhancedDialogContext.Provider>
-  );
+	// region const { ... } = props
+	const {
+		id,
+		open,
+		isSubmitting = false,
+		hasPendingChanges = false,
+		isMinimized = false,
+		isFullScreen = false,
+		title,
+		subtitle,
+		onClosed,
+		onMinimize,
+		onMaximize,
+		onWithPendingChangesCloseRequest,
+		updateSubmittingOrHasPendingChanges,
+		children,
+		dialogHeaderProps,
+		omitHeader = false,
+		onFullScreen,
+		onCancelFullScreen,
+		...dialogProps
+	} = props;
+	// endregion
+	const onClose = useOnClose({
+		onClose(e, reason) {
+			if (hasPendingChanges) {
+				onWithPendingChangesCloseRequest?.(e, reason);
+			} else if (!isSubmitting) {
+				dialogProps.onClose?.(e, reason);
+			}
+		},
+		disableBackdropClick: isSubmitting,
+		disableEscapeKeyDown: isSubmitting
+	});
+	const callbackRefs = useUpdateRefs({ onClose, updateSubmittingOrHasPendingChanges });
+	const stableRefs = useRef({
+		// When context is recreated, `stableRefs` remain stable and won't trigger
+		// effects or have closure issues on the consumer components.
+		onClose(e, reason) {
+			callbackRefs.current.onClose?.(e, reason);
+		},
+		updateSubmittingOrHasPendingChanges(changes: onSubmittingAndOrPendingChangeProps) {
+			callbackRefs.current.updateSubmittingOrHasPendingChanges?.(changes);
+		}
+	});
+	const context = useMemo<EnhancedDialogContextProps>(
+		() => ({
+			open,
+			isMinimized,
+			isFullScreen,
+			isSubmitting,
+			hasPendingChanges,
+			onClose: stableRefs.current.onClose,
+			updateSubmittingOrHasPendingChanges: stableRefs.current.updateSubmittingOrHasPendingChanges
+		}),
+		[hasPendingChanges, isFullScreen, isMinimized, isSubmitting, open]
+	);
+	return (
+		<EnhancedDialogContext.Provider value={context}>
+			<MuiDialog
+				open={open && !isMinimized}
+				keepMounted={isMinimized}
+				fullWidth
+				maxWidth="md"
+				fullScreen={isFullScreen}
+				{...dialogProps}
+				onClose={onClose}
+			>
+				{!omitHeader && (
+					<DialogHeader
+						{...dialogHeaderProps}
+						title={title ?? dialogHeaderProps?.title}
+						subtitle={subtitle ?? dialogHeaderProps?.subtitle}
+						disabled={isSubmitting}
+						onMinimizeButtonClick={onMinimize}
+						onFullScreenButtonClick={isFullScreen ? onCancelFullScreen : onFullScreen}
+						onCloseButtonClick={(e) => onClose(e, null)}
+					/>
+				)}
+				<Suspencified>
+					{React.Children.map(children, (child) =>
+						React.cloneElement(
+							child as React.ReactElement<{ onClose(event, reason: 'backdropClick' | 'escapeKeyDown'): void }>,
+							{ onClose }
+						)
+					)}
+				</Suspencified>
+				<OnClosedInvoker onClosed={onClosed} />
+			</MuiDialog>
+			<MinimizedBar open={isMinimized} onMaximize={onMaximize} title={title} />
+		</EnhancedDialogContext.Provider>
+	);
 }
 
 export default EnhancedDialog;
 
 function OnClosedInvoker({ onClosed }: { onClosed }) {
-  useUnmount(onClosed);
-  return null as JSX.Element;
+	useUnmount(onClosed);
+	return null as JSX.Element;
 }

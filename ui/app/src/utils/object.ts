@@ -287,29 +287,29 @@ export function isAjaxError(source: object): boolean {
 }
 
 export function prettyPrintPerson(
-  person: Person,
-  format: 'username' | 'name' | 'fullName' | 'firstInitial+last' = 'fullName'
+	person: Person,
+	format: 'username' | 'name' | 'fullName' | 'firstInitial+last' = 'fullName'
 ): { display: string; tooltip: string } {
-  let display;
-  const tooltip = `"${person.firstName} ${person.lastName}"<${person.username}>`;
-  switch (format) {
-    case 'username':
-      display = person.username;
-      break;
-    case 'firstInitial+last':
-      display = `${person.firstName[0]}. ${person.lastName}`;
-      break;
-    case 'fullName':
-      display = getPersonFullName(person);
-      break;
-    case 'name':
-    default:
-      display = person.firstName;
-      break;
-  }
-  return { display, tooltip };
+	let display;
+	const tooltip = `"${person.firstName} ${person.lastName}"<${person.username}>`;
+	switch (format) {
+		case 'username':
+			display = person.username;
+			break;
+		case 'firstInitial+last':
+			display = `${person.firstName[0]}. ${person.lastName}`;
+			break;
+		case 'fullName':
+			display = getPersonFullName(person);
+			break;
+		case 'name':
+		default:
+			display = person.firstName;
+			break;
+	}
+	return { display, tooltip };
 }
 
 export function getPersonFullName(person: Person): string {
-  return `${person.firstName} ${person.lastName}`;
+	return `${person.firstName} ${person.lastName}`;
 }

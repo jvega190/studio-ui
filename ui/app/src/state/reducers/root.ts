@@ -33,22 +33,22 @@ import { combineReducers } from 'redux';
 import dialogStack from './dialogStack';
 
 const reducer = combineReducers({
-  auth,
-  user,
-  sites,
-  env,
-  preview,
-  previewNavigation,
-  contentTypes,
-  dialogs,
-  dialogStack,
-  versions,
-  content,
-  pathNavigator,
-  pathNavigatorTree,
-  uiConfig,
-  dashboard,
-  globalNavigation
+	auth,
+	user,
+	sites,
+	env,
+	preview,
+	previewNavigation,
+	contentTypes,
+	dialogs,
+	dialogStack,
+	versions,
+	content,
+	pathNavigator,
+	pathNavigatorTree,
+	uiConfig,
+	dashboard,
+	globalNavigation
 });
 
 export default reducer;

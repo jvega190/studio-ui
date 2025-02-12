@@ -19,12 +19,12 @@ import ContentType from '../../models/ContentType';
 import { createStore } from 'jotai/index';
 
 export interface ControlProps {
-  value: unknown;
-  setValue(newValue: unknown): void;
-  field: ContentTypeField;
-  contentType: ContentType;
-  readonly: boolean;
-  autoFocus: boolean;
+	value: unknown;
+	setValue(newValue: unknown): void;
+	field: ContentTypeField;
+	contentType: ContentType;
+	readonly: boolean;
+	autoFocus: boolean;
 }
 
 export type JotaiStore = ReturnType<typeof createStore>;

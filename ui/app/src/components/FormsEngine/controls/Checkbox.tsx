@@ -20,18 +20,18 @@ import { ControlProps } from '../types';
 import Switch from '@mui/material/Switch';
 
 export interface CheckboxProps extends ControlProps {
-  value: boolean;
+	value: boolean;
 }
 
 export function Checkbox(props: CheckboxProps) {
-  const { field, value, setValue, readonly, autoFocus } = props;
-  const htmlId = useId();
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => setValue(e.target.checked);
-  return (
-    <FormsEngineField htmlFor={htmlId} field={field}>
-      <Switch checked={value} onChange={handleChange} disabled={readonly} autoFocus={autoFocus} />
-    </FormsEngineField>
-  );
+	const { field, value, setValue, readonly, autoFocus } = props;
+	const htmlId = useId();
+	const handleChange = (e: ChangeEvent<HTMLInputElement>) => setValue(e.target.checked);
+	return (
+		<FormsEngineField htmlFor={htmlId} field={field}>
+			<Switch checked={value} onChange={handleChange} disabled={readonly} autoFocus={autoFocus} />
+		</FormsEngineField>
+	);
 }
 
 export default Checkbox;

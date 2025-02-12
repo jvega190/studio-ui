@@ -19,42 +19,42 @@ import Box from '@mui/material/Box';
 import { PropsWithChildren, useEffect, useRef, useState } from 'react';
 
 export const StickyBox = styled(Box)(({ theme }) => ({
-  top: theme.spacing(1),
-  height: `var(--container-height)`,
-  position: 'sticky',
-  overflowY: 'auto'
+	top: theme.spacing(1),
+	height: `var(--container-height)`,
+	position: 'sticky',
+	overflowY: 'auto'
 }));
 
 function Sticky(props: PropsWithChildren) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [classes, setClasses] = useState('');
-  useEffect(() => {
-    // Create an IntersectionObserver instance
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setClasses('sticky');
-          } else {
-            setClasses('');
-          }
-        });
-      },
-      {
-        root: null, // Use the viewport as the root
-        rootMargin: '0px',
-        threshold: 1.0
-      }
-    );
-    // Target the element you want to observe
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-  return <StickyBox ref={ref} className={classes} children={props.children} />;
+	const ref = useRef<HTMLDivElement>(null);
+	const [classes, setClasses] = useState('');
+	useEffect(() => {
+		// Create an IntersectionObserver instance
+		const observer = new IntersectionObserver(
+			(entries) => {
+				entries.forEach((entry) => {
+					if (entry.isIntersecting) {
+						setClasses('sticky');
+					} else {
+						setClasses('');
+					}
+				});
+			},
+			{
+				root: null, // Use the viewport as the root
+				rootMargin: '0px',
+				threshold: 1.0
+			}
+		);
+		// Target the element you want to observe
+		if (ref.current) {
+			observer.observe(ref.current);
+		}
+		return () => {
+			observer.disconnect();
+		};
+	}, []);
+	return <StickyBox ref={ref} className={classes} children={props.children} />;
 }
 
 export default Sticky;

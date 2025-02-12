@@ -22,18 +22,18 @@ type Return = { error: unknown; module: Partial<Record<'default' | string, unkno
 
 // FE2 TODO: backend does not support mjs extension
 export function useImportFile(type: string, name: string, file?: string, id?: string): Return {
-  const site = useActiveSiteId();
-  const [value, setValue] = useState<Return>();
-  useEffect(() => {
-    let mounted = true;
-    importFile(site, type, name, file, id)
-      .then((module) => mounted && setValue({ error: null, module }))
-      .catch((error) => mounted && setValue({ error, module: null }));
-    return () => {
-      mounted = false;
-    };
-  }, [site, type, name, file, id]);
-  return value;
+	const site = useActiveSiteId();
+	const [value, setValue] = useState<Return>();
+	useEffect(() => {
+		let mounted = true;
+		importFile(site, type, name, file, id)
+			.then((module) => mounted && setValue({ error: null, module }))
+			.catch((error) => mounted && setValue({ error, module: null }));
+		return () => {
+			mounted = false;
+		};
+	}, [site, type, name, file, id]);
+	return value;
 }
 
 export default useImportFile;

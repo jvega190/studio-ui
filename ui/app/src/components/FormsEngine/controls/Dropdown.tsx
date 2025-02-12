@@ -27,46 +27,46 @@ import Skeleton from '@mui/material/Skeleton';
 import { useKVPLoader } from '../data-sources/hooks';
 
 export interface DropdownProps extends ControlProps {
-  value: string;
+	value: string;
 }
 
 export function Dropdown(props: DropdownProps) {
-  const { field, contentType, value, setValue, readonly, autoFocus } = props;
-  const contentTypes = useContentTypes();
-  const effectRefs = useUpdateRefs({ contentTypes });
-  const maxLength = field.validations.maxLength?.value;
-  const handleChange = (event: SelectChangeEvent) => setValue(event.target.value);
-  const optionGroups = useKVPLoader(
-    useActiveSiteId(),
-    useMemo(() => (field.properties.datasource.value as string).split(','), [field.properties.datasource?.value]),
-    effectRefs.current.contentTypes[contentType.id].dataSources
-  );
-  if (!optionGroups) {
-    return (
-      <FormsEngineField field={field} max={maxLength} length={value.length}>
-        <Skeleton variant="rounded" height={56} />
-      </FormsEngineField>
-    );
-  }
-  // TODO: Add argument typing
-  const renderGroup = (group) =>
-    group.items.map((option, index) => (
-      <MenuItem key={`${group.id}_${index}`} value={option.key}>
-        {option.value}
-      </MenuItem>
-    ));
-  return (
-    <FormsEngineField field={field} max={maxLength} length={value.length}>
-      <Select value={value} label="" onChange={handleChange} disabled={readonly} autoFocus={autoFocus}>
-        {optionGroups.length > 1
-          ? optionGroups.map((group) => [
-              <ListSubheader key={group.id}>{group.label}</ListSubheader>,
-              renderGroup(group)
-            ])
-          : renderGroup(optionGroups[0])}
-      </Select>
-    </FormsEngineField>
-  );
+	const { field, contentType, value, setValue, readonly, autoFocus } = props;
+	const contentTypes = useContentTypes();
+	const effectRefs = useUpdateRefs({ contentTypes });
+	const maxLength = field.validations.maxLength?.value;
+	const handleChange = (event: SelectChangeEvent) => setValue(event.target.value);
+	const optionGroups = useKVPLoader(
+		useActiveSiteId(),
+		useMemo(() => (field.properties.datasource.value as string).split(','), [field.properties.datasource?.value]),
+		effectRefs.current.contentTypes[contentType.id].dataSources
+	);
+	if (!optionGroups) {
+		return (
+			<FormsEngineField field={field} max={maxLength} length={value.length}>
+				<Skeleton variant="rounded" height={56} />
+			</FormsEngineField>
+		);
+	}
+	// TODO: Add argument typing
+	const renderGroup = (group) =>
+		group.items.map((option, index) => (
+			<MenuItem key={`${group.id}_${index}`} value={option.key}>
+				{option.value}
+			</MenuItem>
+		));
+	return (
+		<FormsEngineField field={field} max={maxLength} length={value.length}>
+			<Select value={value} label="" onChange={handleChange} disabled={readonly} autoFocus={autoFocus}>
+				{optionGroups.length > 1
+					? optionGroups.map((group) => [
+							<ListSubheader key={group.id}>{group.label}</ListSubheader>,
+							renderGroup(group)
+						])
+					: renderGroup(optionGroups[0])}
+			</Select>
+		</FormsEngineField>
+	);
 }
 
 export default Dropdown;

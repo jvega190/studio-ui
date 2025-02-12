@@ -26,35 +26,35 @@ import { StableFormContext } from '../formsEngineContext';
 import { useAtom } from 'jotai';
 
 export interface SectionAccordionProps {
-  section: ContentTypeSection;
-  renderControl(fieldId: string, fieldIndex: number): ReactNode;
+	section: ContentTypeSection;
+	renderControl(fieldId: string, fieldIndex: number): ReactNode;
 }
 
 export function SectionAccordion({ section, renderControl }: SectionAccordionProps) {
-  const theme = useTheme();
-  const [isExpanded, setExpanded] = useAtom(
-    useContext(StableFormContext).atoms.expandedStateBySectionId[section.title]
-  );
-  return (
-    <Accordion
-      expanded={isExpanded}
-      onChange={(e, expanded) => setExpanded(expanded)}
-      sx={{
-        borderLeftColor: toColor(section.title, 0.7),
-        borderLeftWidth: 5,
-        borderLeftStyle: 'solid',
-        borderTopLeftRadius: theme.shape.borderRadius,
-        borderBottomLeftRadius: theme.shape.borderRadius,
-        borderTopRightRadius: theme.shape.borderRadius,
-        borderBottomRightRadius: theme.shape.borderRadius
-      }}
-    >
-      <AccordionSummary data-section-id={section.title}>
-        <Typography>{section.title}</Typography>
-      </AccordionSummary>
-      <AccordionDetails className="space-y-2">{section.fields.map(renderControl)}</AccordionDetails>
-    </Accordion>
-  );
+	const theme = useTheme();
+	const [isExpanded, setExpanded] = useAtom(
+		useContext(StableFormContext).atoms.expandedStateBySectionId[section.title]
+	);
+	return (
+		<Accordion
+			expanded={isExpanded}
+			onChange={(e, expanded) => setExpanded(expanded)}
+			sx={{
+				borderLeftColor: toColor(section.title, 0.7),
+				borderLeftWidth: 5,
+				borderLeftStyle: 'solid',
+				borderTopLeftRadius: theme.shape.borderRadius,
+				borderBottomLeftRadius: theme.shape.borderRadius,
+				borderTopRightRadius: theme.shape.borderRadius,
+				borderBottomRightRadius: theme.shape.borderRadius
+			}}
+		>
+			<AccordionSummary data-section-id={section.title}>
+				<Typography>{section.title}</Typography>
+			</AccordionSummary>
+			<AccordionDetails className="space-y-2">{section.fields.map(renderControl)}</AccordionDetails>
+		</Accordion>
+	);
 }
 
 export default SectionAccordion;

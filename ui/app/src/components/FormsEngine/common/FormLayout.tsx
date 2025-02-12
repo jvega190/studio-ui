@@ -15,13 +15,13 @@
  */
 
 import React, {
-  forwardRef,
-  PropsWithChildren,
-  ReactNode,
-  RefObject,
-  useContext,
-  useImperativeHandle,
-  useLayoutEffect
+	forwardRef,
+	PropsWithChildren,
+	ReactNode,
+	RefObject,
+	useContext,
+	useImperativeHandle,
+	useLayoutEffect
 } from 'react';
 import { useTheme } from '@mui/material/styles';
 import { FormsEngineAtoms, ItemMetaContext, StableFormContext, StableGlobalContext } from '../formsEngineContext';
@@ -37,138 +37,138 @@ import { stackFormCountAtom } from './formConsts';
 import type { createStore } from 'jotai';
 
 export type FormLayoutProps = PropsWithChildren<{
-  isLargeContainer: boolean;
-  targetHeight: string;
-  mainContentGrid: ReactNode;
-  headerFragment: ReactNode;
-  containerRef: RefObject<HTMLDivElement>;
-  hasStackedForms: boolean;
-  stackIndex: number;
+	isLargeContainer: boolean;
+	targetHeight: string;
+	mainContentGrid: ReactNode;
+	headerFragment: ReactNode;
+	containerRef: RefObject<HTMLDivElement>;
+	hasStackedForms: boolean;
+	stackIndex: number;
 }>;
 
 function collectSectionExpandedState(
-  store: ReturnType<typeof createStore>,
-  atomLookup: FormsEngineAtoms['expandedStateBySectionId']
+	store: ReturnType<typeof createStore>,
+	atomLookup: FormsEngineAtoms['expandedStateBySectionId']
 ): Record<string, boolean> {
-  return Object.entries(atomLookup).reduce((acc, [section, atom]) => {
-    acc[section] = store.get(atom);
-    return acc;
-  }, {});
+	return Object.entries(atomLookup).reduce((acc, [section, atom]) => {
+		acc[section] = store.get(atom);
+		return acc;
+	}, {});
 }
 
 export const FormLayout = forwardRef<HTMLDivElement, FormLayoutProps>(function (
-  {
-    children,
-    mainContentGrid,
-    targetHeight,
-    containerRef,
-    headerFragment,
-    isLargeContainer,
-    hasStackedForms,
-    stackIndex
-  },
-  ref
+	{
+		children,
+		mainContentGrid,
+		targetHeight,
+		containerRef,
+		headerFragment,
+		isLargeContainer,
+		hasStackedForms,
+		stackIndex
+	},
+	ref
 ) {
-  const theme = useTheme();
-  const store = useJotaiStore();
-  const { api: contextApi } = useContext(StableGlobalContext);
-  const { state: stateCache, atoms } = useContext(StableFormContext);
-  const { id } = useContext(ItemMetaContext);
+	const theme = useTheme();
+	const store = useJotaiStore();
+	const { api: contextApi } = useContext(StableGlobalContext);
+	const { state: stateCache, atoms } = useContext(StableFormContext);
+	const { id } = useContext(ItemMetaContext);
 
-  useImperativeHandle(ref, () => containerRef.current);
+	useImperativeHandle(ref, () => containerRef.current);
 
-  // Restore previous scroll position if provided.
-  const collapsedToCAtom = atoms.collapsedToC;
-  const previousScrollTopPosition = stateCache?.previousScrollTopPosition;
-  useLayoutEffect(() => {
-    // Only a single stacked form is rendered at a time, so the scroll position of stacked forms is stored before opening a new one for later restoration here.
-    if (containerRef.current != null && previousScrollTopPosition != null) {
-      // Restore the previous scroll position
-      const container: HTMLElement = getScrollContainer(containerRef.current);
-      container.scrollTop = previousScrollTopPosition;
-    }
-    // TODO: Once mounted back, clean the state cache. Assumes everything should have grabbed the cached values by now.
-    //   contextApi.deleteStateCache(stackIndex);
-    return () => {
-      // Getting the count directly from the store provides the latest value. React may not have been updated `stackFormCount` yet.
-      const currentCount = store.get(stackFormCountAtom);
-      // If the count is greater than the stackIndex, a new form is being opened, so store the scroll position before dismounting.
-      if (currentCount > stackIndex) {
-        contextApi.setStateCache(stackIndex, {
-          collapsedToC: store.get(collapsedToCAtom),
-          previousScrollTopPosition: getScrollContainer(containerRef.current).scrollTop,
-          sectionExpandedState: collectSectionExpandedState(store, atoms.expandedStateBySectionId)
-        });
-      }
-    };
-  }, [
-    previousScrollTopPosition,
-    containerRef,
-    contextApi,
-    stackIndex,
-    store,
-    collapsedToCAtom,
-    atoms.expandedStateBySectionId
-  ]);
+	// Restore previous scroll position if provided.
+	const collapsedToCAtom = atoms.collapsedToC;
+	const previousScrollTopPosition = stateCache?.previousScrollTopPosition;
+	useLayoutEffect(() => {
+		// Only a single stacked form is rendered at a time, so the scroll position of stacked forms is stored before opening a new one for later restoration here.
+		if (containerRef.current != null && previousScrollTopPosition != null) {
+			// Restore the previous scroll position
+			const container: HTMLElement = getScrollContainer(containerRef.current);
+			container.scrollTop = previousScrollTopPosition;
+		}
+		// TODO: Once mounted back, clean the state cache. Assumes everything should have grabbed the cached values by now.
+		//   contextApi.deleteStateCache(stackIndex);
+		return () => {
+			// Getting the count directly from the store provides the latest value. React may not have been updated `stackFormCount` yet.
+			const currentCount = store.get(stackFormCountAtom);
+			// If the count is greater than the stackIndex, a new form is being opened, so store the scroll position before dismounting.
+			if (currentCount > stackIndex) {
+				contextApi.setStateCache(stackIndex, {
+					collapsedToC: store.get(collapsedToCAtom),
+					previousScrollTopPosition: getScrollContainer(containerRef.current).scrollTop,
+					sectionExpandedState: collectSectionExpandedState(store, atoms.expandedStateBySectionId)
+				});
+			}
+		};
+	}, [
+		previousScrollTopPosition,
+		containerRef,
+		contextApi,
+		stackIndex,
+		store,
+		collapsedToCAtom,
+		atoms.expandedStateBySectionId
+	]);
 
-  // Freeze/manage scroll when stacked forms are open, and set the --scroll-top css property for stacked
-  // forms to position themselves at the right position.
-  useLayoutEffect(() => {
-    if (hasStackedForms) {
-      const scrollContainer = getScrollContainer(containerRef.current);
-      // Store the current scroll position to restore
-      const scrollTop = scrollContainer.scrollTop;
-      const scrollLeft = scrollContainer.scrollLeft;
-      // Disable scrolling
-      scrollContainer.style.overflow = 'hidden';
-      // Restore the scroll position
-      scrollContainer.scrollTop = scrollTop;
-      scrollContainer.scrollLeft = scrollLeft;
-      scrollContainer.style.setProperty('--scroll-top', `${scrollTop}px`);
-      return () => {
-        scrollContainer.style.overflow = '';
-      };
-    }
-  }, [hasStackedForms]);
+	// Freeze/manage scroll when stacked forms are open, and set the --scroll-top css property for stacked
+	// forms to position themselves at the right position.
+	useLayoutEffect(() => {
+		if (hasStackedForms) {
+			const scrollContainer = getScrollContainer(containerRef.current);
+			// Store the current scroll position to restore
+			const scrollTop = scrollContainer.scrollTop;
+			const scrollLeft = scrollContainer.scrollLeft;
+			// Disable scrolling
+			scrollContainer.style.overflow = 'hidden';
+			// Restore the scroll position
+			scrollContainer.scrollTop = scrollTop;
+			scrollContainer.scrollLeft = scrollLeft;
+			scrollContainer.style.setProperty('--scroll-top', `${scrollTop}px`);
+			return () => {
+				scrollContainer.style.overflow = '';
+			};
+		}
+	}, [hasStackedForms]);
 
-  return (
-    <Box
-      ref={containerRef}
-      data-model-id={id}
-      data-area-id="formContainer"
-      sx={{
-        display: 'flex',
-        height: targetHeight,
-        flexDirection: 'column',
-        position: 'relative',
-        overflow: 'auto',
-        '.space-y > :not([hidden]) ~ :not([hidden])': { mt: 1 },
-        '.space-y-half > :not([hidden]) ~ :not([hidden])': { mt: 0.5 },
-        '.space-x > :not([hidden]) ~ :not([hidden])': { ml: 1 },
-        '.space-y-2 > :not([hidden]) ~ :not([hidden])': { mt: 2 }
-      }}
-    >
-      <UIBlockerOverlay />
-      <Paper component="header" data-area-id="formHeader" elevation={0} square>
-        {headerFragment}
-        <Divider />
-      </Paper>
-      <Box
-        sx={{
-          // TODO: Tabs will be done at a later phase.
-          // display: activeTab === 0 ? 'inherit' : 'none',
-          px: 0,
-          py: 2,
-          backgroundColor: theme.palette.background.default
-        }}
-      >
-        <Container maxWidth={isLargeContainer ? 'xl' : undefined}>
-          <Grid container spacing={2}>
-            {mainContentGrid}
-          </Grid>
-        </Container>
-      </Box>
-      {/*
+	return (
+		<Box
+			ref={containerRef}
+			data-model-id={id}
+			data-area-id="formContainer"
+			sx={{
+				display: 'flex',
+				height: targetHeight,
+				flexDirection: 'column',
+				position: 'relative',
+				overflow: 'auto',
+				'.space-y > :not([hidden]) ~ :not([hidden])': { mt: 1 },
+				'.space-y-half > :not([hidden]) ~ :not([hidden])': { mt: 0.5 },
+				'.space-x > :not([hidden]) ~ :not([hidden])': { ml: 1 },
+				'.space-y-2 > :not([hidden]) ~ :not([hidden])': { mt: 2 }
+			}}
+		>
+			<UIBlockerOverlay />
+			<Paper component="header" data-area-id="formHeader" elevation={0} square>
+				{headerFragment}
+				<Divider />
+			</Paper>
+			<Box
+				sx={{
+					// TODO: Tabs will be done at a later phase.
+					// display: activeTab === 0 ? 'inherit' : 'none',
+					px: 0,
+					py: 2,
+					backgroundColor: theme.palette.background.default
+				}}
+			>
+				<Container maxWidth={isLargeContainer ? 'xl' : undefined}>
+					<Grid container spacing={2}>
+						{mainContentGrid}
+					</Grid>
+				</Container>
+			</Box>
+			{/*
       TODO: Tabs differed to a later stage. Should tabs be pluggable & configurable?
       {activeTab === 1 && (
         <IFrame
@@ -179,15 +179,15 @@ export const FormLayout = forwardRef<HTMLDivElement, FormLayoutProps>(function (
         />
       )}
       */}
-      {children}
-    </Box>
-  );
+			{children}
+		</Box>
+	);
 });
 
 function UIBlockerOverlay() {
-  const stableFormContext = useContext(StableFormContext);
-  const isSubmitting = useAtomValue(stableFormContext.atoms.isSubmitting);
-  return <UIBlocker open={isSubmitting} />;
+	const stableFormContext = useContext(StableFormContext);
+	const isSubmitting = useAtomValue(stableFormContext.atoms.isSubmitting);
+	return <UIBlocker open={isSubmitting} />;
 }
 
 export default FormLayout;

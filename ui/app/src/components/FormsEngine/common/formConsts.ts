@@ -25,33 +25,33 @@ export const UnknownError = Symbol('UnknownError');
 export const stackFormCountAtom = atom(0);
 
 export enum XmlKeys {
-  modelId = 'objectId',
-  contentTypeId = 'content-type',
-  displayTemplate = 'display-template',
-  mergeStrategy = 'merge-strategy',
-  fileName = 'file-name',
-  folderName = 'folder-name',
-  internalName = 'internal-name',
-  templateNotRequired = 'no-template-required',
-  dateCreated = 'createdDate',
-  dateCreatedDt = 'createdDate_dt',
-  dateModified = 'lastModifiedDate',
-  dateModifiedDt = 'lastModifiedDate_dt',
-  savedAsDraft = 'savedAsDraft'
+	modelId = 'objectId',
+	contentTypeId = 'content-type',
+	displayTemplate = 'display-template',
+	mergeStrategy = 'merge-strategy',
+	fileName = 'file-name',
+	folderName = 'folder-name',
+	internalName = 'internal-name',
+	templateNotRequired = 'no-template-required',
+	dateCreated = 'createdDate',
+	dateCreatedDt = 'createdDate_dt',
+	dateModified = 'lastModifiedDate',
+	dateModifiedDt = 'lastModifiedDate_dt',
+	savedAsDraft = 'savedAsDraft'
 }
 
 // These are not in the content type definition
 export const systemFieldsNotInType = [
-  XmlKeys.contentTypeId,
-  XmlKeys.displayTemplate,
-  XmlKeys.templateNotRequired,
-  XmlKeys.mergeStrategy,
-  XmlKeys.modelId,
-  XmlKeys.fileName, // TODO: fileName is in the ContentType. Why was it added here?
-  XmlKeys.folderName,
-  XmlKeys.internalName,
-  XmlKeys.dateCreated,
-  `${XmlKeys.dateCreated}_dt`,
-  XmlKeys.dateModified,
-  `${XmlKeys.dateModified}_dt`
+	XmlKeys.contentTypeId,
+	XmlKeys.displayTemplate,
+	XmlKeys.templateNotRequired,
+	XmlKeys.mergeStrategy,
+	XmlKeys.modelId,
+	XmlKeys.fileName, // TODO: fileName is in the ContentType. Why was it added here?
+	XmlKeys.folderName,
+	XmlKeys.internalName,
+	XmlKeys.dateCreated,
+	`${XmlKeys.dateCreated}_dt`,
+	XmlKeys.dateModified,
+	`${XmlKeys.dateModified}_dt`
 ];

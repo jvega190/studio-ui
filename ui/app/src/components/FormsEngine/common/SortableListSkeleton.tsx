@@ -29,27 +29,27 @@ const pulseKeyframe = keyframes`
 `;
 
 export function SortableListSkeleton({ items }: { items: TItem[] }) {
-  return (
-    <List
-      sx={{
-        animation: `${pulseKeyframe} 2s ease-in-out 0.25s infinite`,
-        cursor: 'wait',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 0.5,
-        px: 1
-      }}
-    >
-      {items.map((item, index) => (
-        <ListItem key={index}>
-          <ListItemIcon>
-            <DragIndicator fontSize="small" />
-          </ListItemIcon>
-          <ListItemText primary={item.value} />
-        </ListItem>
-      ))}
-    </List>
-  );
+	return (
+		<List
+			sx={{
+				animation: `${pulseKeyframe} 2s ease-in-out 0.25s infinite`,
+				cursor: 'wait',
+				display: 'flex',
+				flexDirection: 'column',
+				gap: 0.5,
+				px: 1
+			}}
+		>
+			{items.map((item, index) => (
+				<ListItem key={index}>
+					<ListItemIcon>
+						<DragIndicator fontSize="small" />
+					</ListItemIcon>
+					<ListItemText primary={item.value} />
+				</ListItem>
+			))}
+		</List>
+	);
 }
 
 export default SortableListSkeleton;

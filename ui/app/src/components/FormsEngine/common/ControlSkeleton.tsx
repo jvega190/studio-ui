@@ -20,21 +20,21 @@ import Skeleton from '@mui/material/Skeleton';
 import React from 'react';
 
 export function ControlSkeleton({ label }: { label: string }) {
-  return (
-    <>
-      <Box display="flex" justifyContent="space-between" alignItems="center" height={30}>
-        <Box display="flex" alignItems="center" className="space-x">
-          {label ? <FormLabel component="div">{label}</FormLabel> : <Skeleton variant="text" width={100} />}
-          <Skeleton variant="circular" />
-        </Box>
-        <Box display="flex" alignItems="center" className="space-x">
-          <Skeleton variant="text" width={30} />
-          <Skeleton variant="circular" width={15} height={15} />
-          <Skeleton variant="circular" width={15} height={15} />
-        </Box>
-      </Box>
-      <Skeleton variant="rounded" width="100%" height={50} />
-      <Skeleton variant="text" width={200} height={15} />
-    </>
-  );
+	return (
+		<>
+			<Box display="flex" justifyContent="space-between" alignItems="center" height={30}>
+				<Box display="flex" alignItems="center" className="space-x">
+					{label ? <FormLabel component="div">{label}</FormLabel> : <Skeleton variant="text" width={100} />}
+					<Skeleton variant="circular" />
+				</Box>
+				<Box display="flex" alignItems="center" className="space-x">
+					<Skeleton variant="text" width={30} />
+					<Skeleton variant="circular" width={15} height={15} />
+					<Skeleton variant="circular" width={15} height={15} />
+				</Box>
+			</Box>
+			<Skeleton variant="rounded" width="100%" height={50} />
+			<Skeleton variant="text" width={200} height={15} />
+		</>
+	);
 }

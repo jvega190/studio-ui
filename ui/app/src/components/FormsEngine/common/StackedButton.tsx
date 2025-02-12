@@ -19,11 +19,11 @@ import Button from '@mui/material/Button';
 import { avatarClasses } from '@mui/material/Avatar';
 
 export const StackedButton = styled(Button)(({ theme }) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  textDecoration: 'underline',
-  [`& .${avatarClasses.root}`]: {
-    backgroundColor: theme.palette.action.selected,
-    color: alpha(theme.palette.action.selected, 1)
-  }
+	display: 'flex',
+	flexDirection: 'column',
+	textDecoration: 'underline',
+	[`& .${avatarClasses.root}`]: {
+		backgroundColor: theme.palette.action.selected,
+		color: alpha(theme.palette.action.selected, 1)
+	}
 }));

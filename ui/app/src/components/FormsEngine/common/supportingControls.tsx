@@ -34,133 +34,133 @@ import { FormsEngineAtoms } from '../formsEngineContext';
 const lazyControlMap = new Map<string, LazyExoticComponent<ComponentType>>();
 
 function addLazyControl(url: string): void {
-  lazyControlMap.set(
-    url,
-    lazy(() =>
-      import(/* @vite-ignore */ url)
-        .then((m) => {
-          if (m.default) return m;
-          else return { default: ControlPluginNoDefaultExportError };
-        })
-        .catch((reason) => {
-          console.error(
-            // TODO: Docs or internal URL
-            `An error occurred loading the control. The form attempted to load the control from \`${url}\`. Forms Engine v1 controls are not compatible with this version. If you haven't migrated this control, please check the migration guide at https://docs.craftercms.org/.\n\n`,
-            reason
-          );
-          return { default: ControlPluginError };
-        })
-    )
-  );
+	lazyControlMap.set(
+		url,
+		lazy(() =>
+			import(/* @vite-ignore */ url)
+				.then((m) => {
+					if (m.default) return m;
+					else return { default: ControlPluginNoDefaultExportError };
+				})
+				.catch((reason) => {
+					console.error(
+						// TODO: Docs or internal URL
+						`An error occurred loading the control. The form attempted to load the control from \`${url}\`. Forms Engine v1 controls are not compatible with this version. If you haven't migrated this control, please check the migration guide at https://docs.craftercms.org/.\n\n`,
+						reason
+					);
+					return { default: ControlPluginError };
+				})
+		)
+	);
 }
 
 export interface ControlWrapperProps {
-  field: ContentTypeField;
-  autoFocus: boolean;
-  readonly: boolean;
-  contentType: ContentType;
-  atom: Atom<unknown>;
+	field: ContentTypeField;
+	autoFocus: boolean;
+	readonly: boolean;
+	contentType: ContentType;
+	atom: Atom<unknown>;
 }
 
 export const ControlWrapper = memo(function (props: ControlWrapperProps) {
-  const siteId = useActiveSiteId();
-  const { field, autoFocus, readonly, contentType, atom } = props;
-  const [value, setValue] = useAtom(atom);
-  const fieldId = field.id;
-  let Control: ElementType<ControlProps>;
-  if (field.properties.plugin) {
-    const url = buildFileUrl(
-      siteId,
-      field.properties.plugin.type,
-      field.properties.plugin.name,
-      field.properties.plugin.filename,
-      field.properties.plugin.pluginId
-    );
-    if (!lazyControlMap.has(url)) addLazyControl(url);
-    Control = lazyControlMap.get(url);
-  } else {
-    Control = controlMap[field.type] ?? UnknownControl;
-  }
-  return (
-    <ErrorBoundary key={fieldId}>
-      <Suspense fallback={<ControlSkeleton label={field.name} />}>
-        <Control
-          // Only auto-focus on controls that are not readonly.
-          // Focus might not work consistently on disabled controls anyway.
-          autoFocus={autoFocus && !readonly}
-          value={value}
-          setValue={setValue}
-          field={field}
-          contentType={contentType}
-          readonly={readonly}
-        />
-      </Suspense>
-    </ErrorBoundary>
-  );
+	const siteId = useActiveSiteId();
+	const { field, autoFocus, readonly, contentType, atom } = props;
+	const [value, setValue] = useAtom(atom);
+	const fieldId = field.id;
+	let Control: ElementType<ControlProps>;
+	if (field.properties.plugin) {
+		const url = buildFileUrl(
+			siteId,
+			field.properties.plugin.type,
+			field.properties.plugin.name,
+			field.properties.plugin.filename,
+			field.properties.plugin.pluginId
+		);
+		if (!lazyControlMap.has(url)) addLazyControl(url);
+		Control = lazyControlMap.get(url);
+	} else {
+		Control = controlMap[field.type] ?? UnknownControl;
+	}
+	return (
+		<ErrorBoundary key={fieldId}>
+			<Suspense fallback={<ControlSkeleton label={field.name} />}>
+				<Control
+					// Only auto-focus on controls that are not readonly.
+					// Focus might not work consistently on disabled controls anyway.
+					autoFocus={autoFocus && !readonly}
+					value={value}
+					setValue={setValue}
+					field={field}
+					contentType={contentType}
+					readonly={readonly}
+				/>
+			</Suspense>
+		</ErrorBoundary>
+	);
 });
 
 function ControlPluginError({ field }: ControlProps) {
-  return (
-    <FormsEngineField field={field} menu={false}>
-      <Alert
-        severity="error"
-        variant="standard"
-        sx={(theme) => ({ border: 'none', strong: { fontWeight: theme.typography.fontWeightMedium } })}
-      >
-        <FormattedMessage
-          defaultMessage="Unable to load the {name} ({id}) control. The control may be absent or contain errors in the code. Check the browser console for error details."
-          values={{
-            name: field.name,
-            id: field.id
-          }}
-        />
-      </Alert>
-    </FormsEngineField>
-  );
+	return (
+		<FormsEngineField field={field} menu={false}>
+			<Alert
+				severity="error"
+				variant="standard"
+				sx={(theme) => ({ border: 'none', strong: { fontWeight: theme.typography.fontWeightMedium } })}
+			>
+				<FormattedMessage
+					defaultMessage="Unable to load the {name} ({id}) control. The control may be absent or contain errors in the code. Check the browser console for error details."
+					values={{
+						name: field.name,
+						id: field.id
+					}}
+				/>
+			</Alert>
+		</FormsEngineField>
+	);
 }
 
 function ControlPluginNoDefaultExportError({ field }: ControlProps) {
-  return (
-    <FormsEngineField field={field} menu={false}>
-      <Alert
-        severity="error"
-        variant="standard"
-        sx={(theme) => ({ border: 'none', strong: { fontWeight: theme.typography.fontWeightMedium } })}
-      >
-        <FormattedMessage
-          defaultMessage="Unable to render {name} ({id}) control. No default export found. A control's JavaScript file should export a React component as `default`. Please check <docs>the documentation</docs>."
-          values={{
-            name: field.name,
-            id: field.id,
-            // TODO: Docs or internal link
-            docs: (str) => (
-              <a href="https://docs.craftercms.org" target="_blank">
-                {str}
-              </a>
-            )
-          }}
-        />
-      </Alert>
-    </FormsEngineField>
-  );
+	return (
+		<FormsEngineField field={field} menu={false}>
+			<Alert
+				severity="error"
+				variant="standard"
+				sx={(theme) => ({ border: 'none', strong: { fontWeight: theme.typography.fontWeightMedium } })}
+			>
+				<FormattedMessage
+					defaultMessage="Unable to render {name} ({id}) control. No default export found. A control's JavaScript file should export a React component as `default`. Please check <docs>the documentation</docs>."
+					values={{
+						name: field.name,
+						id: field.id,
+						// TODO: Docs or internal link
+						docs: (str) => (
+							<a href="https://docs.craftercms.org" target="_blank">
+								{str}
+							</a>
+						)
+					}}
+				/>
+			</Alert>
+		</FormsEngineField>
+	);
 }
 
 export function renderFieldControl(
-  field: ContentTypeField,
-  atoms: FormsEngineAtoms['valueByFieldId'],
-  autoFocus: boolean,
-  readonly: boolean,
-  contentType: ContentType
+	field: ContentTypeField,
+	atoms: FormsEngineAtoms['valueByFieldId'],
+	autoFocus: boolean,
+	readonly: boolean,
+	contentType: ContentType
 ) {
-  const fieldId = field.id;
-  return (
-    <ControlWrapper
-      key={fieldId}
-      field={field}
-      atom={atoms[fieldId]}
-      readonly={readonly}
-      autoFocus={autoFocus}
-      contentType={contentType}
-    />
-  );
+	const fieldId = field.id;
+	return (
+		<ControlWrapper
+			key={fieldId}
+			field={field}
+			atom={atoms[fieldId]}
+			readonly={readonly}
+			autoFocus={autoFocus}
+			contentType={contentType}
+		/>
+	);
 }

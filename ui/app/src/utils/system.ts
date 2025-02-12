@@ -94,31 +94,31 @@ export function isProjectToolsAppUrl(pathname = window.location.pathname): boole
 }
 
 export function consolidateSx(...sxs: SxProps<Theme>[]): SxProps<Theme> {
-  return sxs.flatMap((item) => item ?? []);
+	return sxs.flatMap((item) => item ?? []);
 }
 
 export function pickShowContentFormAction(oldProps: ReturnType<typeof showEditDialog>['payload']) {
-  const useLegacy = window.localStorage.getItem('useLegacyFormEngine') ?? false;
-  return useLegacy
-    ? showEditDialog(oldProps)
-    : pushDialog({
-        component: 'craftercms.components.FormsEngineDialog',
-        props: {
-          formProps: {
-            ...(oldProps.isNewContent
-              ? {
-                  create: {
-                    path: oldProps.path,
-                    contentTypeId: oldProps.contentTypeId
-                  }
-                }
-              : {
-                  update: {
-                    path: oldProps.path
-                  }
-                }),
-            readonly: oldProps.readonly ?? false
-          } as FormsEngineProps
-        }
-      });
+	const useLegacy = window.localStorage.getItem('useLegacyFormEngine') ?? false;
+	return useLegacy
+		? showEditDialog(oldProps)
+		: pushDialog({
+				component: 'craftercms.components.FormsEngineDialog',
+				props: {
+					formProps: {
+						...(oldProps.isNewContent
+							? {
+									create: {
+										path: oldProps.path,
+										contentTypeId: oldProps.contentTypeId
+									}
+								}
+							: {
+									update: {
+										path: oldProps.path
+									}
+								}),
+						readonly: oldProps.readonly ?? false
+					} as FormsEngineProps
+				}
+			});
 }

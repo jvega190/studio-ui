@@ -89,4 +89,4 @@ export function createPagedArray<T = any>(array: T[], response): PagedArray<T> {
 }
 
 export const areTuplesEqual: (tuples: [unknown, unknown][]) => boolean = (touples) =>
-  !touples.some(([a, b]) => a !== b);
+	!touples.some(([a, b]) => a !== b);

@@ -20,27 +20,27 @@ import { FormsEngineField } from '../common/FormsEngineField';
 import { ControlProps } from '../types';
 
 export interface TextareaProps extends ControlProps {
-  value: string;
+	value: string;
 }
 
 export function Textarea(props: TextareaProps) {
-  const { field, value, setValue, readonly, autoFocus } = props;
-  const htmlId = useId();
-  const maxLength = field.validations.maxLength?.value;
-  return (
-    <FormsEngineField htmlFor={htmlId} field={field} max={maxLength} length={value.length}>
-      <OutlinedInput
-        autoFocus={autoFocus}
-        fullWidth
-        multiline
-        inputProps={{ maxLength }}
-        id={htmlId}
-        value={value}
-        onChange={(e) => setValue(e.currentTarget.value)}
-        disabled={readonly}
-      />
-    </FormsEngineField>
-  );
+	const { field, value, setValue, readonly, autoFocus } = props;
+	const htmlId = useId();
+	const maxLength = field.validations.maxLength?.value;
+	return (
+		<FormsEngineField htmlFor={htmlId} field={field} max={maxLength} length={value.length}>
+			<OutlinedInput
+				autoFocus={autoFocus}
+				fullWidth
+				multiline
+				inputProps={{ maxLength }}
+				id={htmlId}
+				value={value}
+				onChange={(e) => setValue(e.currentTarget.value)}
+				disabled={readonly}
+			/>
+		</FormsEngineField>
+	);
 }
 
 export default Textarea;
