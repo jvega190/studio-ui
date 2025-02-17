@@ -21,6 +21,7 @@ export const ContentTypeNotFoundError = Symbol('ContentTypeNotFoundError');
 export const InvalidParamsError = Symbol('InvalidParamsError');
 export const NoSiteIdError = Symbol('NoSiteIdError');
 export const UnknownError = Symbol('UnknownError');
+export const PropsChangedError = Symbol('PropsChangedError');
 
 export const stackFormCountAtom = atom(0);
 

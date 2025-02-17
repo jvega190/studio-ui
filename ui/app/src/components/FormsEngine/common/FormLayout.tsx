@@ -34,10 +34,11 @@ import { useAtomValue, useStore as useJotaiStore } from 'jotai/index';
 import { UIBlocker } from '../../UIBlocker';
 import { getScrollContainer } from './formUtils';
 import { stackFormCountAtom } from './formConsts';
-import type { createStore } from 'jotai';
+import { createStore, useAtom } from 'jotai';
+import { Subject } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 
 export type FormLayoutProps = PropsWithChildren<{
-	isLargeContainer: boolean;
 	targetHeight: string;
 	mainContentGrid: ReactNode;
 	headerFragment: ReactNode;
@@ -57,16 +58,7 @@ function collectSectionExpandedState(
 }
 
 export const FormLayout = forwardRef<HTMLDivElement, FormLayoutProps>(function (
-	{
-		children,
-		mainContentGrid,
-		targetHeight,
-		containerRef,
-		headerFragment,
-		isLargeContainer,
-		hasStackedForms,
-		stackIndex
-	},
+	{ children, mainContentGrid, targetHeight, containerRef, headerFragment, hasStackedForms, stackIndex },
 	ref
 ) {
 	const theme = useTheme();
@@ -74,11 +66,12 @@ export const FormLayout = forwardRef<HTMLDivElement, FormLayoutProps>(function (
 	const { api: contextApi } = useContext(StableGlobalContext);
 	const { state: stateCache, atoms } = useContext(StableFormContext);
 	const { id } = useContext(ItemMetaContext);
+	const [isLargeContainer, setIsLargeContainer] = useAtom(atoms.isLargeContainer);
 
 	useImperativeHandle(ref, () => containerRef.current);
 
 	// Restore previous scroll position if provided.
-	const collapsedToCAtom = atoms.collapsedToC;
+	const collapsedToCAtom = atoms.collapseToC;
 	const previousScrollTopPosition = stateCache?.previousScrollTopPosition;
 	useLayoutEffect(() => {
 		// Only a single stacked form is rendered at a time, so the scroll position of stacked forms is stored before opening a new one for later restoration here.
@@ -102,8 +95,8 @@ export const FormLayout = forwardRef<HTMLDivElement, FormLayoutProps>(function (
 			}
 		};
 	}, [
-		previousScrollTopPosition,
 		containerRef,
+		previousScrollTopPosition,
 		contextApi,
 		stackIndex,
 		store,
@@ -129,7 +122,30 @@ export const FormLayout = forwardRef<HTMLDivElement, FormLayoutProps>(function (
 				scrollContainer.style.overflow = '';
 			};
 		}
-	}, [hasStackedForms]);
+	}, [containerRef, hasStackedForms]);
+
+	// Resize observer attached to the [scroll] container
+	useLayoutEffect(() => {
+		if (containerRef.current) {
+			const resize$ = new Subject<void>();
+			const container: HTMLElement = getScrollContainer(containerRef.current);
+			const setValues = (rect: DOMRect) => {
+				const width = rect.width;
+				container.style.setProperty('--container-width', `${width}px`);
+				container.style.setProperty('--container-height', `${rect.height}px`);
+				setIsLargeContainer(width >= theme.breakpoints.values.lg);
+			};
+			const resizeObserver = new ResizeObserver(() => resize$.next());
+			const subscription = resize$.pipe(debounceTime(300)).subscribe(() => {
+				setValues(container.getBoundingClientRect());
+			});
+			resizeObserver.observe(containerRef.current);
+			return () => {
+				resizeObserver.disconnect();
+				subscription.unsubscribe();
+			};
+		}
+	}, [containerRef, theme.breakpoints.values.lg]);
 
 	return (
 		<Box

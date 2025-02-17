@@ -36,7 +36,7 @@ import { Dispatch as ReduxDispatch } from 'redux';
 import { IntlShape } from 'react-intl/src/types';
 import { showSystemNotification } from '../../../state/actions/system';
 import { atom, Atom, PrimitiveAtom } from 'jotai/index';
-import React, { ReactNode, RefObject } from 'react';
+import React, { ReactNode, RefObject, useRef } from 'react';
 import { XMLBuilder } from 'fast-xml-parser';
 import { deserialize, fromString, getInnerHtml } from '../../../utils/xml';
 import { nanoid } from 'nanoid';
@@ -46,11 +46,24 @@ import PrimaryButton from '../../PrimaryButton';
 import { FormattedMessage } from 'react-intl';
 import { AlertDialogProps } from '../../AlertDialog';
 import { Theme } from '@mui/material/styles';
-import { JotaiStore } from '../types';
-import { ContentTypeNotFoundError, systemFieldsNotInType, XmlKeys } from './formConsts';
+import { CollapseToCAtomWithStorage, JotaiStore } from '../types';
+import {
+	ContentTypeNotFoundError,
+	InvalidParamsError,
+	ItemNotFoundError,
+	NoSiteIdError,
+	PropsChangedError,
+	systemFieldsNotInType,
+	UnknownError,
+	XmlKeys
+} from './formConsts';
 import { v4 as uuid } from 'uuid';
 import { atomWithStorage } from 'jotai/utils';
 import { useDispatch } from 'react-redux';
+import type { FormsEngineProps } from '../FormsEngine';
+import usePreviousValue from '../../../hooks/usePreviousValue';
+import useActiveSiteId from '../../../hooks/useActiveSiteId';
+import { areAllPairsEqual } from '../../../utils/array';
 
 /**
  * Formats a FormsEngine values object with "hints" for attributes or other specifics for the XML serialiser to serialise
@@ -278,7 +291,6 @@ export function createFormStackData(mixin?: Partial<StableFormContextProps>): St
 		atoms: null,
 		changedFieldIds: new Set<string>(),
 		fieldUpdates$: new Subject<string>(),
-		initialized: false,
 		itemMeta: null,
 		originalValues: null,
 		props: null,
@@ -427,10 +439,13 @@ export function createFormsEngineAtoms(mixin?: Partial<FormsEngineAtoms>): Forms
 		lockResult: null,
 		readonly: null,
 		versionComment: atom(''),
-		// @ts-expect-error - atomWithStorage typing conflicts with the usage we're doing of it where there's no async anywhere.
-		collapsedToC: atomWithStorage('craftercms.formsEngine.collapsedToC', false, undefined, { getOnInit: true }),
 		expandedStateBySectionId: {},
 		tableOfContentsDrawerOpen: atom(false),
+		isLargeContainer: atom(false),
+		collapseToC: atomWithStorage('craftercms.formsEngine.collapsedToC', false, undefined, {
+			getOnInit: true
+		}) as unknown as CollapseToCAtomWithStorage,
+		useCollapsedToC: atom((get) => (get(atoms.isLargeContainer) ? get(atoms.collapseToC) : true)),
 		...mixin
 	};
 	return atoms;
@@ -494,7 +509,7 @@ export function createObjectWithSystemProps(
 		[XmlKeys.dateModified]: mixin?.[XmlKeys.dateModified] ?? dateIsoString,
 		[XmlKeys.dateModifiedDt]: mixin?.[XmlKeys.dateModifiedDt] ?? dateIsoString,
 		[XmlKeys.savedAsDraft]: mixin?.[XmlKeys.savedAsDraft] ?? 'false',
-		// // TODO: folderName? fileName?
+		// TODO: folderName? fileName?
 		[XmlKeys.folderName]: mixin?.[XmlKeys.folderName] ?? '',
 		[XmlKeys.fileName]: mixin?.[XmlKeys.fileName] ?? 'index.xml'
 	};
@@ -506,4 +521,67 @@ export function produceChangedFieldsMessage(changedFieldNames: string[]): string
 	return changedFieldNames.length > 1
 		? `Updated ${changedFieldNames.slice(0, -1).join(', ')} and ${changedFieldNames[changedFieldNames.length - 1]}`
 		: `Updated ${changedFieldNames[changedFieldNames.length - 1]}`;
+}
+
+/**
+ * Inspects the form props, and that there is an active siteId, to ensure validity and ability to render a form correctly.
+ **/
+export function useValidateFormProps(props: Partial<FormsEngineProps>): void {
+	const siteId = useActiveSiteId();
+	const previousProps = usePreviousValue(props);
+	const propsChangedRef = useRef(false);
+	const { create, update, repeat, fieldsToRender, readonly } = props;
+	if (!siteId) {
+		throw NoSiteIdError;
+	} else if (
+		// Missing or bad combination of props
+		[create, update, repeat].filter(Boolean).length !== 1 ||
+		// Update prop but no path
+		(update && !update.path?.trim()) ||
+		// Create prop but no path or content type id
+		(create && (!create.path?.trim() || !create.contentTypeId?.trim())) ||
+		// Repeat prop but no field id
+		(repeat && !repeat.fieldId?.trim())
+	) {
+		throw InvalidParamsError;
+	} else if (
+		propsChangedRef.current ||
+		(previousProps &&
+			// Note: Make sure to include all relevant props here
+			!areAllPairsEqual([
+				[create, previousProps.create],
+				[fieldsToRender, previousProps.fieldsToRender],
+				[readonly, previousProps.readonly],
+				[repeat?.fieldId, previousProps.repeat?.fieldId],
+				[repeat?.values, previousProps.repeat?.values],
+				[update?.modelId, previousProps.update?.modelId],
+				[update?.path, previousProps.update?.path],
+				[update?.values, previousProps.update?.values]
+			]))
+	) {
+		propsChangedRef.current = true;
+		throw PropsChangedError;
+	}
+}
+
+/**
+ * Inspects the error symbol and returns a message to display to the user.
+ **/
+export function getMessageForErrorSymbol(errorSymbol: unknown): ReactNode {
+	// TODO: Should errors allow parameters? e.g. show the path that wasn't found, or the type id?
+	switch (errorSymbol) {
+		case ItemNotFoundError:
+			return <FormattedMessage defaultMessage="The item was not found" />;
+		case ContentTypeNotFoundError:
+			return <FormattedMessage defaultMessage="The content type was not found" />;
+		case InvalidParamsError:
+			return <FormattedMessage defaultMessage="The form was opened with an incorrect set of arguments" />;
+		case NoSiteIdError:
+			return <FormattedMessage defaultMessage="No CrafterCMS project was specified" />;
+		case PropsChangedError:
+			return <FormattedMessage defaultMessage="Dynamic updates of the FormsEngine props are not supported" />;
+		case UnknownError:
+		default:
+			return <FormattedMessage defaultMessage="An error occurred preparing the form" />;
+	}
 }

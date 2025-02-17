@@ -1,4 +1,4 @@
-import React, { Dispatch as ReactDispatch, SetStateAction, useContext } from 'react';
+import React, { useContext } from 'react';
 import { useTheme } from '@mui/material/styles';
 import { ItemContext, ItemMetaContext, StableFormContext } from '../formsEngineContext';
 import { useAtomValue, useStore as useJotaiStore } from 'jotai/index';
@@ -23,18 +23,9 @@ import { copyToClipboard } from '../../../utils/system';
 import ContentCopyRounded from '@mui/icons-material/ContentCopyRounded';
 import MenuOpenIcon from '@mui/icons-material/MenuOpenRounded';
 import { XmlKeys } from './formConsts';
+import { useAtom } from 'jotai';
 
-export function EditModeHeader({
-	isEmbedded,
-	isLargeContainer,
-	useCollapsedToC,
-	setCollapsedToC
-}: {
-	isEmbedded: boolean;
-	isLargeContainer: boolean;
-	useCollapsedToC: boolean;
-	setCollapsedToC: ReactDispatch<SetStateAction<boolean>>;
-}) {
+export function EditModeHeader({ isEmbedded }: { isEmbedded: boolean }) {
 	const theme = useTheme();
 	const { atoms } = useContext(StableFormContext);
 	const { id: objectId } = useContext(ItemMetaContext);
@@ -42,6 +33,9 @@ export function EditModeHeader({
 	const store = useJotaiStore();
 	const readonly = useAtomValue(atoms.readonly);
 	const localeConf = useLocale();
+	const isLargeContainer = useAtomValue(atoms.isLargeContainer);
+	const [collapseToC, setCollapseToC] = useAtom(atoms.collapseToC);
+	const useCollapsedToC = useAtomValue(atoms.useCollapsedToC);
 	const itemLabel = isEmbedded
 		? (getFieldAtomValue(atoms.valueByFieldId[XmlKeys.internalName], store) as string)
 		: item.label;
@@ -201,7 +195,7 @@ export function EditModeHeader({
 					<Tooltip title={<FormattedMessage defaultMessage="Collapse table of contents" />}>
 						<IconButton
 							size="small"
-							onClick={() => setCollapsedToC(!useCollapsedToC)}
+							onClick={() => setCollapseToC(!collapseToC)}
 							sx={{
 								// TODO: Tabs will be done at a later phase.
 								// visibility: activeTab === 0 ? undefined : 'hidden',

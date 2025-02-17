@@ -124,8 +124,8 @@ export function isEmptyValue(field: ContentTypeField, currentValue: unknown): bo
 }
 
 /**
- * Takes in the raw deserialized values from a content XML and returns a clean object with the values ran through the
- * field's value retriever.
+ * Takes in the raw deserialized values from a content XML and returns a "clean" JSON-style object
+ * with the values returned by the field value retrievers.
  * @param contentTypeFields The fields of the content type
  * @param xmlDeserializedValues The raw deserialized values from the content XML
  * @param contentTypesLookup A lookup table of content types

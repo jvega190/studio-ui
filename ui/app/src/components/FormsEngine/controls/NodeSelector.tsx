@@ -344,6 +344,7 @@ function NodeSelector(props: NodeSelectorProps) {
 	// const saveRef = useRef(setValue);
 	// saveRef.current = setValue;
 	// TODO: Handle '*' from components DS
+	// TODO: Extra DS summary to a hook for the item data sources
 	const dataSourceSummary = useMemo(() => {
 		const allowedCreateTypes: LookupTable<AllowedContentTypesDataWithDestinations> = {};
 		const allowedCreatePaths = new Set<string>();

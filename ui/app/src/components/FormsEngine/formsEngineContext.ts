@@ -23,6 +23,7 @@ import LookupTable from '../../models/LookupTable';
 import type { Atom, PrimitiveAtom } from 'jotai';
 import { FieldValidityState } from './validateFieldValue';
 import { Subject } from 'rxjs';
+import { CollapseToCAtomWithStorage } from './types';
 
 export type FormsEngineSourceMap = LookupTable<string>;
 
@@ -75,8 +76,9 @@ export interface FormsEngineAtoms {
 	valueByFieldId: LookupTable<PrimitiveAtom<unknown>>;
 	validationByFieldId: LookupTable<Atom<FieldValidityState>>;
 	versionComment: PrimitiveAtom<string>;
-	collapsedToC: PrimitiveAtom<boolean>; // Note: uses atomWithStorage
-	// Gets populated as the sections get rendered
+	collapseToC: CollapseToCAtomWithStorage; // Note: `collapseToC` is an atomWithStorage
+	useCollapsedToC: Atom<boolean>;
+	isLargeContainer: PrimitiveAtom<boolean>;
 	expandedStateBySectionId: LookupTable<PrimitiveAtom<boolean>>;
 	tableOfContentsDrawerOpen: PrimitiveAtom<boolean>;
 }
@@ -101,7 +103,6 @@ export interface StableFormContextProps {
 	atoms: FormsEngineAtoms;
 	changedFieldIds: Set<string>;
 	fieldUpdates$: Subject<string>;
-	initialized: boolean;
 	itemMeta: FormsEngineItemMetaContextProps; // TODO: There's a dedicated ItemMetaContext; why have here too?
 	originalValues: LookupTable<unknown>;
 	props: FormsEngineProps;
