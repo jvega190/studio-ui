@@ -1,6 +1,6 @@
 import { h, Component } from 'preact';
 import classNames from 'classnames';
-import shallowEqual from 'is-shallow-equal';
+import { shallowEqualObjects } from 'shallow-equal';
 import FilePreviewAndLink from '@uppy/dashboard/lib/components/FileItem/FilePreviewAndLink';
 import FileProgress from './FileProgress/index';
 import FileInfo from './FileInfo/index';
@@ -8,7 +8,7 @@ import Buttons from './Buttons/index';
 
 export default class FileItem extends Component {
   shouldComponentUpdate(nextProps) {
-    return !shallowEqual(this.props, nextProps);
+    return !shallowEqualObjects(this.props, nextProps);
   }
 
   componentDidMount() {
