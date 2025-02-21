@@ -26,16 +26,16 @@ import { EnhancedDialogContext } from './useEnhancedDialogContext';
 import Suspencified from '../Suspencified';
 
 export interface EnhancedDialogProps extends Omit<MuiDialogProps, 'title'>, EnhancedDialogState {
-  title?: ReactNode;
-  subtitle?: ReactNode;
-  onMinimize?(): void;
-  onMaximize?(): void;
-  onClosed?(): void;
-  onFullScreen?(): void;
-  onCancelFullScreen?(): void;
-  onWithPendingChangesCloseRequest?: MuiDialogProps['onClose'];
-  omitHeader?: boolean;
-  dialogHeaderProps?: Partial<DialogHeaderProps>;
+	title?: ReactNode;
+	subtitle?: ReactNode;
+	onMinimize?(): void;
+	onMaximize?(): void;
+	onClosed?(): void;
+	onFullScreen?(): void;
+	onCancelFullScreen?(): void;
+	onWithPendingChangesCloseRequest?: MuiDialogProps['onClose'];
+	omitHeader?: boolean;
+	dialogHeaderProps?: Partial<DialogHeaderProps>;
 }
 
 export function EnhancedDialog(props: EnhancedDialogProps) {
@@ -116,6 +116,6 @@ export function EnhancedDialog(props: EnhancedDialogProps) {
 export default EnhancedDialog;
 
 function OnClosedInvoker({ onClosed }: { onClosed }) {
-  useUnmount(onClosed);
-  return null as JSX.Element;
+	useUnmount(onClosed);
+	return null as JSX.Element;
 }

@@ -154,7 +154,7 @@ export function CompareVersionsDialog(props: CompareVersionsDialogProps) {
         }
       }}
       maxWidth="xl"
-      TransitionComponent={TransitionComponent}
+			TransitionComponent={TransitionComponent}
       TransitionProps={TransitionProps}
       sx={{
         [`.${dialogClasses.paper}`]: {

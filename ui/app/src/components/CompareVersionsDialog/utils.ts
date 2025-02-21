@@ -40,9 +40,9 @@ import { NumberDiffView } from './FieldsTypesDiffViews/NumberDiffView';
 import FileNameDiffView from './FieldsTypesDiffViews/FileNameDiffView';
 
 export interface CompareVersionsDialogBaseProps {
-  error: ApiResponse;
-  isFetching: boolean;
-  disableItemSwitching?: boolean;
+	error: ApiResponse;
+	isFetching: boolean;
+	disableItemSwitching?: boolean;
 }
 
 export interface SelectionContentVersion {
@@ -66,10 +66,10 @@ export interface CompareVersionsDialogProps extends CompareVersionsDialogBasePro
 }
 
 export interface CompareVersionsDialogStateProps extends CompareVersionsDialogBaseProps, EnhancedDialogState {
-  leftActions?: DialogHeaderStateAction[];
-  rightActions?: DialogHeaderStateAction[];
-  onClose?: StandardAction;
-  onClosed?: StandardAction;
+	leftActions?: DialogHeaderStateAction[];
+	rightActions?: DialogHeaderStateAction[];
+	onClose?: StandardAction;
+	onClosed?: StandardAction;
 }
 
 export interface CompareVersionsDialogContainerProps

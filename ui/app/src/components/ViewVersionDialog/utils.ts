@@ -43,10 +43,10 @@ export interface ViewVersionDialogProps extends ViewVersionDialogBaseProps, Enha
 }
 
 export interface ViewVersionDialogStateProps extends ViewVersionDialogBaseProps, EnhancedDialogState {
-  leftActions?: DialogHeaderStateAction[];
-  rightActions?: DialogHeaderStateAction[];
-  onClose?: StandardAction;
-  onClosed?: StandardAction;
+	leftActions?: DialogHeaderStateAction[];
+	rightActions?: DialogHeaderStateAction[];
+	onClose?: StandardAction;
+	onClosed?: StandardAction;
 }
 
 export interface ViewVersionDialogContainerProps
