@@ -23,19 +23,19 @@ import { DiffViewComponentBaseProps } from '../utils';
 export interface ImageDiffViewProps extends DiffViewComponentBaseProps {}
 
 export function ImageDiffView(props: ImageDiffViewProps) {
-  const { aXml, bXml, field } = props;
-  return (
-    <DiffViewLayout
-      aXml={aXml}
-      bXml={bXml}
-      field={field}
-      renderContent={(xml) => (
-        <Box sx={{ height: 'calc(50% - 9px)', textAlign: 'center' }}>
-          <ImageView xml={xml} field={field} sxs={{ image: { maxHeight: 'calc(100% - 40px)' } }} />
-        </Box>
-      )}
-    />
-  );
+	const { aXml, bXml, field } = props;
+	return (
+		<DiffViewLayout
+			aXml={aXml}
+			bXml={bXml}
+			field={field}
+			renderContent={(xml) => (
+				<Box sx={{ height: 'calc(50% - 9px)', textAlign: 'center' }}>
+					<ImageView xml={xml} field={field} sxs={{ image: { maxHeight: 'calc(100% - 40px)' } }} />
+				</Box>
+			)}
+		/>
+	);
 }
 
 export default ImageDiffView;

@@ -29,66 +29,66 @@ import { ViewComponentBaseProps } from '../utils';
 export interface NodeSelectorViewProps extends ViewComponentBaseProps {}
 
 export function NodeSelector(props: NodeSelectorViewProps) {
-  const { xml, field } = props;
-  const itemsByPath = useItemsByPath();
-  const [, contextApiRef] = useVersionsDialogContext();
-  const contentTypes = useContentTypes();
-  const content = xml
-    ? parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {})
-    : [];
+	const { xml, field } = props;
+	const itemsByPath = useItemsByPath();
+	const [, contextApiRef] = useVersionsDialogContext();
+	const contentTypes = useContentTypes();
+	const content = xml
+		? parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {})
+		: [];
 
-  const getItemLabel = (item: ContentInstance): string => {
-    return item.craftercms?.label ?? itemsByPath?.[item.craftercms?.path]?.label ?? item.craftercms?.id ?? item.key;
-  };
+	const getItemLabel = (item: ContentInstance): string => {
+		return item.craftercms?.label ?? itemsByPath?.[item.craftercms?.path]?.label ?? item.craftercms?.id ?? item.key;
+	};
 
-  const isEmbedded = (item: ContentInstance): boolean => {
-    return item?.craftercms && !item.craftercms.path;
-  };
+	const isEmbedded = (item: ContentInstance): boolean => {
+		return item?.craftercms && !item.craftercms.path;
+	};
 
-  const onSelectStateItem = (item: ContentInstance) => {
-    const isEmbeddedComponent = isEmbedded(item);
-    const fields = isEmbeddedComponent ? contentTypes[item.craftercms.contentTypeId].fields : field.fields;
+	const onSelectStateItem = (item: ContentInstance) => {
+		const isEmbeddedComponent = isEmbedded(item);
+		const fields = isEmbeddedComponent ? contentTypes[item.craftercms.contentTypeId].fields : field.fields;
 
-    contextApiRef.current.setViewSlideOutState({
-      open: true,
-      data: {
-        content: item,
-        xml,
-        fields
-      },
-      title: field.name,
-      subtitle: <FormattedMessage defaultMessage="{fieldId} - Repeat Group" values={{ fieldId: field.id }} />,
-      onClose: () => contextApiRef.current.closeSlideOuts()
-    });
-  };
+		contextApiRef.current.setViewSlideOutState({
+			open: true,
+			data: {
+				content: item,
+				xml,
+				fields
+			},
+			title: field.name,
+			subtitle: <FormattedMessage defaultMessage="{fieldId} - Repeat Group" values={{ fieldId: field.id }} />,
+			onClose: () => contextApiRef.current.closeSlideOuts()
+		});
+	};
 
-  return (
-    <Box component="section" sx={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
-      <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '1100px', gap: '10px' }}>
-        {content?.map((item) => (
-          <DiffCollectionItem
-            key={item.craftercms.path}
-            state="unchanged"
-            primaryText={getItemLabel(item)}
-            secondaryText={
-              item.craftercms && isEmbedded(item) ? (
-                <FormattedMessage defaultMessage="Embedded" />
-              ) : (
-                (item.craftercms?.path ?? item.value)
-              )
-            }
-            disableHighlight={!isEmbedded(item)}
-            hideState
-            onSelect={() => {
-              if (isEmbedded(item)) {
-                onSelectStateItem(item);
-              }
-            }}
-          />
-        ))}
-      </Box>
-    </Box>
-  );
+	return (
+		<Box component="section" sx={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
+			<Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '1100px', gap: '10px' }}>
+				{content?.map((item) => (
+					<DiffCollectionItem
+						key={item.craftercms.path}
+						state="unchanged"
+						primaryText={getItemLabel(item)}
+						secondaryText={
+							item.craftercms && isEmbedded(item) ? (
+								<FormattedMessage defaultMessage="Embedded" />
+							) : (
+								(item.craftercms?.path ?? item.value)
+							)
+						}
+						disableHighlight={!isEmbedded(item)}
+						hideState
+						onSelect={() => {
+							if (isEmbedded(item)) {
+								onSelectStateItem(item);
+							}
+						}}
+					/>
+				))}
+			</Box>
+		</Box>
+	);
 }
 
 export default NodeSelector;

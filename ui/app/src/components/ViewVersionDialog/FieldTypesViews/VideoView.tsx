@@ -26,17 +26,17 @@ import { parseElementByContentType } from '../../../utils/content';
 export interface VideoViewProps extends ViewComponentBaseProps {}
 
 export function VideoView(props: VideoViewProps) {
-  const { xml, field, content: contentProp } = props;
-  const contentTypes = useContentTypes();
-  const content =
-    contentProp ??
-    (xml ? parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {}) : '');
-  return (
-    <Box sx={{ textAlign: 'center' }}>
-      <AsyncVideoPlayer playerOptions={{ src: content, controls: true, width: 400 }} />
-      {xml && <Typography variant="subtitle2">{content}</Typography>}
-    </Box>
-  );
+	const { xml, field, content: contentProp } = props;
+	const contentTypes = useContentTypes();
+	const content =
+		contentProp ??
+		(xml ? parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {}) : '');
+	return (
+		<Box sx={{ textAlign: 'center' }}>
+			<AsyncVideoPlayer playerOptions={{ src: content, controls: true, width: 400 }} />
+			{xml && <Typography variant="subtitle2">{content}</Typography>}
+		</Box>
+	);
 }
 
 export default VideoView;

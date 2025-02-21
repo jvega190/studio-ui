@@ -17,27 +17,27 @@
 import React from 'react';
 import { FormattedMessage } from 'react-intl';
 import {
-  removeStoredBrowseDialogViewMode,
-  removeStoredClipboard,
-  removeStoredEditModeChoice,
-  removeStoredEditModePadding,
-  removeStoredGlobalAppOpenSidebar,
-  removeStoredGlobalMenuSiteViewPreference,
-  removeStoredHighlightModeChoice,
-  removeStoredICEToolsPanelPage,
-  removeStoredICEToolsPanelWidth,
-  removeStoredItems,
-  removeStoredLegacyComponentPanel,
-  removeStoredOutdatedXBValidationDate,
-  removeStoredPreviewBackgroundMode,
-  removeStoredPreviewToolsPanelPage,
-  removeStoredPreviewToolsPanelWidth,
-  removeStoredPullBranch,
-  removeStoredPullMergeStrategy,
-  removeStoredPushBranch,
-  removeStoredShowToolsPanel,
-  removeCompareVersionDialogViewModes,
-  removeViewVersionDialogViewModes
+	removeStoredBrowseDialogViewMode,
+	removeStoredClipboard,
+	removeStoredEditModeChoice,
+	removeStoredEditModePadding,
+	removeStoredGlobalAppOpenSidebar,
+	removeStoredGlobalMenuSiteViewPreference,
+	removeStoredHighlightModeChoice,
+	removeStoredICEToolsPanelPage,
+	removeStoredICEToolsPanelWidth,
+	removeStoredItems,
+	removeStoredLegacyComponentPanel,
+	removeStoredOutdatedXBValidationDate,
+	removeStoredPreviewBackgroundMode,
+	removeStoredPreviewToolsPanelPage,
+	removeStoredPreviewToolsPanelWidth,
+	removeStoredPullBranch,
+	removeStoredPullMergeStrategy,
+	removeStoredPushBranch,
+	removeStoredShowToolsPanel,
+	removeCompareVersionDialogViewModes,
+	removeViewVersionDialogViewModes
 } from '../../utils/state';
 
 export const preferencesGroups: Array<{
@@ -127,15 +127,15 @@ export const preferencesGroups: Array<{
 				`^craftercms.${props.username}.widgetsAccordion.${props.siteUuid}.[a-zA-Z0-9]+`
 			);
 
-      removeStoredGlobalAppOpenSidebar(props.username);
-      removeStoredGlobalMenuSiteViewPreference(props.username);
-      removeStoredOutdatedXBValidationDate(props.siteId, props.username);
-      removeStoredClipboard(props.siteUuid, props.username);
-      removeStoredPreviewBackgroundMode(props.username);
-      removeStoredBrowseDialogViewMode(props.username);
-      removeStoredItems((key) => widgetsAccordionsKeyRegex.test(key));
-      removeCompareVersionDialogViewModes(props.username);
-      removeViewVersionDialogViewModes(props.username);
-    }
-  }
+			removeStoredGlobalAppOpenSidebar(props.username);
+			removeStoredGlobalMenuSiteViewPreference(props.username);
+			removeStoredOutdatedXBValidationDate(props.siteId, props.username);
+			removeStoredClipboard(props.siteUuid, props.username);
+			removeStoredPreviewBackgroundMode(props.username);
+			removeStoredBrowseDialogViewMode(props.username);
+			removeStoredItems((key) => widgetsAccordionsKeyRegex.test(key));
+			removeCompareVersionDialogViewModes(props.username);
+			removeViewVersionDialogViewModes(props.username);
+		}
+	}
 ];

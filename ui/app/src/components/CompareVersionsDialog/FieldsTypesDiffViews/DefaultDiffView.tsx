@@ -20,12 +20,12 @@ import { DiffViewComponentBaseProps } from '../utils';
 import { DiffEditorProps } from '@monaco-editor/react';
 
 export interface DefaultDiffViewProps extends Pick<DiffViewComponentBaseProps, 'aXml' | 'bXml'> {
-  editorProps?: DiffEditorProps;
+	editorProps?: DiffEditorProps;
 }
 
 export function DefaultDiffView(props: DefaultDiffViewProps) {
-  const { aXml, bXml, editorProps } = props;
-  return <TextDiffView aXml={aXml} bXml={bXml} editorProps={editorProps} />;
+	const { aXml, bXml, editorProps } = props;
+	return <TextDiffView aXml={aXml} bXml={bXml} editorProps={editorProps} />;
 }
 
 export default DefaultDiffView;

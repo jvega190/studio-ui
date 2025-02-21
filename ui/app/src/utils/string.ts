@@ -283,8 +283,8 @@ export function isUUID(str: string): boolean {
  * @returns The number of lines in the text. Returns 0 if the text is empty or undefined.
  */
 export function countLines(text: string): number {
-  if (!text) {
-    return 0;
-  }
-  return text.split('\n').length;
+	if (!text) {
+		return 0;
+	}
+	return text.split('\n').length;
 }

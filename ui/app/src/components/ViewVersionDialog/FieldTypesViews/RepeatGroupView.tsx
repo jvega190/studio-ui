@@ -28,44 +28,44 @@ import { ViewComponentBaseProps } from '../utils';
 export interface RepeatGroupViewProps extends ViewComponentBaseProps {}
 
 export function RepeatGroupView(props: RepeatGroupViewProps) {
-  const { xml, field } = props;
-  const [, contextApiRef] = useVersionsDialogContext();
-  const contentTypes = useContentTypes();
-  const content = xml
-    ? parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {})
-    : [];
+	const { xml, field } = props;
+	const [, contextApiRef] = useVersionsDialogContext();
+	const contentTypes = useContentTypes();
+	const content = xml
+		? parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {})
+		: [];
 
-  const onSelectStateItem = (item: ContentInstance) => {
-    const fields = field.fields;
+	const onSelectStateItem = (item: ContentInstance) => {
+		const fields = field.fields;
 
-    contextApiRef.current.setViewSlideOutState({
-      open: true,
-      data: {
-        content: item,
-        xml,
-        fields
-      },
-      title: field.name,
-      subtitle: <FormattedMessage defaultMessage="{fieldId} - Repeat Group" values={{ fieldId: field.id }} />,
-      onClose: () => contextApiRef.current.closeSlideOuts()
-    });
-  };
+		contextApiRef.current.setViewSlideOutState({
+			open: true,
+			data: {
+				content: item,
+				xml,
+				fields
+			},
+			title: field.name,
+			subtitle: <FormattedMessage defaultMessage="{fieldId} - Repeat Group" values={{ fieldId: field.id }} />,
+			onClose: () => contextApiRef.current.closeSlideOuts()
+		});
+	};
 
-  return (
-    <Box component="section" sx={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
-      <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '1100px', gap: '10px' }}>
-        {content?.map((item, index) => (
-          <DiffCollectionItem
-            key={index}
-            state="unchanged"
-            primaryText={<FormattedMessage defaultMessage="Item {index}" values={{ index }} />}
-            onSelect={() => onSelectStateItem(item)}
-            hideState
-          />
-        ))}
-      </Box>
-    </Box>
-  );
+	return (
+		<Box component="section" sx={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
+			<Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '1100px', gap: '10px' }}>
+				{content?.map((item, index) => (
+					<DiffCollectionItem
+						key={index}
+						state="unchanged"
+						primaryText={<FormattedMessage defaultMessage="Item {index}" values={{ index }} />}
+						onSelect={() => onSelectStateItem(item)}
+						hideState
+					/>
+				))}
+			</Box>
+		</Box>
+	);
 }
 
 export default RepeatGroupView;

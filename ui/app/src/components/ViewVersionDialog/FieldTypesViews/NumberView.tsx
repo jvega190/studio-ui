@@ -24,10 +24,10 @@ import { parseElementByContentType } from '../../../utils/content';
 export interface NumberViewProps extends ViewComponentBaseProps {}
 
 export function NumberView(props: NumberViewProps) {
-  const { xml, field } = props;
-  const contentTypes = useContentTypes();
-  const content = xml && parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {});
-  return <Box sx={{ textAlign: 'center' }}>{`${content}`}</Box>;
+	const { xml, field } = props;
+	const contentTypes = useContentTypes();
+	const content = xml && parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {});
+	return <Box sx={{ textAlign: 'center' }}>{`${content}`}</Box>;
 }
 
 export default NumberView;

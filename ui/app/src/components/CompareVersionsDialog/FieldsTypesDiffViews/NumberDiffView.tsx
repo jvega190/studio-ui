@@ -22,13 +22,13 @@ import { DiffViewComponentBaseProps } from '../utils';
 export interface NumberDiffViewProps extends DiffViewComponentBaseProps {}
 
 export function NumberDiffView(props: NumberDiffViewProps) {
-  const { aXml, bXml, field } = props;
-  return (
-    <DiffViewLayout
-      aXml={aXml}
-      bXml={bXml}
-      field={field}
-      renderContent={(xml) => <NumberView xml={xml} field={field} />}
-    />
-  );
+	const { aXml, bXml, field } = props;
+	return (
+		<DiffViewLayout
+			aXml={aXml}
+			bXml={bXml}
+			field={field}
+			renderContent={(xml) => <NumberView xml={xml} field={field} />}
+		/>
+	);
 }

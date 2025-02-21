@@ -17,12 +17,12 @@
 import { defineMessages } from 'react-intl';
 
 export const translations = defineMessages({
-  compareXml: {
-    defaultMessage: 'XML'
-  },
-  compareContent: {
-    defaultMessage: 'Content'
-  }
+	compareXml: {
+		defaultMessage: 'XML'
+	},
+	compareContent: {
+		defaultMessage: 'Content'
+	}
 });
 
 export default translations;

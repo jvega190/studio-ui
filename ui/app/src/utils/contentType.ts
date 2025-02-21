@@ -25,18 +25,18 @@ import { Theme } from '@mui/material';
 import { defineMessages, IntlShape } from 'react-intl';
 
 const messages = defineMessages({
-  'display-template': {
-    defaultMessage: 'Display template'
-  },
-  'no-template-required': {
-    defaultMessage: 'No template required'
-  },
-  lastModifiedDate: {
-    defaultMessage: 'Last modified date'
-  },
-  createdDate: {
-    defaultMessage: 'Created date'
-  }
+	'display-template': {
+		defaultMessage: 'Display template'
+	},
+	'no-template-required': {
+		defaultMessage: 'No template required'
+	},
+	lastModifiedDate: {
+		defaultMessage: 'Last modified date'
+	},
+	createdDate: {
+		defaultMessage: 'Created date'
+	}
 });
 
 // TODO: Not used.
@@ -204,27 +204,27 @@ export function getAvatarWithIconColors(
  * @returns An array of `ContentTypeField` objects representing the internal fields.
  */
 export function getStudioContentInternalFields(formatMessage: IntlShape['formatMessage']): ContentTypeField[] {
-  return [
-    {
-      id: 'no-template-required',
-      name: formatMessage(messages['no-template-required']),
-      type: 'boolean',
-      validations: {},
-      defaultValue: ''
-    },
-    {
-      id: 'lastModifiedDate',
-      name: formatMessage(messages['lastModifiedDate']),
-      type: 'date-time',
-      validations: {},
-      defaultValue: ''
-    },
-    {
-      id: 'createdDate',
-      name: formatMessage(messages['createdDate']),
-      type: 'date-time',
-      validations: {},
-      defaultValue: ''
-    }
-  ];
+	return [
+		{
+			id: 'no-template-required',
+			name: formatMessage(messages['no-template-required']),
+			type: 'boolean',
+			validations: {},
+			defaultValue: ''
+		},
+		{
+			id: 'lastModifiedDate',
+			name: formatMessage(messages['lastModifiedDate']),
+			type: 'date-time',
+			validations: {},
+			defaultValue: ''
+		},
+		{
+			id: 'createdDate',
+			name: formatMessage(messages['createdDate']),
+			type: 'date-time',
+			validations: {},
+			defaultValue: ''
+		}
+	];
 }

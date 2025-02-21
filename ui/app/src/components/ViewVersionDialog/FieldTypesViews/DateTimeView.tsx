@@ -29,27 +29,27 @@ import { FormattedMessage } from 'react-intl';
 export interface DateTimeViewProps extends ViewComponentBaseProps {}
 
 export function DateTimeView(props: DateTimeViewProps) {
-  const { xml, field } = props;
-  const contentTypes = useContentTypes();
-  const content = xml
-    ? parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {})
-    : '';
-  const locale = useLocale();
-  const isDateValid = !isNaN(Date.parse(content));
-  return (
-    <Box sx={{ textAlign: 'center' }}>
-      <Tooltip title={content}>
-        <Typography>
-          {content &&
-            (isDateValid ? (
-              asLocalizedDateTime(new Date(content).getTime(), locale.localeCode, locale.dateTimeFormatOptions)
-            ) : (
-              <FormattedMessage defaultMessage="Invalid date format." />
-            ))}
-        </Typography>
-      </Tooltip>
-    </Box>
-  );
+	const { xml, field } = props;
+	const contentTypes = useContentTypes();
+	const content = xml
+		? parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {})
+		: '';
+	const locale = useLocale();
+	const isDateValid = !isNaN(Date.parse(content));
+	return (
+		<Box sx={{ textAlign: 'center' }}>
+			<Tooltip title={content}>
+				<Typography>
+					{content &&
+						(isDateValid ? (
+							asLocalizedDateTime(new Date(content).getTime(), locale.localeCode, locale.dateTimeFormatOptions)
+						) : (
+							<FormattedMessage defaultMessage="Invalid date format." />
+						))}
+				</Typography>
+			</Tooltip>
+		</Box>
+	);
 }
 
 export default DateTimeView;

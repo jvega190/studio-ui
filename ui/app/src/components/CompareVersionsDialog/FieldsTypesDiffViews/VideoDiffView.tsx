@@ -22,15 +22,15 @@ import { DiffViewComponentBaseProps } from '../utils';
 export interface VideoDiffViewProps extends DiffViewComponentBaseProps {}
 
 export function VideoDiffView(props: VideoDiffViewProps) {
-  const { aXml, bXml, field } = props;
-  return (
-    <DiffViewLayout
-      aXml={aXml}
-      bXml={bXml}
-      field={field}
-      renderContent={(xml) => <VideoView xml={xml} field={field} />}
-    />
-  );
+	const { aXml, bXml, field } = props;
+	return (
+		<DiffViewLayout
+			aXml={aXml}
+			bXml={bXml}
+			field={field}
+			renderContent={(xml) => <VideoView xml={xml} field={field} />}
+		/>
+	);
 }
 
 export default VideoDiffView;

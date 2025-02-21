@@ -27,19 +27,19 @@ import { parseElementByContentType } from '../../../utils/content';
 export interface TimeViewProps extends ViewComponentBaseProps {}
 
 export function TimeView(props: TimeViewProps) {
-  const { xml, field } = props;
-  const contentTypes = useContentTypes();
-  const content = xml
-    ? parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {})
-    : '';
-  const locale = useLocale();
-  return (
-    <Box sx={{ textAlign: 'center' }}>
-      <Typography>
-        {content ? convertUtcTimeToTimezone(content, locale.dateTimeFormatOptions?.timeZone) : ''}
-      </Typography>
-    </Box>
-  );
+	const { xml, field } = props;
+	const contentTypes = useContentTypes();
+	const content = xml
+		? parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {})
+		: '';
+	const locale = useLocale();
+	return (
+		<Box sx={{ textAlign: 'center' }}>
+			<Typography>
+				{content ? convertUtcTimeToTimezone(content, locale.dateTimeFormatOptions?.timeZone) : ''}
+			</Typography>
+		</Box>
+	);
 }
 
 export default TimeView;

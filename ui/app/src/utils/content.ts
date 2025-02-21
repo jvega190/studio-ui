@@ -355,35 +355,35 @@ export function parseSandBoxItemToDetailedItem(
 }
 
 export const systemPropsList = [
-  'orderDefault_f',
-  'savedAsDraft',
-  'content-type',
-  'display-template',
-  'no-template-required',
-  'merge-strategy',
-  'objectGroupId',
-  'objectId',
-  'file-name',
-  'folder-name',
-  'internal-name',
-  'disabled',
-  'createdDate',
-  'createdDate_dt',
-  'lastModifiedDate',
-  'lastModifiedDate_dt'
+	'orderDefault_f',
+	'savedAsDraft',
+	'content-type',
+	'display-template',
+	'no-template-required',
+	'merge-strategy',
+	'objectGroupId',
+	'objectId',
+	'file-name',
+	'folder-name',
+	'internal-name',
+	'disabled',
+	'createdDate',
+	'createdDate_dt',
+	'lastModifiedDate',
+	'lastModifiedDate_dt'
 ];
 
 export const systemPropMap = {
-  fileName: 'fileName',
-  placeInNav: 'placeInNav',
-  internalName: 'label',
-  'content-type': 'contentTypeId',
-  createdDate: 'dateCreated',
-  createdDate_dt: 'dateCreated',
-  lastModifiedDate: 'dateModified',
-  lastModifiedDate_dt: 'dateModified',
-  disabled: 'disabled',
-  orderDefault_f: 'orderInNav'
+	fileName: 'fileName',
+	placeInNav: 'placeInNav',
+	internalName: 'label',
+	'content-type': 'contentTypeId',
+	createdDate: 'dateCreated',
+	createdDate_dt: 'dateCreated',
+	lastModifiedDate: 'dateModified',
+	lastModifiedDate_dt: 'dateModified',
+	disabled: 'disabled',
+	orderDefault_f: 'orderInNav'
 };
 
 /**
@@ -400,81 +400,81 @@ export function parseContentXML(
 	instanceLookup: LookupTable<ContentInstance>,
 	unflattenedPaths?: LookupTable<ContentInstance>
 ): ContentInstance {
-  let id = nnou(doc) ? getInnerHtml(doc.querySelector(':scope > objectId')) : null;
-  if (id === null && !/^[a-f\d]{4}(?:[a-f\d]{4}-){4}[a-f\d]{12}$/i.test((id = fileNameFromPath(path)))) {
-    // If the id is not a guid by now, then is simply not available at this time.
-    id = null;
-  }
-  const contentTypeId = nnou(doc) ? getInnerHtml(doc.querySelector(':scope > content-type')) : null;
-  const current: ContentInstanceBase = {
-    craftercms: {
-      id,
-      path,
-      label: null,
-      dateCreated: null,
-      dateModified: null,
-      contentTypeId,
-      disabled: false,
-      sourceMap: {}
-    }
-  };
-  // We're assuming that contentTypeId is null when the content is not flattened
-  if (contentTypeId === null && unflattenedPaths) {
-    unflattenedPaths[path] = current;
-  }
-  if (nnou(doc)) {
-    current.craftercms.label = getInnerHtml(
-      doc.querySelector(':scope > internal-name') ?? doc.querySelector(':scope > file-name'),
-      { applyLegacyUnescaping: true }
-    );
-    current.craftercms.dateCreated = getInnerHtml(doc.querySelector(':scope > createdDate_dt'));
-    current.craftercms.dateModified = getInnerHtml(doc.querySelector(':scope > lastModifiedDate_dt'));
-    current.craftercms.disabled = getInnerHtml(doc.querySelector(':scope > disabled'), { trim: true }) === 'true';
-  }
-  id && (instanceLookup[id] = current);
-  if (nnou(doc)) {
-    Array.from(doc.documentElement.children).forEach((element: Element) => {
-      const tagName = element.tagName;
-      if (!systemPropsList.includes(tagName)) {
-        let sourceContentTypeId;
-        const source = element.getAttribute('crafter-source');
-        if (source) {
-          current.craftercms.sourceMap[tagName] = source;
-          sourceContentTypeId = element.getAttribute('crafter-source-content-type-id');
-          if (!sourceContentTypeId) {
-            console.error(
-              `[parseContentXML] No "crafter-source-content-type-id" attribute found together with "crafter-source".`
-            );
-          }
-        }
-        const field = contentTypesLookup[sourceContentTypeId ?? contentTypeId]?.fields?.[tagName];
-        if (!field) {
-          // date-time control handles the timezone field using {controlName}_tz format. So if the field without `tz` is
-          // found in the content type, we can ignore the `tz` field (and don't log an error).
-          let isTimezoneField = false;
-          if (tagName.endsWith('_tz')) {
-            const withoutTz = tagName.replace(/_tz$/, '');
-            isTimezoneField = Boolean(contentTypesLookup[sourceContentTypeId ?? contentTypeId]?.fields?.[withoutTz]);
-          }
-          if (!isTimezoneField) {
-            console.error(
-              `[parseContentXML] Field "${tagName}" was not found on "${
-                sourceContentTypeId ?? contentTypeId
-              }" content type. "${source ?? path}" may have stale/outdated content properties.`
-            );
-          }
-        }
-        current[tagName] = parseElementByContentType(
-          element,
-          field,
-          contentTypesLookup,
-          instanceLookup,
-          unflattenedPaths
-        );
-      }
-    });
-  }
-  return current;
+	let id = nnou(doc) ? getInnerHtml(doc.querySelector(':scope > objectId')) : null;
+	if (id === null && !/^[a-f\d]{4}(?:[a-f\d]{4}-){4}[a-f\d]{12}$/i.test((id = fileNameFromPath(path)))) {
+		// If the id is not a guid by now, then is simply not available at this time.
+		id = null;
+	}
+	const contentTypeId = nnou(doc) ? getInnerHtml(doc.querySelector(':scope > content-type')) : null;
+	const current: ContentInstanceBase = {
+		craftercms: {
+			id,
+			path,
+			label: null,
+			dateCreated: null,
+			dateModified: null,
+			contentTypeId,
+			disabled: false,
+			sourceMap: {}
+		}
+	};
+	// We're assuming that contentTypeId is null when the content is not flattened
+	if (contentTypeId === null && unflattenedPaths) {
+		unflattenedPaths[path] = current;
+	}
+	if (nnou(doc)) {
+		current.craftercms.label = getInnerHtml(
+			doc.querySelector(':scope > internal-name') ?? doc.querySelector(':scope > file-name'),
+			{ applyLegacyUnescaping: true }
+		);
+		current.craftercms.dateCreated = getInnerHtml(doc.querySelector(':scope > createdDate_dt'));
+		current.craftercms.dateModified = getInnerHtml(doc.querySelector(':scope > lastModifiedDate_dt'));
+		current.craftercms.disabled = getInnerHtml(doc.querySelector(':scope > disabled'), { trim: true }) === 'true';
+	}
+	id && (instanceLookup[id] = current);
+	if (nnou(doc)) {
+		Array.from(doc.documentElement.children).forEach((element: Element) => {
+			const tagName = element.tagName;
+			if (!systemPropsList.includes(tagName)) {
+				let sourceContentTypeId;
+				const source = element.getAttribute('crafter-source');
+				if (source) {
+					current.craftercms.sourceMap[tagName] = source;
+					sourceContentTypeId = element.getAttribute('crafter-source-content-type-id');
+					if (!sourceContentTypeId) {
+						console.error(
+							`[parseContentXML] No "crafter-source-content-type-id" attribute found together with "crafter-source".`
+						);
+					}
+				}
+				const field = contentTypesLookup[sourceContentTypeId ?? contentTypeId]?.fields?.[tagName];
+				if (!field) {
+					// date-time control handles the timezone field using {controlName}_tz format. So if the field without `tz` is
+					// found in the content type, we can ignore the `tz` field (and don't log an error).
+					let isTimezoneField = false;
+					if (tagName.endsWith('_tz')) {
+						const withoutTz = tagName.replace(/_tz$/, '');
+						isTimezoneField = Boolean(contentTypesLookup[sourceContentTypeId ?? contentTypeId]?.fields?.[withoutTz]);
+					}
+					if (!isTimezoneField) {
+						console.error(
+							`[parseContentXML] Field "${tagName}" was not found on "${
+								sourceContentTypeId ?? contentTypeId
+							}" content type. "${source ?? path}" may have stale/outdated content properties.`
+						);
+					}
+				}
+				current[tagName] = parseElementByContentType(
+					element,
+					field,
+					contentTypesLookup,
+					instanceLookup,
+					unflattenedPaths
+				);
+			}
+		});
+	}
+	return current;
 }
 
 /**
@@ -485,11 +485,11 @@ export function parseContentXML(
  * unflattenedPaths {LookupTable<ContentInstance>} A lookup table directly completed/mutated by this function indexed by path of those objects that are incomplete/unflattened
  */
 export function parseElementByContentType(
-  element: Element,
-  field: ContentTypeField,
-  contentTypesLookup: LookupTable<ContentType>,
-  instanceLookup: LookupTable<ContentInstance>,
-  unflattenedPaths?: LookupTable<ContentInstance>
+	element: Element,
+	field: ContentTypeField,
+	contentTypesLookup: LookupTable<ContentType>,
+	instanceLookup: LookupTable<ContentInstance>,
+	unflattenedPaths?: LookupTable<ContentInstance>
 ) {
 	if (!field) {
 		return getInnerHtml(element) ?? '';
@@ -1235,41 +1235,41 @@ export function generatePlaceholderImageDataUrl(attributes?: Partial<GeneratePla
  * @returns The value of the property from the model.
  * */
 export function getContentInstanceValueFromProp(model: ContentInstance, prop: string) {
-  const systemProp = systemPropMap[prop];
-  if (systemProp) {
-    if (systemProp === 'fileName') {
-      return getContentInstanceFileName(model);
-    } else {
-      return model.craftercms[systemProp];
-    }
-  } else {
-    return model[prop];
-  }
+	const systemProp = systemPropMap[prop];
+	if (systemProp) {
+		if (systemProp === 'fileName') {
+			return getContentInstanceFileName(model);
+		} else {
+			return model.craftercms[systemProp];
+		}
+	} else {
+		return model[prop];
+	}
 }
 
 export const systemPropToXmlMap = {
-  fileName: 'file-name',
-  internalName: 'internal-name'
+	fileName: 'file-name',
+	internalName: 'internal-name'
 };
 
 export function getContentInstanceXmlValueFromProp(xml: string, prop: string): string {
-  const selectionProp = systemPropToXmlMap[prop] ?? prop;
-  const doc = fromString(xml).querySelector(selectionProp);
-  return doc ? serialize(doc) : '';
+	const selectionProp = systemPropToXmlMap[prop] ?? prop;
+	const doc = fromString(xml).querySelector(selectionProp);
+	return doc ? serialize(doc) : '';
 }
 
 export function getContentFileNameFromPath(path: string): string {
-  let fileName = path.replace('/site/website', '');
+	let fileName = path.replace('/site/website', '');
 
-  if (path.endsWith('/index.xml')) {
-    fileName = fileName.replace('/index.xml', '');
-    return fileName.substring(fileName.lastIndexOf('/')) || '/';
-  }
+	if (path.endsWith('/index.xml')) {
+		fileName = fileName.replace('/index.xml', '');
+		return fileName.substring(fileName.lastIndexOf('/')) || '/';
+	}
 
-  if (path.includes('.xml')) {
-    return fileName.substring(fileName.lastIndexOf('/') + 1).replace('.xml', '');
-  }
-  return fileName;
+	if (path.includes('.xml')) {
+		return fileName.substring(fileName.lastIndexOf('/') + 1).replace('.xml', '');
+	}
+	return fileName;
 }
 
 /**
@@ -1279,29 +1279,29 @@ export function getContentFileNameFromPath(path: string): string {
  * @returns The file name extracted from the model's path, or null if the path is not defined.
  */
 export function getContentInstanceFileName(model: ContentInstance) {
-  const path = model.craftercms.path;
-  if (!path) return null;
+	const path = model.craftercms.path;
+	if (!path) return null;
 
-  return getContentFileNameFromPath(path);
+	return getContentFileNameFromPath(path);
 }
 
 export const mockContentInstance = {
-  craftercms: {
-    id: null,
-    path: null,
-    label: null,
-    dateCreated: null,
-    dateModified: null,
-    contentTypeId: null,
-    disabled: false
-  }
+	craftercms: {
+		id: null,
+		path: null,
+		label: null,
+		dateCreated: null,
+		dateModified: null,
+		contentTypeId: null,
+		disabled: false
+	}
 };
 
 export const isComparableAsset = (item) => {
-  return (
-    item?.systemType === 'asset' &&
-    (isEditableAsset(item.path) || isImage(item.path) || isVideo(item) || isPdfDocument(item.mimeType))
-  );
+	return (
+		item?.systemType === 'asset' &&
+		(isEditableAsset(item.path) || isImage(item.path) || isVideo(item) || isPdfDocument(item.mimeType))
+	);
 };
 
 // region Package presence checker functions

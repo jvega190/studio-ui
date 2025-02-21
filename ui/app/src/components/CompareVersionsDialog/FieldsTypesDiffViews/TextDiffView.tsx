@@ -26,47 +26,47 @@ import useContentTypes from '../../../hooks/useContentTypes';
 import { textViewLanguageMap } from '../../ViewVersionDialog/utils';
 
 export interface TextDiffViewProps extends Pick<DiffViewComponentBaseProps, 'aXml' | 'bXml'> {
-  field?: ContentTypeField;
-  editorProps?: DiffEditorProps;
+	field?: ContentTypeField;
+	editorProps?: DiffEditorProps;
 }
 
 export function TextDiffView(props: TextDiffViewProps) {
-  const { aXml, bXml, field, editorProps } = props;
-  const contentTypes = useContentTypes();
-  const contentA =
-    aXml && field ? parseElementByContentType(fromString(aXml).querySelector(field.id), field, contentTypes, {}) : aXml;
-  const contentB =
-    bXml && field ? parseElementByContentType(fromString(bXml).querySelector(field.id), field, contentTypes, {}) : bXml;
-  const [{ fieldsViewState }] = useVersionsDialogContext();
-  const cleanText = field && fieldsViewState[field.id]?.cleanText;
-  const originalContent = cleanText ? removeTags(contentA ?? '') : contentA;
-  const modifiedContent = cleanText ? removeTags(contentB ?? '') : contentB;
-  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
-  const language = textViewLanguageMap[field?.type] || 'xml';
+	const { aXml, bXml, field, editorProps } = props;
+	const contentTypes = useContentTypes();
+	const contentA =
+		aXml && field ? parseElementByContentType(fromString(aXml).querySelector(field.id), field, contentTypes, {}) : aXml;
+	const contentB =
+		bXml && field ? parseElementByContentType(fromString(bXml).querySelector(field.id), field, contentTypes, {}) : bXml;
+	const [{ fieldsViewState }] = useVersionsDialogContext();
+	const cleanText = field && fieldsViewState[field.id]?.cleanText;
+	const originalContent = cleanText ? removeTags(contentA ?? '') : contentA;
+	const modifiedContent = cleanText ? removeTags(contentB ?? '') : contentB;
+	const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+	const language = textViewLanguageMap[field?.type] || 'xml';
 
-  const monacoOptions: DiffEditorProps['options'] = {
-    readOnly: true,
-    automaticLayout: true,
-    fontSize: 14,
-    contextmenu: false,
-    scrollBeyondLastLine: false,
-    renderWhitespace: 'none',
-    renderIndicators: false,
-    scrollbar: { alwaysConsumeMouseWheel: false },
-    ...editorProps?.options
-  };
+	const monacoOptions: DiffEditorProps['options'] = {
+		readOnly: true,
+		automaticLayout: true,
+		fontSize: 14,
+		contextmenu: false,
+		scrollBeyondLastLine: false,
+		renderWhitespace: 'none',
+		renderIndicators: false,
+		scrollbar: { alwaysConsumeMouseWheel: false },
+		...editorProps?.options
+	};
 
-  return (
-    <DiffEditor
-      height="100%"
-      language={language}
-      original={originalContent}
-      modified={modifiedContent}
-      theme={prefersDarkMode ? 'vs-dark' : 'vs'}
-      {...editorProps}
-      options={monacoOptions}
-    />
-  );
+	return (
+		<DiffEditor
+			height="100%"
+			language={language}
+			original={originalContent}
+			modified={modifiedContent}
+			theme={prefersDarkMode ? 'vs-dark' : 'vs'}
+			{...editorProps}
+			options={monacoOptions}
+		/>
+	);
 }
 
 export default TextDiffView;

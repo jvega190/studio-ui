@@ -22,49 +22,49 @@ import { LookupTable } from '../../models';
 import ContentType from '../../models/ContentType';
 
 export interface FieldViewState {
-  compareXml: boolean;
-  cleanText: boolean;
-  compareMode: boolean;
-  compareModeDisabled: boolean;
-  monacoOptions: DiffEditorProps['options'];
+	compareXml: boolean;
+	cleanText: boolean;
+	compareMode: boolean;
+	compareModeDisabled: boolean;
+	monacoOptions: DiffEditorProps['options'];
 }
 
 export interface VersionsDialogContextProps {
-  compareSlideOutState?: CompareVersionsDialogProps & { compareXml: boolean };
-  viewSlideOutState: ViewVersionDialogProps & { showXml: boolean };
-  fieldsViewState: LookupTable<FieldViewState>;
-  contentType: ContentType;
-  enableDialogActions: boolean;
+	compareSlideOutState?: CompareVersionsDialogProps & { compareXml: boolean };
+	viewSlideOutState: ViewVersionDialogProps & { showXml: boolean };
+	fieldsViewState: LookupTable<FieldViewState>;
+	contentType: ContentType;
+	enableDialogActions: boolean;
 }
 
 export const initialFieldViewState = {
-  compareXml: false,
-  cleanText: false,
-  compareMode: false,
-  compareModeDisabled: false,
-  monacoOptions: {
-    ignoreTrimWhitespace: false,
-    renderSideBySide: true,
-    diffWordWrap: 'off' as DiffEditorProps['options']['diffWordWrap'],
-    wordWrap: 'on' as DiffEditorProps['options']['wordWrap']
-  }
+	compareXml: false,
+	cleanText: false,
+	compareMode: false,
+	compareModeDisabled: false,
+	monacoOptions: {
+		ignoreTrimWhitespace: false,
+		renderSideBySide: true,
+		diffWordWrap: 'off' as DiffEditorProps['options']['diffWordWrap'],
+		wordWrap: 'on' as DiffEditorProps['options']['wordWrap']
+	}
 };
 
 export const dialogInitialState: VersionsDialogContextProps = {
-  compareSlideOutState: { open: false, isFetching: false, error: null, compareXml: false },
-  viewSlideOutState: { open: false, isFetching: false, error: null, showXml: false },
-  fieldsViewState: {},
-  contentType: null,
-  enableDialogActions: false
+	compareSlideOutState: { open: false, isFetching: false, error: null, compareXml: false },
+	viewSlideOutState: { open: false, isFetching: false, error: null, showXml: false },
+	fieldsViewState: {},
+	contentType: null,
+	enableDialogActions: false
 };
 
 export interface VersionsDialogContextApi {
-  setState: (state: Partial<VersionsDialogContextProps>) => void;
-  setCompareSlideOutState: (props: Partial<CompareVersionsDialogProps>) => void;
-  setViewSlideOutState: (props: Partial<ViewVersionDialogProps>) => void;
-  setFieldViewState: (fieldId: string, viewState: Partial<FieldViewState>) => void;
-  setFieldViewEditorOptionsState: (fieldId: string, options: DiffEditorProps['options']) => void;
-  closeSlideOuts: () => void;
+	setState: (state: Partial<VersionsDialogContextProps>) => void;
+	setCompareSlideOutState: (props: Partial<CompareVersionsDialogProps>) => void;
+	setViewSlideOutState: (props: Partial<ViewVersionDialogProps>) => void;
+	setFieldViewState: (fieldId: string, viewState: Partial<FieldViewState>) => void;
+	setFieldViewEditorOptionsState: (fieldId: string, options: DiffEditorProps['options']) => void;
+	closeSlideOuts: () => void;
 }
 
 export type VersionsDialogContextType = [VersionsDialogContextProps, MutableRefObject<VersionsDialogContextApi>];
@@ -72,9 +72,9 @@ export type VersionsDialogContextType = [VersionsDialogContextProps, MutableRefO
 export const VersionsDialogContext = createContext<VersionsDialogContextType>(null);
 
 export function useVersionsDialogContext() {
-  const context = useContext(VersionsDialogContext);
-  if (!context) {
-    throw new Error('useVersionsDialogContext must be used within a VersionsDialogContext');
-  }
-  return context;
+	const context = useContext(VersionsDialogContext);
+	if (!context) {
+		throw new Error('useVersionsDialogContext must be used within a VersionsDialogContext');
+	}
+	return context;
 }

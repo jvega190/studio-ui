@@ -30,74 +30,74 @@ import { DiffEditorProps } from '@monaco-editor/react';
 import ContentInstance from '../../models/ContentInstance';
 
 export interface CompareFieldPanelProps {
-  a: SelectionContentVersion;
-  b: SelectionContentVersion;
-  field: ContentTypeField;
-  dynamicHeight?: boolean;
-  onSelectField?(field: ContentTypeField): void;
+	a: SelectionContentVersion;
+	b: SelectionContentVersion;
+	field: ContentTypeField;
+	dynamicHeight?: boolean;
+	onSelectField?(field: ContentTypeField): void;
 }
 
 export interface DiffComponentProps extends Pick<DiffViewComponentBaseProps, 'aXml' | 'bXml' | 'field'> {
-  editorProps?: DiffEditorProps;
+	editorProps?: DiffEditorProps;
 }
 
 export function CompareFieldPanel(props: CompareFieldPanelProps) {
-  const { a, b, field, onSelectField, dynamicHeight } = props;
-  const [{ fieldsViewState }] = useVersionsDialogContext();
-  const fieldType = field.type;
-  const versionAXmlDoc = fromString(a.xml);
-  const versionBXmlDoc = fromString(b.xml);
-  const versionAFieldDoc =
-    versionAXmlDoc.querySelector(`page > ${field.id}`) ??
-    versionAXmlDoc.querySelector(`component > ${field.id}`) ??
-    versionAXmlDoc.querySelector(`item > ${field.id}`);
-  const versionBFieldDoc =
-    versionBXmlDoc.querySelector(`page > ${field.id}`) ??
-    versionBXmlDoc.querySelector(`component > ${field.id}`) ??
-    versionBXmlDoc.querySelector(`item > ${field.id}`);
-  const versionAFieldXml = versionAFieldDoc ? serialize(versionAFieldDoc) : '';
-  const versionBFieldXml = versionBFieldDoc ? serialize(versionBFieldDoc) : '';
-  const unchanged = versionAFieldXml === versionBFieldXml;
-  const contentA = getContentInstanceValueFromProp(a.content as ContentInstance, field.id);
-  const longerXmlContent = versionAFieldXml.length > versionBFieldXml.length ? versionAFieldXml : versionBFieldXml;
-  const monacoEditorHeight = dynamicHeight ? (countLines(longerXmlContent) < 15 ? '200px' : '600px') : '100%';
-  const DiffComponent = typesDiffMap[fieldType] ?? DefaultDiffView;
-  const viewState = fieldsViewState[field.id] ?? initialFieldViewState;
-  const { compareXml, monacoOptions } = viewState;
-  const diffComponentProps: DiffComponentProps = {
-    aXml: versionAFieldXml,
-    bXml: versionBFieldXml,
-    field,
-    editorProps: { options: monacoOptions, height: monacoEditorHeight }
-  };
+	const { a, b, field, onSelectField, dynamicHeight } = props;
+	const [{ fieldsViewState }] = useVersionsDialogContext();
+	const fieldType = field.type;
+	const versionAXmlDoc = fromString(a.xml);
+	const versionBXmlDoc = fromString(b.xml);
+	const versionAFieldDoc =
+		versionAXmlDoc.querySelector(`page > ${field.id}`) ??
+		versionAXmlDoc.querySelector(`component > ${field.id}`) ??
+		versionAXmlDoc.querySelector(`item > ${field.id}`);
+	const versionBFieldDoc =
+		versionBXmlDoc.querySelector(`page > ${field.id}`) ??
+		versionBXmlDoc.querySelector(`component > ${field.id}`) ??
+		versionBXmlDoc.querySelector(`item > ${field.id}`);
+	const versionAFieldXml = versionAFieldDoc ? serialize(versionAFieldDoc) : '';
+	const versionBFieldXml = versionBFieldDoc ? serialize(versionBFieldDoc) : '';
+	const unchanged = versionAFieldXml === versionBFieldXml;
+	const contentA = getContentInstanceValueFromProp(a.content as ContentInstance, field.id);
+	const longerXmlContent = versionAFieldXml.length > versionBFieldXml.length ? versionAFieldXml : versionBFieldXml;
+	const monacoEditorHeight = dynamicHeight ? (countLines(longerXmlContent) < 15 ? '200px' : '600px') : '100%';
+	const DiffComponent = typesDiffMap[fieldType] ?? DefaultDiffView;
+	const viewState = fieldsViewState[field.id] ?? initialFieldViewState;
+	const { compareXml, monacoOptions } = viewState;
+	const diffComponentProps: DiffComponentProps = {
+		aXml: versionAFieldXml,
+		bXml: versionBFieldXml,
+		field,
+		editorProps: { options: monacoOptions, height: monacoEditorHeight }
+	};
 
-  return (
-    <Box height="calc(100% - 70px)" display="flex" flexDirection="column">
-      {unchanged ? (
-        <ContentFieldView
-          content={contentA}
-          field={field}
-          xml={a.xml}
-          onSelectField={onSelectField}
-          dynamicHeight={dynamicHeight}
-        />
-      ) : (
-        <>
-          {compareXml ? (
-            <TextDiffView
-              aXml={versionAFieldXml}
-              bXml={versionBFieldXml}
-              editorProps={diffComponentProps.editorProps}
-            />
-          ) : (
-            <ErrorBoundary key={field.id}>
-              <DiffComponent {...diffComponentProps} />
-            </ErrorBoundary>
-          )}
-        </>
-      )}
-    </Box>
-  );
+	return (
+		<Box height="calc(100% - 70px)" display="flex" flexDirection="column">
+			{unchanged ? (
+				<ContentFieldView
+					content={contentA}
+					field={field}
+					xml={a.xml}
+					onSelectField={onSelectField}
+					dynamicHeight={dynamicHeight}
+				/>
+			) : (
+				<>
+					{compareXml ? (
+						<TextDiffView
+							aXml={versionAFieldXml}
+							bXml={versionBFieldXml}
+							editorProps={diffComponentProps.editorProps}
+						/>
+					) : (
+						<ErrorBoundary key={field.id}>
+							<DiffComponent {...diffComponentProps} />
+						</ErrorBoundary>
+					)}
+				</>
+			)}
+		</Box>
+	);
 }
 
 export default CompareFieldPanel;

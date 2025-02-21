@@ -24,56 +24,56 @@ import AccordionDetails from '@mui/material/AccordionDetails';
 import { ContentTypeField } from '../../models';
 
 export interface CompareFieldPanelAccordionProps {
-  field: ContentTypeField;
-  details: React.ReactNode;
-  selected: boolean;
-  fieldRef: RefObject<HTMLDivElement>;
-  summary?: React.ReactNode;
+	field: ContentTypeField;
+	details: React.ReactNode;
+	selected: boolean;
+	fieldRef: RefObject<HTMLDivElement>;
+	summary?: React.ReactNode;
 }
 
 export function FieldAccordionPanel(props: CompareFieldPanelAccordionProps) {
-  const { fieldRef, selected, summary, details } = props;
-  const [expanded, setExpanded] = useState<boolean>(true);
+	const { fieldRef, selected, summary, details } = props;
+	const [expanded, setExpanded] = useState<boolean>(true);
 
-  useEffect(() => {
-    if (selected) {
-      setExpanded(true);
-    }
-  }, [selected]);
+	useEffect(() => {
+		if (selected) {
+			setExpanded(true);
+		}
+	}, [selected]);
 
-  return (
-    <Accordion
-      ref={fieldRef}
-      expanded={expanded}
-      onChange={() => setExpanded(!expanded)}
-      slotProps={{ transition: { mountOnEnter: true } }}
-      sx={{
-        margin: 0,
-        border: 0,
-        boxShadow: 'none',
-        background: 'none',
-        '&.Mui-expanded': {
-          margin: 0,
-          borderBottom: (theme) => `1px solid ${theme.palette.divider}`
-        }
-      }}
-    >
-      <AccordionSummary
-        expandIcon={<ExpandMoreIcon />}
-        sx={{ [`.${accordionSummaryClasses.content}`]: { justifyContent: 'space-between', alignItems: 'center' } }}
-      >
-        {summary ? (
-          <Box width="100%">{summary}</Box>
-        ) : (
-          <Typography>
-            <Box component="span" sx={{ fontWeight: 600 }}>
-              {props.field.name}{' '}
-            </Box>
-            ({props.field.id})
-          </Typography>
-        )}
-      </AccordionSummary>
-      <AccordionDetails sx={{ py: 2 }}>{details}</AccordionDetails>
-    </Accordion>
-  );
+	return (
+		<Accordion
+			ref={fieldRef}
+			expanded={expanded}
+			onChange={() => setExpanded(!expanded)}
+			slotProps={{ transition: { mountOnEnter: true } }}
+			sx={{
+				margin: 0,
+				border: 0,
+				boxShadow: 'none',
+				background: 'none',
+				'&.Mui-expanded': {
+					margin: 0,
+					borderBottom: (theme) => `1px solid ${theme.palette.divider}`
+				}
+			}}
+		>
+			<AccordionSummary
+				expandIcon={<ExpandMoreIcon />}
+				sx={{ [`.${accordionSummaryClasses.content}`]: { justifyContent: 'space-between', alignItems: 'center' } }}
+			>
+				{summary ? (
+					<Box width="100%">{summary}</Box>
+				) : (
+					<Typography>
+						<Box component="span" sx={{ fontWeight: 600 }}>
+							{props.field.name}{' '}
+						</Box>
+						({props.field.id})
+					</Typography>
+				)}
+			</AccordionSummary>
+			<AccordionDetails sx={{ py: 2 }}>{details}</AccordionDetails>
+		</Accordion>
+	);
 }

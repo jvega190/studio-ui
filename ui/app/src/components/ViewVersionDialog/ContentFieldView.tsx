@@ -40,71 +40,71 @@ import { getContentInstanceXmlValueFromProp } from '../../utils/content';
 import FileNameView from './FieldTypesViews/FileNameView';
 
 export interface ContentFieldViewProps {
-  content: Primitive;
-  field: ContentTypeField;
-  xml?: string;
-  showToolbar?: boolean;
-  dynamicHeight?: boolean;
-  onSelectField?(field: ContentTypeField): void;
+	content: Primitive;
+	field: ContentTypeField;
+	xml?: string;
+	showToolbar?: boolean;
+	dynamicHeight?: boolean;
+	onSelectField?(field: ContentTypeField): void;
 }
 
 export interface ViewComponentProps extends Pick<ViewComponentBaseProps, 'xml' | 'field'> {
-  editorProps?: EditorProps;
+	editorProps?: EditorProps;
 }
 
 export const typesViewMap = {
-  'file-name': FileNameView,
-  text: TextView,
-  textarea: TextView,
-  html: TextView,
-  'node-selector': NodeSelector,
-  'checkbox-group': CheckboxGroupView,
-  repeat: RepeatGroupView,
-  image: ImageView,
-  'video-picker': VideoView,
-  time: TimeView,
-  'date-time': DateTimeView,
-  boolean: BooleanView,
-  'page-nav-order': BooleanView,
-  'numeric-input': NumberView,
-  dropdown: TextView
+	'file-name': FileNameView,
+	text: TextView,
+	textarea: TextView,
+	html: TextView,
+	'node-selector': NodeSelector,
+	'checkbox-group': CheckboxGroupView,
+	repeat: RepeatGroupView,
+	image: ImageView,
+	'video-picker': VideoView,
+	time: TimeView,
+	'date-time': DateTimeView,
+	boolean: BooleanView,
+	'page-nav-order': BooleanView,
+	'numeric-input': NumberView,
+	dropdown: TextView
 };
 
 export function ContentFieldView(props: ContentFieldViewProps) {
-  const { content, field, xml = '', dynamicHeight } = props;
-  const fieldXml = getContentInstanceXmlValueFromProp(xml, field.id);
-  const [{ fieldsViewState }] = useVersionsDialogContext();
-  const viewState = fieldsViewState[field.id] ?? initialFieldViewState;
-  const { compareXml: viewXml, monacoOptions } = viewState;
-  const monacoEditorHeight = !dynamicHeight ? '100%' : countLines(fieldXml ?? '') < 15 ? '200px' : '600px';
-  const ViewComponent = typesViewMap[field.type] ?? DefaultView;
-  const viewComponentProps: ViewComponentProps = {
-    xml: fieldXml,
-    field,
-    editorProps: {
-      options: monacoOptions,
-      height: monacoEditorHeight
-    }
-  };
-  const noContentSet = ViewComponent !== Boolean && !content;
+	const { content, field, xml = '', dynamicHeight } = props;
+	const fieldXml = getContentInstanceXmlValueFromProp(xml, field.id);
+	const [{ fieldsViewState }] = useVersionsDialogContext();
+	const viewState = fieldsViewState[field.id] ?? initialFieldViewState;
+	const { compareXml: viewXml, monacoOptions } = viewState;
+	const monacoEditorHeight = !dynamicHeight ? '100%' : countLines(fieldXml ?? '') < 15 ? '200px' : '600px';
+	const ViewComponent = typesViewMap[field.type] ?? DefaultView;
+	const viewComponentProps: ViewComponentProps = {
+		xml: fieldXml,
+		field,
+		editorProps: {
+			options: monacoOptions,
+			height: monacoEditorHeight
+		}
+	};
+	const noContentSet = ViewComponent !== Boolean && !content;
 
-  return (
-    <Box sx={{ flexGrow: 1 }}>
-      {viewXml ? (
-        <TextView xml={fieldXml} editorProps={viewComponentProps.editorProps} />
-      ) : nnou(ViewComponent) ? (
-        noContentSet ? (
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography color="textSecondary">
-              <FormattedMessage defaultMessage="No content set" />
-            </Typography>
-          </Box>
-        ) : (
-          <ViewComponent {...viewComponentProps} />
-        )
-      ) : null}
-    </Box>
-  );
+	return (
+		<Box sx={{ flexGrow: 1 }}>
+			{viewXml ? (
+				<TextView xml={fieldXml} editorProps={viewComponentProps.editorProps} />
+			) : nnou(ViewComponent) ? (
+				noContentSet ? (
+					<Box sx={{ textAlign: 'center' }}>
+						<Typography color="textSecondary">
+							<FormattedMessage defaultMessage="No content set" />
+						</Typography>
+					</Box>
+				) : (
+					<ViewComponent {...viewComponentProps} />
+				)
+			) : null}
+		</Box>
+	);
 }
 
 export default ContentFieldView;

@@ -25,17 +25,17 @@ import { ViewComponentBaseProps } from '../utils';
 export interface CheckboxGroupViewProps extends ViewComponentBaseProps {}
 
 export function CheckboxGroupView(props: CheckboxGroupViewProps) {
-  const { xml, field } = props;
-  const contentTypes = useContentTypes();
-  const content = xml
-    ? parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {})
-    : [];
+	const { xml, field } = props;
+	const contentTypes = useContentTypes();
+	const content = xml
+		? parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {})
+		: [];
 
-  return (
-    <Box sx={{ textAlign: 'center' }}>
-      {content?.map((item) => <Typography key={item.key}>{`${item.value_smv} (${item.key})`}</Typography>)}
-    </Box>
-  );
+	return (
+		<Box sx={{ textAlign: 'center' }}>
+			{content?.map((item) => <Typography key={item.key}>{`${item.value_smv} (${item.key})`}</Typography>)}
+		</Box>
+	);
 }
 
 export default CheckboxGroupView;

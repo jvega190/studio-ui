@@ -24,26 +24,26 @@ import useContentTypes from '../../../hooks/useContentTypes';
 import { PartialSxRecord } from '../../../models';
 
 export interface ImageViewProps extends ViewComponentBaseProps {
-  sxs?: PartialSxRecord<'image' | 'label'>;
+	sxs?: PartialSxRecord<'image' | 'label'>;
 }
 
 export function ImageView(props: ImageViewProps) {
-  const { xml, field, content: contentProp, sxs } = props;
-  const contentTypes = useContentTypes();
-  const content =
-    contentProp ??
-    (xml ? parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {}) : '');
+	const { xml, field, content: contentProp, sxs } = props;
+	const contentTypes = useContentTypes();
+	const content =
+		contentProp ??
+		(xml ? parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {}) : '');
 
-  return (
-    <>
-      <Box component="img" src={content} alt="" sx={{ maxWidth: '100%', ...sxs?.image }} />
-      {xml && (
-        <Typography variant="subtitle2" sx={{ ...sxs?.label }}>
-          {content}
-        </Typography>
-      )}
-    </>
-  );
+	return (
+		<>
+			<Box component="img" src={content} alt="" sx={{ maxWidth: '100%', ...sxs?.image }} />
+			{xml && (
+				<Typography variant="subtitle2" sx={{ ...sxs?.label }}>
+					{content}
+				</Typography>
+			)}
+		</>
+	);
 }
 
 export default ImageView;

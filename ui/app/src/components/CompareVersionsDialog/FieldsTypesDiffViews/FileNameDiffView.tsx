@@ -22,17 +22,17 @@ import { getContentFileNameFromPath } from '../../../utils/content';
 import TextDiffView from './TextDiffView';
 
 export interface FileNameDiffViewProps extends Pick<DiffViewComponentBaseProps, 'aXml' | 'bXml'> {
-  editorProps?: DiffEditorProps;
+	editorProps?: DiffEditorProps;
 }
 
 export function FileNameDiffView(props: FileNameDiffViewProps) {
-  const { aXml, bXml, editorProps } = props;
-  const pathA = fromString(aXml).querySelector('file-name').textContent;
-  const pathB = fromString(bXml).querySelector('file-name').textContent;
-  const fileNameA = getContentFileNameFromPath(pathA);
-  const fileNameB = getContentFileNameFromPath(pathB);
+	const { aXml, bXml, editorProps } = props;
+	const pathA = fromString(aXml).querySelector('file-name').textContent;
+	const pathB = fromString(bXml).querySelector('file-name').textContent;
+	const fileNameA = getContentFileNameFromPath(pathA);
+	const fileNameB = getContentFileNameFromPath(pathB);
 
-  return <TextDiffView aXml={fileNameA} bXml={fileNameB} editorProps={editorProps} />;
+	return <TextDiffView aXml={fileNameA} bXml={fileNameB} editorProps={editorProps} />;
 }
 
 export default FileNameDiffView;

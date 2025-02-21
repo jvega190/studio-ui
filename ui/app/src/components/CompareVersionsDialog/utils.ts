@@ -46,23 +46,23 @@ export interface CompareVersionsDialogBaseProps {
 }
 
 export interface SelectionContentVersion {
-  xml?: string;
-  content: ContentInstance | string;
+	xml?: string;
+	content: ContentInstance | string;
 }
 
 export interface CompareVersionsDialogProps extends CompareVersionsDialogBaseProps, EnhancedDialogProps {
-  subtitle?: ReactNode;
-  versionsBranch?: VersionsStateProps;
-  selectedA?: ItemHistoryEntry;
-  selectedB?: ItemHistoryEntry;
-  selectionContent?: {
-    a: SelectionContentVersion;
-    b: SelectionContentVersion;
-  };
-  fields?: LookupTable<ContentTypeField>;
-  contentTypesBranch?: EntityState<ContentType>;
-  leftActions?: DialogHeaderActionProps[];
-  rightActions?: DialogHeaderActionProps[];
+	subtitle?: ReactNode;
+	versionsBranch?: VersionsStateProps;
+	selectedA?: ItemHistoryEntry;
+	selectedB?: ItemHistoryEntry;
+	selectionContent?: {
+		a: SelectionContentVersion;
+		b: SelectionContentVersion;
+	};
+	fields?: LookupTable<ContentTypeField>;
+	contentTypesBranch?: EntityState<ContentType>;
+	leftActions?: DialogHeaderActionProps[];
+	rightActions?: DialogHeaderActionProps[];
 }
 
 export interface CompareVersionsDialogStateProps extends CompareVersionsDialogBaseProps, EnhancedDialogState {
@@ -73,33 +73,33 @@ export interface CompareVersionsDialogStateProps extends CompareVersionsDialogBa
 }
 
 export interface CompareVersionsDialogContainerProps
-  extends CompareVersionsDialogBaseProps,
-    Pick<
-      CompareVersionsDialogProps,
-      | 'contentTypesBranch'
-      | 'versionsBranch'
-      | 'selectedA'
-      | 'selectedB'
-      | 'disableItemSwitching'
-      | 'selectionContent'
-      | 'fields'
-    > {
-  compareXml: boolean;
+	extends CompareVersionsDialogBaseProps,
+		Pick<
+			CompareVersionsDialogProps,
+			| 'contentTypesBranch'
+			| 'versionsBranch'
+			| 'selectedA'
+			| 'selectedB'
+			| 'disableItemSwitching'
+			| 'selectionContent'
+			| 'fields'
+		> {
+	compareXml: boolean;
 }
 
 export interface DiffViewComponentBaseProps {
-  aXml?: string;
-  bXml?: string;
-  field?: ContentTypeField;
-  aContent?: string;
-  bContent?: string;
+	aXml?: string;
+	bXml?: string;
+	field?: ContentTypeField;
+	aContent?: string;
+	bContent?: string;
 }
 
 export type ContentInstanceComponentsDiffResult = {
-  count: number;
-  added: boolean;
-  removed: boolean;
-  value: string[];
+	count: number;
+	added: boolean;
+	removed: boolean;
+	value: string[];
 };
 
 /**
@@ -109,13 +109,13 @@ export type ContentInstanceComponentsDiffResult = {
  * @returns {ItemDiffState} - The status of the item difference: 'new', 'deleted', or 'unchanged'.
  */
 export const getItemDiffStatus = (diff: ContentInstanceComponentsDiffResult): ItemDiffState => {
-  if (diff.added) {
-    return 'new';
-  }
-  if (diff.removed) {
-    return 'deleted';
-  }
-  return 'unchanged';
+	if (diff.added) {
+		return 'new';
+	}
+	if (diff.removed) {
+		return 'deleted';
+	}
+	return 'unchanged';
 };
 
 /**
@@ -125,63 +125,63 @@ export const getItemDiffStatus = (diff: ContentInstanceComponentsDiffResult): It
  * @returns {string} - The content string without HTML tags.
  */
 export function removeTags(content: string): string {
-  return content.replace(/<[^>]*>?/gm, '');
+	return content.replace(/<[^>]*>?/gm, '');
 }
 
 export const getContentInstanceXmlItemFromIndex = (xml: string, index: number): string => {
-  const doc = fromString(xml).querySelectorAll('item')[index];
-  return doc ? serialize(doc) : '';
+	const doc = fromString(xml).querySelectorAll('item')[index];
+	return doc ? serialize(doc) : '';
 };
 
 export const typesDiffMap: Record<string, ElementType> = {
-  'file-name': FileNameDiffView,
-  text: TextDiffView,
-  textarea: TextDiffView,
-  html: TextDiffView,
-  'node-selector': ContentInstanceComponents,
-  'checkbox-group': CheckboxGroupDiffView,
-  repeat: RepeatGroupItems,
-  image: ImageDiffView,
-  'video-picker': VideoDiffView,
-  time: TimeDiffView,
-  'date-time': DateTimeDiffView,
-  boolean: BooleanDiffView,
-  'page-nav-order': BooleanDiffView,
-  'numeric-input': NumberDiffView,
-  dropdown: TextDiffView
+	'file-name': FileNameDiffView,
+	text: TextDiffView,
+	textarea: TextDiffView,
+	html: TextDiffView,
+	'node-selector': ContentInstanceComponents,
+	'checkbox-group': CheckboxGroupDiffView,
+	repeat: RepeatGroupItems,
+	image: ImageDiffView,
+	'video-picker': VideoDiffView,
+	time: TimeDiffView,
+	'date-time': DateTimeDiffView,
+	boolean: BooleanDiffView,
+	'page-nav-order': BooleanDiffView,
+	'numeric-input': NumberDiffView,
+	dropdown: TextDiffView
 };
 
 export const getDialogHeaderActions = ({
-  xmlMode,
-  contentActionLabel,
-  xmlActionLabel,
-  onClickContent,
-  onClickXml
+	xmlMode,
+	contentActionLabel,
+	xmlActionLabel,
+	onClickContent,
+	onClickXml
 }: {
-  xmlMode: boolean;
-  contentActionLabel: string;
-  xmlActionLabel: string;
-  onClickContent: () => void;
-  onClickXml: () => void;
+	xmlMode: boolean;
+	contentActionLabel: string;
+	xmlActionLabel: string;
+	onClickContent: () => void;
+	onClickXml: () => void;
 }) => {
-  return [
-    {
-      icon: { id: '@mui/icons-material/TextSnippetOutlined' },
-      text: contentActionLabel,
-      onClick: onClickContent,
-      sx: {
-        color: (theme) => (xmlMode ? theme.palette.text.secondary : theme.palette.primary.main),
-        fontSize: 14
-      }
-    },
-    {
-      icon: { id: '@mui/icons-material/CodeRounded' },
-      text: xmlActionLabel,
-      onClick: onClickXml,
-      sx: {
-        color: (theme) => (xmlMode ? theme.palette.primary.main : theme.palette.text.secondary),
-        fontSize: 14
-      }
-    }
-  ];
+	return [
+		{
+			icon: { id: '@mui/icons-material/TextSnippetOutlined' },
+			text: contentActionLabel,
+			onClick: onClickContent,
+			sx: {
+				color: (theme) => (xmlMode ? theme.palette.text.secondary : theme.palette.primary.main),
+				fontSize: 14
+			}
+		},
+		{
+			icon: { id: '@mui/icons-material/CodeRounded' },
+			text: xmlActionLabel,
+			onClick: onClickXml,
+			sx: {
+				color: (theme) => (xmlMode ? theme.palette.primary.main : theme.palette.text.secondary),
+				fontSize: 14
+			}
+		}
+	];
 };

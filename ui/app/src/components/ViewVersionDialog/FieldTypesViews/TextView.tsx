@@ -25,40 +25,40 @@ import { ContentTypeField } from '../../../models';
 import { systemPropToXmlMap } from '../../../utils/content';
 
 export interface TextViewProps extends Pick<ViewComponentBaseProps, 'xml'> {
-  field?: ContentTypeField;
-  editorProps?: EditorProps;
+	field?: ContentTypeField;
+	editorProps?: EditorProps;
 }
 
 export function TextView(props: TextViewProps) {
-  const { xml, field, editorProps } = props;
-  const xmlFieldId = systemPropToXmlMap[field?.id] || field?.id;
-  const content = field ? fromString(xml).querySelector(xmlFieldId)?.textContent : xml;
-  const [{ fieldsViewState }] = useVersionsDialogContext();
-  const cleanText = field && fieldsViewState[field.id]?.cleanText;
-  const value = cleanText ? removeTags(content ?? '') : content;
-  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
-  const language = textViewLanguageMap[field?.type] || 'xml';
-  const monacoOptions: EditorProps['options'] = {
-    readOnly: true,
-    automaticLayout: true,
-    fontSize: 14,
-    contextmenu: false,
-    scrollBeyondLastLine: false,
-    renderWhitespace: 'none',
-    scrollbar: { alwaysConsumeMouseWheel: false },
-    ...editorProps?.options
-  };
+	const { xml, field, editorProps } = props;
+	const xmlFieldId = systemPropToXmlMap[field?.id] || field?.id;
+	const content = field ? fromString(xml).querySelector(xmlFieldId)?.textContent : xml;
+	const [{ fieldsViewState }] = useVersionsDialogContext();
+	const cleanText = field && fieldsViewState[field.id]?.cleanText;
+	const value = cleanText ? removeTags(content ?? '') : content;
+	const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+	const language = textViewLanguageMap[field?.type] || 'xml';
+	const monacoOptions: EditorProps['options'] = {
+		readOnly: true,
+		automaticLayout: true,
+		fontSize: 14,
+		contextmenu: false,
+		scrollBeyondLastLine: false,
+		renderWhitespace: 'none',
+		scrollbar: { alwaysConsumeMouseWheel: false },
+		...editorProps?.options
+	};
 
-  return (
-    <Editor
-      height="100%"
-      language={language}
-      value={value}
-      theme={prefersDarkMode ? 'vs-dark' : 'vs'}
-      {...(editorProps as EditorProps)}
-      options={monacoOptions}
-    />
-  );
+	return (
+		<Editor
+			height="100%"
+			language={language}
+			value={value}
+			theme={prefersDarkMode ? 'vs-dark' : 'vs'}
+			{...(editorProps as EditorProps)}
+			options={monacoOptions}
+		/>
+	);
 }
 
 export default TextView;

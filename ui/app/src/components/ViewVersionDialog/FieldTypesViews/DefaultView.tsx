@@ -21,8 +21,8 @@ import { ViewComponentBaseProps } from '../utils';
 export interface DefaultViewProps extends Pick<ViewComponentBaseProps, 'xml'> {}
 
 export function DefaultView(props: DefaultViewProps) {
-  const { xml } = props;
-  return <TextView xml={xml} />;
+	const { xml } = props;
+	return <TextView xml={xml} />;
 }
 
 export default DefaultView;

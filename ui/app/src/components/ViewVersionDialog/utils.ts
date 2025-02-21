@@ -26,20 +26,20 @@ import { EnhancedDialogState } from '../../hooks/useEnhancedDialogState';
 import { ContentInstance, ItemHistoryEntry } from '../../models';
 
 export interface ViewVersionDialogBaseProps {
-  error: ApiResponse;
-  isFetching: boolean;
-  version?: ItemHistoryEntry;
-  data?: {
-    content: ContentInstance;
-    xml: string;
-    fields: LookupTable<ContentTypeField>;
-  };
+	error: ApiResponse;
+	isFetching: boolean;
+	version?: ItemHistoryEntry;
+	data?: {
+		content: ContentInstance;
+		xml: string;
+		fields: LookupTable<ContentTypeField>;
+	};
 }
 
 export interface ViewVersionDialogProps extends ViewVersionDialogBaseProps, EnhancedDialogProps {
-  contentTypesBranch?: EntityState<ContentType>;
-  leftActions?: DialogHeaderActionProps[];
-  rightActions?: DialogHeaderActionProps[];
+	contentTypesBranch?: EntityState<ContentType>;
+	leftActions?: DialogHeaderActionProps[];
+	rightActions?: DialogHeaderActionProps[];
 }
 
 export interface ViewVersionDialogStateProps extends ViewVersionDialogBaseProps, EnhancedDialogState {
@@ -50,21 +50,21 @@ export interface ViewVersionDialogStateProps extends ViewVersionDialogBaseProps,
 }
 
 export interface ViewVersionDialogContainerProps
-  extends ViewVersionDialogBaseProps,
-    Pick<ViewVersionDialogProps, 'contentTypesBranch'> {
-  showXml: boolean;
+	extends ViewVersionDialogBaseProps,
+		Pick<ViewVersionDialogProps, 'contentTypesBranch'> {
+	showXml: boolean;
 }
 
 export interface ViewComponentBaseProps {
-  xml?: string;
-  field?: ContentTypeField;
-  content?: string;
+	xml?: string;
+	field?: ContentTypeField;
+	content?: string;
 }
 
 export const textViewLanguageMap = {
-  'file-name': 'text',
-  text: 'text',
-  textarea: 'text',
-  html: 'html',
-  dropdown: 'text'
+	'file-name': 'text',
+	text: 'text',
+	textarea: 'text',
+	html: 'html',
+	dropdown: 'text'
 };

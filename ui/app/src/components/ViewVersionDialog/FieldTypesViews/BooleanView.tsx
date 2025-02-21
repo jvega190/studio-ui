@@ -26,18 +26,18 @@ import useContentTypes from '../../../hooks/useContentTypes';
 export interface BooleanViewProps extends ViewComponentBaseProps {}
 
 export function BooleanView(props: BooleanViewProps) {
-  const { xml, field } = props;
-  const contentTypes = useContentTypes();
-  const content = xml
-    ? parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {})
-    : false;
-  return (
-    <Box sx={{ textAlign: 'center' }}>
-      <Typography>
-        {content ? <FormattedMessage defaultMessage="Checked" /> : <FormattedMessage defaultMessage="Unchecked" />}
-      </Typography>
-    </Box>
-  );
+	const { xml, field } = props;
+	const contentTypes = useContentTypes();
+	const content = xml
+		? parseElementByContentType(fromString(xml).querySelector(field.id), field, contentTypes, {})
+		: false;
+	return (
+		<Box sx={{ textAlign: 'center' }}>
+			<Typography>
+				{content ? <FormattedMessage defaultMessage="Checked" /> : <FormattedMessage defaultMessage="Unchecked" />}
+			</Typography>
+		</Box>
+	);
 }
 
 export default BooleanView;

@@ -22,15 +22,15 @@ import { DiffViewComponentBaseProps } from '../utils';
 export interface TimeDiffViewProps extends DiffViewComponentBaseProps {}
 
 export function TimeDiffView(props: TimeDiffViewProps) {
-  const { aXml, bXml, field } = props;
-  return (
-    <DiffViewLayout
-      aXml={aXml}
-      bXml={bXml}
-      field={field}
-      renderContent={(xml) => <TimeView xml={xml} field={field} />}
-    />
-  );
+	const { aXml, bXml, field } = props;
+	return (
+		<DiffViewLayout
+			aXml={aXml}
+			bXml={bXml}
+			field={field}
+			renderContent={(xml) => <TimeView xml={xml} field={field} />}
+		/>
+	);
 }
 
 export default TimeDiffView;

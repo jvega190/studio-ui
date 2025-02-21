@@ -22,15 +22,15 @@ import { getContentFileNameFromPath } from '../../../utils/content';
 import TextView from './TextView';
 
 export interface FileNameViewProps extends Pick<ViewComponentBaseProps, 'xml'> {
-  editorProps?: EditorProps;
+	editorProps?: EditorProps;
 }
 
 export function FileNameView(props: FileNameViewProps) {
-  const { xml, editorProps } = props;
-  const path = fromString(xml).querySelector('file-name').textContent;
-  const fileName = getContentFileNameFromPath(path);
+	const { xml, editorProps } = props;
+	const path = fromString(xml).querySelector('file-name').textContent;
+	const fileName = getContentFileNameFromPath(path);
 
-  return <TextView xml={fileName} editorProps={editorProps} />;
+	return <TextView xml={fileName} editorProps={editorProps} />;
 }
 
 export default FileNameView;

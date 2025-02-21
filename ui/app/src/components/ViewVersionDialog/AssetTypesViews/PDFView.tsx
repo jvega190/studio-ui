@@ -20,8 +20,8 @@ import { isBlobUrl } from '../../../utils/content';
 import { IFrame } from '../../IFrame';
 
 export function PDFView(props) {
-  const { content } = props;
-  const guestBase = useSelection<string>((state) => state.env.guestBase);
+	const { content } = props;
+	const guestBase = useSelection<string>((state) => state.env.guestBase);
 
-  return <IFrame url={isBlobUrl(content) ? content : `${guestBase}${content}`} title="" width="100%" height="100%" />;
+	return <IFrame url={isBlobUrl(content) ? content : `${guestBase}${content}`} title="" width="100%" height="100%" />;
 }

@@ -21,45 +21,45 @@ import React, { ReactNode } from 'react';
 import { ContentTypeField } from '../../../models';
 
 export interface DefaultFieldDiffViewProps {
-  aXml: string;
-  bXml: string;
-  field: ContentTypeField;
-  renderContent: (xml: string) => ReactNode;
-  noContent?: ReactNode;
+	aXml: string;
+	bXml: string;
+	field: ContentTypeField;
+	renderContent: (xml: string) => ReactNode;
+	noContent?: ReactNode;
 }
 
 export function DiffViewLayout(props: DefaultFieldDiffViewProps) {
-  const {
-    aXml,
-    bXml,
-    field,
-    renderContent,
-    noContent = (
-      <Box>
-        <Typography color="textSecondary">no content set</Typography>
-      </Box>
-    )
-  } = props;
-  const verticalLayout = field.type === 'image' || field.type === 'video-picker';
+	const {
+		aXml,
+		bXml,
+		field,
+		renderContent,
+		noContent = (
+			<Box>
+				<Typography color="textSecondary">no content set</Typography>
+			</Box>
+		)
+	} = props;
+	const verticalLayout = field.type === 'image' || field.type === 'video-picker';
 
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        height: '100%',
-        alignItems: verticalLayout ? 'center' : 'flex-start',
-        justifyContent: 'space-around',
-        flexDirection: verticalLayout ? 'column' : 'row',
-        '> div': {
-          flexGrow: verticalLayout && 1
-        }
-      }}
-    >
-      {aXml ? renderContent(aXml) : noContent}
-      {verticalLayout && <Divider sx={{ width: '100%', mt: 1, mb: 1 }} />}
-      {bXml ? renderContent(bXml) : noContent}
-    </Box>
-  );
+	return (
+		<Box
+			sx={{
+				display: 'flex',
+				height: '100%',
+				alignItems: verticalLayout ? 'center' : 'flex-start',
+				justifyContent: 'space-around',
+				flexDirection: verticalLayout ? 'column' : 'row',
+				'> div': {
+					flexGrow: verticalLayout && 1
+				}
+			}}
+		>
+			{aXml ? renderContent(aXml) : noContent}
+			{verticalLayout && <Divider sx={{ width: '100%', mt: 1, mb: 1 }} />}
+			{bXml ? renderContent(bXml) : noContent}
+		</Box>
+	);
 }
 
 export default DiffViewLayout;

@@ -454,28 +454,28 @@ export function removePublishingPackagePreferredView(username: string) {
 }
 
 export function getCompareVersionDialogViewModes(username: string): { entireDiff: boolean; accordionView: boolean } {
-  return JSON.parse(localStorage.getItem(`craftercms.${username}.compareVersionDialog.viewModes`));
+	return JSON.parse(localStorage.getItem(`craftercms.${username}.compareVersionDialog.viewModes`));
 }
 
 export function setCompareVersionDialogViewModes(
-  username: string,
-  viewModes: { entireDiff: boolean; accordionView: boolean }
+	username: string,
+	viewModes: { entireDiff: boolean; accordionView: boolean }
 ) {
-  localStorage.setItem(`craftercms.${username}.compareVersionDialog.viewModes`, JSON.stringify(viewModes));
+	localStorage.setItem(`craftercms.${username}.compareVersionDialog.viewModes`, JSON.stringify(viewModes));
 }
 
 export function removeCompareVersionDialogViewModes(username: string) {
-  localStorage.removeItem(`craftercms.${username}.compareVersionDialog.viewModes`);
+	localStorage.removeItem(`craftercms.${username}.compareVersionDialog.viewModes`);
 }
 
 export function getViewVersionDialogViewModes(username: string) {
-  return localStorage.getItem(`craftercms.${username}.viewVersionDialog.viewModes`) === 'true';
+	return localStorage.getItem(`craftercms.${username}.viewVersionDialog.viewModes`) === 'true';
 }
 
 export function setViewVersionDialogViewModes(username: string, singleFieldView: boolean) {
-  localStorage.setItem(`craftercms.${username}.viewVersionDialog.viewModes`, String(singleFieldView));
+	localStorage.setItem(`craftercms.${username}.viewVersionDialog.viewModes`, String(singleFieldView));
 }
 
 export function removeViewVersionDialogViewModes(username: string) {
-  localStorage.removeItem(`craftercms.${username}.viewVersionDialog.viewModes`);
+	localStorage.removeItem(`craftercms.${username}.viewVersionDialog.viewModes`);
 }

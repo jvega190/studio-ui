@@ -154,12 +154,12 @@ export function createAtLeastHalfHourInFutureDate(): Date {
  * @returns {string} The time string in the target timezone.
  */
 export function convertUtcTimeToTimezone(utcTime: string, targetTimezone: string = getUserTimeZone()): string {
-  // Parse the time string in UTC
-  const timeInUTC = moment.utc(utcTime, 'HH:mm:ss');
+	// Parse the time string in UTC
+	const timeInUTC = moment.utc(utcTime, 'HH:mm:ss');
 
-  // Convert the time to the desired timezone
-  const timeInTargetZone = timeInUTC.tz(targetTimezone);
+	// Convert the time to the desired timezone
+	const timeInTargetZone = timeInUTC.tz(targetTimezone);
 
-  // Format the time in the desired timezone
-  return timeInTargetZone.format('HH:mm:ss');
+	// Format the time in the desired timezone
+	return timeInTargetZone.format('HH:mm:ss');
 }
