@@ -43,9 +43,9 @@
 		<script src="/studio/static-assets/libs/momentjs/moment-timezone-with-data-2000-2030.min.js"></script>
 		<script src="/studio/static-assets/libs/routie/routie-0.3.2.min.js"></script>
 
-  <script src="/studio/static-assets/scripts/crafter.js"></script>
-  <script src="/studio/static-assets/scripts/animator.js"></script>
-  <script src="/studio/static-assets/libs/js-cache/cache.js"></script>
+		<script src="/studio/static-assets/scripts/crafter.js"></script>
+		<script src="/studio/static-assets/scripts/animator.js"></script>
+		<script src="/studio/static-assets/libs/js-cache/cache.js"></script>
 
 		<script>
 			CMgs = CStudioAuthoring.Messages;
