@@ -14,23 +14,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import Grid, { GridProps } from '@mui/material/Grid';
+import Grid, { Grid2Props } from '@mui/material/Grid2';
 import React from 'react';
 import { renderWidgets } from '../Widget';
 import { WidgetDescriptor } from '../../models';
 import useActiveSiteId from '../../hooks/useActiveSiteId';
 import useActiveUser from '../../hooks/useActiveUser';
 
-export interface WidgetsGridProps extends GridProps {
-  widgets: WidgetDescriptor[];
+export interface WidgetsGridProps extends Grid2Props {
+	widgets: WidgetDescriptor[];
 }
 
 export function WidgetsGrid(props: WidgetsGridProps) {
-  const { widgets, ...gridProps } = props;
-  const site = useActiveSiteId();
-  const user = useActiveUser();
-  const userRoles = user.rolesBySite[site];
-  return <Grid {...gridProps}>{renderWidgets(widgets, { userRoles })}</Grid>;
+	const { widgets, ...gridProps } = props;
+	const site = useActiveSiteId();
+	const user = useActiveUser();
+	const userRoles = user.rolesBySite[site];
+	return <Grid {...gridProps}>{renderWidgets(widgets, { userRoles })}</Grid>;
 }
 
 export default WidgetsGrid;

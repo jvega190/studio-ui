@@ -21,28 +21,28 @@ import EnhancedDialog from '../EnhancedDialog/EnhancedDialog';
 import { FormattedMessage } from 'react-intl';
 
 export function CreateFileDialog(props: CreateFileProps) {
-  const { type, path, allowBraces, allowSubFolders, onCreated, ...rest } = props;
-  return (
-    <EnhancedDialog
-      title={
-        type === 'controller' ? (
-          <FormattedMessage id="createFileDialog.controller" defaultMessage="New Controller" />
-        ) : (
-          <FormattedMessage id="createFileDialog.template" defaultMessage="New Template" />
-        )
-      }
-      maxWidth="xs"
-      {...rest}
-    >
-      <CreateFileDialogContainer
-        path={path}
-        onCreated={onCreated}
-        type={type}
-        allowBraces={allowBraces}
-        allowSubFolders={allowSubFolders}
-      />
-    </EnhancedDialog>
-  );
+	const { type, path, allowBraces, allowSubFolders, onCreated, ...rest } = props;
+	return (
+		<EnhancedDialog
+			title={
+				type === 'controller' ? (
+					<FormattedMessage id="createFileDialog.controller" defaultMessage="New Controller" />
+				) : (
+					<FormattedMessage id="createFileDialog.template" defaultMessage="New Template" />
+				)
+			}
+			maxWidth="xs"
+			{...rest}
+		>
+			<CreateFileDialogContainer
+				path={path}
+				onCreated={onCreated}
+				type={type}
+				allowBraces={allowBraces}
+				allowSubFolders={allowSubFolders}
+			/>
+		</EnhancedDialog>
+	);
 }
 
 export default CreateFileDialog;

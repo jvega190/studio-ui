@@ -19,157 +19,192 @@ import { catchError, filter, map, switchMap, withLatestFrom } from 'rxjs/operato
 import { merge, NEVER, Observable, of } from 'rxjs';
 import GlobalState from '../../models/GlobalState';
 import {
-  batchActions,
-  changeContentType as changeContentTypeAction,
-  dispatchDOMEvent,
-  editContentTypeTemplate,
-  editController,
-  editTemplate,
-  editTemplateCreateSuccess
+	batchActions,
+	changeContentType as changeContentTypeAction,
+	dispatchDOMEvent,
+	createFile as createFileAction,
+	editContentTypeTemplate,
+	editController,
+	editTemplate,
+	editTemplateCreateSuccess
 } from '../actions/misc';
-import { changeContentType, fetchWorkflowAffectedItems } from '../../services/content';
+import { changeContentType, createFile, fetchSandboxItem } from '../../services/content';
 import {
-  closeCreateFileDialog,
-  showCodeEditorDialog,
-  showCreateFileDialog,
-  showEditDialog,
-  showWorkflowCancellationDialog
+	closeCreateFileDialog,
+	showCodeEditorDialog,
+	showCreateFileDialog,
+	showEditDialog,
+	showViewPackagesDialog
 } from '../actions/dialogs';
 import { reloadDetailedItem } from '../actions/content';
 import {
-  blockUI,
-  showCreateItemSuccessNotification,
-  showEditItemSuccessNotification,
-  unblockUI
+	blockUI,
+	showCreateItemSuccessNotification,
+	showEditItemSuccessNotification,
+	unblockUI
 } from '../actions/system';
 import { CrafterCMSEpic } from '../store';
 import { translations } from '../../components/ItemActionsMenu/translations';
 import { showErrorDialog } from '../reducers/dialogs/error';
+import { getFileNameFromPath, getParentPath } from '../../utils/path';
 import { ensureSingleSlash, popPiece } from '../../utils/string';
 import { associateTemplate } from '../actions/preview';
+import { isInActiveWorkflow } from '../../utils/content';
 
 const epics = [
-  (action$, state$: Observable<GlobalState>) =>
-    action$.pipe(
-      ofType(changeContentTypeAction.type),
-      withLatestFrom(state$),
-      switchMap(([{ payload }, state]) => {
-        const newContentTypeId = payload.newContentTypeId;
-        const path = payload.path;
-        if (payload.originalContentTypeId !== newContentTypeId) {
-          return changeContentType(state.sites.active, path, newContentTypeId).pipe(
-            map(() =>
-              showEditDialog({
-                site: state.sites.active,
-                path,
-                authoringBase: state.env.authoringBase,
-                changeTemplate: newContentTypeId,
-                onSaveSuccess: batchActions([showEditItemSuccessNotification(), reloadDetailedItem({ path })])
-              })
-            )
-          );
-        }
-        return NEVER;
-      })
-    ),
-  (action$, state$, { getIntl }) =>
-    action$.pipe(
-      ofType(editTemplate.type, editController.type, editContentTypeTemplate.type),
-      filter(({ payload }) => payload.openOnSuccess || payload.openOnSuccess === void 0),
-      withLatestFrom(state$),
-      switchMap(([action, state]) => {
-        const { payload, type } = action;
-        let path;
-        let mode;
-        let contentType;
-        if (editContentTypeTemplate.type === type) {
-          const _contentType = state.contentTypes.byId[payload.contentTypeId];
-          path = _contentType.displayTemplate
-            ? _contentType.displayTemplate
-            : `/templates/web/${_contentType.type === 'page' ? 'pages' : 'components'}/${popPiece(
-                _contentType.id,
-                '/'
-              )}.ftl`;
-          mode = 'ftl';
-          contentType = payload.contentTypeId;
-        } else {
-          path = `${payload.path}/${payload.fileName}`.replace(/\/{2,}/g, '/');
-          mode = payload.mode;
-          contentType = payload.contentType;
-        }
-        return merge(
-          of(blockUI({ message: getIntl().formatMessage(translations.verifyingAffectedWorkflows) })),
-          fetchWorkflowAffectedItems(state.sites.active, path).pipe(
-            map((items) =>
-              items?.length > 0
-                ? batchActions([
-                    showWorkflowCancellationDialog({
-                      items,
-                      onContinue: showCodeEditorDialog({
-                        path,
-                        mode,
-                        contentType
-                      })
-                    }),
-                    unblockUI()
-                  ])
-                : batchActions([
-                    showCodeEditorDialog({
-                      site: state.sites.active,
-                      path,
-                      mode,
-                      contentType
-                    }),
-                    unblockUI()
-                  ])
-            ),
-            catchError(({ response }) => {
-              if (response.response.code === 7000) {
-                // Base path for content type templates should always be '/templates/web', because the dialog allows
-                // the template to be created in a subfolder of that path.
-                const destinationPath = editContentTypeTemplate.type === type ? '/templates/web' : payload.path;
-                return of(
-                  batchActions([
-                    unblockUI(),
-                    showCreateFileDialog({
-                      path: destinationPath,
-                      type: type === editController.type ? 'controller' : 'template',
-                      allowSubFolders: !(type === editController.type),
-                      onCreated: batchActions([
-                        type !== editController.type && editTemplateCreateSuccess({ contentTypeId: contentType }),
-                        closeCreateFileDialog(),
-                        showCreateItemSuccessNotification(),
-                        type === editController.type ? editController() : editTemplate(),
-                        // Action for legacy code createSuccess handling
-                        type !== editController.type && dispatchDOMEvent({ id: 'editTemplateCreateSuccess' })
-                      ]),
-                      onClose: closeCreateFileDialog()
-                    })
-                  ])
-                );
-              }
-              return of(
-                batchActions([
-                  showErrorDialog({
-                    error: response.response
-                  }),
-                  unblockUI()
-                ])
-              );
-            })
-          )
-        );
-      })
-    ),
-  (action$, state$: Observable<GlobalState>) =>
-    action$.pipe(
-      ofType(editTemplateCreateSuccess.type),
-      withLatestFrom(state$),
-      map(([{ payload }, state]) => {
-        const newTemplatePath = ensureSingleSlash(`${payload.path}/${payload.fileName}`);
-        return associateTemplate({ contentTypeId: payload.contentTypeId, displayTemplate: newTemplatePath });
-      })
-    )
+	(action$, state$: Observable<GlobalState>) =>
+		action$.pipe(
+			ofType(changeContentTypeAction.type),
+			withLatestFrom(state$),
+			switchMap(([{ payload }, state]) => {
+				const newContentTypeId = payload.newContentTypeId;
+				const path = payload.path;
+				if (payload.originalContentTypeId !== newContentTypeId) {
+					return changeContentType(state.sites.active, path, newContentTypeId).pipe(
+						map(() =>
+							showEditDialog({
+								site: state.sites.active,
+								path,
+								authoringBase: state.env.authoringBase,
+								changeTemplate: newContentTypeId,
+								onSaveSuccess: batchActions([showEditItemSuccessNotification(), reloadDetailedItem({ path })])
+							})
+						)
+					);
+				}
+				return NEVER;
+			})
+		),
+	(action$, state$, { getIntl }) =>
+		action$.pipe(
+			ofType(editTemplate.type, editController.type, editContentTypeTemplate.type),
+			filter(({ payload }) => payload.openOnSuccess || payload.openOnSuccess === void 0),
+			withLatestFrom(state$),
+			switchMap(([action, state]) => {
+				const { payload, type } = action;
+				let path;
+				let mode;
+				let contentType;
+				if (editContentTypeTemplate.type === type) {
+					const _contentType = state.contentTypes.byId[payload.contentTypeId];
+					path = _contentType.displayTemplate
+						? _contentType.displayTemplate
+						: `/templates/web/${_contentType.type === 'page' ? 'pages' : 'components'}/${popPiece(
+								_contentType.id,
+								'/'
+							)}.ftl`;
+					mode = 'ftl';
+					contentType = payload.contentTypeId;
+				} else {
+					path = `${payload.path}/${payload.fileName}`.replace(/\/{2,}/g, '/');
+					mode = payload.mode;
+					contentType = payload.contentType;
+				}
+				const fileName = editContentTypeTemplate.type === type ? getFileNameFromPath(path) : payload.fileName;
+				const destinationPath = editContentTypeTemplate.type === type ? getParentPath(path) : payload.path;
+				return merge(
+					of(blockUI({ message: getIntl().formatMessage(translations.verifyingAffectedWorkflows) })),
+					fetchSandboxItem(state.sites.active, path).pipe(
+						map((item) =>
+							item
+								? isInActiveWorkflow(item)
+									? batchActions([
+											showViewPackagesDialog({
+												item,
+												onContinue: showCodeEditorDialog({
+													path,
+													mode,
+													contentType
+												})
+											}),
+											unblockUI()
+										])
+									: batchActions([
+											showCodeEditorDialog({
+												site: state.sites.active,
+												path,
+												mode,
+												contentType
+											}),
+											unblockUI()
+										])
+								: createFileAction({
+										path: destinationPath,
+										fileName,
+										onCreated: batchActions(
+											[
+												// Only editing templates should associate. Groovy controllers are not on the content type definition.
+												type !== editController.type &&
+													associateTemplate({ contentTypeId: contentType, displayTemplate: path }),
+												showCodeEditorDialog({
+													site: state.sites.active,
+													path,
+													mode,
+													contentType
+												}),
+												unblockUI()
+											].filter(Boolean)
+										)
+									})
+						),
+						catchError(({ response }) => {
+							if (response.response.code === 7000) {
+								// Base path for content type templates should always be '/templates/web', because the dialog allows
+								// the template to be created in a subfolder of that path.
+								const destinationPath = editContentTypeTemplate.type === type ? '/templates/web' : payload.path;
+								return of(
+									batchActions([
+										unblockUI(),
+										showCreateFileDialog({
+											path: destinationPath,
+											type: type === editController.type ? 'controller' : 'template',
+											allowSubFolders: !(type === editController.type),
+											onCreated: batchActions([
+												type !== editController.type && editTemplateCreateSuccess({ contentTypeId: contentType }),
+												closeCreateFileDialog(),
+												showCreateItemSuccessNotification(),
+												type === editController.type ? editController() : editTemplate(),
+												// Action for legacy code createSuccess handling
+												type !== editController.type && dispatchDOMEvent({ id: 'editTemplateCreateSuccess' })
+											]),
+											onClose: closeCreateFileDialog()
+										})
+									])
+								);
+							} else {
+								return of(
+									batchActions([
+										showErrorDialog({
+											error: response.response
+										}),
+										unblockUI()
+									])
+								);
+							}
+						})
+					)
+				);
+			})
+		),
+	(action$, state$) =>
+		action$.pipe(
+			ofType(createFileAction.type),
+			withLatestFrom(state$),
+			switchMap(([{ payload }, state]) => {
+				const path = payload.path;
+				const fileName = payload.fileName;
+				return createFile(state.sites.active, path, fileName).pipe(map(() => payload.onCreated));
+			})
+		),
+	(action$, state$: Observable<GlobalState>) =>
+		action$.pipe(
+			ofType(editTemplateCreateSuccess.type),
+			withLatestFrom(state$),
+			map(([{ payload }, state]) => {
+				const newTemplatePath = ensureSingleSlash(`${payload.path}/${payload.fileName}`);
+				return associateTemplate({ contentTypeId: payload.contentTypeId, displayTemplate: newTemplatePath });
+			})
+		)
 ] as CrafterCMSEpic[];
 
 export default epics;

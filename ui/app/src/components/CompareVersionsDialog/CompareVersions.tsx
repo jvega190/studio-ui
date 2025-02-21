@@ -16,13 +16,10 @@
 
 // Next UI code disabled temporarily
 
-import { makeStyles } from 'tss-react/mui';
 import ContentInstance from '../../models/ContentInstance';
-import { LookupTable } from '../../models/LookupTable';
-import ContentType from '../../models/ContentType';
 import React from 'react';
-import { Resource } from '../../models/Resource';
 import { useSelection } from '../../hooks/useSelection';
+import Box from '@mui/material/Box';
 
 // declare const monaco: any;
 
@@ -151,34 +148,24 @@ import { useSelection } from '../../hooks/useSelection';
   }
 }); */
 
-export interface CompareVersionsResource {
-  a: ContentInstance;
-  b: any;
-  contentTypes: LookupTable<ContentType>;
-}
-
 interface CompareVersionsProps {
-  resource: Resource<CompareVersionsResource>;
+	versions: ContentInstance[];
 }
-
-const getLegacyDialogStyles = makeStyles()(() => ({
-  iframe: {
-    border: 'none',
-    height: '80vh'
-  }
-}));
 
 export function CompareVersions(props: CompareVersionsProps) {
-  const { a, b } = props.resource.read();
-  const { classes } = getLegacyDialogStyles();
-  const authoringUrl = useSelection<string>((state) => state.env.authoringBase);
-  return (
-    <iframe
-      title="Comparing versions"
-      className={classes.iframe}
-      src={`${authoringUrl}/diff?site=${a.site}&path=${a.path}&oldPath=${b.path}&version=${a.versionNumber}&versionTO=${b.versionNumber}&mode=iframe&ui=next`}
-    />
-  );
+	const [a, b] = props.versions;
+	const authoringUrl = useSelection<string>((state) => state.env.authoringBase);
+	return (
+		<Box
+			component="iframe"
+			title="Comparing versions"
+			sx={{
+				border: 'none',
+				height: '80vh'
+			}}
+			src={`${authoringUrl}/diff?site=${a.site}&path=${a.path}&oldPath=${b.path}&version=${a.versionNumber}&versionTO=${b.versionNumber}&mode=iframe&ui=next`}
+		/>
+	);
 }
 
 /*export function CompareVersions(props: CompareVersionsProps) {
