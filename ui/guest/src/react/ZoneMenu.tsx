@@ -217,16 +217,16 @@ export function ZoneMenu(props: ZoneMenuProps) {
 	]);
 	const showItemMenuButton = ['node-selector-item', 'component', 'page'].includes(recordType);
 
-  const store = useStore();
-  const getItemData = () => {
-    const models = getCachedModels();
-    const isNodeSelectorItem = recordType === 'component' && Boolean(nodeSelectorItemRecord);
-    const itemModelId = isNodeSelectorItem ? nodeSelectorItemRecord.modelId : modelId;
-    const itemFieldId = isNodeSelectorItem ? nodeSelectorItemRecord.fieldId : fieldId;
-    const itemIndex = isNodeSelectorItem ? nodeSelectorItemRecord.index : index;
-    const path = models[itemModelId]?.craftercms.path ?? modelPath;
-    return { path, itemModelId, itemFieldId, itemIndex };
-  };
+	const store = useStore();
+	const getItemData = () => {
+		const models = getCachedModels();
+		const isNodeSelectorItem = recordType === 'component' && Boolean(nodeSelectorItemRecord);
+		const itemModelId = isNodeSelectorItem ? nodeSelectorItemRecord.modelId : modelId;
+		const itemFieldId = isNodeSelectorItem ? nodeSelectorItemRecord.fieldId : fieldId;
+		const itemIndex = isNodeSelectorItem ? nodeSelectorItemRecord.index : index;
+		const path = models[itemModelId]?.craftercms.path ?? modelPath;
+		return { path, itemModelId, itemFieldId, itemIndex };
+	};
 
 	// region Callbacks
 

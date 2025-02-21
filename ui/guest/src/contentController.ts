@@ -169,18 +169,18 @@ export function fetchById(id: string): Observable<LookupTable<ContentInstance>> 
 }
 
 export function byPathFetchIfNotLoaded(path: string): Observable<ContentInstance> {
-  if (nou(path)) {
-    return of(null);
-  } else if (requestedPaths[path]) {
-    return paths$.pipe(
-      take(1),
-      filter((paths) => Boolean(paths[path])),
-      map((paths) => models$.value[paths[path]])
-    );
-  } else {
-    requestedPaths[path] = true;
-    return fetchByPath(path).pipe(map((data) => data?.model));
-  }
+	if (nou(path)) {
+		return of(null);
+	} else if (requestedPaths[path]) {
+		return paths$.pipe(
+			take(1),
+			filter((paths) => Boolean(paths[path])),
+			map((paths) => models$.value[paths[path]])
+		);
+	} else {
+		requestedPaths[path] = true;
+		return fetchByPath(path).pipe(map((data) => data?.model));
+	}
 }
 
 export function getContentInstanceByPath(path: string): ContentInstance {

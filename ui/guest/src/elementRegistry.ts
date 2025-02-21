@@ -146,42 +146,42 @@ export function register(payload: ElementRecordRegistration): number {
         : fieldId.split(',').map((str) => str.trim());
 	const terminator$ = deregister$.pipe(filter((_id) => _id === String(id)));
 
-  function create(inheritanceParentModelId?: string) {
-    // Create/register the physical record
-    db[id] = {
-      id,
-      element,
-      modelId: inheritanceParentModelId ?? modelId,
-      index,
-      label,
-      fieldId: fieldIds,
-      iceIds,
-      complete: false,
-      inherited: fieldIds.some((fieldId) => isInheritedField(inheritanceParentModelId ?? modelId, fieldId))
-    };
-  }
+	function create(inheritanceParentModelId?: string) {
+		// Create/register the physical record
+		db[id] = {
+			id,
+			element,
+			modelId: inheritanceParentModelId ?? modelId,
+			index,
+			label,
+			fieldId: fieldIds,
+			iceIds,
+			complete: false,
+			inherited: fieldIds.some((fieldId) => isInheritedField(inheritanceParentModelId ?? modelId, fieldId))
+		};
+	}
 
-  function completeRegistration(id) {
-    const model = getCachedModel(modelId);
-    // The field may be inherited (for example, from a level descriptor), so it needs to be checked, and if so, wait
-    // for the model to be loaded.
-    if (isInheritedField(model.craftercms.id, fieldId)) {
-      byPathFetchIfNotLoaded(model.craftercms.sourceMap?.[fieldId])
-        .pipe(
-          switchMap((response) => model$(response.craftercms.id)),
-          takeUntil(terminator$),
-          take(1)
-        )
-        .subscribe((response) => {
-          const sourceModelId = response.craftercms.id;
-          create(sourceModelId);
-          completeDeferredRegistration(id);
-        });
-    } else {
-      create();
-      completeDeferredRegistration(id);
-    }
-  }
+	function completeRegistration(id) {
+		const model = getCachedModel(modelId);
+		// The field may be inherited (for example, from a level descriptor), so it needs to be checked, and if so, wait
+		// for the model to be loaded.
+		if (isInheritedField(model.craftercms.id, fieldId)) {
+			byPathFetchIfNotLoaded(model.craftercms.sourceMap?.[fieldId])
+				.pipe(
+					switchMap((response) => model$(response.craftercms.id)),
+					takeUntil(terminator$),
+					take(1)
+				)
+				.subscribe((response) => {
+					const sourceModelId = response.craftercms.id;
+					create(sourceModelId);
+					completeDeferredRegistration(id);
+				});
+		} else {
+			create();
+			completeDeferredRegistration(id);
+		}
+	}
 
 	// If the relevant model is loaded, complete its registration, otherwise,
 	// request it and complete registration when it does load.
@@ -204,26 +204,26 @@ export function register(payload: ElementRecordRegistration): number {
 }
 
 export function completeDeferredRegistration(id: number, inheritanceParentModelId?: string): void {
-  const record = db[id];
-  const { modelId, index, fieldId: fieldIds, iceIds } = record;
+	const record = db[id];
+	const { modelId, index, fieldId: fieldIds, iceIds } = record;
 
-  if (fieldIds.length > 0) {
-    fieldIds.forEach((fieldId) => {
-      const iceId = iceRegistry.register({ modelId: inheritanceParentModelId ?? modelId, index, fieldId });
-      if (!registry[iceId]) {
-        registry[iceId] = [];
-      }
-      registry[iceId].push(record.id);
-      !iceIds.includes(iceId) && iceIds.push(iceId);
-    });
-  } else {
-    const iceId = iceRegistry.register({ modelId: inheritanceParentModelId ?? modelId, index });
-    if (!registry[iceId]) {
-      registry[iceId] = [];
-    }
-    registry[iceId].push(record.id);
-    !iceIds.includes(iceId) && iceIds.push(iceId);
-  }
+	if (fieldIds.length > 0) {
+		fieldIds.forEach((fieldId) => {
+			const iceId = iceRegistry.register({ modelId: inheritanceParentModelId ?? modelId, index, fieldId });
+			if (!registry[iceId]) {
+				registry[iceId] = [];
+			}
+			registry[iceId].push(record.id);
+			!iceIds.includes(iceId) && iceIds.push(iceId);
+		});
+	} else {
+		const iceId = iceRegistry.register({ modelId: inheritanceParentModelId ?? modelId, index });
+		if (!registry[iceId]) {
+			registry[iceId] = [];
+		}
+		registry[iceId].push(record.id);
+		!iceIds.includes(iceId) && iceIds.push(iceId);
+	}
 
 	db[id].complete = true;
 }
