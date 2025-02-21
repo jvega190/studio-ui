@@ -21,68 +21,68 @@ import { WidgetDialogProps } from '../../components/WidgetDialog/utils';
 import { popDialog, pushDialog, pushNonDialog, updateDialogState, updateNonDialogState } from '../actions/dialogStack';
 
 const reducer = createReducer<GlobalState['dialogStack']>(
-  {
-    ids: [],
-    byId: {}
-  },
-  (builder) => {
-    builder.addCase(pushDialog, (state, { payload }) => {
-      const id = payload.id ?? nanoid();
-      state.ids.push(id);
-      state.byId[id] = {
-        id,
-        ...payload,
-        props: {
-          open: true,
-          isMinimized: false,
-          isFullScreen: false,
-          hasPendingChanges: false,
-          isSubmitting: false,
-          ...(payload.props as object)
-        }
-      };
-    });
-    builder.addCase(popDialog, (state, { payload }) => {
-      state.ids = state.ids.filter((id) => payload.id !== id);
-      delete state.byId[payload.id];
-    });
-    builder.addCase(updateDialogState, (state, { payload }) => {
-      state.byId[payload.id].props = {
-        // @ts-expect-error TS2698: TypeScript doesn't think the WritableDraft can be spread.
-        ...state.byId[payload.id].props,
-        // @ts-expect-error TS2698: Don't know how to type this all around. Type is too dynamic.
-        ...payload.props
-      };
-    });
-    builder.addCase(pushNonDialog, (state, { payload }) => {
-      const id = payload.id ?? nanoid();
-      state.ids.push(id);
-      state.byId[id] = {
-        id,
-        component: 'craftercms.components.WidgetDialog',
-        props: {
-          open: true,
-          isMinimized: false,
-          isFullScreen: false,
-          hasPendingChanges: false,
-          isSubmitting: false,
-          ...(payload.dialogProps as object),
-          widget: {
-            id: payload.component,
-            configuration: payload.props
-          }
-        } as WidgetDialogProps
-      };
-    });
-    builder.addCase(updateNonDialogState, (state, { payload }) => {
-      const target = (state.byId[payload.id].props as WidgetDialogProps).widget;
-      target.configuration = {
-        ...target.configuration,
-        // @ts-expect-error: Don't know how to type this all around. Type is too dynamic.
-        ...payload.props
-      };
-    });
-  }
+	{
+		ids: [],
+		byId: {}
+	},
+	(builder) => {
+		builder.addCase(pushDialog, (state, { payload }) => {
+			const id = payload.id ?? nanoid();
+			state.ids.push(id);
+			state.byId[id] = {
+				id,
+				...payload,
+				props: {
+					open: true,
+					isMinimized: false,
+					isFullScreen: false,
+					hasPendingChanges: false,
+					isSubmitting: false,
+					...(payload.props as object)
+				}
+			};
+		});
+		builder.addCase(popDialog, (state, { payload }) => {
+			state.ids = state.ids.filter((id) => payload.id !== id);
+			delete state.byId[payload.id];
+		});
+		builder.addCase(updateDialogState, (state, { payload }) => {
+			state.byId[payload.id].props = {
+				// @ts-expect-error TS2698: TypeScript doesn't think the WritableDraft can be spread.
+				...state.byId[payload.id].props,
+				// @ts-expect-error TS2698: Don't know how to type this all around. Type is too dynamic.
+				...payload.props
+			};
+		});
+		builder.addCase(pushNonDialog, (state, { payload }) => {
+			const id = payload.id ?? nanoid();
+			state.ids.push(id);
+			state.byId[id] = {
+				id,
+				component: 'craftercms.components.WidgetDialog',
+				props: {
+					open: true,
+					isMinimized: false,
+					isFullScreen: false,
+					hasPendingChanges: false,
+					isSubmitting: false,
+					...(payload.dialogProps as object),
+					widget: {
+						id: payload.component,
+						configuration: payload.props
+					}
+				} as WidgetDialogProps
+			};
+		});
+		builder.addCase(updateNonDialogState, (state, { payload }) => {
+			const target = (state.byId[payload.id].props as WidgetDialogProps).widget;
+			target.configuration = {
+				...target.configuration,
+				// @ts-expect-error: Don't know how to type this all around. Type is too dynamic.
+				...payload.props
+			};
+		});
+	}
 );
 
 export default reducer;

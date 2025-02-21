@@ -50,17 +50,17 @@ export interface PathSelectionDialogBaseProps {
 }
 
 export interface PathSelectionDialogCallbacks {
-  onClose(): void;
-  onClosed?(): void;
-  onOk?(response: { path: string }): void;
+	onClose(): void;
+	onClosed?(): void;
+	onOk?(response: { path: string }): void;
 }
 
 export type PathSelectionDialogProps = PathSelectionDialogBaseProps & PathSelectionDialogCallbacks;
 
 export interface PathSelectionDialogStateProps extends PathSelectionDialogBaseProps {
-  onClose?: StandardAction;
-  onClosed?: StandardAction;
-  onOk?: StandardAction;
+	onClose?: StandardAction;
+	onClosed?: StandardAction;
+	onOk?: StandardAction;
 }
 
 export function PathSelectionDialog(props: PathSelectionDialogProps) {
@@ -78,39 +78,39 @@ export function PathSelectionDialog(props: PathSelectionDialogProps) {
 }
 
 export function PathSelectionDialogContainer(props: PathSelectionDialogProps) {
-  const {
-    onClosed,
-    onClose,
-    onOk,
-    rootPath = '',
-    initialPath,
-    showCreateFolderOption = true,
-    stripXmlIndex = true,
-    allowSwitchingRootPath = true
-  } = props;
-  const [root, setRoot] = useState(rootPath);
-  const [currentPath, setCurrentPath] = useState(initialPath ?? root);
-  const [openCreateFolderDialog, setOpenCreateFolderDialog] = useState(false);
-  const title = usePossibleTranslation(props.title);
-  const createFolderState = useSelection((state) => state.dialogs.createFolder);
+	const {
+		onClosed,
+		onClose,
+		onOk,
+		rootPath = '',
+		initialPath,
+		showCreateFolderOption = true,
+		stripXmlIndex = true,
+		allowSwitchingRootPath = true
+	} = props;
+	const [root, setRoot] = useState(rootPath);
+	const [currentPath, setCurrentPath] = useState(initialPath ?? root);
+	const [openCreateFolderDialog, setOpenCreateFolderDialog] = useState(false);
+	const title = usePossibleTranslation(props.title);
+	const createFolderState = useSelection((state) => state.dialogs.createFolder);
 
-  useUnmount(onClosed);
+	useUnmount(onClosed);
 
-  const onCloseCreateFolder = () => setOpenCreateFolderDialog(false);
+	const onCloseCreateFolder = () => setOpenCreateFolderDialog(false);
 
-  const onWithPendingChangesCloseRequest = useWithPendingChangesCloseRequest(onCloseCreateFolder);
+	const onWithPendingChangesCloseRequest = useWithPendingChangesCloseRequest(onCloseCreateFolder);
 
-  const onCreateFolder = () => setOpenCreateFolderDialog(true);
+	const onCreateFolder = () => setOpenCreateFolderDialog(true);
 
-  const onFolderCreated = ({ path, name }: { path: string; name: string }) => {
-    setOpenCreateFolderDialog(false);
-    let id = `${path}/${name}`;
-    setCurrentPath(id);
-  };
+	const onFolderCreated = ({ path, name }: { path: string; name: string }) => {
+		setOpenCreateFolderDialog(false);
+		let id = `${path}/${name}`;
+		setCurrentPath(id);
+	};
 
-  const onPathChanged = (path: string) => {
-    setCurrentPath(path);
-  };
+	const onPathChanged = (path: string) => {
+		setCurrentPath(path);
+	};
 
   return (
     <>

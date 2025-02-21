@@ -20,19 +20,19 @@ import { ContentTypeField } from '../../../models';
 import { FormsEngineField } from './FormsEngineField';
 
 export const UnknownControl = ({ field }: { field: ContentTypeField }) => (
-  <FormsEngineField field={field}>
-    <Alert
-      severity="error"
-      variant="outlined"
-      sx={(theme) => ({ border: 'none', strong: { fontWeight: theme.typography.fontWeightMedium } })}
-    >
-      Unable to render{' '}
-      <strong>
-        <em>
-          {field.name} ({field.id})
-        </em>
-      </strong>
-      . No mapping found in the system for the <strong>{field.type}</strong> type.
-    </Alert>
-  </FormsEngineField>
+	<FormsEngineField field={field}>
+		<Alert
+			severity="error"
+			variant="outlined"
+			sx={(theme) => ({ border: 'none', strong: { fontWeight: theme.typography.fontWeightMedium } })}
+		>
+			Unable to render{' '}
+			<strong>
+				<em>
+					{field.name} ({field.id})
+				</em>
+			</strong>
+			. No mapping found in the system for the <strong>{field.type}</strong> type.
+		</Alert>
+	</FormsEngineField>
 );

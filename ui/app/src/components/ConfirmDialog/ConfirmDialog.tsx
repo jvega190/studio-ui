@@ -23,31 +23,31 @@ import SecondaryButton from '../SecondaryButton';
 import translations from './translations';
 
 export function ConfirmDialog(props: ConfirmDialogProps) {
-  const { onOk, onCancel, disableOkButton, disableCancelButton, okButtonText, cancelButtonText, ...rest } = props;
-  const { formatMessage } = useIntl();
-  return (
-    <AlertDialog
-      // The backdrop or escape should trigger the onCancel (this action is likely the one that won't cause data
-      // loss or undesired changes). If this action is not provided, then disable backdrop and escape close.
-      disableBackdropClick={!onCancel}
-      disableEscapeKeyDown={!onCancel}
-      {...rest}
-      buttons={
-        <>
-          {onOk && (
-            <PrimaryButton onClick={onOk} autoFocus fullWidth size="large" disabled={disableOkButton}>
-              {okButtonText ?? formatMessage(translations.accept)}
-            </PrimaryButton>
-          )}
-          {onCancel && (
-            <SecondaryButton onClick={onCancel} fullWidth size="large" disabled={disableCancelButton}>
-              {cancelButtonText ?? formatMessage(translations.cancel)}
-            </SecondaryButton>
-          )}
-        </>
-      }
-    />
-  );
+	const { onOk, onCancel, disableOkButton, disableCancelButton, okButtonText, cancelButtonText, ...rest } = props;
+	const { formatMessage } = useIntl();
+	return (
+		<AlertDialog
+			// The backdrop or escape should trigger the onCancel (this action is likely the one that won't cause data
+			// loss or undesired changes). If this action is not provided, then disable backdrop and escape close.
+			disableBackdropClick={!onCancel}
+			disableEscapeKeyDown={!onCancel}
+			{...rest}
+			buttons={
+				<>
+					{onOk && (
+						<PrimaryButton onClick={onOk} autoFocus fullWidth size="large" disabled={disableOkButton}>
+							{okButtonText ?? formatMessage(translations.accept)}
+						</PrimaryButton>
+					)}
+					{onCancel && (
+						<SecondaryButton onClick={onCancel} fullWidth size="large" disabled={disableCancelButton}>
+							{cancelButtonText ?? formatMessage(translations.cancel)}
+						</SecondaryButton>
+					)}
+				</>
+			}
+		/>
+	);
 }
 
 export default ConfirmDialog;

@@ -17,29 +17,29 @@
 import { defineMessages } from 'react-intl';
 
 export const translations = defineMessages({
-  title: {
-    id: 'codeEditor.title',
-    defaultMessage: 'Code Editor'
-  },
-  save: {
-    id: 'words.save',
-    defaultMessage: 'Save'
-  },
-  saveAndClose: {
-    id: 'codeEditor.saveAndClose',
-    defaultMessage: 'Save & Close'
-  },
-  saveAndMinimize: {
-    id: 'codeEditor.saveAndMinimize',
-    defaultMessage: 'Save & Minimize'
-  },
-  saved: {
-    id: 'codeEditor.saved',
-    defaultMessage: 'Item saved successfully'
-  },
-  pendingChanges: {
-    defaultMessage: 'Close without saving changes?'
-  }
+	title: {
+		id: 'codeEditor.title',
+		defaultMessage: 'Code Editor'
+	},
+	save: {
+		id: 'words.save',
+		defaultMessage: 'Save'
+	},
+	saveAndClose: {
+		id: 'codeEditor.saveAndClose',
+		defaultMessage: 'Save & Close'
+	},
+	saveAndMinimize: {
+		id: 'codeEditor.saveAndMinimize',
+		defaultMessage: 'Save & Minimize'
+	},
+	saved: {
+		id: 'codeEditor.saved',
+		defaultMessage: 'Item saved successfully'
+	},
+	pendingChanges: {
+		defaultMessage: 'Close without saving changes?'
+	}
 });
 
 export default translations;

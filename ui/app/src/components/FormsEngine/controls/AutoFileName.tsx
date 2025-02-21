@@ -21,23 +21,23 @@ import { ControlProps } from '../types';
 import { useItemMetaContext } from '../formsEngineContext';
 
 export interface AutoFileNameProps extends ControlProps {
-  value: string;
+	value: string;
 }
 
 export function AutoFileName(props: AutoFileNameProps) {
-  const { field, value, setValue, autoFocus } = props;
-  const { id } = useItemMetaContext();
-  const htmlId = useId();
-  useEffect(() => {
-    if (!value) {
-      setValue(`${id}.xml`);
-    }
-  }, [setValue, value, id]);
-  return (
-    <FormsEngineField htmlFor={htmlId} field={field}>
-      <OutlinedInput readOnly fullWidth id={htmlId} value={value.replace(/\.xml$/, '')} autoFocus={autoFocus} />
-    </FormsEngineField>
-  );
+	const { field, value, setValue, autoFocus } = props;
+	const { id } = useItemMetaContext();
+	const htmlId = useId();
+	useEffect(() => {
+		if (!value) {
+			setValue(`${id}.xml`);
+		}
+	}, [setValue, value, id]);
+	return (
+		<FormsEngineField htmlFor={htmlId} field={field}>
+			<OutlinedInput readOnly fullWidth id={htmlId} value={value.replace(/\.xml$/, '')} autoFocus={autoFocus} />
+		</FormsEngineField>
+	);
 }
 
 export default AutoFileName;

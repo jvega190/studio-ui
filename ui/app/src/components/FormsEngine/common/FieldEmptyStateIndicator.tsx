@@ -20,11 +20,11 @@ import CheckRounded from '@mui/icons-material/CheckRounded';
 import React from 'react';
 
 export function FieldEmptyStateIndicator({ isEmpty }: { isEmpty: boolean }) {
-  return isEmpty ? undefined : (
-    <Tooltip title={<FormattedMessage defaultMessage="Complete" />}>
-      <CheckRounded fontSize="small" color="success" />
-    </Tooltip>
-  );
+	return isEmpty ? undefined : (
+		<Tooltip title={<FormattedMessage defaultMessage="Complete" />}>
+			<CheckRounded fontSize="small" color="success" />
+		</Tooltip>
+	);
 }
 
 export default FieldEmptyStateIndicator;

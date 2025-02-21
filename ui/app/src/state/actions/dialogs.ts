@@ -63,7 +63,7 @@ export const historyDialogUpdate =
 
 // region View Versions
 export const showViewVersionDialog =
-  /*#__PURE__*/ createAction<Partial<ViewVersionDialogStateProps>>('SHOW_VIEW_VERSION_DIALOG');
+	/*#__PURE__*/ createAction<Partial<ViewVersionDialogStateProps>>('SHOW_VIEW_VERSION_DIALOG');
 export const closeViewVersionDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_VIEW_VERSION_DIALOG');
 export const viewVersionDialogClosed = /*#__PURE__*/ createAction<StandardAction>('VERSION_DIALOG_CLOSED');
 // endregion
@@ -76,7 +76,7 @@ export const fetchContentVersionFailed = /*#__PURE__*/ createAction<any>('FETCH_
 
 // region Compare Versions
 export const showCompareVersionsDialog =
-  /*#__PURE__*/ createAction<Partial<CompareVersionsDialogStateProps>>('SHOW_COMPARE_VERSIONS_DIALOG');
+	/*#__PURE__*/ createAction<Partial<CompareVersionsDialogStateProps>>('SHOW_COMPARE_VERSIONS_DIALOG');
 export const closeCompareVersionsDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_COMPARE_VERSIONS_DIALOG');
 export const compareVersionsDialogClosed = /*#__PURE__*/ createAction('COMPARE_VERSIONS_DIALOG_CLOSED');
 // endregion
@@ -90,36 +90,36 @@ export const confirmDialogClosed = /*#__PURE__*/ createAction('CONFIRM_DIALOG_CL
 // region Publish
 export const showPublishDialog = /*#__PURE__*/ createAction<Partial<PublishDialogStateProps>>('SHOW_PUBLISH_DIALOG');
 export const updatePublishDialog =
-  /*#__PURE__*/ createAction<Partial<PublishDialogStateProps>>('UPDATE_PUBLISH_DIALOG');
+	/*#__PURE__*/ createAction<Partial<PublishDialogStateProps>>('UPDATE_PUBLISH_DIALOG');
 export const closePublishDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_PUBLISH_DIALOG');
 export const publishDialogClosed = /*#__PURE__*/ createAction('PUBLISH_DIALOG_CLOSED');
 // endregion
 
 // region Review
 export const showPublishingPackageReviewDialog = /*#__PURE__*/ createAction<
-  Partial<PublishingPackageReviewDialogStateProps>
+	Partial<PublishingPackageReviewDialogStateProps>
 >('SHOW_PUBLISH_PACKAGE_REVIEW_DIALOG');
 export const updatePublishingPackageReviewDialog = /*#__PURE__*/ createAction<Partial<PublishDialogStateProps>>(
-  'UPDATE_PUBLISH_PACKAGE_REVIEW_DIALOG'
+	'UPDATE_PUBLISH_PACKAGE_REVIEW_DIALOG'
 );
 export const closePublishingPackageReviewDialog = /*#__PURE__*/ createAction<StandardAction>(
-  'CLOSE_PUBLISH_PACKAGE_REVIEW_DIALOG'
+	'CLOSE_PUBLISH_PACKAGE_REVIEW_DIALOG'
 );
 export const publishingPackageReviewDialogClosed = /*#__PURE__*/ createAction('PUBLISH_PACKAGE_REVIEW_DIALOG_CLOSED');
 // endregion
 
 // region Resubmit
 export const showPublishingPackageResubmitDialog = /*#__PURE__*/ createAction<
-  Partial<PublishingPackageResubmitDialogStateProps>
+	Partial<PublishingPackageResubmitDialogStateProps>
 >('SHOW_PUBLISHING_PACKAGE_RESUBMIT_DIALOG');
 export const updatePublishingPackageResubmitDialog = /*#__PURE__*/ createAction<Partial<PublishDialogStateProps>>(
-  'UPDATE_PUBLISHING_PACKAGE_RESUBMIT_DIALOG'
+	'UPDATE_PUBLISHING_PACKAGE_RESUBMIT_DIALOG'
 );
 export const closePublishingPackageResubmitDialog = /*#__PURE__*/ createAction<StandardAction>(
-  'CLOSE_PUBLISHING_PACKAGE_RESUBMIT_DIALOG'
+	'CLOSE_PUBLISHING_PACKAGE_RESUBMIT_DIALOG'
 );
 export const publishingPackageResubmitDialogClosed = /*#__PURE__*/ createAction(
-  'PUBLISHING_PACKAGE_RESUBMIT_DIALOG_CLOSED'
+	'PUBLISHING_PACKAGE_RESUBMIT_DIALOG_CLOSED'
 );
 // endregion
 
@@ -130,31 +130,31 @@ export const closeDeleteDialog = /*#__PURE__*/ createAction<StandardAction>('CLO
 export const deleteDialogClosed = /*#__PURE__*/ createAction('DELETE_DIALOG_CLOSED');
 export const fetchDeleteDependencies = /*#__PURE__*/ createAction<{ paths: string[] }>('FETCH_DELETE_DEPENDENCIES');
 export const fetchDeleteDependenciesComplete = /*#__PURE__*/ createAction<FetchDeleteDependenciesResponse>(
-  'FETCH_DELETE_DEPENDENCIES_COMPLETE'
+	'FETCH_DELETE_DEPENDENCIES_COMPLETE'
 );
 export const fetchDeleteDependenciesFailed = /*#__PURE__*/ createAction<AjaxError>('FETCH_DELETE_DEPENDENCIES_FAILED');
 // endregion
 
 // region New Content
 export const showNewContentDialog =
-  /*#__PURE__*/ createAction<Partial<NewContentDialogStateProps>>('SHOW_NEW_CONTENT_DIALOG');
+	/*#__PURE__*/ createAction<Partial<NewContentDialogStateProps>>('SHOW_NEW_CONTENT_DIALOG');
 export const closeNewContentDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_NEW_CONTENT_DIALOG');
 export const newContentDialogClosed = /*#__PURE__*/ createAction('NEW_CONTENT_DIALOG_CLOSED');
 // endregion
 
 // region Change ContentType
 export const showChangeContentTypeDialog = /*#__PURE__*/ createAction<Partial<ChangeContentTypeDialogStateProps>>(
-  'SHOW_CHANGE_CONTENT_TYPE_DIALOG'
+	'SHOW_CHANGE_CONTENT_TYPE_DIALOG'
 );
 export const closeChangeContentTypeDialog = /*#__PURE__*/ createAction<StandardAction>(
-  'CLOSE_CHANGE_CONTENT_TYPE_DIALOG'
+	'CLOSE_CHANGE_CONTENT_TYPE_DIALOG'
 );
 export const changeContentTypeDialogClosed = /*#__PURE__*/ createAction('CHANGE_CONTENT_TYPE_DIALOG_CLOSED');
 // endregion
 
 // region Dependencies
 export const showDependenciesDialog =
-  /*#__PURE__*/ createAction<Partial<DependenciesDialogStateProps>>('SHOW_DEPENDENCIES_DIALOG');
+	/*#__PURE__*/ createAction<Partial<DependenciesDialogStateProps>>('SHOW_DEPENDENCIES_DIALOG');
 export const closeDependenciesDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_DEPENDENCIES_DIALOG');
 export const dependenciesDialogClosed = /*#__PURE__*/ createAction('DEPENDENCIES_DIALOG_CLOSED');
 // endregion

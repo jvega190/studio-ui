@@ -16,12 +16,22 @@
 
 import { ContentTypeField } from '../../models';
 import ContentType from '../../models/ContentType';
+import { createStore } from 'jotai/index';
+import type { RESET } from 'jotai/utils';
+import type { WritableAtom } from 'jotai/vanilla';
 
 export interface ControlProps {
-  value: unknown;
-  setValue(newValue: unknown): void;
-  field: ContentTypeField;
-  contentType: ContentType;
-  readonly: boolean;
-  autoFocus: boolean;
+	value: unknown;
+	setValue(newValue: unknown): void;
+	field: ContentTypeField;
+	contentType: ContentType;
+	readonly: boolean;
+	autoFocus: boolean;
 }
+
+export type JotaiStore = ReturnType<typeof createStore>;
+
+// Jotai hides this type, so we need to redefine it here.
+export type SetStateActionWithReset<Value> = Value | typeof RESET | ((prev: Value) => Value | typeof RESET);
+
+export type CollapseToCAtomWithStorage = WritableAtom<boolean, [SetStateActionWithReset<boolean>], boolean>;

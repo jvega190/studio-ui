@@ -22,28 +22,28 @@ import { styled } from '@mui/material/styles';
 import { alpha } from '@mui/material';
 
 const StackedButton = styled(Button)(({ theme }) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  textDecoration: 'underline',
-  [`& .${avatarClasses.root}`]: {
-    backgroundColor: theme.palette.action.selected,
-    color: alpha(theme.palette.action.selected, 1)
-  }
+	display: 'flex',
+	flexDirection: 'column',
+	textDecoration: 'underline',
+	[`& .${avatarClasses.root}`]: {
+		backgroundColor: theme.palette.action.selected,
+		color: alpha(theme.palette.action.selected, 1)
+	}
 }));
 
 export interface FeaturedButtonProps extends ButtonProps {
-  icon: ReactNode;
+	icon: ReactNode;
 }
 
 export function FeaturedButton({ children, ...rest }: FeaturedButtonProps) {
-  return (
-    <StackedButton {...rest}>
-      <Avatar variant="circular">
-        <UploadFileOutlinedIcon />
-      </Avatar>
-      {children}
-    </StackedButton>
-  );
+	return (
+		<StackedButton {...rest}>
+			<Avatar variant="circular">
+				<UploadFileOutlinedIcon />
+			</Avatar>
+			{children}
+		</StackedButton>
+	);
 }
 
 export default FeaturedButton;

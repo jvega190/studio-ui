@@ -15,7 +15,7 @@
  */
 
 import type { TItem } from './SortableList';
-import { sortableListActionProcessor, SortAction } from './util';
+import { sortableListActionProcessor, SortAction } from './sortableListUtil';
 import List from '@mui/material/List';
 import { ListItem } from '@mui/material';
 import ListItemText from '@mui/material/ListItemText';
@@ -29,52 +29,52 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 
 export interface TouchSortableListProps<T = unknown> {
-  items: TItem<T>[];
-  onChange(newList: TItem<T>[]): void;
+	items: TItem<T>[];
+	onChange(newList: TItem<T>[]): void;
 }
 
 export function TouchSortableList({ items, onChange }: TouchSortableListProps) {
-  const handleMove = (action: SortAction, moveToEdge: boolean, index: number) =>
-    sortableListActionProcessor(action, moveToEdge, items, index, onChange);
-  return (
-    <List sx={{}}>
-      {items.map((item, index) => (
-        <ListItem key={index} sx={{ display: 'flex' }}>
-          <ListItemText
-            disableTypography
-            primary={
-              <Box display="flex" alignItems="center" sx={{ placeContent: 'space-between' }}>
-                <Typography>{item.value}</Typography>
-                <Box sx={{ display: 'flex' }}>
-                  <IconButton color="primary" disabled={index === 0} onClick={() => handleMove('up', false, index)}>
-                    <KeyboardArrowUpRounded />
-                  </IconButton>
-                  <IconButton color="primary" disabled={index === 0} onClick={() => handleMove('up', true, index)}>
-                    <KeyboardDoubleArrowUpRounded />
-                  </IconButton>
-                  <Divider orientation="vertical" flexItem sx={{ height: 15, alignSelf: 'center' }} />
-                  <IconButton
-                    color="primary"
-                    disabled={index === items.length - 1}
-                    onClick={() => handleMove('down', false, index)}
-                  >
-                    <KeyboardArrowDownRounded />
-                  </IconButton>
-                  <IconButton
-                    color="primary"
-                    disabled={index === items.length - 1}
-                    onClick={() => handleMove('down', true, index)}
-                  >
-                    <KeyboardDoubleArrowDownRounded />
-                  </IconButton>
-                </Box>
-              </Box>
-            }
-          />
-        </ListItem>
-      ))}
-    </List>
-  );
+	const handleMove = (action: SortAction, moveToEdge: boolean, index: number) =>
+		sortableListActionProcessor(action, moveToEdge, items, index, onChange);
+	return (
+		<List>
+			{items.map((item, index) => (
+				<ListItem key={index} sx={{ display: 'flex' }}>
+					<ListItemText
+						disableTypography
+						primary={
+							<Box display="flex" alignItems="center" sx={{ placeContent: 'space-between' }}>
+								<Typography>{item.value}</Typography>
+								<Box sx={{ display: 'flex' }}>
+									<IconButton color="primary" disabled={index === 0} onClick={() => handleMove('up', false, index)}>
+										<KeyboardArrowUpRounded />
+									</IconButton>
+									<IconButton color="primary" disabled={index === 0} onClick={() => handleMove('up', true, index)}>
+										<KeyboardDoubleArrowUpRounded />
+									</IconButton>
+									<Divider orientation="vertical" flexItem sx={{ height: 15, alignSelf: 'center' }} />
+									<IconButton
+										color="primary"
+										disabled={index === items.length - 1}
+										onClick={() => handleMove('down', false, index)}
+									>
+										<KeyboardArrowDownRounded />
+									</IconButton>
+									<IconButton
+										color="primary"
+										disabled={index === items.length - 1}
+										onClick={() => handleMove('down', true, index)}
+									>
+										<KeyboardDoubleArrowDownRounded />
+									</IconButton>
+								</Box>
+							</Box>
+						}
+					/>
+				</ListItem>
+			))}
+		</List>
+	);
 }
 
 export default TouchSortableList;

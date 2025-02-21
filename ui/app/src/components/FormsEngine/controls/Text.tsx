@@ -20,27 +20,27 @@ import { FormsEngineField } from '../common/FormsEngineField';
 import { ControlProps } from '../types';
 
 export interface TextProps extends ControlProps {
-  value: string;
+	value: string;
 }
 
 export function Text(props: TextProps) {
-  const { field, value, setValue, readonly, autoFocus } = props;
-  const htmlId = useId();
-  const maxLength = field.validations.maxLength?.value;
-  const handleChange: OutlinedInputProps['onChange'] = (e) => setValue(e.currentTarget.value);
-  return (
-    <FormsEngineField htmlFor={htmlId} field={field} max={maxLength} length={value.length}>
-      <OutlinedInput
-        autoFocus={autoFocus}
-        id={htmlId}
-        fullWidth
-        inputProps={{ maxLength }}
-        value={value}
-        onChange={handleChange}
-        disabled={readonly}
-      />
-    </FormsEngineField>
-  );
+	const { field, value, setValue, readonly, autoFocus } = props;
+	const htmlId = useId();
+	const maxLength = field.validations.maxLength?.value;
+	const handleChange: OutlinedInputProps['onChange'] = (e) => setValue(e.currentTarget.value);
+	return (
+		<FormsEngineField htmlFor={htmlId} field={field} max={maxLength} length={value.length}>
+			<OutlinedInput
+				autoFocus={autoFocus}
+				id={htmlId}
+				fullWidth
+				inputProps={{ maxLength }}
+				value={value}
+				onChange={handleChange}
+				disabled={readonly}
+			/>
+		</FormsEngineField>
+	);
 }
 
 export default Text;

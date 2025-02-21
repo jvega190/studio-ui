@@ -31,81 +31,81 @@ import { FormattedMessage } from 'react-intl';
 import FieldBox from '../common/FieldBox';
 
 export interface ImagePickerProps extends ControlProps {
-  value: string;
+	value: string;
 }
 
 export function ImagePicker(props: ImagePickerProps) {
-  const { field, value, autoFocus } = props;
-  const { guestBase } = useEnv();
-  const hasValue = Boolean(value);
-  return (
-    <FormsEngineField field={field}>
-      {hasValue ? (
-        <Card sx={{ display: 'flex' }}>
-          <CardMedia
-            component="img"
-            sx={{ width: '40%' }}
-            image={`${guestBase}${value}`}
-            alt="Live from space album cover"
-          />
-          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-            <CardContent sx={{ flex: '1 0 auto' }}>
-              <Typography component="div" variant="body1" marginBottom={1}>
-                /static/images/cards/live-from-space.jpg
-              </Typography>
-              <Typography variant="body2" component="div" color="textSecondary" marginBottom={1}>
-                image/webp
-                <br />
-                640x427
-                <br />
-                12.3Kb
-              </Typography>
-              <Box>
-                <IconButton size="small">
-                  <EditOutlined />
-                </IconButton>
-                <IconButton size="small">
-                  <DownloadOutlined />
-                </IconButton>
-                <IconButton size="small">
-                  <DeleteOutlined />
-                </IconButton>
-              </Box>
-            </CardContent>
-          </Box>
-        </Card>
-      ) : (
-        <FieldBox
-          dashed
-          sx={{
-            p: 1,
-            gap: 1,
-            flexDirection: 'row',
-            justifyContent: 'center'
-          }}
-        >
-          <StackedButton>
-            <Avatar variant="circular">
-              <UploadFileOutlinedIcon />
-            </Avatar>
-            <FormattedMessage defaultMessage="Upload" />
-          </StackedButton>
-          <StackedButton>
-            <Avatar variant="circular">
-              <UploadFileOutlinedIcon />
-            </Avatar>
-            <FormattedMessage defaultMessage="Browse" />
-          </StackedButton>
-          <StackedButton>
-            <Avatar variant="circular">
-              <UploadFileOutlinedIcon />
-            </Avatar>
-            <FormattedMessage defaultMessage="Search" />
-          </StackedButton>
-        </FieldBox>
-      )}
-    </FormsEngineField>
-  );
+	const { field, value, autoFocus } = props;
+	const { guestBase } = useEnv();
+	const hasValue = Boolean(value);
+	return (
+		<FormsEngineField field={field}>
+			{hasValue ? (
+				<Card sx={{ display: 'flex' }}>
+					<CardMedia
+						component="img"
+						sx={{ width: '40%' }}
+						image={`${guestBase}${value}`}
+						alt="Live from space album cover"
+					/>
+					<Box sx={{ display: 'flex', flexDirection: 'column' }}>
+						<CardContent sx={{ flex: '1 0 auto' }}>
+							<Typography component="div" variant="body1" marginBottom={1}>
+								/static/images/cards/live-from-space.jpg
+							</Typography>
+							<Typography variant="body2" component="div" color="textSecondary" marginBottom={1}>
+								image/webp
+								<br />
+								640x427
+								<br />
+								12.3Kb
+							</Typography>
+							<Box>
+								<IconButton size="small">
+									<EditOutlined />
+								</IconButton>
+								<IconButton size="small">
+									<DownloadOutlined />
+								</IconButton>
+								<IconButton size="small">
+									<DeleteOutlined />
+								</IconButton>
+							</Box>
+						</CardContent>
+					</Box>
+				</Card>
+			) : (
+				<FieldBox
+					dashed
+					sx={{
+						p: 1,
+						gap: 1,
+						flexDirection: 'row',
+						justifyContent: 'center'
+					}}
+				>
+					<StackedButton>
+						<Avatar variant="circular">
+							<UploadFileOutlinedIcon />
+						</Avatar>
+						<FormattedMessage defaultMessage="Upload" />
+					</StackedButton>
+					<StackedButton>
+						<Avatar variant="circular">
+							<UploadFileOutlinedIcon />
+						</Avatar>
+						<FormattedMessage defaultMessage="Browse" />
+					</StackedButton>
+					<StackedButton>
+						<Avatar variant="circular">
+							<UploadFileOutlinedIcon />
+						</Avatar>
+						<FormattedMessage defaultMessage="Search" />
+					</StackedButton>
+				</FieldBox>
+			)}
+		</FormsEngineField>
+	);
 }
 
 export default ImagePicker;

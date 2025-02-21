@@ -19,25 +19,25 @@ import { ErrorBoundary, ErrorBoundaryProps } from '../ErrorBoundary/ErrorBoundar
 import LoadingState, { LoadingStateProps } from '../LoadingState/LoadingState';
 
 type SuspencifiedProps = PropsWithChildren<{
-  suspenseProps?: SuspenseProps;
-  loadingStateProps?: LoadingStateProps;
-  errorBoundaryProps?: ErrorBoundaryProps;
-  fallback?: SuspenseProps['fallback'];
+	suspenseProps?: SuspenseProps;
+	loadingStateProps?: LoadingStateProps;
+	errorBoundaryProps?: ErrorBoundaryProps;
+	fallback?: SuspenseProps['fallback'];
 }>;
 
 export function Suspencified(props: SuspencifiedProps) {
-  const {
-    children,
-    loadingStateProps,
-    errorBoundaryProps,
-    suspenseProps,
-    fallback = <LoadingState {...loadingStateProps} />
-  } = props;
-  return (
-    <ErrorBoundary {...errorBoundaryProps}>
-      <Suspense fallback={fallback} {...suspenseProps} children={children} />
-    </ErrorBoundary>
-  );
+	const {
+		children,
+		loadingStateProps,
+		errorBoundaryProps,
+		suspenseProps,
+		fallback = <LoadingState {...loadingStateProps} />
+	} = props;
+	return (
+		<ErrorBoundary {...errorBoundaryProps}>
+			<Suspense fallback={fallback} {...suspenseProps} children={children} />
+		</ErrorBoundary>
+	);
 }
 
 export default Suspencified;

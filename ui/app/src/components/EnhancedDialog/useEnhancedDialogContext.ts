@@ -19,14 +19,14 @@ import { EnhancedDialogState, onSubmittingAndOrPendingChangeProps } from '../../
 import { DialogProps } from '@mui/material/Dialog';
 
 export type EnhancedDialogContextProps = EnhancedDialogState & {
-  onClose: DialogProps['onClose'];
-  updateSubmittingOrHasPendingChanges(changes: onSubmittingAndOrPendingChangeProps): void;
+	onClose: DialogProps['onClose'];
+	updateSubmittingOrHasPendingChanges(changes: onSubmittingAndOrPendingChangeProps): void;
 };
 
 export const EnhancedDialogContext = createContext<EnhancedDialogContextProps>(void 0);
 
 export function useEnhancedDialogContext() {
-  return useContext(EnhancedDialogContext);
+	return useContext(EnhancedDialogContext);
 }
 
 export default useEnhancedDialogContext;

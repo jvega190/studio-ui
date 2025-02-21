@@ -17,53 +17,53 @@
 import { Resource } from '../models/Resource';
 
 export function createFakeResource<T>(result: T): Resource<T> {
-  return {
-    complete: true,
-    error: false,
-    read() {
-      return result;
-    }
-  };
+	return {
+		complete: true,
+		error: false,
+		read() {
+			return result;
+		}
+	};
 }
 
 export function createResource<T>(factoryFn: () => Promise<T>): Resource<T> {
-  let result: T;
-  let status: 'pending' | 'error' | 'success' = 'pending';
-  const resource: { complete: boolean; error: boolean; read(): T } = {
-    complete: false,
-    error: false,
-    read() {
-      if (status === 'pending') {
-        throw factoryFn().then(
-          (response) => {
-            status = 'success';
-            result = response;
-            return response;
-          },
-          (error) => {
-            status = 'error';
-            result = error;
-            return result;
-          }
-        );
-      } else if (status === 'error') {
-        resource.complete = true;
-        resource.error = true;
-        throw result;
-      } else if (status === 'success') {
-        resource.complete = true;
-        return result;
-      }
-    }
-  };
-  return resource;
+	let result: T;
+	let status: 'pending' | 'error' | 'success' = 'pending';
+	const resource: { complete: boolean; error: boolean; read(): T } = {
+		complete: false,
+		error: false,
+		read() {
+			if (status === 'pending') {
+				throw factoryFn().then(
+					(response) => {
+						status = 'success';
+						result = response;
+						return response;
+					},
+					(error) => {
+						status = 'error';
+						result = error;
+						return result;
+					}
+				);
+			} else if (status === 'error') {
+				resource.complete = true;
+				resource.error = true;
+				throw result;
+			} else if (status === 'success') {
+				resource.complete = true;
+				return result;
+			}
+		}
+	};
+	return resource;
 }
 
 export function createResourceBundle<T>(): [Resource<T>, (value?: T | Promise<T>) => void, (reason?: unknown) => void] {
-  let resolve: (value?: T | Promise<T>) => void, reject: (reason?: unknown) => void;
-  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
-    resolve = resolvePromise;
-    reject = rejectPromise;
-  });
-  return [createResource(() => promise), resolve, reject];
+	let resolve: (value?: T | Promise<T>) => void, reject: (reason?: unknown) => void;
+	const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+		resolve = resolvePromise;
+		reject = rejectPromise;
+	});
+	return [createResource(() => promise), resolve, reject];
 }

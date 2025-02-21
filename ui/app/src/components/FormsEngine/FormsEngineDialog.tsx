@@ -20,35 +20,33 @@ import FormsEngine, { FormsEngineProps } from './FormsEngine';
 import { dialogClasses } from '@mui/material/Dialog';
 
 export interface FormsEngineDialogProps extends EnhancedDialogProps {
-  formProps: FormsEngineProps;
+	formProps: FormsEngineProps;
 }
 
 export function FormsEngineDialog(props: FormsEngineDialogProps) {
-  const { formProps, ...rest } = props;
-  return (
-    <EnhancedDialog
-      sx={{
-        // prettier-ignore
-        [`& > .${dialogClasses.container} > .${dialogClasses.paper}`]: {
-          height: '100vh',
-          // overflow: 'hidden'
-        }
-      }}
-      {...rest}
-      omitHeader
-      maxWidth="xl"
-      title="Content Form"
-      data-area-id="forms-engine-dialog-root"
-    >
-      <FormsEngine
-        onMinimize={props.onMinimize}
-        onFullScreen={props.onFullScreen}
-        onCancelFullScreen={props.onCancelFullScreen}
-        {...formProps}
-        isDialog
-      />
-    </EnhancedDialog>
-  );
+	const { formProps, ...rest } = props;
+	return (
+		<EnhancedDialog
+			sx={{
+				[`& > .${dialogClasses.container} > .${dialogClasses.paper}`]: {
+					height: '100vh'
+				}
+			}}
+			{...rest}
+			omitHeader
+			maxWidth="xl"
+			title="Content Form"
+			data-area-id="forms-engine-dialog-root"
+		>
+			<FormsEngine
+				onMinimize={props.onMinimize}
+				onFullScreen={props.onFullScreen}
+				onCancelFullScreen={props.onCancelFullScreen}
+				{...formProps}
+				isDialog
+			/>
+		</EnhancedDialog>
+	);
 }
 
 export default FormsEngineDialog;
