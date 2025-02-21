@@ -15,7 +15,7 @@
  */
 
 @import 'variables';
-@import '../../static-assets/libs/bootstrap/scss/mixins';
+@import '../../../static-assets/libs/bootstrap/scss/mixins';
 
 .yui-skin-cstudioTheme {
   overflow-x: hidden;
@@ -47,10 +47,14 @@
 
   .panel {
     border: none !important;
-    box-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12) !important;
+    box-shadow:
+      0 3px 1px -2px rgba(0, 0, 0, 0.2),
+      0 2px 2px 0 rgba(0, 0, 0, 0.14),
+      0 1px 5px 0 rgba(0, 0, 0, 0.12) !important;
+
     .panel-heading {
-      @include clearfix;
       border: none !important;
+      @include clearfix;
 
       .studio-section-widget {
         background: url('../themes/cstudioTheme/images/icons/icon_strip.gif') no-repeat scroll -20px 5px transparent;
@@ -119,7 +123,9 @@
 
 .site-dashboard-footer {
   padding: 20px 0;
-  transition: padding 0.5s, transform 0.5s;
+  transition:
+    padding 0.5s,
+    transform 0.5s;
 }
 
 .embedded {
@@ -142,7 +148,9 @@
     #activeContentActions {
       opacity: 0;
       visibility: hidden;
-      transition: opacity 0.3s, visibility 0.3s;
+      transition:
+        opacity 0.3s,
+        visibility 0.3s;
       position: fixed;
       top: 18px;
       left: 50%;
@@ -418,7 +426,9 @@ table.scroll-body {
   border: 1px solid #e7e7e7;
   border-bottom-left-radius: $border-radius-base;
   border-bottom-right-radius: $border-radius-base;
-  transition: height 0.25s, transform 0.25s;
+  transition:
+    height 0.25s,
+    transform 0.25s;
 
   > .bd {
     &.overlay::before {
@@ -429,7 +439,9 @@ table.scroll-body {
       top: 0;
       height: 100vh;
       background-color: rgba(0, 0, 0, 0.65);
-      transition: height 0.5s, transform 0.5s;
+      transition:
+        height 0.5s,
+        transform 0.5s;
     }
 
     &.overlay.overlay-collapsed::before {
@@ -490,7 +502,9 @@ table.scroll-body {
     }
 
     iframe {
-      transition: top 0.5s, transform 0.5s;
+      transition:
+        top 0.5s,
+        transform 0.5s;
     }
   }
 }
