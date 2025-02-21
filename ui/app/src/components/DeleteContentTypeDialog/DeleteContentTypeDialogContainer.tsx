@@ -19,76 +19,102 @@ import { useActiveSiteId } from '../../hooks/useActiveSiteId';
 import { defineMessages, useIntl } from 'react-intl';
 import { useDispatch } from 'react-redux';
 import * as React from 'react';
-import { useMemo } from 'react';
-import { createResource } from '../../utils/resource';
+import { useEffect } from 'react';
 import { deleteContentType, fetchContentTypeUsage } from '../../services/contentTypes';
 import { showSystemNotification } from '../../state/actions/system';
-import Suspencified from '../Suspencified/Suspencified';
 import DeleteContentTypeDialogBody from './DeleteContentTypeDialogBody';
 import useUpdateRefs from '../../hooks/useUpdateRefs';
+import useSpreadState from '../../hooks/useSpreadState';
+import ApiResponseErrorState from '../ApiResponseErrorState';
+import LoadingState from '../LoadingState';
 
 const messages = defineMessages({
-  deleteComplete: {
-    id: 'deleteContentTypeDialog.contentTypeDeletedMessage',
-    defaultMessage: 'Content type deleted successfully'
-  },
-  deleteFailed: {
-    id: 'deleteContentTypeDialog.contentTypeDeleteFailedMessage',
-    defaultMessage: 'Error deleting content type'
-  }
+	deleteComplete: {
+		id: 'deleteContentTypeDialog.contentTypeDeletedMessage',
+		defaultMessage: 'Content type deleted successfully'
+	},
+	deleteFailed: {
+		id: 'deleteContentTypeDialog.contentTypeDeleteFailedMessage',
+		defaultMessage: 'Error deleting content type'
+	}
 });
 
 export function DeleteContentTypeDialogContainer(props: DeleteContentTypeDialogContainerProps) {
-  const { onClose, contentType, onComplete, isSubmitting, onSubmittingAndOrPendingChange } = props;
-  const site = useActiveSiteId();
-  const { formatMessage } = useIntl();
-  const dispatch = useDispatch();
-  const functionRefs = useUpdateRefs({
-    onSubmittingAndOrPendingChange
-  });
+	const { onClose, contentType, onComplete, isSubmitting, onSubmittingAndOrPendingChange } = props;
+	const site = useActiveSiteId();
+	const { formatMessage } = useIntl();
+	const dispatch = useDispatch();
+	const functionRefs = useUpdateRefs({
+		onSubmittingAndOrPendingChange
+	});
+	const [{ data, isFetching, error }, setState] = useSpreadState({
+		data: null,
+		isFetching: false,
+		error: null
+	});
 
-  const resource = useMemo(
-    () => createResource(() => fetchContentTypeUsage(site, contentType.id).toPromise()),
-    [site, contentType.id]
-  );
-  const onSubmit = () => {
-    functionRefs.current.onSubmittingAndOrPendingChange({
-      isSubmitting: true
-    });
-    deleteContentType(site, contentType.id).subscribe({
-      next() {
-        functionRefs.current.onSubmittingAndOrPendingChange({
-          isSubmitting: false
-        });
-        dispatch(showSystemNotification({ message: formatMessage(messages.deleteComplete) }));
-        onComplete?.();
-      },
-      error(e) {
-        functionRefs.current.onSubmittingAndOrPendingChange({
-          isSubmitting: false
-        });
-        const response = e.response?.response ?? e.response;
-        dispatch(
-          showSystemNotification({
-            message: response?.message ?? formatMessage(messages.deleteFailed),
-            options: { variant: 'error' }
-          })
-        );
-      }
-    });
-  };
+	useEffect(() => {
+		setState({ isFetching: true });
+		const sub = fetchContentTypeUsage(site, contentType.id).subscribe({
+			next(response) {
+				setState({
+					data: response,
+					isFetching: false,
+					error: null
+				});
+			},
+			error(e) {
+				setState({
+					error: e,
+					isFetching: false
+				});
+			}
+		});
+		return () => {
+			sub.unsubscribe();
+		};
+	}, [site, contentType.id, setState]);
 
-  const onCloseButtonClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => onClose(e, null);
+	const onSubmit = () => {
+		functionRefs.current.onSubmittingAndOrPendingChange({
+			isSubmitting: true
+		});
+		deleteContentType(site, contentType.id).subscribe({
+			next() {
+				functionRefs.current.onSubmittingAndOrPendingChange({
+					isSubmitting: false
+				});
+				dispatch(showSystemNotification({ message: formatMessage(messages.deleteComplete) }));
+				onComplete?.();
+			},
+			error(e) {
+				functionRefs.current.onSubmittingAndOrPendingChange({
+					isSubmitting: false
+				});
+				const response = e.response?.response ?? e.response;
+				dispatch(
+					showSystemNotification({
+						message: response?.message ?? formatMessage(messages.deleteFailed),
+						options: { variant: 'error' }
+					})
+				);
+			}
+		});
+	};
 
-  return (
-    <Suspencified loadingStateProps={{ styles: { root: { width: 300, height: 250 } } }}>
-      <DeleteContentTypeDialogBody
-        submitting={isSubmitting}
-        onCloseButtonClick={onCloseButtonClick}
-        resource={resource}
-        contentType={contentType}
-        onSubmit={onSubmit}
-      />
-    </Suspencified>
-  );
+	const onCloseButtonClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => onClose(e, null);
+
+	return error ? (
+		<ApiResponseErrorState error={error} />
+	) : isFetching ? (
+		<LoadingState sxs={{ root: { width: 300, height: 250 } }} />
+	) : data ? (
+		<DeleteContentTypeDialogBody
+			submitting={isSubmitting}
+			onCloseButtonClick={onCloseButtonClick}
+			data={data}
+			contentType={contentType}
+			onSubmit={onSubmit}
+		/>
+	) : null;
 }

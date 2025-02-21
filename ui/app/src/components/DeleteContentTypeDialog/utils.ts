@@ -14,30 +14,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import ContentType from '../../models/ContentType';
-import { Resource } from '../../models/Resource';
 import { FetchContentTypeUsageResponse } from '../../services/contentTypes';
 import { EnhancedDialogProps } from '../EnhancedDialog';
 import React from 'react';
 import { onSubmittingAndOrPendingChangeProps } from '../../hooks/useEnhancedDialogState';
 
 export interface DeleteContentTypeBaseProps {
-  contentType: ContentType;
+	contentType: ContentType;
 }
 
 export interface DeleteContentTypeDialogProps extends DeleteContentTypeBaseProps, EnhancedDialogProps {
-  onSubmittingAndOrPendingChange(value: onSubmittingAndOrPendingChangeProps): void;
-  onComplete?();
+	onSubmittingAndOrPendingChange(value: onSubmittingAndOrPendingChangeProps): void;
+	onComplete?();
 }
 
 export interface DeleteContentTypeDialogContainerProps
-  extends DeleteContentTypeBaseProps,
-    Pick<DeleteContentTypeDialogProps, 'onComplete' | 'onClose' | 'isSubmitting' | 'onSubmittingAndOrPendingChange'> {}
+	extends DeleteContentTypeBaseProps,
+		Pick<DeleteContentTypeDialogProps, 'onComplete' | 'onClose' | 'isSubmitting' | 'onSubmittingAndOrPendingChange'> {}
 
 export interface DeleteContentTypeDialogBodyProps {
-  submitting: boolean;
-  contentType: ContentType;
-  resource: Resource<FetchContentTypeUsageResponse>;
-  password?: string;
-  onCloseButtonClick?(e: React.MouseEvent<HTMLButtonElement, MouseEvent>): void;
-  onSubmit(): void;
+	submitting: boolean;
+	contentType: ContentType;
+	data: FetchContentTypeUsageResponse;
+	password?: string;
+	onCloseButtonClick?(e: React.MouseEvent<HTMLButtonElement, MouseEvent>): void;
+	onSubmit(): void;
 }
