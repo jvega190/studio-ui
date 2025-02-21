@@ -20,84 +20,78 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import { camelize } from '../../utils/string';
 import React from 'react';
-import { makeStyles } from 'tss-react/mui';
 import { SORT_AUTO } from '../Search/utils';
 
-const useStyles = makeStyles()(() => ({
-  select: {
-    width: '100%',
-    '&.last': {
-      marginTop: '10px'
-    }
-  }
-}));
-
 export const filtersMessages = defineMessages({
-  relevance: {
-    id: 'words.relevance',
-    defaultMessage: 'Relevance'
-  },
-  internalName: {
-    id: 'searchFilter.internalName',
-    defaultMessage: 'Name'
-  },
-  width: {
-    id: 'words.width',
-    defaultMessage: 'Width'
-  },
-  contentType: {
-    id: 'searchFilter.contentType',
-    defaultMessage: 'Content Type'
-  },
-  mimeType: {
-    id: 'searchFilter.mimeType',
-    defaultMessage: 'MIME Type'
-  },
-  size: {
-    id: 'searchFilter.size',
-    defaultMessage: 'Content Size'
-  },
-  lastEditDate: {
-    id: 'searchFilter.lastEditDate',
-    defaultMessage: 'Last Edit Date'
-  },
-  height: {
-    id: 'words.height',
-    defaultMessage: 'Height'
-  }
+	relevance: {
+		id: 'words.relevance',
+		defaultMessage: 'Relevance'
+	},
+	internalName: {
+		id: 'searchFilter.internalName',
+		defaultMessage: 'Name'
+	},
+	width: {
+		id: 'words.width',
+		defaultMessage: 'Width'
+	},
+	contentType: {
+		id: 'searchFilter.contentType',
+		defaultMessage: 'Content Type'
+	},
+	mimeType: {
+		id: 'searchFilter.mimeType',
+		defaultMessage: 'MIME Type'
+	},
+	size: {
+		id: 'searchFilter.size',
+		defaultMessage: 'Content Size'
+	},
+	lastEditDate: {
+		id: 'searchFilter.lastEditDate',
+		defaultMessage: 'Last Edit Date'
+	},
+	height: {
+		id: 'words.height',
+		defaultMessage: 'Height'
+	}
 });
 
 interface SortByProps {
-  sortBy?: string;
-  filterKeys: string[];
-  handleFilterChange(filter: FilterType, isFilter?: boolean): any;
+	sortBy?: string;
+	filterKeys: string[];
+	handleFilterChange(filter: FilterType, isFilter?: boolean): any;
 }
 
 export function SiteSearchSortBy(props: SortByProps) {
-  const { classes } = useStyles();
-  const { formatMessage } = useIntl();
-  const { handleFilterChange, filterKeys, sortBy = SORT_AUTO } = props;
+	const { formatMessage } = useIntl();
+	const { handleFilterChange, filterKeys, sortBy = SORT_AUTO } = props;
 
-  return (
-    <Select
-      value={sortBy}
-      className={classes.select}
-      onChange={(event) => handleFilterChange({ name: 'sortBy', value: event.target.value })}
-    >
-      <MenuItem value={SORT_AUTO}>
-        <FormattedMessage defaultMessage="Auto" />
-      </MenuItem>
-      <MenuItem value="_score">{formatMessage(filtersMessages.relevance)}</MenuItem>
-      <MenuItem value="internalName">{formatMessage(filtersMessages.internalName)}</MenuItem>
-      {filterKeys.map((name: string, i: number) => {
-        return (
-          <MenuItem value={name} key={i}>
-            {formatMessage(filtersMessages[camelize(name)])}
-          </MenuItem>
-        );
-      })}
-    </Select>
-  );
+	return (
+		<Select
+			value={sortBy}
+			sx={{
+				width: '100%',
+				'&.last': {
+					marginTop: '10px'
+				}
+			}}
+			onChange={(event) => handleFilterChange({ name: 'sortBy', value: event.target.value })}
+		>
+			<MenuItem value={SORT_AUTO}>
+				<FormattedMessage defaultMessage="Auto" />
+			</MenuItem>
+			<MenuItem value="_score">{formatMessage(filtersMessages.relevance)}</MenuItem>
+			<MenuItem value="internalName">{formatMessage(filtersMessages.internalName)}</MenuItem>
+			{filterKeys.map((name: string, i: number) => {
+				return (
+					<MenuItem value={name} key={i}>
+						{formatMessage(filtersMessages[camelize(name)])}
+					</MenuItem>
+				);
+			})}
+		</Select>
+	);
 }
 
 export default SiteSearchSortBy;
