@@ -409,6 +409,8 @@ export function SingleItemSelector(props: SingleItemSelectorProps) {
 								marginLeft: 'auto',
 								display: 'flex',
 								minWidth: 0,
+								flexDirection: 'column',
+								flex: 1,
 								...sxs?.selectedItem
 							}}
 						>
