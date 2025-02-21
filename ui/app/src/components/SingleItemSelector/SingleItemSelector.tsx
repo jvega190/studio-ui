@@ -61,6 +61,7 @@ interface SingleItemSelectorProps {
 	disabled?: boolean;
 	buttonSize?: IconButtonProps['size'];
 	tooltip?: string;
+	showPath?: boolean;
 	onClose?(): void;
 	onItemClicked(item: DetailedItem): void;
 	onDropdownClick?(): void;
@@ -238,7 +239,7 @@ export function SingleItemSelector(props: SingleItemSelectorProps) {
 		filterChildren = () => true,
 		buttonSize = 'large',
 		tooltip = '',
-    showPath = false
+		showPath = false
 	} = props;
 	// endregion
 	const buttonElRef = useRef(undefined);
@@ -412,19 +413,19 @@ export function SingleItemSelector(props: SingleItemSelectorProps) {
 							}}
 						>
 							<ItemDisplay item={selectedItem} showNavigableAsLinks={false} />
-              {showPath && (
-                <Typography
-                  color="text.secondary"
-                  variant="body2"
-                  sx={{
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}
-                  title={selectedItem.path}
-                >
-                  {selectedItem.path}
-                </Typography>
-              )}
+							{showPath && (
+								<Typography
+									color="text.secondary"
+									variant="body2"
+									sx={{
+										overflow: 'hidden',
+										textOverflow: 'ellipsis'
+									}}
+									title={selectedItem.path}
+								>
+									{selectedItem.path}
+								</Typography>
+							)}
 						</Box>
 					)}
 				</>

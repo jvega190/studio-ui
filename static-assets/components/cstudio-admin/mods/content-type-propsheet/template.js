@@ -125,36 +125,36 @@ YAHOO.extend(
 							}
 						});
 
-            CrafterCMSNext.createLegacyCallbackListener(customEventId, (response) => {
-              const { openOnSuccess, fileName, path, type } = response;
-              if (type === 'onCreated') {
-                const templatePath = craftercms.utils.string.ensureSingleSlash(`${path}/${fileName}`);
-                _self.valueEl.value = templatePath;
-                _self.value = templatePath;
-                _self.updateFn(null, _self.valueEl);
-                if (openOnSuccess) {
-                  CStudioAuthoring.Operations.openCodeEditor({ path: templatePath, contentType, mode: 'ftl' });
-                }
-              }
-            });
-          } else {
-            const customEventId = 'editTemplateCreateSuccess';
-            CrafterCMSNext.system.store.dispatch({
-              type: 'EDIT_CONTENT_TYPE_TEMPLATE',
-              payload: {
-                contentTypeId: contentType
-              }
-            });
+						CrafterCMSNext.createLegacyCallbackListener(customEventId, (response) => {
+							const { openOnSuccess, fileName, path, type } = response;
+							if (type === 'onCreated') {
+								const templatePath = craftercms.utils.string.ensureSingleSlash(`${path}/${fileName}`);
+								_self.valueEl.value = templatePath;
+								_self.value = templatePath;
+								_self.updateFn(null, _self.valueEl);
+								if (openOnSuccess) {
+									CStudioAuthoring.Operations.openCodeEditor({ path: templatePath, contentType, mode: 'ftl' });
+								}
+							}
+						});
+					} else {
+						const customEventId = 'editTemplateCreateSuccess';
+						CrafterCMSNext.system.store.dispatch({
+							type: 'EDIT_CONTENT_TYPE_TEMPLATE',
+							payload: {
+								contentTypeId: contentType
+							}
+						});
 
-            CrafterCMSNext.createLegacyCallbackListener(customEventId, (response) => {
-              const { path, fileName } = response;
-              const templatePath = craftercms.utils.string.ensureSingleSlash(`${path}/${fileName}`);
-              _self.valueEl.value = templatePath;
-              _self.value = templatePath;
-              _self.updateFn(null, _self.valueEl);
-            });
-          }
-        };
+						CrafterCMSNext.createLegacyCallbackListener(customEventId, (response) => {
+							const { path, fileName } = response;
+							const templatePath = craftercms.utils.string.ensureSingleSlash(`${path}/${fileName}`);
+							_self.valueEl.value = templatePath;
+							_self.value = templatePath;
+							_self.updateFn(null, _self.valueEl);
+						});
+					}
+				};
 
 				pickEl.onclick = function () {
 					CStudioAuthoring.Operations.openBrowseFilesDialog({

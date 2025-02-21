@@ -1089,13 +1089,13 @@ export function applyFolderNameRules(name: string, options?: { allowBraces: bool
 
 // Separate the path into sections, apply the folder rules to each section and join them back together.
 export function applyFolderPathRules(path: string, options?: { allowBraces: boolean }): string {
-  return ensureSingleSlash(
-    path
-      .replace(/^\/+/, '') // Remove leading slash
-      .split('/')
-      .map((section) => applyFolderNameRules(section, options))
-      .join('/')
-  );
+	return ensureSingleSlash(
+		path
+			.replace(/^\/+/, '') // Remove leading slash
+			.split('/')
+			.map((section) => applyFolderNameRules(section, options))
+			.join('/')
+	);
 }
 
 export function applyAssetNameRules(name: string, options?: { allowBraces: boolean }): string {
@@ -1104,13 +1104,13 @@ export function applyAssetNameRules(name: string, options?: { allowBraces: boole
 
 // Separate the path into sections, apply the asset rules to each section and join them back together.
 export function applyAssetPathRules(path: string, options?: { allowBraces: boolean }): string {
-  return ensureSingleSlash(
-    path
-      .replace(/^\/+/, '') // Remove leading slash
-      .split('/')
-      .map((section) => applyAssetNameRules(section, options))
-      .join('/')
-  );
+	return ensureSingleSlash(
+		path
+			.replace(/^\/+/, '') // Remove leading slash
+			.split('/')
+			.map((section) => applyAssetNameRules(section, options))
+			.join('/')
+	);
 }
 
 /**

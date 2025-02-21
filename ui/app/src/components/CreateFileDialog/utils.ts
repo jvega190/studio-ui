@@ -21,7 +21,7 @@ import { EnhancedDialogState } from '../../hooks/useEnhancedDialogState';
 export interface CreateFileBaseProps {
 	type: 'controller' | 'template';
 	path: string;
-  allowSubFolders?: boolean;
+	allowSubFolders?: boolean;
 	allowBraces?: boolean;
 }
 

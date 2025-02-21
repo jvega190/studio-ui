@@ -39,14 +39,14 @@ export type ErrorStateProps = React.PropsWithChildren<{
 }>;
 
 export function ErrorState(props: ErrorStateProps) {
-  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+	const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
 	const {
 		title,
 		message,
 		buttonText = 'Back',
 		buttonIcon = <ArrowBackIcon />,
 		onButtonClick,
-    imageUrl = prefersDarkMode ? crackDarkMode : crack,
+		imageUrl = prefersDarkMode ? crackDarkMode : crack,
 		children,
 		sxs
 	} = props;
