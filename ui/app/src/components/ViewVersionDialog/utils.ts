@@ -20,39 +20,37 @@ import { DialogHeaderStateAction } from '../DialogHeader';
 import { DialogHeaderActionProps } from '../DialogHeaderAction';
 import { ApiResponse } from '../../models/ApiResponse';
 import StandardAction from '../../models/StandardAction';
-import { LookupTable } from '../../models/LookupTable';
-import { Resource } from '../../models/Resource';
 import { EnhancedDialogProps } from '../EnhancedDialog';
 import { EnhancedDialogState } from '../../hooks/useEnhancedDialogState';
 
 export interface VersionViewProps {
-  resource: Resource<VersionResource>;
-}
-
-export interface VersionResource {
-  version: any;
-  contentTypes: LookupTable<ContentType>;
+	version: {
+		content: string;
+		path: string;
+		site: string;
+		versionNumber: string;
+	};
 }
 
 export interface ViewVersionDialogBaseProps {
-  error: ApiResponse;
-  isFetching: boolean;
-  version: any;
+	error: ApiResponse;
+	isFetching: boolean;
+	version: any;
 }
 
 export interface ViewVersionDialogProps extends ViewVersionDialogBaseProps, EnhancedDialogProps {
-  contentTypesBranch: EntityState<ContentType>;
-  leftActions?: DialogHeaderActionProps[];
-  rightActions?: DialogHeaderActionProps[];
+	contentTypesBranch: EntityState<ContentType>;
+	leftActions?: DialogHeaderActionProps[];
+	rightActions?: DialogHeaderActionProps[];
 }
 
 export interface ViewVersionDialogStateProps extends ViewVersionDialogBaseProps, EnhancedDialogState {
-  leftActions?: DialogHeaderStateAction[];
-  rightActions?: DialogHeaderStateAction[];
-  onClose?: StandardAction;
-  onClosed?: StandardAction;
+	leftActions?: DialogHeaderStateAction[];
+	rightActions?: DialogHeaderStateAction[];
+	onClose?: StandardAction;
+	onClosed?: StandardAction;
 }
 
 export interface ViewVersionDialogContainerProps
-  extends ViewVersionDialogBaseProps,
-    Pick<ViewVersionDialogProps, 'contentTypesBranch'> {}
+	extends ViewVersionDialogBaseProps,
+		Pick<ViewVersionDialogProps, 'contentTypesBranch'> {}

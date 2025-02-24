@@ -15,59 +15,86 @@
  */
 
 import * as React from 'react';
+import { Suspense, useEffect } from 'react';
 import { UninstallPluginDialogContainerProps } from './utils';
 import { useActiveSiteId } from '../../hooks/useActiveSiteId';
-import { useMemo } from 'react';
-import { createResource } from '../../utils/resource';
-import { uninstallMarketplacePlugin, fetchMarketplacePluginUsage } from '../../services/marketplace';
-import Suspencified from '../Suspencified/Suspencified';
+import { fetchMarketplacePluginUsage, uninstallMarketplacePlugin } from '../../services/marketplace';
 import { UninstallPluginDialogBody } from './UninstallPluginDialogBody';
 import { useDispatch } from 'react-redux';
 import { showErrorDialog } from '../../state/reducers/dialogs/error';
 import useUpdateRefs from '../../hooks/useUpdateRefs';
+import useSpreadState from '../../hooks/useSpreadState';
+import { ApiResponseErrorState } from '../ApiResponseErrorState';
+import { LoadingState } from '../LoadingState';
 
 export function UninstallPluginDialogContainer(props: UninstallPluginDialogContainerProps) {
-  const { onClose, pluginId, onComplete, isSubmitting, onSubmittingAndOrPendingChange } = props;
-  const site = useActiveSiteId();
-  const dispatch = useDispatch();
-  const callbacksRef = useUpdateRefs({ onSubmittingAndOrPendingChange });
+	const { onClose, pluginId, onComplete, isSubmitting, onSubmittingAndOrPendingChange } = props;
+	const site = useActiveSiteId();
+	const dispatch = useDispatch();
+	const callbacksRef = useUpdateRefs({ onSubmittingAndOrPendingChange });
+	const [{ data, isFetching, error }, setState] = useSpreadState({
+		data: null,
+		isFetching: false,
+		error: null
+	});
 
-  const resource = useMemo(() => {
-    return createResource(() => fetchMarketplacePluginUsage(site, pluginId).toPromise());
-  }, [site, pluginId]);
+	useEffect(() => {
+		setState({ isFetching: true });
+		const sub = fetchMarketplacePluginUsage(site, pluginId).subscribe({
+			next(response) {
+				setState({
+					data: response,
+					isFetching: false
+				});
+			},
+			error: ({ response: { response } }) => {
+				setState({
+					error: response,
+					isFetching: false
+				});
+			}
+		});
+		return () => {
+			sub.unsubscribe();
+		};
+	}, [site, pluginId, setState]);
 
-  const onSubmit = (id: string) => {
-    onSubmittingAndOrPendingChange({
-      isSubmitting: true
-    });
+	const onSubmit = (id: string) => {
+		onSubmittingAndOrPendingChange({
+			isSubmitting: true
+		});
 
-    uninstallMarketplacePlugin(site, id, true).subscribe({
-      next: () => {
-        callbacksRef.current.onSubmittingAndOrPendingChange({
-          isSubmitting: false
-        });
-        onComplete?.();
-      },
-      error: ({ response: { response } }) => {
-        callbacksRef.current.onSubmittingAndOrPendingChange({
-          isSubmitting: false
-        });
-        dispatch(showErrorDialog({ error: response }));
-      }
-    });
-  };
+		uninstallMarketplacePlugin(site, id, true).subscribe({
+			next: () => {
+				callbacksRef.current.onSubmittingAndOrPendingChange({
+					isSubmitting: false
+				});
+				onComplete?.();
+			},
+			error: ({ response: { response } }) => {
+				callbacksRef.current.onSubmittingAndOrPendingChange({
+					isSubmitting: false
+				});
+				dispatch(showErrorDialog({ error: response }));
+			}
+		});
+	};
 
-  const onCloseButtonClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => onClose(e, null);
+	const onCloseButtonClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => onClose(e, null);
 
-  return (
-    <Suspencified loadingStateProps={{ styles: { root: { width: 300, height: 250 } } }}>
-      <UninstallPluginDialogBody
-        isSubmitting={isSubmitting}
-        onCloseButtonClick={onCloseButtonClick}
-        pluginId={pluginId}
-        resource={resource}
-        onSubmit={() => onSubmit(pluginId)}
-      />
-    </Suspencified>
-  );
+	return error ? (
+		<ApiResponseErrorState error={error} />
+	) : isFetching ? (
+		<LoadingState sxs={{ root: { width: 300, height: 250 } }} />
+	) : data ? (
+		<Suspense fallback="">
+			<UninstallPluginDialogBody
+				isSubmitting={isSubmitting}
+				onCloseButtonClick={onCloseButtonClick}
+				pluginId={pluginId}
+				data={data}
+				onSubmit={() => onSubmit(pluginId)}
+			/>
+		</Suspense>
+	) : null;
 }

@@ -15,161 +15,38 @@
  */
 
 import { CompareVersionsDialogContainerProps } from './utils';
-import { FormattedMessage } from 'react-intl';
-import React, { useMemo, useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { useLogicResource } from '../../hooks/useLogicResource';
-import { CompareVersionsBranch, ItemHistoryEntry } from '../../models/Version';
-import { CompareVersions, CompareVersionsResource } from './CompareVersions';
-import { EntityState } from '../../models/EntityState';
-import ContentType from '../../models/ContentType';
-import {
-  compareBothVersions,
-  compareVersion,
-  versionsChangeItem,
-  versionsChangePage
-} from '../../state/actions/versions';
-import VersionList from '../VersionList';
+import React from 'react';
+import { CompareVersions } from './CompareVersions';
 import DialogBody from '../DialogBody/DialogBody';
-import SingleItemSelector from '../SingleItemSelector';
-import { SuspenseWithEmptyState } from '../Suspencified/Suspencified';
-import EmptyState from '../EmptyState/EmptyState';
-import Typography from '@mui/material/Typography';
-import DialogFooter from '../DialogFooter/DialogFooter';
-import { HistoryDialogPagination } from '../HistoryDialog';
-import { makeStyles } from 'tss-react/mui';
-import { ErrorBoundary } from '../ErrorBoundary';
+import { ApiResponseErrorState } from '../ApiResponseErrorState';
 import { LoadingState } from '../LoadingState';
-
-const useStyles = makeStyles()(() => ({
-  dialogBody: {
-    overflow: 'auto',
-    minHeight: '50vh'
-  },
-  noPadding: {
-    padding: 0
-  },
-  singleItemSelector: {
-    marginBottom: '10px'
-  },
-  typography: {
-    lineHeight: '1.5'
-  }
-}));
+import { EmptyState } from '../EmptyState';
+import { FormattedMessage } from 'react-intl';
 
 export function CompareVersionsDialogContainer(props: CompareVersionsDialogContainerProps) {
-  const { selectedA, selectedB, versionsBranch, disableItemSwitching = false, contentTypesBranch } = props;
-  const { count, page, limit, selected, compareVersionsBranch, current, item, rootPath } = versionsBranch;
-  const { classes, cx } = useStyles();
-  const [openSelector, setOpenSelector] = useState(false);
-  const dispatch = useDispatch();
-  const compareMode = selectedA && selectedB;
+	const { versionsBranch } = props;
+	const { compareVersionsBranch } = versionsBranch;
 
-  const compareVersionsData = useMemo(
-    () => ({
-      compareVersionsBranch,
-      contentTypesBranch
-    }),
-    [compareVersionsBranch, contentTypesBranch]
-  );
-
-  const compareVersionsResource = useLogicResource<
-    CompareVersionsResource,
-    { compareVersionsBranch: CompareVersionsBranch; contentTypesBranch: EntityState<ContentType> }
-  >(compareVersionsData, {
-    shouldResolve: ({ compareVersionsBranch, contentTypesBranch }) =>
-      compareVersionsBranch.compareVersions &&
-      contentTypesBranch.byId &&
-      !compareVersionsBranch.isFetching &&
-      !contentTypesBranch.isFetching,
-    shouldReject: ({ compareVersionsBranch, contentTypesBranch }) =>
-      Boolean(compareVersionsBranch.error || contentTypesBranch.error),
-    shouldRenew: ({ compareVersionsBranch, contentTypesBranch }, resource) => resource.complete,
-    resultSelector: ({ compareVersionsBranch, contentTypesBranch }) => ({
-      a: compareVersionsBranch.compareVersions?.[0],
-      b: compareVersionsBranch.compareVersions?.[1],
-      contentTypes: contentTypesBranch.byId
-    }),
-    errorSelector: ({ compareVersionsBranch, contentTypesBranch }) =>
-      compareVersionsBranch.error || contentTypesBranch.error
-  });
-
-  const handleItemClick = (version: ItemHistoryEntry) => {
-    if (!selected[0]) {
-      dispatch(compareVersion({ id: version.versionNumber }));
-    } else if (selected[0] !== version.versionNumber) {
-      dispatch(compareBothVersions({ versions: [selected[0], version.versionNumber] }));
-    } else {
-      dispatch(compareVersion());
-    }
-  };
-
-  const onPageChanged = (nextPage: number) => {
-    dispatch(versionsChangePage({ page: nextPage }));
-  };
-
-  return (
-    <>
-      <DialogBody className={cx(classes.dialogBody, compareMode && classes.noPadding)}>
-        {!compareMode && (
-          <SingleItemSelector
-            classes={{ root: classes.singleItemSelector }}
-            label={<FormattedMessage id="words.item" defaultMessage="Item" />}
-            disabled={disableItemSwitching}
-            open={openSelector}
-            onClose={() => setOpenSelector(false)}
-            onDropdownClick={() => setOpenSelector(!openSelector)}
-            rootPath={rootPath}
-            selectedItem={item}
-            onItemClicked={(item) => {
-              setOpenSelector(false);
-              dispatch(versionsChangeItem({ item }));
-            }}
-          />
-        )}
-        {compareMode ? (
-          <SuspenseWithEmptyState resource={compareVersionsResource}>
-            <CompareVersions resource={compareVersionsResource} />
-          </SuspenseWithEmptyState>
-        ) : item ? (
-          <ErrorBoundary>
-            {versionsBranch.isFetching ? (
-              <LoadingState />
-            ) : (
-              versionsBranch.versions && (
-                <VersionList
-                  selected={selected}
-                  versions={versionsBranch.versions}
-                  current={current}
-                  onItemClick={handleItemClick}
-                />
-              )
-            )}
-          </ErrorBoundary>
-        ) : (
-          <EmptyState
-            title={
-              <FormattedMessage id="compareVersionsDialog.pleaseContentItem" defaultMessage="Please content item" />
-            }
-          >
-            <section>
-              <Typography variant="subtitle1" color="textSecondary" className={classes.typography}>
-                1. Select item <br />
-                2. Select revision “A” <br />
-                3. Select revision “B” <br />
-                4. View diff
-              </Typography>
-            </section>
-          </EmptyState>
-        )}
-      </DialogBody>
-      {!compareMode && item?.path && (
-        <DialogFooter>
-          <HistoryDialogPagination count={count} page={page} rowsPerPage={limit} onPageChanged={onPageChanged} />
-        </DialogFooter>
-      )}
-    </>
-  );
+	return (
+		<DialogBody
+			sx={{
+				overflow: 'auto',
+				minHeight: '50vh',
+				padding: 0
+			}}
+		>
+			{compareVersionsBranch &&
+				(compareVersionsBranch.error ? (
+					<ApiResponseErrorState error={compareVersionsBranch.error} />
+				) : compareVersionsBranch.isFetching ? (
+					<LoadingState />
+				) : compareVersionsBranch.compareVersions?.length > 0 ? (
+					<CompareVersions versions={compareVersionsBranch.compareVersions} />
+				) : (
+					<EmptyState title={<FormattedMessage defaultMessage="No versions found" />} />
+				))}
+		</DialogBody>
+	);
 }
 
 export default CompareVersionsDialogContainer;

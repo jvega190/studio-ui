@@ -19,11 +19,11 @@ import { DetailedItem, FetchContentVersion, ItemHistoryEntry } from '../../model
 import { AjaxError, AjaxResponse } from 'rxjs/ajax';
 
 export interface HistoryConfigProps {
-  item: Partial<DetailedItem>;
-  rootPath?: string;
-  environment?: string;
-  module?: string;
-  isConfig?: boolean;
+	item: Partial<DetailedItem>;
+	rootPath?: string;
+	environment?: string;
+	module?: string;
+	isConfig?: boolean;
 }
 
 export const fetchItemVersions = /*#__PURE__*/ createAction<HistoryConfigProps>('FETCH_ITEM_VERSIONS');
@@ -32,7 +32,6 @@ export const fetchItemVersionsFailed = /*#__PURE__*/ createAction<AjaxError>('FE
 export const versionsChangePage = /*#__PURE__*/ createAction<{ page: number }>('VERSIONS_CHANGE_PAGE');
 export const versionsChangeLimit = /*#__PURE__*/ createAction<{ limit: number }>('VERSIONS_CHANGE_LIMIT');
 export const versionsChangeItem = /*#__PURE__*/ createAction<{ item: DetailedItem }>('VERSIONS_CHANGE_ITEM');
-export const compareVersion = /*#__PURE__*/ createAction<{ id: string }>('COMPARE_VERSIONS');
 export const compareToPreviousVersion = /*#__PURE__*/ createAction<{ id: string }>('COMPARE_TO_PREVIOUS_VERSION');
 export const resetVersionsState = /*#__PURE__*/ createAction('RESET_VERSIONS_STATE');
 export const compareBothVersions = /*#__PURE__*/ createAction<{ versions: string[] }>('COMPARE_BOTH_VERSIONS');
@@ -42,5 +41,5 @@ export const revertContent = /*#__PURE__*/ createAction<FetchContentVersion>('RE
 export const revertContentComplete = /*#__PURE__*/ createAction<{ path: string }>('REVERT_CONTENT_COMPLETE');
 export const revertContentFailed = /*#__PURE__*/ createAction<AjaxResponse<unknown>>('REVERT_CONTENT_FAILED');
 export const revertToPreviousVersion = /*#__PURE__*/ createAction<{ id: string; path: string }>(
-  'REVERT_TO_PREVIOUS_VERSION'
+	'REVERT_TO_PREVIOUS_VERSION'
 );

@@ -16,11 +16,10 @@
 
 import GlobalAppToolbar from '../GlobalAppToolbar';
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Box } from '@mui/material';
 import { fetchConfigurationXML, writeConfiguration } from '../../services/configuration';
 import AceEditor from '../AceEditor/AceEditor';
-import useStyles from './styles';
 import SecondaryButton from '../SecondaryButton';
 import PrimaryButton from '../PrimaryButton';
 import { forkJoin } from 'rxjs';
@@ -29,222 +28,244 @@ import ConfigurationSamplePreviewDialog from '../ConfigurationSamplePreviewDialo
 import ConfirmDropdown from '../ConfirmDropdown';
 import { useDispatch } from 'react-redux';
 import { showSystemNotification } from '../../state/actions/system';
-import { useHistory } from 'react-router';
-import ConfirmDialog from '../ConfirmDialog/ConfirmDialog';
 import { useMount } from '../../hooks/useMount';
 import Paper from '@mui/material/Paper';
 import { MAX_CONFIG_SIZE } from '../../utils/constants';
 import { MaxLengthCircularProgress } from '../MaxLengthCircularProgress';
+import useUnmount from '../../hooks/useUnmount';
+import useActiveUser from '../../hooks/useActiveUser';
+import { batchActions, dispatchDOMEvent } from '../../state/actions/misc';
+import { closeConfirmDialog, showConfirmDialog } from '../../state/actions/dialogs';
+import { createCustomDocumentEventListener } from '../../utils/dom';
+import { useBeforeUnload, useNavigate } from 'react-router';
+import { GlobalRoutes } from '../../env/routes';
 
 const translations = defineMessages({
-  configSaved: {
-    id: 'globalConfig.configSaved',
-    defaultMessage: 'Configuration saved successfully.'
-  },
-  documentError: {
-    id: 'globalConfig.documentError',
-    defaultMessage: 'The document contains errors. Check for error markers on side of the editor.'
-  }
+	configSaved: {
+		id: 'globalConfig.configSaved',
+		defaultMessage: 'Configuration saved successfully.'
+	},
+	documentError: {
+		id: 'globalConfig.documentError',
+		defaultMessage: 'The document contains errors. Check for error markers on side of the editor.'
+	}
 });
 
 export function GlobalConfigManagement() {
-  const [content, setContent] = useState('');
-  const [sample, setSample] = useState('');
-  const [lastSavedContent, setLastSavedContent] = useState('');
-  const [enable, setEnable] = useState(true);
-  const [viewSample, setViewSample] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [nextRoute, setNextRoute] = useState<string>();
-  const history = useHistory();
-  const { classes } = useStyles();
-  const [contentSize, setContentSize] = useState(0);
+	const [content, setContent] = useState('');
+	const [sample, setSample] = useState('');
+	const [lastSavedContent, setLastSavedContent] = useState('');
+	const [enable, setEnable] = useState(true);
+	const [viewSample, setViewSample] = useState(false);
+	const [hasChanges, setHasChanges] = useState(false);
+	const hasChangesRef = useRef(hasChanges);
+	hasChangesRef.current = hasChanges;
+	const [contentSize, setContentSize] = useState(0);
+	const aceEditorRef = useRef<any>(undefined);
+	const dispatch = useDispatch();
+	const { formatMessage } = useIntl();
+	const { username } = useActiveUser();
+	const navigate = useNavigate();
+	const sessionStorageKey = `craftercms.${username}.globalConfigContent`;
 
-  const aceEditorRef = useRef<any>();
-  const dispatch = useDispatch();
-  const { formatMessage } = useIntl();
+	useMount(() => {
+		const requests = [
+			fetchConfigurationXML('studio_root', '/configuration/samples/sample-studio-config-override.yaml', 'studio'),
+			fetchConfigurationXML('studio_root', '/configuration/studio-config-override.yaml', 'studio')
+		];
 
-  useEffect(() => {
-    const historyBlock = history.block;
-    history.block((props) => {
-      if (hasChanges) {
-        history.goBack();
-        setNextRoute(props.pathname);
-        setShowConfirmDialog(true);
-        return false;
-      }
-    });
-    return () => {
-      history.block = historyBlock;
-    };
-  }, [hasChanges, history]);
+		forkJoin(requests).subscribe(([sample, content]) => {
+			const sessionContent = sessionStorage.getItem(sessionStorageKey);
 
-  useMount(() => {
-    const requests = [
-      fetchConfigurationXML('studio_root', '/configuration/samples/sample-studio-config-override.yaml', 'studio'),
-      fetchConfigurationXML('studio_root', '/configuration/studio-config-override.yaml', 'studio')
-    ];
+			setLastSavedContent(content);
+			if (sessionContent) {
+				setContent(sessionContent);
+				setContentSize(sessionContent.length);
+				setHasChanges(true);
+				sessionStorage.removeItem(sessionStorageKey);
+			} else {
+				setContent(content);
+				setContentSize(content.length);
+			}
+			setSample(sample);
+			setEnable(false);
+		});
+	});
 
-    forkJoin(requests).subscribe(([sample, content]) => {
-      setLastSavedContent(content);
-      setContent(content);
-      setContentSize(content.length);
-      setSample(sample);
-      setEnable(false);
-    });
-  });
+	useUnmount(() => {
+		if (hasChangesRef.current) {
+			sessionStorage.setItem(sessionStorageKey, aceEditorRef.current.getValue());
+			const eventId = 'unsavedConfigManagementChangesConfirmation';
+			dispatch(
+				showConfirmDialog({
+					body: <FormattedMessage defaultMessage="You left unsaved changes. Go back and continue editing?" />,
+					onCancel: batchActions([closeConfirmDialog(), dispatchDOMEvent({ id: eventId, button: 'cancel' })]),
+					onOk: batchActions([closeConfirmDialog(), dispatchDOMEvent({ id: eventId, button: 'ok' })]),
+					okButtonText: <FormattedMessage defaultMessage="Continue editing" />,
+					cancelButtonText: <FormattedMessage defaultMessage="Discard changes" />
+				})
+			);
+			createCustomDocumentEventListener<{ button: 'ok' | 'cancel' }>(eventId, ({ button }) => {
+				if (button === 'ok') {
+					navigate(GlobalRoutes.GlobalConfig);
+				} else {
+					sessionStorage.removeItem(sessionStorageKey);
+				}
+			});
+		}
+	});
 
-  const onUseSampleClick = (type: 'replace' | 'append') => {
-    if (type === 'replace') {
-      setContent(sample);
-    } else {
-      const currentContent = aceEditorRef.current.getValue();
-      setContent(currentContent + sample);
-    }
-    setViewSample(false);
-  };
+	useBeforeUnload((event) => {
+		if (hasChangesRef.current) {
+			event.preventDefault();
+		}
+	});
 
-  const onResetClick = () => {
-    aceEditorRef.current.setValue(lastSavedContent, -1); // sets cursor in position 0, avoiding all editor content selection
-    aceEditorRef.current.focus();
-  };
+	const onUseSampleClick = (type: 'replace' | 'append') => {
+		if (type === 'replace') {
+			setContent(sample);
+		} else {
+			const currentContent = aceEditorRef.current.getValue();
+			setContent(currentContent + sample);
+		}
+		setViewSample(false);
+	};
 
-  const onSaveClick = () => {
-    const value = aceEditorRef.current.getValue();
-    const errors = aceEditorRef.current
-      .getSession()
-      .getAnnotations()
-      .filter((annotation) => {
-        return annotation.type === 'error';
-      });
+	const onResetClick = () => {
+		aceEditorRef.current.setValue(lastSavedContent, -1); // sets cursor in position 0, avoiding all editor content selection
+		aceEditorRef.current.focus();
+	};
 
-    if (errors.length) {
-      dispatch(
-        showSystemNotification({
-          message: formatMessage(translations.documentError),
-          options: {
-            variant: 'error'
-          }
-        })
-      );
-    } else {
-      writeConfiguration('studio_root', '/configuration/studio-config-override.yaml', 'studio', value).subscribe(
-        () => {
-          setLastSavedContent(value);
-          setHasChanges(false);
-          dispatch(
-            showSystemNotification({
-              message: formatMessage(translations.configSaved)
-            })
-          );
-        },
-        ({ response: { response } }) => {
-          dispatch(
-            showSystemNotification({
-              message: response.message,
-              options: {
-                variant: 'error'
-              }
-            })
-          );
-        }
-      );
-      setHasChanges(false);
-    }
-  };
+	const onSaveClick = () => {
+		const value = aceEditorRef.current.getValue();
+		const errors = aceEditorRef.current
+			.getSession()
+			.getAnnotations()
+			.filter((annotation) => {
+				return annotation.type === 'error';
+			});
 
-  const onChange = () => {
-    const currentEditorValue = aceEditorRef.current.getValue();
-    const hasChanges = lastSavedContent !== currentEditorValue;
-    setContentSize(currentEditorValue.length);
-    setHasChanges(hasChanges);
-  };
+		if (errors.length) {
+			dispatch(
+				showSystemNotification({
+					message: formatMessage(translations.documentError),
+					options: {
+						variant: 'error'
+					}
+				})
+			);
+		} else {
+			writeConfiguration('studio_root', '/configuration/studio-config-override.yaml', 'studio', value).subscribe(
+				() => {
+					setLastSavedContent(value);
+					setHasChanges(false);
+					dispatch(
+						showSystemNotification({
+							message: formatMessage(translations.configSaved)
+						})
+					);
+				},
+				({ response: { response } }) => {
+					dispatch(
+						showSystemNotification({
+							message: response.message,
+							options: {
+								variant: 'error'
+							}
+						})
+					);
+				}
+			);
+			setHasChanges(false);
+		}
+	};
 
-  const onConfirmOk = () => {
-    setHasChanges(false);
-    setShowConfirmDialog(false);
-    // timeout needed to avoid running the useEffect on line:64 with hasChanges on true
-    setTimeout(() => {
-      history.push(nextRoute);
-    });
-  };
+	const onChange = () => {
+		const currentEditorValue = aceEditorRef.current.getValue();
+		const hasChanges = lastSavedContent !== currentEditorValue;
+		setContentSize(currentEditorValue.length);
+		setHasChanges(hasChanges);
+	};
 
-  const onAceInit = (editor: AceAjax.Editor) => {
-    editor.commands.addCommand({
-      name: 'saveToCrafter',
-      bindKey: { win: 'Ctrl-S', mac: 'Command-S' },
-      exec: () => onSaveClick(),
-      readOnly: false
-    });
-  };
+	const onAceInit = (editor: AceAjax.Editor) => {
+		editor.commands.addCommand({
+			name: 'saveToCrafter',
+			bindKey: { win: 'Ctrl-S', mac: 'Command-S' },
+			exec: () => onSaveClick(),
+			readOnly: false
+		});
+	};
 
-  return (
-    <Paper elevation={0}>
-      <GlobalAppToolbar
-        title={<FormattedMessage id="globalMenu.globalConfigEntryLabel" defaultMessage="Global Config" />}
-      />
-      <ConditionalLoadingState isLoading={enable}>
-        <section className={classes.paper}>
-          <AceEditor
-            ref={aceEditorRef}
-            onChange={onChange}
-            classes={{ editorRoot: classes.root }}
-            value={content}
-            mode="ace/mode/yaml"
-            theme="ace/theme/textmate"
-            autoFocus={true}
-            readOnly={enable}
-            onInit={onAceInit}
-          />
-          <Box p="10px" display="flex" justifyContent="space-between">
-            <SecondaryButton onClick={() => setViewSample(true)}>
-              <FormattedMessage id="globalConfig.viewSample" defaultMessage="View Sample" />
-            </SecondaryButton>
-            <ConfirmDropdown
-              disabled={!hasChanges}
-              classes={{ button: classes.marginLeftAuto }}
-              text={<FormattedMessage id="words.reset" defaultMessage="Reset" />}
-              cancelText={<FormattedMessage id="words.cancel" defaultMessage="Cancel" />}
-              confirmText={<FormattedMessage id="words.ok" defaultMessage="Ok" />}
-              confirmHelperText={
-                <FormattedMessage id="globalConfig.confirmHelper" defaultMessage="Discard unsaved changes?" />
-              }
-              onConfirm={onResetClick}
-            />
-            <PrimaryButton disabled={!hasChanges || contentSize > MAX_CONFIG_SIZE} onClick={onSaveClick}>
-              <FormattedMessage id="words.save" defaultMessage="Save" />
-            </PrimaryButton>
-            <MaxLengthCircularProgress
-              sxs={{ root: { ml: 1 }, circularProgress: { width: '35px !important', height: '35px !important' } }}
-              max={MAX_CONFIG_SIZE}
-              current={contentSize}
-              renderThresholdPercentage={90}
-            />
-          </Box>
-        </section>
-      </ConditionalLoadingState>
-      <ConfigurationSamplePreviewDialog
-        onUseSampleClick={onUseSampleClick}
-        open={viewSample}
-        onClose={() => setViewSample(false)}
-        onClosed={() => aceEditorRef.current.focus()}
-        content={sample}
-      />
-      <ConfirmDialog
-        open={showConfirmDialog}
-        title={
-          <FormattedMessage
-            id="globalConfigManagement.pendingChanges"
-            defaultMessage="You have unsaved changes. Discard changes?"
-          />
-        }
-        onOk={onConfirmOk}
-        onCancel={() => {
-          setShowConfirmDialog(false);
-        }}
-      />
-    </Paper>
-  );
+	return (
+		<Paper elevation={0}>
+			<GlobalAppToolbar
+				title={<FormattedMessage id="globalMenu.globalConfigEntryLabel" defaultMessage="Global Config" />}
+			/>
+			<ConditionalLoadingState isLoading={enable}>
+				<Box
+					component="section"
+					sx={{
+						borderRadius: 0,
+						minHeight: '400px',
+						height: 'calc(100vh - 121px)',
+						borderBottom: (theme) => `1px solid ${theme.palette.divider}`
+					}}
+				>
+					<AceEditor
+						ref={aceEditorRef}
+						onChange={onChange}
+						sxs={{
+							editorRoot: {
+								margin: '0',
+								width: '100%',
+								height: '100%',
+								borderRadius: 0,
+								border: 0
+							}
+						}}
+						value={content}
+						mode="ace/mode/yaml"
+						theme="ace/theme/textmate"
+						autoFocus={true}
+						readOnly={enable}
+						onInit={onAceInit}
+					/>
+					<Box p="10px" display="flex" justifyContent="space-between">
+						<SecondaryButton onClick={() => setViewSample(true)}>
+							<FormattedMessage id="globalConfig.viewSample" defaultMessage="View Sample" />
+						</SecondaryButton>
+						<ConfirmDropdown
+							disabled={!hasChanges}
+							sx={{ button: { marginLeft: 'auto', marginRight: '15px' } }}
+							text={<FormattedMessage id="words.reset" defaultMessage="Reset" />}
+							cancelText={<FormattedMessage id="words.cancel" defaultMessage="Cancel" />}
+							confirmText={<FormattedMessage id="words.ok" defaultMessage="Ok" />}
+							confirmHelperText={
+								<FormattedMessage id="globalConfig.confirmHelper" defaultMessage="Discard unsaved changes?" />
+							}
+							onConfirm={onResetClick}
+						/>
+						<PrimaryButton disabled={!hasChanges || contentSize > MAX_CONFIG_SIZE} onClick={onSaveClick}>
+							<FormattedMessage id="words.save" defaultMessage="Save" />
+						</PrimaryButton>
+						<MaxLengthCircularProgress
+							sxs={{ root: { ml: 1 }, circularProgress: { width: '35px !important', height: '35px !important' } }}
+							max={MAX_CONFIG_SIZE}
+							current={contentSize}
+							renderThresholdPercentage={90}
+						/>
+					</Box>
+				</Box>
+			</ConditionalLoadingState>
+			<ConfigurationSamplePreviewDialog
+				onUseSampleClick={onUseSampleClick}
+				open={viewSample}
+				onClose={() => setViewSample(false)}
+				onClosed={() => aceEditorRef.current.focus()}
+				content={sample}
+			/>
+		</Paper>
+	);
 }
 
 export default GlobalConfigManagement;
