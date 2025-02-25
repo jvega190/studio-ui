@@ -51,10 +51,10 @@ function createCheckedLookup(items: Array<DetailedItem | string>, setChecked = t
 
 export function DeleteDialogContainer(props: DeleteDialogContainerProps) {
 	const { items, onClose, isSubmitting, onSuccess, isFetching, childItems, dependentItems, error } = props;
+	const [title, setTitle] = useState('');
 	const [comment, setComment] = useState('');
 	const [submitError, setSubmitError] = useState<ApiResponse>(null);
 	const site = useActiveSiteId();
-	const isCommentRequired = useSelection((state) => state.uiConfig.publishing.deleteCommentRequired);
 	const [selectedItems, setSelectedItems] = useState<LookupTable<boolean>>({});
 	const dispatch = useDispatch();
 	const [submitDisabled, setSubmitDisabled] = useState(true);
@@ -65,7 +65,7 @@ export function DeleteDialogContainer(props: DeleteDialogContainerProps) {
 	const onSubmit = () => {
 		const paths = createCheckedList(selectedItems);
 		dispatch(updateDeleteDialog({ isSubmitting: true }));
-		deleteItems(site, paths, comment).subscribe({
+		deleteItems(site, paths, title, comment).subscribe({
 			next() {
 				dispatch(updateDeleteDialog({ isSubmitting: false, hasPendingChanges: false }));
 				onSuccess?.({
@@ -81,9 +81,18 @@ export function DeleteDialogContainer(props: DeleteDialogContainerProps) {
 
 	const onCloseButtonClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => onClose(e, null);
 
-	const onCommentChange = (e) => {
+	const onInputChange = (e, fieldId) => {
 		dispatch(updateDeleteDialog({ hasPendingChanges: true }));
-		setComment(e.target.value);
+		switch (fieldId) {
+			case 'title':
+				setTitle(e.target.value);
+				break;
+			case 'comment':
+				setComment(e.target.value);
+				break;
+			default:
+				break;
+		}
 	};
 
 	const fetchOrCleanDependencies = (nextChecked) => {
@@ -149,12 +158,9 @@ export function DeleteDialogContainer(props: DeleteDialogContainerProps) {
 
 	useEffect(() => {
 		setSubmitDisabled(
-			isSubmitting ||
-				Object.values(selectedItems).length === 0 ||
-				(isCommentRequired && isBlank(comment)) ||
-				!confirmChecked
+			isSubmitting || Object.values(selectedItems).length === 0 || isBlank(comment) || isBlank(title) || !confirmChecked
 		);
-	}, [isSubmitting, comment, isCommentRequired, selectedItems, confirmChecked]);
+	}, [isSubmitting, title, comment, selectedItems, confirmChecked]);
 
 	return (
 		<DeleteDialogUI
@@ -166,13 +172,13 @@ export function DeleteDialogContainer(props: DeleteDialogContainerProps) {
 			submitError={submitError}
 			setSubmitError={setSubmitError}
 			isFetching={isFetching}
+			title={title}
 			comment={comment}
-			onCommentChange={onCommentChange}
+			onInputChange={onInputChange}
 			isDisabled={isSubmitting}
 			isSubmitting={isSubmitting}
 			onSubmit={onSubmit}
 			onCloseButtonClick={onCloseButtonClick}
-			isCommentRequired={isCommentRequired}
 			isSubmitButtonDisabled={submitDisabled}
 			onItemClicked={onItemClicked}
 			onSelectAllClicked={onSelectAllClicked}
