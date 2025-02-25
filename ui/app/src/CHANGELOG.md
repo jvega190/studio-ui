@@ -53,6 +53,7 @@
   * Removed `publishing/clearLock` service.
   * Removed `cmis` services.
   * Removed `content/uploadToCMIS` service.
+  * Removed `models/CMIS` service.
 * `PublishingItem` interface changes:
   * `approver` is now `reviewer`, of type Person.
   * `comment` is removed, and now there's `reviewerComment` and `submitterComment`.
