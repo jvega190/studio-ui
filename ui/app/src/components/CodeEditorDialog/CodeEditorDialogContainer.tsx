@@ -109,7 +109,9 @@ export function CodeEditorDialogContainer(props: CodeEditorDialogContainerProps)
 					onSuccess?.();
 				},
 				error({ response }) {
-					dispatch(showErrorDialog({ error: response }));
+					dispatch(
+						batchActions([updateCodeEditorDialog({ isSubmitting: false }), showErrorDialog({ error: response })])
+					);
 				}
 			});
 		}
