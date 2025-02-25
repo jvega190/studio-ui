@@ -41,6 +41,11 @@ import { applyFolderNameRules, lookupItemByPath } from '../../utils/content';
 import { useFetchItem } from '../../hooks/useFetchItem';
 import ApiResponse from '../../models/ApiResponse';
 import FolderMoveAlert from '../FolderMoveAlert/FolderMoveAlert';
+import Alert from '@mui/material/Alert';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Checkbox from '@mui/material/Checkbox';
+import Typography from '@mui/material/Typography';
+import { cancelPackages, fetchAffectedPackages } from '../../services/workflow';
 
 export function CreateFolderContainer(props: CreateFolderContainerProps) {
 	const { onClose, onCreated, onRenamed, rename = false, value = '', allowBraces = false } = props;
@@ -68,7 +73,15 @@ export function CreateFolderContainer(props: CreateFolderContainerProps) {
 		? name !== value && (itemExists || lookupItemByPath(newFolderPath, itemLookupTable) !== UNDEFINED)
 		: itemExists || lookupItemByPath(newFolderPath, itemLookupTable) !== UNDEFINED;
 	const [moveFolderAck, setMoveFolderAck] = useState(false);
-	const isValid = !isBlank(name) && !folderExists && (!rename || (name !== value && moveFolderAck));
+	const [fetchingAffectedPackages, setFetchingAffectedPackages] = useState(false);
+	const [packagesInWorkflow, setPackagesInWorkflow] = useState(undefined);
+	const containsItemsInWorkflow = packagesInWorkflow?.length > 0;
+	const [cancelPackagesAck, setCancelPackagesAck] = useState(false);
+	const isValid =
+		!isBlank(name) &&
+		!folderExists &&
+		(!rename || (name !== value && moveFolderAck)) &&
+		(!rename || !containsItemsInWorkflow || (containsItemsInWorkflow && cancelPackagesAck));
 
 	useEffect(() => {
 		if (item && rename === false) {
@@ -76,7 +89,27 @@ export function CreateFolderContainer(props: CreateFolderContainerProps) {
 		}
 	}, [item, rename]);
 
+	useEffect(() => {
+		if (rename) {
+			// If renaming, check if the folder contains items in workflow
+			setFetchingAffectedPackages(true);
+			fetchAffectedPackages(site, path, true).subscribe({
+				next: (packages) => {
+					setFetchingAffectedPackages(false);
+					setPackagesInWorkflow(packages);
+				},
+				error: () => {
+					setFetchingAffectedPackages(false);
+				}
+			});
+		} else {
+			setPackagesInWorkflow(undefined);
+		}
+	}, [path, rename, site]);
+
 	const onMoveFolderAckChange = (e: React.ChangeEvent<HTMLInputElement>) => setMoveFolderAck(e.target.checked);
+
+	const onCancelPackagesAckChange = (e: React.ChangeEvent<HTMLInputElement>) => setCancelPackagesAck(e.target.checked);
 
 	const onError = (error: ApiResponse) => {
 		dispatch(
@@ -132,7 +165,17 @@ export function CreateFolderContainer(props: CreateFolderContainerProps) {
 										setConfirm({ body: message });
 									} else {
 										if (rename) {
-											onRenameFolder(site, path, name);
+											if (containsItemsInWorkflow) {
+												const packageIds: number[] = packagesInWorkflow.map((pkg) => pkg.id);
+												cancelPackages(site, {
+													packageIds,
+													comment: `Cancel packages to rename folder "${path}"`
+												}).subscribe(() => {
+													onRenameFolder(site, path, name);
+												});
+											} else {
+												onRenameFolder(site, path, name);
+											}
 										} else {
 											onCreateFolder(site, path, name);
 										}
@@ -242,6 +285,22 @@ export function CreateFolderContainer(props: CreateFolderContainerProps) {
 						}}
 						onChange={(event) => onInputChanges(applyFolderNameRules(event.target.value, { allowBraces }))}
 					/>
+					{rename && containsItemsInWorkflow && (
+						<Alert severity="warning" icon={false} sx={{ mb: 1 }}>
+							<FormControlLabel
+								disableTypography
+								control={<Checkbox onChange={onCancelPackagesAckChange} />}
+								label={
+									<Typography>
+										<FormattedMessage
+											defaultMessage="The current folder have child items that are part of one or more publishing packages. Renaming it will cancel the
+						packages."
+										/>
+									</Typography>
+								}
+							/>
+						</Alert>
+					)}
 					{rename && <FolderMoveAlert initialExpanded checked={moveFolderAck} onChange={onMoveFolderAckChange} />}
 				</form>
 			</DialogBody>
@@ -249,7 +308,11 @@ export function CreateFolderContainer(props: CreateFolderContainerProps) {
 				<SecondaryButton onClick={onCloseButtonClick} disabled={isSubmitting}>
 					<FormattedMessage id="words.cancel" defaultMessage="Cancel" />
 				</SecondaryButton>
-				<PrimaryButton onClick={onSubmit} disabled={isSubmitting || !isValid} loading={isSubmitting}>
+				<PrimaryButton
+					onClick={onSubmit}
+					disabled={isSubmitting || !isValid || fetchingAffectedPackages}
+					loading={isSubmitting}
+				>
 					{rename ? (
 						<FormattedMessage id="words.rename" defaultMessage="Rename" />
 					) : (
