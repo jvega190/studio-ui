@@ -169,7 +169,10 @@ $dark-mode-input-border-focus: #007aff;
     border: 0;
     color: $dark-mode-button-primary-color;
     background: $dark-mode-button-primary;
-    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.2), 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12);
+    box-shadow:
+      0 2px 4px -1px rgba(0, 0, 0, 0.2),
+      0 4px 5px 0 rgba(0, 0, 0, 0.14),
+      0 1px 10px 0 rgba(0, 0, 0, 0.12);
   }
 
   .btn-primary:hover {
@@ -567,12 +570,12 @@ $dark-mode-input-border-focus: #007aff;
 
   // cstudio-admin-console-workarea-container
   .cstudio-admin-console-workarea-container {
-    h1 {
-      color: $dark-mode-font-color;
-    }
     height: calc(100vh - 53px);
     background-color: $dark-mode-background-paper;
     margin-top: -2px;
+    h1 {
+      color: $dark-mode-font-color;
+    }
   }
 
   // workflow states
