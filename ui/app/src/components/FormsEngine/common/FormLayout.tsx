@@ -25,7 +25,7 @@ import React, {
 } from 'react';
 import { useTheme } from '@mui/material/styles';
 import { FormsEngineAtoms, ItemMetaContext, StableFormContext, StableGlobalContext } from '../formsEngineContext';
-import Box from '@mui/material/Box';
+import Box, { BoxProps } from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Divider from '@mui/material/Divider';
 import Container from '@mui/material/Container';
@@ -45,6 +45,7 @@ export type FormLayoutProps = PropsWithChildren<{
 	containerRef: RefObject<HTMLDivElement>;
 	hasStackedForms: boolean;
 	stackIndex: number;
+	style?: BoxProps['style'];
 }>;
 
 function collectSectionExpandedState(
@@ -57,10 +58,9 @@ function collectSectionExpandedState(
 	}, {});
 }
 
-export const FormLayout = forwardRef<HTMLDivElement, FormLayoutProps>(function (
-	{ children, mainContentGrid, targetHeight, containerRef, headerFragment, hasStackedForms, stackIndex },
-	ref
-) {
+export const FormLayout = forwardRef<HTMLDivElement, FormLayoutProps>(function (props, ref) {
+	const { children, mainContentGrid, targetHeight, containerRef, headerFragment, hasStackedForms, stackIndex, style } =
+		props;
 	const theme = useTheme();
 	const store = useJotaiStore();
 	const { api: contextApi } = useContext(StableGlobalContext);
@@ -145,11 +145,12 @@ export const FormLayout = forwardRef<HTMLDivElement, FormLayoutProps>(function (
 				subscription.unsubscribe();
 			};
 		}
-	}, [containerRef, theme.breakpoints.values.lg]);
+	}, [containerRef, setIsLargeContainer, theme.breakpoints.values.lg]);
 
 	return (
 		<Box
 			ref={containerRef}
+			style={style}
 			data-model-id={id}
 			data-area-id="formContainer"
 			sx={{
