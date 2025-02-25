@@ -17,6 +17,8 @@
 import LookupTable from '../models/LookupTable';
 import { PagedArray } from '../models';
 
+export const fooArray = [];
+
 export function forEach<T = any, R = undefined>(
 	array: T[],
 	fn: (item: T, index: number, array: T[]) => R | 'continue' | 'break' | undefined,

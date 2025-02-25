@@ -643,14 +643,12 @@ function FormOrchestrator(props: FormsEngineProps) {
 	// If rendered in a dialog, update the dialog's isSubmitting and hasPendingChanges. Only the root form.
 	// Stacked forms have their own changes and submit state management.
 	useEffect(() => {
-		if (!isStackedForm) {
-			updateSubmittingOrHasPendingChanges?.({ isSubmitting, hasPendingChanges });
-		}
+		if (!isStackedForm) updateSubmittingOrHasPendingChanges?.({ isSubmitting, hasPendingChanges });
 	}, [isSubmitting, hasPendingChanges, isStackedForm, updateSubmittingOrHasPendingChanges]);
 
 	// Unlock content when the form is closed.
-	useEffect(() => {
-		return () => {
+	useEffect(
+		() => () => {
 			if (
 				!isRepeatMode &&
 				!isCreateMode &&
@@ -662,22 +660,11 @@ function FormOrchestrator(props: FormsEngineProps) {
 					!isStackedForm ||
 					// If the parent form is readonly, release the lock to put the parent back in sync with its readonly mode.
 					store.get(formsStackData[stackIndex - 1].atoms.readonly))
-			) {
-				dispatch(unlockItem({ path: item['path'] }));
-			}
-		};
-	}, [
-		dispatch,
-		formsStackData,
-		isRepeatMode,
-		isCreateMode,
-		isEmbedded,
-		isStackedForm,
-		item,
-		readonly,
-		stackIndex,
-		store
-	]);
+			)
+				dispatch(unlockItem({ path: item['path'] })); // TODO: Check. Getting expected unlocks. The dependencies changing don't imply unmount.
+		},
+		[dispatch, formsStackData, isRepeatMode, isCreateMode, isEmbedded, isStackedForm, item, readonly, stackIndex, store]
+	);
 
 	const handleOpenDrawerSidebar = () => {
 		const scroller = getScrollContainer(containerRef.current);
@@ -1056,7 +1043,7 @@ function FormOrchestrator(props: FormsEngineProps) {
 	);
 
 	return (
-		// TODO: The transition doesn't seem to be carried out.
+		// TODO: The transition doesn't seem to be carried out. Check forwarding the style prop.
 		// The Fade provides some transitioning for the stacked forms that show without the Slide transition since the Drawer is already open and there's only one.
 		isStackedForm ? <Fade mountOnEnter in={stackTransitionEnded} children={bodyFragment} /> : bodyFragment
 	);
@@ -1067,6 +1054,7 @@ export { Firewall as FormsEngine };
 export default Firewall;
 
 // TODO:
+//  - Need Jotai store per form so fields with same id across forms don't collide. Same goes for sections (or other UI state) that could collide across forms.
 // 	- Consider API that provides all form requirements: form def xml, context xml, sandbox/detailed item, affected workflow, lock(?)
 //  - Russ: "Some people push the save button just to have the modified date changed"
 //  - Implement the various constraints/validation checks

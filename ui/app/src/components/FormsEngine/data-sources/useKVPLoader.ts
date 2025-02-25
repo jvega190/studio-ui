@@ -75,3 +75,5 @@ export function useKVPLoader(siteId: string, dataSourceIds: string[], dataSource
 	}, [dataSourceIds, dataSourceList, siteId]);
 	return optionGroups;
 }
+
+export default useKVPLoader;

@@ -36,6 +36,8 @@ import useContentTypes from '../../../hooks/useContentTypes';
 import {
 	lazy,
 	MouseEvent as ReactMouseEvent,
+	ReactNode,
+	RefObject,
 	Suspense,
 	SyntheticEvent,
 	useEffect,
@@ -85,6 +87,11 @@ import { isTouchDevice, KeyDownEvent, sortableListKeyDownHandler } from '../comm
 import SortableListSkeleton from '../common/SortableListSkeleton';
 import { EmptyState } from '../../EmptyState';
 import { XmlKeys } from '../common/formConsts';
+import useConsolidatedItemPickerData, {
+	ConsolidatedItemPickerData
+} from '../data-sources/useConsolidatedItemPickerData';
+import { useExtractItemPickerDataSources } from '../data-sources/useExtractItemPickerDataSources';
+import { Dispatch as ReduxDispatch } from 'redux';
 
 const SortableList = lazy(() => import('../common/SortableList'));
 const TouchSortableList = lazy(() => import('../common/TouchSortableList'));
@@ -103,11 +110,11 @@ export interface NodeSelectorItem {
 	component?: Record<string, Primitive>;
 }
 
-type DataSourcePickerType = 'search' | 'browse' | 'create';
+export type DataSourcePickerType = 'search' | 'browse' | 'create';
 
-type AllowedContentTypesDataWithDestinations = AllowedContentTypesData & { createPaths?: string[] };
+export type AllowedContentTypesDataWithDestinations = AllowedContentTypesData & { createPaths?: string[] };
 
-interface AllowedPathsData {
+export interface AllowedPathsData {
 	path: string;
 	title: string;
 	allowedContentTypes: string[];
@@ -126,6 +133,7 @@ const oppositeStrategy: Record<ContentCreationStrategy, ContentCreationStrategy>
 	shared: 'embedded'
 };
 
+// Internal/private component
 function CreateDataSourcePicker(props: {
 	siteId: string;
 	contentTypesLookup: LookupTable<ContentType>;
@@ -290,6 +298,7 @@ function CreateDataSourcePicker(props: {
 	);
 }
 
+// Internal/private component
 function DataSourcePicker(props: { allowedPaths: AllowedPathsData[]; onChange(e, choice: AllowedPathsData): void }) {
 	const { allowedPaths, onChange } = props;
 	const handleChange = (event: SyntheticEvent) =>
@@ -320,6 +329,132 @@ function DataSourcePicker(props: { allowedPaths: AllowedPathsData[]; onChange(e,
 	);
 }
 
+const createAddMenuOptions = ({
+	refs,
+	readonly,
+	itemPickerDataSourceData
+}: {
+	refs: RefObject<{
+		handleDataSourceOptionClick(event: ReactMouseEvent<HTMLLIElement, MouseEvent>, option: DataSourcePickerType): void;
+	}>;
+	itemPickerDataSourceData: ConsolidatedItemPickerData;
+	readonly: boolean;
+}): ReactNode[] => {
+	const { allowedCreateTypes, allowedBrowsePaths, allowedSearchPaths } = itemPickerDataSourceData;
+	const createAllowed = Object.keys(allowedCreateTypes).length > 0;
+	const menuOptions = [];
+
+	if (allowedSearchPaths.length > 0) {
+		menuOptions.push(
+			<MenuItem
+				key="search"
+				disabled={readonly}
+				onClick={(event) => refs.current.handleDataSourceOptionClick(event, 'search')}
+			>
+				<ListItemIcon sx={{ mr: 0 }}>
+					<SearchRounded fontSize="small" />
+				</ListItemIcon>
+				<ListItemText children={<FormattedMessage defaultMessage="Search" />} />
+			</MenuItem>
+		);
+	}
+	if (allowedBrowsePaths.length > 0) {
+		menuOptions.push(
+			<MenuItem
+				key="browse"
+				disabled={readonly}
+				onClick={(event) => refs.current.handleDataSourceOptionClick(event, 'browse')}
+			>
+				<ListItemIcon sx={{ mr: 0 }}>
+					<TravelExploreOutlined fontSize="small" />
+				</ListItemIcon>
+				<ListItemText children={<FormattedMessage defaultMessage="Browse" />} />
+			</MenuItem>
+		);
+	}
+	if (createAllowed) {
+		menuOptions.push(
+			<MenuItem
+				key="create"
+				disabled={readonly}
+				onClick={(event) => refs.current.handleDataSourceOptionClick(event, 'create')}
+			>
+				<ListItemIcon sx={{ mr: 0 }}>
+					<AddRounded fontSize="small" />
+				</ListItemIcon>
+				<ListItemText children={<FormattedMessage defaultMessage="Create" />} />
+			</MenuItem>
+		);
+	}
+
+	return menuOptions;
+};
+
+const showBrowseFilesDialog = ({
+	dispatch,
+	onSuccess,
+	path,
+	contentTypes
+}: {
+	path: string;
+	contentTypes: string[];
+	dispatch: ReduxDispatch;
+	onSuccess: BrowseFilesDialogProps['onSuccess'];
+}): void => {
+	const id = nanoid();
+	dispatch(
+		pushDialog({
+			id,
+			component: 'craftercms.components.BrowseFilesDialog',
+			props: {
+				path,
+				multiSelect: true,
+				allowUpload: false,
+				contentTypes: contentTypes ?? [],
+				onClose: () => dispatch(popDialog({ id })),
+				onSuccess(items) {
+					dispatch(popDialog({ id }));
+					onSuccess(items);
+				}
+			} as Partial<BrowseFilesDialogProps>
+		})
+	);
+};
+
+const showSearchDialog = ({
+	dispatch,
+	path,
+	contentTypes,
+	onAcceptSelection
+}: {
+	path: string;
+	contentTypes: string[];
+	dispatch: ReduxDispatch;
+	onAcceptSelection: SearchProps['onAcceptSelection'];
+}): void => {
+	const id = nanoid();
+	dispatch(
+		pushNonDialog({
+			id,
+			component: 'craftercms.components.Search',
+			props: {
+				mode: 'select',
+				embedded: true,
+				initialParameters: {
+					path,
+					sortBy: 'internalName',
+					filters: { 'content-type': contentTypes }
+				},
+				onClose: () => dispatch(popDialog({ id })),
+				onAcceptSelection(paths, items) {
+					dispatch(popDialog({ id }));
+					onAcceptSelection(paths, items);
+				}
+			} as Partial<SearchProps>
+		})
+	);
+};
+
 function NodeSelector(props: NodeSelectorProps) {
 	const { field, contentType, value, setValue, readonly, autoFocus } = props;
 	useFetchSandboxItems(value.flatMap((item) => item.include ?? []));
@@ -341,123 +476,7 @@ function NodeSelector(props: NodeSelectorProps) {
 	const addMenuButtonRef = useRef<HTMLButtonElement>(undefined);
 	const contentTypes = useContentTypes();
 	const siteId = useActiveSiteId();
-	// const saveRef = useRef(setValue);
-	// saveRef.current = setValue;
-	// TODO: Handle '*' from components DS
-	// TODO: Extra DS summary to a hook for the item data sources
-	const dataSourceSummary = useMemo(() => {
-		const allowedCreateTypes: LookupTable<AllowedContentTypesDataWithDestinations> = {};
-		const allowedCreatePaths = new Set<string>();
-		const allowedBrowsePaths: AllowedPathsData[] = [];
-		const allowedSearchPaths: AllowedPathsData[] = [];
-
-		// In dropdown, the `itemManager` "property" is called datasource
-		const dataSourceIds = ((field.properties.itemManager?.value as string) ?? '').split(',');
-		contentTypes[contentType.id].dataSources.forEach((ds) => {
-			if (dataSourceIds.includes(ds.id)) {
-				switch (ds.type) {
-					case 'components': {
-						const allowedContentTypesData: LookupTable<AllowedContentTypesData> =
-							field.validations.allowedContentTypes?.value ?? [];
-						const allowedContentTypes: string[] = Object.keys(allowedContentTypesData);
-						const allowedSharedExisingTypes: string[] = [];
-						allowedContentTypes.forEach((contentTypeId) => {
-							if (allowedContentTypesData[contentTypeId].embedded) {
-								allowedCreateTypes[contentTypeId] = allowedCreateTypes[contentTypeId] ?? {};
-								allowedCreateTypes[contentTypeId].embedded = true;
-							}
-							if (allowedContentTypesData[contentTypeId].shared) {
-								allowedCreateTypes[contentTypeId] = allowedCreateTypes[contentTypeId] ?? {};
-								allowedCreateTypes[contentTypeId].shared = true;
-								const brp = ds.properties.baseRepoPath?.trim();
-								if (brp) {
-									allowedCreateTypes[contentTypeId].createPaths = allowedCreateTypes[contentTypeId].createPaths ?? [];
-									allowedCreateTypes[contentTypeId].createPaths.push(brp);
-								}
-							}
-							if (allowedContentTypesData[contentTypeId].sharedExisting) {
-								allowedSharedExisingTypes.push(contentTypeId);
-							}
-						});
-						if (ds.properties.enableBrowse) {
-							allowedBrowsePaths.push({
-								title: ds.title,
-								path: ds.properties.baseBrowsePath,
-								allowedContentTypes: allowedSharedExisingTypes
-							});
-						}
-						if (ds.properties.enableSearch) {
-							allowedSearchPaths.push({
-								title: ds.title,
-								path: ds.properties.baseBrowsePath,
-								allowedContentTypes: allowedSharedExisingTypes
-							});
-						}
-						break;
-					}
-					case 'shared-content': {
-						// TODO: For some reason, in editorial, the home type doesn't have any of the "enable" properties: enableCreateNew, enableBrowseExisting, enableSearchExisting
-						//   Unsure if this is a BP issue or something that comes from legacy which loads of other old client sites could have.
-						// Shared content DS properties:
-						// - enableBrowseExisting
-						// - enableCreateNew
-						// - enableSearchExisting
-						// - browsePath
-						// - repoPath
-						// - type ("Default Type" property, refers to a content type)
-						const contentTypeId = ds.properties.type?.trim();
-						if (ds.properties.enableBrowseExisting) {
-							allowedBrowsePaths.push({
-								title: ds.title,
-								path: ds.properties.browsePath || ds.properties.repoPath,
-								allowedContentTypes: contentTypeId ? [contentTypeId] : []
-							});
-						}
-						if (ds.properties.enableSearchExisting) {
-							allowedSearchPaths.push({
-								title: ds.title,
-								path: ds.properties.browsePath,
-								allowedContentTypes: contentTypeId ? [contentTypeId] : []
-							});
-						}
-						if (ds.properties.enableCreateNew) {
-							// If the datasource has a specific type, add as an allowed, if not, add the repoPath so later on
-							// the system can calculate the types allowed on that path.
-							if (contentTypeId) {
-								allowedCreateTypes[contentTypeId] = allowedCreateTypes[contentTypeId] ?? {};
-								allowedCreateTypes[contentTypeId].shared = true;
-								const brp = ds.properties.repoPath?.trim();
-								if (brp) {
-									allowedCreateTypes[contentTypeId].createPaths = allowedCreateTypes[contentTypeId].createPaths ?? [];
-									allowedCreateTypes[contentTypeId].createPaths.push(brp);
-								}
-							} else {
-								allowedCreatePaths.add(ds.properties.repoPath);
-							}
-						}
-						break;
-					}
-					case 'embedded-content': {
-						// Embedded content DS properties: contentType
-						const contentTypeId = ds.properties.contentType.trim();
-						allowedCreateTypes[contentTypeId] = allowedCreateTypes[contentTypeId] ?? {};
-						allowedCreateTypes[contentTypeId].embedded = true;
-						break;
-					}
-					default:
-						console.warn(`Unknown data source type "${ds.type}" for Item Selector control`, ds);
-						return;
-				}
-			}
-		});
-
-		return {
-			allowedCreateTypes,
-			allowedCreatePaths: Array.from(allowedCreatePaths),
-			allowedBrowsePaths,
-			allowedSearchPaths
-		};
-	}, [contentType.id, contentTypes, field]);
+	const dataSourceSummary = useConsolidatedItemPickerData(useExtractItemPickerDataSources(contentType, field));
 	const handleRemoveItem = (event: ReactMouseEvent, index: number) => {
 		event.stopPropagation();
 		const nextValue = value.concat();
@@ -496,8 +515,8 @@ function NodeSelector(props: NodeSelectorProps) {
 				}
 			});
 		} else {
-			// console.log('Edit item', item);
-			console.log('Is file', item);
+			// TODO: Handle files?
+			console.log('Edit file requested', item);
 		}
 	};
 	const handleItemKeyDown = (e: KeyDownEvent, index: number) => {
@@ -513,83 +532,52 @@ function NodeSelector(props: NodeSelectorProps) {
 		optionType: DataSourcePickerType,
 		choice: AllowedPathsData | CreateDataSourcePickerData
 	) => {
+		// TODO: Test cases with paths macros; ensure behaviour is consistent with FE1
 		const processPath = (path: string) =>
-			// TODO: Test cases with paths macros; ensure behaviour is consistent with FE1
-			processPathMacros({
-				path,
-				objectId: id,
-				fullParentPath: contextItem?.path ?? pathInSite
-			});
+			processPathMacros({ path, objectId: id, fullParentPath: contextItem?.path ?? pathInSite });
 		switch (optionType) {
 			case 'browse': {
 				// Open browse dialog
-				const id = nanoid();
 				const pickerChoice = choice as AllowedPathsData;
-				dispatch(
-					pushDialog({
-						id,
-						component: 'craftercms.components.BrowseFilesDialog',
-						props: {
-							path: processPath(pickerChoice.path),
-							multiSelect: true,
-							allowUpload: false,
-							contentTypes: pickerChoice.allowedContentTypes ?? [],
-							onClose() {
-								dispatch(popDialog({ id }));
-							},
-							onSuccess(items: MediaItem | MediaItem[]) {
-								dispatch(popDialog({ id }));
-								const nextValue = value.concat();
-								asArray(items).forEach((item) => {
-									nextValue.push({
-										key: item.path,
-										value: item.name,
-										include: item.path,
-										disableFlattening: Boolean(field.properties?.disableFlattening?.value)
-									});
-								});
-								setValue(nextValue);
-							}
-						} as Partial<BrowseFilesDialogProps>
-					})
-				);
+				showBrowseFilesDialog({
+					dispatch,
+					path: processPath(pickerChoice.path),
+					contentTypes: pickerChoice.allowedContentTypes,
+					onSuccess(items: MediaItem | MediaItem[]) {
+						const nextValue = value.concat();
+						asArray(items).forEach((item) => {
+							nextValue.push({
+								key: item.path,
+								value: item.name,
+								include: item.path,
+								disableFlattening: Boolean(field.properties?.disableFlattening?.value)
+							});
+						});
+						setValue(nextValue);
+					}
+				});
 				break;
 			}
 			case 'search': {
 				// Open search dialog
-				const id = nanoid();
 				const pickerChoice = choice as AllowedPathsData;
-				dispatch(
-					pushNonDialog({
-						id,
-						component: 'craftercms.components.Search',
-						props: {
-							mode: 'select',
-							embedded: true,
-							initialParameters: {
-								path: ensureSingleSlash(`${processPath(pickerChoice.path)}/.+`),
-								sortBy: 'internalName',
-								filters: { 'content-type': pickerChoice.allowedContentTypes }
-							},
-							onClose() {
-								dispatch(popDialog({ id }));
-							},
-							onAcceptSelection(paths, items) {
-								dispatch(popDialog({ id }));
-								const nextValue = value.concat();
-								items?.forEach((item) => {
-									nextValue.push({
-										key: item.path,
-										value: item.name,
-										include: item.path,
-										disableFlattening: Boolean(field.properties?.disableFlattening?.value)
-									});
-								});
-								setValue(nextValue);
-							}
-						} as Partial<SearchProps>
-					})
-				);
+				showSearchDialog({
+					dispatch,
+					path: ensureSingleSlash(`${processPath(pickerChoice.path)}/.+`),
+					contentTypes: pickerChoice.allowedContentTypes,
+					onAcceptSelection(paths, items) {
+						const nextValue = value.concat();
+						items?.forEach((item) => {
+							nextValue.push({
+								key: item.path,
+								value: item.name,
+								include: item.path,
+								disableFlattening: Boolean(field.properties?.disableFlattening?.value)
+							});
+						});
+						setValue(nextValue);
+					}
+				});
 				break;
 			}
 			case 'create': {
@@ -650,12 +638,12 @@ function NodeSelector(props: NodeSelectorProps) {
 				break;
 			}
 			case 'create': {
-				const keys = Object.keys(allowedCreateTypes);
-				const contentTypeId = keys[0];
+				const allowedCreateTypesIds = Object.keys(allowedCreateTypes);
+				const contentTypeId = allowedCreateTypesIds[0];
 				// If there's only one option, use that option, otherwise, will show the picker.
 				if (
 					// Only one content type is allowed
-					keys.length === 1 &&
+					allowedCreateTypesIds.length === 1 &&
 					// Only one strategy is allowed
 					[
 						allowedCreateTypes[contentTypeId].shared,
@@ -698,56 +686,10 @@ function NodeSelector(props: NodeSelectorProps) {
 		executeDataSourceOption('create', createPickerChoice);
 	};
 	const memoRefs = useUpdateRefs({ handleDataSourceOptionClick });
-	const menuOptions = useMemo(() => {
-		const { allowedCreateTypes, allowedBrowsePaths, allowedSearchPaths } = dataSourceSummary;
-		const createAllowed = Object.keys(allowedCreateTypes).length > 0;
-		const menuOptions = [];
-
-		if (allowedSearchPaths.length > 0) {
-			menuOptions.push(
-				<MenuItem
-					key="search"
-					disabled={readonly}
-					onClick={(event) => memoRefs.current.handleDataSourceOptionClick(event, 'search')}
-				>
-					<ListItemIcon sx={{ mr: 0 }}>
-						<SearchRounded fontSize="small" />
-					</ListItemIcon>
-					<ListItemText children={<FormattedMessage defaultMessage="Search" />} />
-				</MenuItem>
-			);
-		}
-		if (allowedBrowsePaths.length > 0) {
-			menuOptions.push(
-				<MenuItem
-					key="browse"
-					disabled={readonly}
-					onClick={(event) => memoRefs.current.handleDataSourceOptionClick(event, 'browse')}
-				>
-					<ListItemIcon sx={{ mr: 0 }}>
-						<TravelExploreOutlined fontSize="small" />
-					</ListItemIcon>
-					<ListItemText children={<FormattedMessage defaultMessage="Browse" />} />
-				</MenuItem>
-			);
-		}
-		if (createAllowed) {
-			menuOptions.push(
-				<MenuItem
-					key="create"
-					disabled={readonly}
-					onClick={(event) => memoRefs.current.handleDataSourceOptionClick(event, 'create')}
-				>
-					<ListItemIcon sx={{ mr: 0 }}>
-						<AddRounded fontSize="small" />
-					</ListItemIcon>
-					<ListItemText children={<FormattedMessage defaultMessage="Create" />} />
-				</MenuItem>
-			);
-		}
-
-		return menuOptions;
-	}, [memoRefs, dataSourceSummary, readonly]);
+	const menuOptions = useMemo(
+		() => createAddMenuOptions({ refs: memoRefs, itemPickerDataSourceData: dataSourceSummary, readonly }),
+		[memoRefs, readonly, dataSourceSummary]
+	);
 	const { allowedCreateTypes, allowedCreatePaths, allowedBrowsePaths, allowedSearchPaths } = dataSourceSummary;
 	const maxLimitReached = value.length >= field.validations.maxCount?.value;
 	const isAddDisabled = readonly || maxLimitReached || !menuOptions.length;
