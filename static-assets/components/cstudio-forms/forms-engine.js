@@ -1525,7 +1525,22 @@ const initializeCStudioForms = () => {
 								});
 							} else {
 								const saveContent = () => {
-									CrafterCMSNext.util.ajax.post(serviceUrl, xml).subscribe(
+									const affectedPackages = me.affectedPackages;
+									const service$ = me.affectedPackages?.length
+										? craftercms.services.workflow
+												.cancelPackages(CStudioAuthoringContext.site, {
+													packageIds: affectedPackages.map((p) => p.id),
+													// TODO: Correct comment generation
+													comment: `Cancel packages to write on "${form.path}`
+												})
+												.pipe(
+													craftercms.libs.rxjs.switchMap(() => {
+														return CrafterCMSNext.util.ajax.post(serviceUrl, xml);
+													})
+												)
+										: CrafterCMSNext.util.ajax.post(serviceUrl, xml);
+
+									service$.subscribe(
 										function () {
 											CStudioForms.currentValidFolder = CStudioForms.updatedModel?.['folder-name'];
 											YAHOO.util.Event.removeListener(window, 'beforeunload', unloadFn, me);
@@ -2824,6 +2839,27 @@ const initializeCStudioForms = () => {
 					if (formDef.pageLocation) {
 						$('.page-header h1 .location').text(formDef.pageLocation);
 					}
+
+					const _self = this;
+					craftercms.services.workflow
+						.fetchAffectedPackages(CStudioAuthoringContext.site, form.path)
+						.subscribe((affectedPackages) => {
+							_self.affectedPackages = affectedPackages;
+							if (affectedPackages) {
+								const workflowWarningEl = document.querySelector('.page-header .in-workflow-warning');
+
+								const { createElement } = craftercms.libs.React;
+								const root = craftercms.libs.ReactDOMClient.createRoot(workflowWarningEl);
+								root.render(
+									createElement(craftercms.libs.MaterialUI.Alert, {
+										variant: 'outlined',
+										severity: 'warning',
+										children: formatMessage(formEngineMessages.inWorkflowWarning)
+									})
+								);
+							}
+						});
+
 					$('.page-description').text(formDef.description);
 					$('#cstudio-form-expand-all').text(CMgs.format(formsLangBundle, 'expandAll'));
 					$('#cstudio-form-collapse-all').text(CMgs.format(formsLangBundle, 'collapseAll'));

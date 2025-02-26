@@ -49,6 +49,10 @@ import { MultiChoiceSaveButton } from '../MultiChoiceSaveButton';
 import useUpToDateRefs from '../../hooks/useUpdateRefs';
 import { useEnhancedDialogContext } from '../EnhancedDialog';
 import { writeConfiguration } from '../../services/configuration';
+import { forkJoin, switchMap } from 'rxjs';
+import { cancelPackages, fetchAffectedPackages } from '../../services/workflow';
+import { PublishPackage } from '../../models';
+import Alert from '@mui/material/Alert';
 
 export function CodeEditorDialogContainer(props: CodeEditorDialogContainerProps) {
 	const { path, onMinimize, onClose, mode, readonly, contentType, onFullScreen, onSuccess } = props;
@@ -69,6 +73,7 @@ export function CodeEditorDialogContainer(props: CodeEditorDialogContainerProps)
 	const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 	const [snippets, setSnippets] = useState<LookupTable<{ label: string; value: string }>>({});
 	const [contentModelSnippets, setContentModelSnippets] = useState<Array<{ label: string; value: string }>>(null);
+	const [affectedPackages, setAffectedPackages] = useState<PublishPackage[]>(undefined);
 	const storedId = 'codeEditor';
 	const {
 		'craftercms.freemarkerCodeSnippets': freemarkerCodeSnippets,
@@ -93,10 +98,24 @@ export function CodeEditorDialogContainer(props: CodeEditorDialogContainerProps)
 			const value = editorRef.current.getValue();
 			const isConfig = path.startsWith('/config');
 			const module = isConfig ? (path.split('/')[2] as 'studio') : null;
+
 			const service$ = isConfig
 				? writeConfiguration(site, path.replace(`/config/${module}`, ''), module, value)
 				: writeContent(site, path, value, { unlock: false });
-			service$.subscribe({
+			// If item is in packages in active workflow, before saving we need to cancel the packages.
+			const preWriteAction$ = affectedPackages?.length
+				? cancelPackages(site, {
+						packageIds: affectedPackages.map((p) => p.id),
+						// TODO: Correct comment generation
+						comment: `Cancel packages to write on "${path}"`
+					}).pipe(
+						switchMap(() => {
+							return service$;
+						})
+					)
+				: service$;
+
+			preWriteAction$.subscribe({
 				next() {
 					dispatch(
 						batchActions([
@@ -192,11 +211,14 @@ export function CodeEditorDialogContainer(props: CodeEditorDialogContainerProps)
 		if (content === null) {
 			setLoading(true);
 			dispatch(updateCodeEditorDialog({ isSubmitting: true }));
-			const subscription = fetchContentXML(site, path).subscribe((xml) => {
-				setContent(xml);
-				setLoading(false);
-				dispatch(updateCodeEditorDialog({ isSubmitting: false }));
-			});
+			const subscription = forkJoin([fetchContentXML(site, path), fetchAffectedPackages(site, path)]).subscribe(
+				([xml, affectedPackages]) => {
+					setContent(xml);
+					setAffectedPackages(affectedPackages);
+					setLoading(false);
+					dispatch(updateCodeEditorDialog({ isSubmitting: false }));
+				}
+			);
 			return () => {
 				subscription.unsubscribe();
 			};
@@ -213,6 +235,17 @@ export function CodeEditorDialogContainer(props: CodeEditorDialogContainerProps)
 		<>
 			<DialogHeader
 				title={item ? item.label : <Skeleton width="120px" />}
+				subtitle={
+					affectedPackages.length ? (
+						<Alert
+							variant="outlined"
+							severity="warning"
+							sx={{ p: 0, border: 'none', '& .MuiAlert-icon, & .MuiAlert-message': { p: 0 } }}
+						>
+							<FormattedMessage defaultMessage="The item is part of one or more publishing packages. Editing it will cancel the packages." />
+						</Alert>
+					) : null
+				}
 				onCloseButtonClick={onCloseButtonClick}
 				onMinimizeButtonClick={onMinimize}
 				onFullScreenButtonClick={onFullScreen}
