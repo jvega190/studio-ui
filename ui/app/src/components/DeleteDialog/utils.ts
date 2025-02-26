@@ -37,6 +37,7 @@ export interface DeleteDialogContentUIProps {
 	title: string;
 	comment: string;
 	selectedItems: LookupTable<boolean>;
+	isCommentRequired: boolean;
 	isDisabled: boolean;
 	isConfirmDeleteChecked: boolean;
 	onInputChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, fieldId: string): void;

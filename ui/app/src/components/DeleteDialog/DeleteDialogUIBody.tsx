@@ -40,6 +40,7 @@ export function DeleteDialogUIBody(props: DeleteDialogContentUIProps) {
 		title,
 		comment,
 		selectedItems,
+		isCommentRequired = false,
 		isDisabled,
 		isConfirmDeleteChecked,
 		onInputChange,
@@ -149,13 +150,14 @@ export function DeleteDialogUIBody(props: DeleteDialogContentUIProps) {
 						sx={{ mb: 2 }}
 						value={title}
 						onChange={(e) => onInputChange(e, 'title')}
+						required
 					/>
 					<TextFieldWithMax
 						label={<FormattedMessage id="deleteDialog.submissionCommentLabel" defaultMessage="Submission Comment" />}
 						multiline
 						value={comment}
 						onChange={(e) => onInputChange(e, 'comment')}
-						required
+						required={isCommentRequired}
 						disabled={isDisabled}
 						sx={{ width: '100%' }}
 					/>

@@ -25,7 +25,7 @@ import {
 } from '../../state/actions/dialogs';
 import { deleteItems } from '../../services/content';
 import { DeleteDialogUI } from './DeleteDialogUI';
-import { DeleteDialogContainerProps } from './utils';
+import { DeleteDialogContainerProps, DeleteDialogContentUIProps } from './utils';
 import { useSelection } from '../../hooks/useSelection';
 import LookupTable from '../../models/LookupTable';
 import { createPresenceTable } from '../../utils/array';
@@ -55,6 +55,7 @@ export function DeleteDialogContainer(props: DeleteDialogContainerProps) {
 	const [comment, setComment] = useState('');
 	const [submitError, setSubmitError] = useState<ApiResponse>(null);
 	const site = useActiveSiteId();
+	const isCommentRequired = useSelection((state) => state.uiConfig.publishing.deleteCommentRequired);
 	const [selectedItems, setSelectedItems] = useState<LookupTable<boolean>>({});
 	const dispatch = useDispatch();
 	const [submitDisabled, setSubmitDisabled] = useState(true);
@@ -81,7 +82,7 @@ export function DeleteDialogContainer(props: DeleteDialogContainerProps) {
 
 	const onCloseButtonClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => onClose(e, null);
 
-	const onInputChange = (e, fieldId) => {
+	const onInputChange: DeleteDialogContentUIProps['onInputChange'] = (e, fieldId) => {
 		dispatch(updateDeleteDialog({ hasPendingChanges: true }));
 		switch (fieldId) {
 			case 'title':
@@ -158,9 +159,13 @@ export function DeleteDialogContainer(props: DeleteDialogContainerProps) {
 
 	useEffect(() => {
 		setSubmitDisabled(
-			isSubmitting || Object.values(selectedItems).length === 0 || isBlank(comment) || isBlank(title) || !confirmChecked
+			isSubmitting ||
+				Object.values(selectedItems).length === 0 ||
+				(isCommentRequired && isBlank(comment)) ||
+				isBlank(title) ||
+				!confirmChecked
 		);
-	}, [isSubmitting, title, comment, selectedItems, confirmChecked]);
+	}, [isSubmitting, title, comment, isCommentRequired, selectedItems, confirmChecked]);
 
 	return (
 		<DeleteDialogUI
@@ -179,6 +184,7 @@ export function DeleteDialogContainer(props: DeleteDialogContainerProps) {
 			isSubmitting={isSubmitting}
 			onSubmit={onSubmit}
 			onCloseButtonClick={onCloseButtonClick}
+			isCommentRequired={isCommentRequired}
 			isSubmitButtonDisabled={submitDisabled}
 			onItemClicked={onItemClicked}
 			onSelectAllClicked={onSelectAllClicked}
