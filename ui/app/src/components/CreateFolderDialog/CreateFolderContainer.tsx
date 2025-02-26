@@ -279,10 +279,7 @@ export function CreateFolderContainer(props: CreateFolderContainerProps) {
 								control={<Checkbox onChange={onCancelPackagesAckChange} />}
 								label={
 									<Typography>
-										<FormattedMessage
-											defaultMessage="The current folder have child items that are part of one or more publishing packages. Renaming it will cancel the
-						packages."
-										/>
+										<FormattedMessage defaultMessage="The item is part of one or more publishing packages. Editing it will cancel the packages." />
 									</Typography>
 								}
 							/>
