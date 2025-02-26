@@ -46,6 +46,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import Typography from '@mui/material/Typography';
 import { cancelPackages, fetchAffectedPackages } from '../../services/workflow';
+import { switchMap, map } from 'rxjs/operators';
 
 export function CreateFolderContainer(props: CreateFolderContainerProps) {
 	const { onClose, onCreated, onRenamed, rename = false, value = '', allowBraces = false } = props;
@@ -84,27 +85,25 @@ export function CreateFolderContainer(props: CreateFolderContainerProps) {
 		(!rename || !containsItemsInWorkflow || (containsItemsInWorkflow && cancelPackagesAck));
 
 	useEffect(() => {
-		if (item && rename === false) {
-			setSelectedItem(item);
-		}
+		if (item && rename === false) setSelectedItem(item);
 	}, [item, rename]);
 
 	useEffect(() => {
-		if (rename) {
-			// If renaming, check if the folder contains items in workflow
-			setFetchingAffectedPackages(true);
-			fetchAffectedPackages(site, path, true).subscribe({
-				next: (packages) => {
-					setFetchingAffectedPackages(false);
-					setPackagesInWorkflow(packages);
-				},
-				error: () => {
-					setFetchingAffectedPackages(false);
-				}
-			});
-		} else {
+		if (!rename) {
 			setPackagesInWorkflow(undefined);
+			return;
 		}
+		// If renaming, check if the folder contains items in workflow
+		setFetchingAffectedPackages(true);
+		fetchAffectedPackages(site, path, true).subscribe({
+			next(packages) {
+				setFetchingAffectedPackages(false);
+				setPackagesInWorkflow(packages);
+			},
+			error() {
+				setFetchingAffectedPackages(false);
+			}
+		});
 	}, [path, rename, site]);
 
 	const onMoveFolderAckChange = (e: React.ChangeEvent<HTMLInputElement>) => setMoveFolderAck(e.target.checked);
@@ -112,14 +111,7 @@ export function CreateFolderContainer(props: CreateFolderContainerProps) {
 	const onCancelPackagesAckChange = (e: React.ChangeEvent<HTMLInputElement>) => setCancelPackagesAck(e.target.checked);
 
 	const onError = (error: ApiResponse) => {
-		dispatch(
-			batchActions([
-				showErrorDialog({ error }),
-				updateCreateFolderDialog({
-					isSubmitting: false
-				})
-			])
-		);
+		dispatch(batchActions([showErrorDialog({ error }), updateCreateFolderDialog({ isSubmitting: false })]));
 	};
 
 	const onRenameFolder = (site: string, path: string, name: string) => {
@@ -143,58 +135,53 @@ export function CreateFolderContainer(props: CreateFolderContainerProps) {
 	};
 
 	const onSubmit = () => {
+		if (!name) return;
 		dispatch(updateCreateFolderDialog({ isSubmitting: true }));
-		if (name) {
-			const parentPath = rename ? getParentPath(path) : path;
-			validateActionPolicy(site, {
-				type: rename ? 'RENAME' : 'CREATE',
-				target: `${parentPath}/${name}`
-			}).subscribe({
-				next: ({ allowed, modifiedValue, message }) => {
-					if (allowed) {
-						const pathToCheckExists = modifiedValue ?? `${parentPath}/${name}`;
-						setItemExists(false);
-						fetchSandboxItem(site, pathToCheckExists).subscribe({
-							next: (item) => {
-								// TODO: The following sequence of ifs can be simplified
-								if (item) {
-									setItemExists(true);
-									dispatch(updateCreateFolderDialog({ isSubmitting: false }));
-								} else {
-									if (modifiedValue) {
-										setConfirm({ body: message });
-									} else {
-										if (rename) {
-											if (containsItemsInWorkflow) {
-												const packageIds: number[] = packagesInWorkflow.map((pkg) => pkg.id);
-												cancelPackages(site, {
-													packageIds,
-													comment: `Cancel packages to rename folder "${path}"`
-												}).subscribe(() => {
-													onRenameFolder(site, path, name);
-												});
-											} else {
-												onRenameFolder(site, path, name);
-											}
-										} else {
-											onCreateFolder(site, path, name);
-										}
-									}
-								}
-							},
-							error: onError
-						});
-					} else {
+		const parentPath = rename ? getParentPath(path) : path;
+		validateActionPolicy(site, { type: rename ? 'RENAME' : 'CREATE', target: `${parentPath}/${name}` })
+			.pipe(
+				switchMap((validationResult) => {
+					const { allowed, modifiedValue, message } = validationResult;
+					if (!allowed) {
 						setConfirm({
 							error: true,
 							body: formatMessage(translations.policyError, { fileName: name, detail: message })
 						});
 						dispatch(updateCreateFolderDialog({ isSubmitting: false }));
+						return [];
 					}
+					const pathToCheckExists = modifiedValue ?? `${parentPath}/${name}`;
+					setItemExists(false);
+					return fetchSandboxItem(site, pathToCheckExists).pipe(map((item) => [validationResult, item]));
+				})
+			)
+			.subscribe({
+				next([{ modifiedValue, message }, item]) {
+					// Note: Block of guard statements (each if ends function)
+					if (item) {
+						setItemExists(true);
+						dispatch(updateCreateFolderDialog({ isSubmitting: false }));
+						return;
+					} else if (modifiedValue) {
+						setConfirm({ body: message });
+						return;
+					} else if (!rename) {
+						onCreateFolder(site, path, name);
+						return;
+					} else if (!containsItemsInWorkflow) {
+						onRenameFolder(site, path, name);
+						return;
+					}
+					// Note: By this point, is a rename and containsItemsInWorkflow
+					const packageIds: number[] = packagesInWorkflow.map((pkg) => pkg.id);
+					// TODO: Correct comment generation
+					cancelPackages(site, { packageIds, comment: `Cancel packages to rename folder "${path}"` }).subscribe({
+						next: () => onRenameFolder(site, path, name),
+						error: onError
+					});
 				},
 				error: onError
 			});
-		}
 	};
 
 	const onConfirm = () => {
