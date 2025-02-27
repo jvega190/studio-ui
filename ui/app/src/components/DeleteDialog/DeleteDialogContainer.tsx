@@ -58,8 +58,13 @@ export function DeleteDialogContainer(props: DeleteDialogContainerProps) {
 	const isCommentRequired = useSelection((state) => state.uiConfig.publishing.deleteCommentRequired);
 	const [selectedItems, setSelectedItems] = useState<LookupTable<boolean>>({});
 	const dispatch = useDispatch();
-	const [submitDisabled, setSubmitDisabled] = useState(true);
 	const [confirmChecked, setConfirmChecked] = useState(false);
+	const submitDisabled =
+		isSubmitting ||
+		Object.values(selectedItems).length === 0 ||
+		(isCommentRequired && isBlank(comment)) ||
+		isBlank(title) ||
+		!confirmChecked;
 	const authoringBase = useSelection((state) => state.env.authoringBase);
 	useFetchSandboxItems(dependentItems ?? []);
 
@@ -156,16 +161,6 @@ export function DeleteDialogContainer(props: DeleteDialogContainerProps) {
 			dispatch(fetchDeleteDependencies({ paths: items.map((i) => i.path) }));
 		}
 	}, [dispatch, items]);
-
-	useEffect(() => {
-		setSubmitDisabled(
-			isSubmitting ||
-				Object.values(selectedItems).length === 0 ||
-				(isCommentRequired && isBlank(comment)) ||
-				isBlank(title) ||
-				!confirmChecked
-		);
-	}, [isSubmitting, title, comment, isCommentRequired, selectedItems, confirmChecked]);
 
 	return (
 		<DeleteDialogUI
