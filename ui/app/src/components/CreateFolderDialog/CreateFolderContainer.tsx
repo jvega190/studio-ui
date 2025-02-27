@@ -81,8 +81,11 @@ export function CreateFolderContainer(props: CreateFolderContainerProps) {
 	const isValid =
 		!isBlank(name) &&
 		!folderExists &&
-		(!rename || (name !== value && moveFolderAck)) &&
-		(!rename || !containsItemsInWorkflow || (containsItemsInWorkflow && cancelPackagesAck));
+		(!rename ||
+			(name !== value &&
+				moveFolderAck &&
+				!fetchingAffectedPackages &&
+				(!containsItemsInWorkflow || cancelPackagesAck)));
 
 	useEffect(() => {
 		if (item && rename === false) setSelectedItem(item);
@@ -279,7 +282,7 @@ export function CreateFolderContainer(props: CreateFolderContainerProps) {
 								control={<Checkbox onChange={onCancelPackagesAckChange} />}
 								label={
 									<Typography>
-										<FormattedMessage defaultMessage="The item is part of one or more publishing packages. Editing it will cancel the packages." />
+										<FormattedMessage defaultMessage="The folder contains items which take part in one or more publishing packages. Renaming it will cancel the packages." />
 									</Typography>
 								}
 							/>
@@ -292,11 +295,7 @@ export function CreateFolderContainer(props: CreateFolderContainerProps) {
 				<SecondaryButton onClick={onCloseButtonClick} disabled={isSubmitting}>
 					<FormattedMessage id="words.cancel" defaultMessage="Cancel" />
 				</SecondaryButton>
-				<PrimaryButton
-					onClick={onSubmit}
-					disabled={isSubmitting || !isValid || fetchingAffectedPackages}
-					loading={isSubmitting}
-				>
+				<PrimaryButton onClick={onSubmit} disabled={isSubmitting || !isValid} loading={isSubmitting}>
 					{rename ? (
 						<FormattedMessage id="words.rename" defaultMessage="Rename" />
 					) : (
