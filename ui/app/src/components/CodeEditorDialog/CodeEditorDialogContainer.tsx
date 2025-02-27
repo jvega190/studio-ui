@@ -21,7 +21,7 @@ import { fetchContentXML, lock, writeContent } from '../../services/content';
 import { ConditionalLoadingState } from '../LoadingState/LoadingState';
 import AceEditor from '../AceEditor/AceEditor';
 import { useDispatch } from 'react-redux';
-import { updateCodeEditorDialog } from '../../state/actions/dialogs';
+import { showViewPackagesDialog, updateCodeEditorDialog } from '../../state/actions/dialogs';
 import Skeleton from '@mui/material/Skeleton';
 import ListSubheader from '@mui/material/ListSubheader';
 import DialogFooter from '../DialogFooter/DialogFooter';
@@ -44,7 +44,7 @@ import { useReferences } from '../../hooks/useReferences';
 import { getHostToGuestBus } from '../../utils/subjects';
 import { reloadRequest } from '../../state/actions/preview';
 import { CodeEditorDialogContainerProps, getContentModelSnippets } from './utils';
-import { batchActions } from '../../state/actions/misc';
+import { batchActions, dispatchDOMEvent } from '../../state/actions/misc';
 import { MultiChoiceSaveButton } from '../MultiChoiceSaveButton';
 import useUpToDateRefs from '../../hooks/useUpdateRefs';
 import { useEnhancedDialogContext } from '../EnhancedDialog';
@@ -52,7 +52,8 @@ import { writeConfiguration } from '../../services/configuration';
 import { forkJoin, switchMap } from 'rxjs';
 import { cancelPackages, fetchAffectedPackages } from '../../services/workflow';
 import { PublishPackage } from '../../models';
-import Alert from '@mui/material/Alert';
+import Alert, { alertClasses } from '@mui/material/Alert';
+import { createCustomDocumentEventListener } from '../../utils/dom';
 
 export function CodeEditorDialogContainer(props: CodeEditorDialogContainerProps) {
 	const { path, onMinimize, onClose, mode, readonly, contentType, onFullScreen, onSuccess } = props;
@@ -92,7 +93,7 @@ export function CodeEditorDialogContainer(props: CodeEditorDialogContainerProps)
 		}, 150);
 	};
 
-	const save = (callback?: Function) => {
+	const _save = (callback?: () => void) => {
 		if (!isLockedForMe && !readonly) {
 			dispatch(updateCodeEditorDialog({ isSubmitting: true }));
 			const value = editorRef.current.getValue();
@@ -108,11 +109,7 @@ export function CodeEditorDialogContainer(props: CodeEditorDialogContainerProps)
 						packageIds: affectedPackages.map((p) => p.id),
 						// TODO: Correct comment generation
 						comment: `Cancel packages to write on "${path}"`
-					}).pipe(
-						switchMap(() => {
-							return service$;
-						})
-					)
+					}).pipe(switchMap(() => service$))
 				: service$;
 
 			preWriteAction$.subscribe({
@@ -136,7 +133,28 @@ export function CodeEditorDialogContainer(props: CodeEditorDialogContainerProps)
 		}
 	};
 
-	const onSave = () => save(() => setContent(editorRef.current.getValue()));
+	const save = (callback?: () => void) => {
+		// Before saving, check if the item is part of a package in active workflow. If so, show a dialog to review the
+		// packages before continuing with the cancellation of the packages and saving the item.
+		if (affectedPackages?.length) {
+			const callbackId = 'viewPackagesDialogCallback';
+			dispatch(
+				showViewPackagesDialog({
+					item,
+					onContinue: dispatchDOMEvent({ id: callbackId })
+				})
+			);
+			createCustomDocumentEventListener(callbackId, () => {
+				_save(callback);
+			});
+		} else {
+			_save(callback);
+		}
+	};
+
+	const onSave = () => {
+		save(() => setContent(editorRef.current.getValue()));
+	};
 
 	const onAddSnippet = (event) => {
 		setAnchorEl(event.currentTarget);
@@ -236,11 +254,32 @@ export function CodeEditorDialogContainer(props: CodeEditorDialogContainerProps)
 			<DialogHeader
 				title={item ? item.label : <Skeleton width="120px" />}
 				subtitle={
-					affectedPackages.length ? (
+					affectedPackages?.length ? (
 						<Alert
 							variant="outlined"
 							severity="warning"
-							sx={{ p: 0, border: 'none', '& .MuiAlert-icon, & .MuiAlert-message': { p: 0 } }}
+							sx={{
+								p: 0,
+								border: 'none',
+								[`& .${alertClasses.icon}, & .${alertClasses.message}`]: {
+									p: 0
+								},
+								[`& .${alertClasses.action}`]: {
+									py: 0
+								}
+							}}
+							action={
+								<Button
+									color="inherit"
+									size="small"
+									sx={{ p: 0 }}
+									onClick={() => {
+										dispatch(showViewPackagesDialog({ item }));
+									}}
+								>
+									<FormattedMessage defaultMessage="Review" />
+								</Button>
+							}
 						>
 							<FormattedMessage defaultMessage="The item is part of one or more publishing packages. Editing it will cancel the packages." />
 						</Alert>

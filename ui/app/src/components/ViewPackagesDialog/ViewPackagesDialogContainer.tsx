@@ -57,8 +57,8 @@ export function ViewPackagesDialogContainer(props: ViewPackagesDialogContainerPr
 	};
 
 	const onContinueClick = (e) => {
-		onClose(e, null);
 		onContinue();
+		onClose(e, null);
 	};
 
 	useEffect(() => {
