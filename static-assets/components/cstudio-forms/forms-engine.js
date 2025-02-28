@@ -2904,6 +2904,19 @@ const initializeCStudioForms = () => {
 										variant: 'outlined',
 										severity: 'warning',
 										children: formatMessage(formEngineMessages.inWorkflowWarning),
+										sx: {
+											mb: 2,
+											borderColor: (theme) =>
+												window.matchMedia('(prefers-color-scheme: dark)').matches
+													? 'rgb(255, 194, 102)'
+													: theme.palette.warning.light,
+											'& .MuiAlert-message, & .MuiAlert-action': {
+												color: (theme) =>
+													window.matchMedia('(prefers-color-scheme: dark)').matches
+														? 'rgb(255, 230, 193)'
+														: theme.palette.warning.text
+											}
+										},
 										action: createElement(craftercms.libs.MaterialUI.Button, {
 											color: 'inherit',
 											size: 'small',

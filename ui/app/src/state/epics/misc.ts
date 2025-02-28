@@ -27,7 +27,7 @@ import {
 	editTemplate
 } from '../actions/misc';
 import { changeContentType, createFile, fetchSandboxItem } from '../../services/content';
-import { showCodeEditorDialog, showEditDialog, showViewPackagesDialog } from '../actions/dialogs';
+import { showCodeEditorDialog, showEditDialog } from '../actions/dialogs';
 import { reloadDetailedItem } from '../actions/content';
 import { blockUI, showEditItemSuccessNotification, unblockUI } from '../actions/system';
 import { CrafterCMSEpic } from '../store';
@@ -36,7 +36,6 @@ import { showErrorDialog } from '../reducers/dialogs/error';
 import { getFileNameFromPath, getParentPath } from '../../utils/path';
 import { popPiece } from '../../utils/string';
 import { associateTemplate } from '../actions/preview';
-import { isInActiveWorkflow } from '../../utils/content';
 
 const epics = [
 	(action$, state$: Observable<GlobalState>) =>
@@ -94,27 +93,15 @@ const epics = [
 					fetchSandboxItem(state.sites.active, path).pipe(
 						map((item) =>
 							item
-								? isInActiveWorkflow(item)
-									? batchActions([
-											showViewPackagesDialog({
-												item,
-												onContinue: showCodeEditorDialog({
-													path,
-													mode,
-													contentType
-												})
-											}),
-											unblockUI()
-										])
-									: batchActions([
-											showCodeEditorDialog({
-												site: state.sites.active,
-												path,
-												mode,
-												contentType
-											}),
-											unblockUI()
-										])
+								? batchActions([
+										showCodeEditorDialog({
+											site: state.sites.active,
+											path,
+											mode,
+											contentType
+										}),
+										unblockUI()
+									])
 								: createFileAction({
 										path: destinationPath,
 										fileName,
