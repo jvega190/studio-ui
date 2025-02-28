@@ -21,7 +21,7 @@ import { fetchContentXML, lock, writeContent } from '../../services/content';
 import { ConditionalLoadingState } from '../LoadingState/LoadingState';
 import AceEditor from '../AceEditor/AceEditor';
 import { useDispatch } from 'react-redux';
-import { showViewPackagesDialog, updateCodeEditorDialog } from '../../state/actions/dialogs';
+import { closeViewPackagesDialog, showViewPackagesDialog, updateCodeEditorDialog } from '../../state/actions/dialogs';
 import Skeleton from '@mui/material/Skeleton';
 import ListSubheader from '@mui/material/ListSubheader';
 import DialogFooter from '../DialogFooter/DialogFooter';
@@ -141,10 +141,12 @@ export function CodeEditorDialogContainer(props: CodeEditorDialogContainerProps)
 			dispatch(
 				showViewPackagesDialog({
 					item,
-					onContinue: dispatchDOMEvent({ id: callbackId })
+					onContinue: dispatchDOMEvent({ id: callbackId, type: 'continue' }),
+					onClose: batchActions([dispatchDOMEvent({ id: callbackId, type: 'close' }), closeViewPackagesDialog()])
 				})
 			);
-			createCustomDocumentEventListener(callbackId, () => {
+			createCustomDocumentEventListener(callbackId, ({ type }) => {
+				if (type === 'close') return;
 				_save(callback);
 			});
 		} else {
