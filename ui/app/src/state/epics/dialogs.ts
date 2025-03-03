@@ -231,6 +231,7 @@ const dialogEpics: CrafterCMSEpic[] = [
 			ignoreElements()
 		),
 	// endregion
+	// TODO: how to handle this in the new dialogs system?
 	// region closeCodeEditorDialog
 	// Moved unlock from dialog to epics since the container has no visibility of the backdrop click close and
 	// was hence unable to unlock the item in all cases.

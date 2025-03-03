@@ -15,5 +15,5 @@
  */
 
 export function generateDialogId(dialogType: string) {
-  return dialogType.replace(/SHOW_|CLOSE_|UPDATE_/g, '');
+	return dialogType.replace(/SHOW_|CLOSE_|UPDATE_/g, '');
 }

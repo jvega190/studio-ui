@@ -41,30 +41,30 @@ import { Observable } from 'rxjs';
 import StandardAction from '../../models/StandardAction';
 
 const epic: CrafterCMSEpic = combineEpics(
-  (action$: Observable<StandardAction<StandardAction[]>>) =>
-    action$.pipe(
-      ofType(batchActions.type),
-      switchMap(({ payload }) => payload)
-    ),
-  ...auth,
-  ...sites,
-  ...contentTypes,
-  ...assets,
-  ...audiencesPanel,
-  ...preview,
-  ...dialogs,
-  ...legacy,
-  ...itemVersions,
-  ...env,
-  ...content,
-  ...translation,
-  ...configuration,
-  ...pathNavigator,
-  ...pathNavigatorTree,
-  ...misc,
-  ...system,
-  ...users,
-  ...mappedDialogs
+	(action$: Observable<StandardAction<StandardAction[]>>) =>
+		action$.pipe(
+			ofType(batchActions.type),
+			switchMap(({ payload }) => payload)
+		),
+	...auth,
+	...sites,
+	...contentTypes,
+	...assets,
+	...audiencesPanel,
+	...preview,
+	...dialogs,
+	...legacy,
+	...itemVersions,
+	...env,
+	...content,
+	...translation,
+	...configuration,
+	...pathNavigator,
+	...pathNavigatorTree,
+	...misc,
+	...system,
+	...users,
+	...mappedDialogs
 );
 
 export default epic;

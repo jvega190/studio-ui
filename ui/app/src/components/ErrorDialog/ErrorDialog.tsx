@@ -40,11 +40,10 @@ export type ErrorDialogProps = PropsWithChildren<
 export interface ErrorDialogStateProps extends ErrorDialogBaseProps {
 	onClose?: StandardAction;
 	onClosed?: StandardAction;
-	onDismiss?: StandardAction;
 }
 
 function ErrorDialogBody(props: ErrorDialogProps) {
-	const { onDismiss, error } = props;
+	const { onClose, error } = props;
 	useUnmount(props.onClosed);
 	return (
 		<Box sx={{ padding: (theme) => theme.spacing(2) }}>
@@ -55,7 +54,7 @@ function ErrorDialogBody(props: ErrorDialogProps) {
 					right: theme.spacing(1),
 					top: theme.spacing(1)
 				})}
-				onClick={() => onDismiss()}
+				onClick={() => onClose()}
 				size="large"
 			>
 				<CloseIcon />

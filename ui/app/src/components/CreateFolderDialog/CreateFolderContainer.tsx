@@ -95,15 +95,15 @@ export function CreateFolderContainer(props: CreateFolderContainerProps) {
 		});
 	};
 
-  const onCreateFolder = (site: string, path: string, name: string) => {
-    createFolder(site, path, name).subscribe({
-      next() {
-        dispatch(updateCreateFolderDialog({ isSubmitting: false, hasPendingChanges: false }));
-        onCreated?.({ path, name, rename });
-      },
-      error: onError
-    });
-  };
+	const onCreateFolder = (site: string, path: string, name: string) => {
+		createFolder(site, path, name).subscribe({
+			next() {
+				dispatch(updateCreateFolderDialog({ isSubmitting: false, hasPendingChanges: false }));
+				onCreated?.({ path, name, rename });
+			},
+			error: onError
+		});
+	};
 
 	const onSubmit = () => {
 		dispatch(updateCreateFolderDialog({ isSubmitting: true }));

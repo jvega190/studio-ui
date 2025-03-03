@@ -33,7 +33,7 @@ import { batchActions } from '../../state/actions/misc';
 import { showSystemNotification } from '../../state/actions/system';
 import { fetchSites, popSite } from '../../state/actions/sites';
 import { showErrorDialog } from '../../state/reducers/dialogs/error';
-import { showEditSiteDialog } from '../../state/actions/dialogs';
+import { closeEditSiteDialog, showEditSiteDialog } from '../../state/actions/dialogs';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import SitesGrid from '../SitesGrid/SitesGrid';
 import PublishingStatusDialog from '../PublishingStatusDialog';
@@ -138,7 +138,7 @@ export function SiteManagement() {
 	};
 
 	const onEditSiteClick = (site: Site) => {
-		dispatch(showEditSiteDialog({ site }));
+		dispatch(showEditSiteDialog({ site, onSaveSuccess: closeEditSiteDialog() }));
 	};
 
 	const onPublishButtonClick = (

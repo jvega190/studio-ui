@@ -76,6 +76,8 @@ export const components = {
 	BasePathSelector: lazy(() => import('../components/BasePathSelector')),
 	BrokenReferencesDialog: lazy(() => import('../components/BrokenReferencesDialog')),
 	BrowseFilesDialog: lazy(() => import('../components/BrowseFilesDialog')),
+	BulkCancelPackageDialog: lazy(() => import('../components/BulkCancelPackageDialog')),
+	CancelPackageDialog: lazy(() => import('../components/CancelPackageDialog')),
 	ChangeContentTypeDialog: lazy(() => import('../components/ChangeContentTypeDialog')),
 	CharCountStatus: lazy(() => import('../components/CharCountStatus')),
 	CodeEditorDialog: lazy(() => import('../components/CodeEditorDialog')),
@@ -137,6 +139,9 @@ export const components = {
 	GitAuthForm: lazy(() => import('../components/GitAuthForm')),
 	GitManagement: lazy(() => import('../components/GitManagement')),
 	PublishCommitDialog: lazy(() => import('../components/GitManagement/PublishCommitDialog')),
+	PublishingPackageReviewDialog: lazy(
+		() => import('../components/PublishPackageReviewDialog/PublishingPackageReviewDialog')
+	),
 	PullDialog: lazy(() => import('../components/GitManagement/PullDialog')),
 	PushDialog: lazy(() => import('../components/GitManagement/PushDialog')),
 	RepoGrid: lazy(() => import('../components/GitManagement/RepoGrid')),
@@ -324,6 +329,7 @@ export const components = {
 	UserManagement: lazy(() => import('../components/UserManagement')),
 	UsersGrid: lazy(() => import('../components/UsersGrid')),
 	VersionList: lazy(() => import('../components/VersionList')),
+	ViewPackagesDialog: lazy(() => import('../components/ViewPackagesDialog')),
 	VideoPlayer: lazy(() => import('../components/VideoPlayer')),
 	ViewToolbar: lazy(() => import('../components/ViewToolbar')),
 	ViewVersionDialog: lazy(() => import('../components/ViewVersionDialog')),
