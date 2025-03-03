@@ -295,7 +295,7 @@ export function CreateFolderContainer(props: CreateFolderContainerProps) {
 				<SecondaryButton onClick={onCloseButtonClick} disabled={isSubmitting}>
 					<FormattedMessage id="words.cancel" defaultMessage="Cancel" />
 				</SecondaryButton>
-				<PrimaryButton onClick={onSubmit} disabled={isSubmitting || !isValid} loading={isSubmitting}>
+				<PrimaryButton onClick={onSubmit} disabled={!isValid} loading={isSubmitting}>
 					{rename ? (
 						<FormattedMessage id="words.rename" defaultMessage="Rename" />
 					) : (
