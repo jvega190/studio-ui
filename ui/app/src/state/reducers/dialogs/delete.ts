@@ -16,15 +16,7 @@
 
 import { createReducer } from '@reduxjs/toolkit';
 import GlobalState from '../../../models/GlobalState';
-import {
-	closeDeleteDialog,
-	deleteDialogClosed,
-	fetchDeleteDependencies,
-	fetchDeleteDependenciesComplete,
-	fetchDeleteDependenciesFailed,
-	showDeleteDialog,
-	updateDeleteDialog
-} from '../../actions/dialogs';
+import { closeDeleteDialog, deleteDialogClosed, showDeleteDialog, updateDeleteDialog } from '../../actions/dialogs';
 import { DeleteDialogStateProps } from '../../../components/DeleteDialog/utils';
 
 const initialState: DeleteDialogStateProps = {
@@ -53,19 +45,5 @@ export default createReducer<GlobalState['dialogs']['delete']>(initialState, (bu
 			...(payload as Partial<DeleteDialogStateProps>)
 		}))
 		.addCase(closeDeleteDialog, (state) => ({ ...state, open: false }))
-		.addCase(deleteDialogClosed, () => initialState)
-		.addCase(fetchDeleteDependencies, (state) => ({
-			...state,
-			isFetching: true
-		}))
-		.addCase(fetchDeleteDependenciesComplete, (state, { payload }) => ({
-			...state,
-			isFetching: false,
-			...payload
-		}))
-		.addCase(fetchDeleteDependenciesFailed, (state, { payload }) => ({
-			...state,
-			isFetching: false,
-			error: payload.response
-		}));
+		.addCase(deleteDialogClosed, () => initialState);
 });

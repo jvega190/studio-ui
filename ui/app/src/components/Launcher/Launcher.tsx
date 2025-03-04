@@ -38,7 +38,7 @@ import CrafterCMSLogo from '../../icons/CrafterCMSLogo';
 import { renderWidgets } from '../Widget';
 import { logout } from '../../state/actions/auth';
 import { ListItem, Tooltip } from '@mui/material';
-import { closeLauncher } from '../../state/actions/dialogs';
+import { closeLauncher, updateLauncher } from '../../state/actions/dialogs';
 import { EnhancedUser } from '../../models/User';
 import { batchActions } from '../../state/actions/misc';
 import LauncherGlobalNav from '../LauncherGlobalNav';
@@ -57,6 +57,8 @@ import useMinimizedDialogWarning from '../../hooks/useMinimizedDialogWarning';
 import TranslationOrText from '../../models/TranslationOrText';
 import { SystemIconDescriptor } from '../SystemIcon';
 import Box from '@mui/material/Box';
+import { deserialize, fromString } from '../../utils/xml';
+import { applyDeserializedXMLTransforms } from '../../utils/object';
 
 export interface LauncherStateProps {
 	open: boolean;
@@ -407,7 +409,14 @@ export function Launcher(props: LauncherStateProps) {
 
 	useEffect(() => {
 		if (uiConfig.xml) {
-			dispatch(initLauncherConfig({ configXml: uiConfig.xml }));
+			const configDOM = fromString(uiConfig.xml);
+			const launcher = configDOM.querySelector('[id="craftercms.components.Launcher"] > configuration');
+			if (launcher) {
+				const launcherConfig = applyDeserializedXMLTransforms(deserialize(launcher), {
+					arrays: ['widgets', 'permittedRoles', 'siteCardMenuLinks']
+				}).configuration;
+				dispatch(updateLauncher({ ...launcherConfig }));
+			}
 		}
 	}, [uiConfig.xml, dispatch]);
 

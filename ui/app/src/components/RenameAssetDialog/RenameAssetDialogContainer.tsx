@@ -79,8 +79,8 @@ export function RenameAssetDialogContainer(props: RenameAssetContainerProps) {
 		const fileName = type !== 'asset' ? getFileNameWithExtensionForItemType(type, name) : name;
 		renameContent(siteId, path, fileName).subscribe({
 			next() {
-				onRenamed?.({ path, name });
 				dispatch(updateRenameAssetDialog({ isSubmitting: false, hasPendingChanges: false }));
+				onRenamed?.({ path, name });
 			},
 			error({ response }) {
 				dispatch(showErrorDialog({ error: response.response }));

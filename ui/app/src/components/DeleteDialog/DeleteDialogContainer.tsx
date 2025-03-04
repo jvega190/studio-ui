@@ -17,12 +17,7 @@
 import React, { useEffect, useState } from 'react';
 import { useActiveSiteId } from '../../hooks/useActiveSiteId';
 import { useDispatch } from 'react-redux';
-import {
-	fetchDeleteDependencies,
-	fetchDeleteDependenciesComplete,
-	showEditDialog,
-	updateDeleteDialog
-} from '../../state/actions/dialogs';
+import { fetchDeleteDependencies, showEditDialog, updateDeleteDialog } from '../../state/actions/dialogs';
 import { deleteItems } from '../../services/content';
 import { DeleteDialogUI } from './DeleteDialogUI';
 import { DeleteDialogContainerProps } from './utils';
@@ -33,6 +28,7 @@ import { DetailedItem } from '../../models/Item';
 import { isBlank } from '../../utils/string';
 import { ApiResponse } from '../../models';
 import useFetchSandboxItems from '../../hooks/useFetchSandboxItems';
+import { batchActions } from '../../state/actions/misc';
 
 function createCheckedList(selectedItems: LookupTable<boolean>, excludedPaths?: string[]) {
 	return Object.entries(selectedItems)
@@ -89,9 +85,9 @@ export function DeleteDialogContainer(props: DeleteDialogContainerProps) {
 	const fetchOrCleanDependencies = (nextChecked) => {
 		let paths = createCheckedList(nextChecked);
 		if (paths.length) {
-			dispatch(fetchDeleteDependencies({ paths }));
+			dispatch(batchActions([updateDeleteDialog({ isSubmitting: true }), fetchDeleteDependencies({ paths })]));
 		} else {
-			dispatch(fetchDeleteDependenciesComplete({ dependentItems: [], childItems: [] }));
+			dispatch(updateDeleteDialog({ dependentItems: [], childItems: [] }));
 		}
 	};
 

@@ -25,6 +25,7 @@ import {
 	closeCreateFolderDialog,
 	closeDeleteDialog,
 	closePublishDialog,
+	closeRenameAssetDialog,
 	closeUploadDialog,
 	showBrokenReferencesDialog,
 	showChangeContentTypeDialog,
@@ -578,7 +579,8 @@ export const itemActionDispatcher = ({
 							path: item.path,
 							allowBraces: item.path.startsWith('/scripts/rest'),
 							type,
-							value: item.label
+							value: item.label,
+							onRenamed: closeRenameAssetDialog()
 						})
 					);
 				}

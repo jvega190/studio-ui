@@ -67,7 +67,7 @@ export function BrokenReferencesDialogContainer(props: BrokenReferencesDialogCon
 										key={reference.path}
 										divider={references.length - 1 !== index}
 										secondaryAction={
-											reference.availableActionsMap.edit ? (
+											reference.availableActionsMap?.edit ? (
 												<Button
 													color="primary"
 													onClick={() => {

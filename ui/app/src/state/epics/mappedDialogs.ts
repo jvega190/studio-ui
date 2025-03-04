@@ -17,6 +17,7 @@
 import { CrafterCMSEpic } from '../store';
 import { ofType } from 'redux-observable';
 import {
+	closeBrokenReferencesDialog,
 	closeBulkCancelPackageDialog,
 	closeCancelPackageDialog,
 	closeChangeContentTypeDialog,
@@ -26,10 +27,14 @@ import {
 	closeCopyDialog,
 	closeCreateFileDialog,
 	closeCreateFolderDialog,
+	closeDeleteDialog,
 	closeDependenciesDialog,
+	closeEditDialog,
 	closeEditSiteDialog,
 	closeHistoryDialog,
 	closeItemMegaMenu,
+	closeItemMenu,
+	closeLauncher,
 	closeNewContentDialog,
 	closePackageDetailsDialog,
 	closePathSelectionDialog,
@@ -38,11 +43,13 @@ import {
 	closePublishingPackageResubmitDialog,
 	closePublishingPackageReviewDialog,
 	closePublishingStatusDialog,
+	closeRenameAssetDialog,
 	closeSingleFileUploadDialog,
 	closeUploadDialog,
 	closeViewPackagesDialog,
 	closeWidgetDialog,
 	historyDialogUpdate,
+	showBrokenReferencesDialog,
 	showBulkCancelPackageDialog,
 	showCancelPackageDialog,
 	showChangeContentTypeDialog,
@@ -52,9 +59,14 @@ import {
 	showCopyDialog,
 	showCreateFileDialog,
 	showCreateFolderDialog,
+	showDeleteDialog,
 	showDependenciesDialog,
+	showEditDialog,
 	showEditSiteDialog,
 	showHistoryDialog,
+	showItemMegaMenu,
+	showItemMenu,
+	showLauncher,
 	showNewContentDialog,
 	showPackageDetailsDialog,
 	showPathSelectionDialog,
@@ -63,21 +75,27 @@ import {
 	showPublishingPackageResubmitDialog,
 	showPublishingPackageReviewDialog,
 	showPublishingStatusDialog,
+	showRenameAssetDialog,
 	showSingleFileUploadDialog,
 	showUploadDialog,
 	showViewPackagesDialog,
 	showWidgetDialog,
+	updateBrokenReferencesDialog,
 	updateBulkCancelPackageDialog,
 	updateCancelPackageDialog,
 	updateCodeEditorDialog,
 	updateCopyDialog,
 	updateCreateFileDialog,
 	updateCreateFolderDialog,
+	updateDeleteDialog,
+	updateEditDialogConfig,
 	updateEditSiteDialog,
+	updateLauncher,
 	updatePreviewDialog,
 	updatePublishDialog,
 	updatePublishingPackageResubmitDialog,
 	updatePublishingPackageReviewDialog,
+	updateRenameAssetDialog,
 	updateSingleFileUploadDialog,
 	updateWidgetDialog
 } from '../actions/dialogs';
@@ -88,6 +106,7 @@ import { updatePublishingStatus } from '../actions/publishingStatus';
 import { DialogStackItem, StandardAction } from '../../models';
 import { createCallback, EnhancedDialogProps } from '../../components';
 import { closeErrorDialog, showErrorDialog } from '../reducers/dialogs/error';
+import { blockUI, unblockUI } from '../actions/system';
 
 const dialogsMap = {
 	[showConfirmDialog.type]: 'craftercms.components.ConfirmDialog',
@@ -114,10 +133,18 @@ const dialogsMap = {
 	[showBulkCancelPackageDialog.type]: 'craftercms.components.BulkCancelPackageDialog',
 	[showPackageDetailsDialog.type]: 'craftercms.components.PackageDetailsDialog',
 	[showViewPackagesDialog.type]: 'craftercms.components.ViewPackagesDialog',
-	[showErrorDialog.type]: 'craftercms.components.ErrorDialog'
+	[showErrorDialog.type]: 'craftercms.components.ErrorDialog',
+	[showBrokenReferencesDialog.type]: 'craftercms.components.BrokenReferencesDialog',
+	[showRenameAssetDialog.type]: 'craftercms.components.RenameAssetDialog',
+	[showDeleteDialog.type]: 'craftercms.components.DeleteDialog',
+	[showEditDialog.type]: 'craftercms.components.LegacyFormDialog',
+	[showItemMenu.type]: 'craftercms.components.ItemMenu',
+	[showItemMegaMenu.type]: 'craftercms.components.ItemMegaMenu',
+	[showLauncher.type]: 'craftercms.components.Launcher',
+	[blockUI.type]: 'craftercms.components.UIBlocker'
 };
 
-const allowMinimizeDialogs = [showPreviewDialog.type, showCodeEditorDialog.type];
+const allowMinimizeDialogs = [showPreviewDialog.type, showCodeEditorDialog.type, showEditDialog.type];
 const allowFullScreenDialogs = [showPreviewDialog.type, showCodeEditorDialog.type];
 
 const showDialogsEpics: CrafterCMSEpic[] = [
@@ -137,12 +164,8 @@ const showDialogsEpics: CrafterCMSEpic[] = [
 				showSingleFileUploadDialog.type,
 				showPreviewDialog.type,
 				showWidgetDialog.type,
-				// showHistoryDialog.type, // TODO: versionsBranch not working... something with the update (?)
 				showPublishingStatusDialog.type,
-				// showCompareVersionsDialog.type, // TODO: versionsBranch undefined.
-				// showRenameAssetDialog.type
 				showPathSelectionDialog.type,
-				// showDeleteDialog.type // TODO: check extra actions
 				showCodeEditorDialog.type,
 				showPublishingPackageReviewDialog.type,
 				showPublishingPackageResubmitDialog.type,
@@ -151,12 +174,17 @@ const showDialogsEpics: CrafterCMSEpic[] = [
 				showBulkCancelPackageDialog.type,
 				showPackageDetailsDialog.type,
 				showViewPackagesDialog.type,
-				showErrorDialog.type
+				showErrorDialog.type,
+				showBrokenReferencesDialog.type,
+				showRenameAssetDialog.type,
+				showDeleteDialog.type,
+				showEditDialog.type,
+				showItemMenu.type,
+				showItemMegaMenu.type,
+				showLauncher.type
 			),
 			withLatestFrom(state$),
 			map(([{ payload, type }]) => {
-				// const dispatch = useDispatch();
-
 				const dialogProps: DialogStackItem<EnhancedDialogProps>['props'] = { ...payload };
 				Object.entries((payload as EnhancedDialogProps) ?? {}).forEach(([key, value]) => {
 					// TODO: By just having a type, can I say it is an action?
@@ -194,7 +222,12 @@ const showDialogsEpics: CrafterCMSEpic[] = [
 				updatePublishingPackageResubmitDialog.type,
 				updateEditSiteDialog.type,
 				updateCancelPackageDialog.type,
-				updateBulkCancelPackageDialog.type
+				updateBulkCancelPackageDialog.type,
+				updateBrokenReferencesDialog.type,
+				updateRenameAssetDialog.type,
+				updateDeleteDialog.type,
+				updateEditDialogConfig.type,
+				updateLauncher.type
 			),
 			withLatestFrom(state$),
 			map(([{ payload, type }]) => {
@@ -237,15 +270,58 @@ const showDialogsEpics: CrafterCMSEpic[] = [
 				closeBulkCancelPackageDialog.type,
 				closePackageDetailsDialog.type,
 				closeViewPackagesDialog.type,
-				closeErrorDialog.type
+				closeErrorDialog.type,
+				closeBrokenReferencesDialog.type,
+				closeRenameAssetDialog.type,
+				closeDeleteDialog.type,
+				closeEditDialog.type,
+				closeItemMenu.type,
+				closeItemMegaMenu.type,
+				closeLauncher.type
 			),
 			withLatestFrom(state$),
 			map(([{ type }]) => {
-				return popDialog({
-					id: generateDialogId(type)
+				return popDialog({ id: generateDialogId(type) });
+			})
+		),
+	// endregion
+
+	// region UIBlocker
+	(action$, state$) =>
+		action$.pipe(
+			ofType(blockUI.type),
+			withLatestFrom(state$),
+			map(([{ payload, type }]) => {
+				return pushDialog({
+					id: blockUI.type,
+					component: dialogsMap[type],
+					props: payload
 				});
 			})
+		),
+	(action$, state$) =>
+		action$.pipe(
+			ofType(unblockUI.type),
+			withLatestFrom(state$),
+			map(() => {
+				return popDialog({ id: blockUI.type });
+			})
 		)
+	// end region
+
+	// region showNonDialogs
+	// (action$, state$) =>
+	// 	action$.pipe(
+	// 		ofType(showLauncher.type),
+	// 		withLatestFrom(state$),
+	// 		map(([{ payload, type }]) => {
+	// 			return pushNonDialog({
+	// 				id: generateDialogId(type),
+	// 				component: dialogsMap[type],
+	// 				props: payload
+	// 			});
+	// 		})
+	// 	)
 	// endregion
 ] as CrafterCMSEpic[];
 

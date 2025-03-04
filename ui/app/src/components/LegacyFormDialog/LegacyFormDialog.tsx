@@ -35,7 +35,17 @@ const renameContentDialogDataInitialState = {
 
 export function LegacyFormDialog(props: LegacyFormDialogProps) {
 	const { formatMessage } = useIntl();
-	const { open, inProgress, isSubmitting, disableHeader, isMinimized, onMaximize, onMinimize, ...rest } = props;
+	const {
+		open,
+		inProgress,
+		isSubmitting,
+		disableHeader,
+		isMinimized,
+		onMaximize,
+		onMinimize,
+		onTransitionExited,
+		...rest
+	} = props;
 	const renameContentDialogState = useEnhancedDialogState();
 	const [renameContentDialogData, setRenameContentDialogData] = useState(renameContentDialogDataInitialState);
 	const [iframeLoaded, setIframeLoaded] = useState(false);
@@ -100,6 +110,7 @@ export function LegacyFormDialog(props: LegacyFormDialogProps) {
 					}
 				}}
 				onClose={onClose}
+				onTransitionExited={onTransitionExited}
 			>
 				{!disableHeader && (
 					<DialogHeader

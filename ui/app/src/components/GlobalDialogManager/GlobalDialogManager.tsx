@@ -22,11 +22,8 @@ import { isPlainObject } from '../../utils/object';
 import { SnackbarKey, useSnackbar } from 'notistack';
 import { getHostToHostBus } from '../../utils/subjects';
 import { blockUI, newProjectReady, showSystemNotification, unblockUI } from '../../state/actions/system';
-import Launcher from '../Launcher/Launcher';
 import useSelection from '../../hooks/useSelection';
-import { useWithPendingChangesCloseRequest } from '../../hooks/useWithPendingChangesCloseRequest';
 import MinimizedBar from '../MinimizedBar';
-import { RenameAssetDialog } from '../RenameAssetDialog';
 import { FormattedMessage, useIntl } from 'react-intl';
 import Button from '@mui/material/Button';
 import { getSystemLink } from '../../utils/system';
@@ -52,13 +49,8 @@ import infoImgUrl from '../../assets/information.svg';
 const ViewVersionDialog = lazy(() => import('../ViewVersionDialog'));
 const CompareVersionsDialog = lazy(() => import('../CompareVersionsDialog'));
 const HistoryDialog = lazy(() => import('../HistoryDialog'));
-const DeleteDialog = lazy(() => import('../DeleteDialog'));
-const LegacyFormDialog = lazy(() => import('../LegacyFormDialog'));
-const ItemMenu = lazy(() => import('../ItemActionsMenu'));
-const ItemMegaMenu = lazy(() => import('../ItemMegaMenu'));
 const AuthMonitor = lazy(() => import('../AuthMonitor'));
 const UIBlocker = lazy(() => import('../UIBlocker'));
-const BrokenReferencesDialog = lazy(() => import('../BrokenReferencesDialog'));
 // endregion
 
 // @formatter:off
@@ -351,28 +343,6 @@ function GlobalDialogManager() {
 				</Suspense>
 			))}
 			<Suspense fallback="">
-				{/* region Edit (LegacyFormDialog) */}
-				<LegacyFormDialog
-					{...state.edit}
-					onClose={createCallback(state.edit.onClose, dispatch)}
-					onMinimize={createCallback(state.edit.onMinimize, dispatch)}
-					onMaximize={createCallback(state.edit.onMaximize, dispatch)}
-					onClosed={createCallback(state.edit.onClosed, dispatch)}
-					onSaveSuccess={createCallback(state.edit.onSaveSuccess, dispatch)}
-				/>
-				{/* endregion */}
-				{/* region Delete */}
-				<DeleteDialog
-					{...state.delete}
-					onClose={createCallback(state.delete.onClose, dispatch)}
-					onClosed={createCallback(state.delete.onClosed, dispatch)}
-					onSuccess={createCallback(state.delete.onSuccess, dispatch)}
-					onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
-						createCallback(state.delete.onClose, dispatch)
-					)}
-				/>
-				{/* endregion */}
-
 				{/* region History */}
 				<HistoryDialog
 					{...state.history}
@@ -422,43 +392,6 @@ function GlobalDialogManager() {
 
 				{/* region Auth Monitor */}
 				<AuthMonitor />
-				{/* endregion */}
-
-				{/*  region Broken References */}
-				<BrokenReferencesDialog
-					{...state.brokenReferences}
-					onClose={createCallback(state.brokenReferences.onClose, dispatch)}
-					onClosed={createCallback(state.brokenReferences.onClosed, dispatch)}
-					onContinue={createCallback(state.brokenReferences.onContinue, dispatch)}
-				/>
-				{/* endregion */}
-
-				{/* region Rename Asset */}
-				<RenameAssetDialog
-					{...state.renameAsset}
-					onClose={createCallback(state.renameAsset.onClose, dispatch)}
-					onClosed={createCallback(state.renameAsset.onClosed, dispatch)}
-					onRenamed={createCallback(state.renameAsset.onRenamed, dispatch)}
-					onWithPendingChangesCloseRequest={useWithPendingChangesCloseRequest(
-						createCallback(state.renameAsset.onClose, dispatch)
-					)}
-				/>
-				{/* endregion */}
-
-				{/* region Item Menu */}
-				<ItemMenu {...state.itemMenu} onClose={createCallback(state.itemMenu.onClose, dispatch)} />
-				{/* endregion */}
-
-				{/* region Item Mega Menu */}
-				<ItemMegaMenu
-					{...state.itemMegaMenu}
-					onClose={createCallback(state.itemMegaMenu.onClose, dispatch)}
-					onClosed={createCallback(state.itemMegaMenu.onClosed, dispatch)}
-				/>
-				{/* endregion */}
-
-				{/* region Launcher */}
-				<Launcher {...state.launcher} />
 				{/* endregion */}
 
 				{/* region Minimized Tabs */}

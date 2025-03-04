@@ -129,10 +129,6 @@ export const updateDeleteDialog = /*#__PURE__*/ createAction<Partial<DeleteDialo
 export const closeDeleteDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE_DELETE_DIALOG');
 export const deleteDialogClosed = /*#__PURE__*/ createAction('DELETE_DIALOG_CLOSED');
 export const fetchDeleteDependencies = /*#__PURE__*/ createAction<{ paths: string[] }>('FETCH_DELETE_DEPENDENCIES');
-export const fetchDeleteDependenciesComplete = /*#__PURE__*/ createAction<FetchDeleteDependenciesResponse>(
-	'FETCH_DELETE_DEPENDENCIES_COMPLETE'
-);
-export const fetchDeleteDependenciesFailed = /*#__PURE__*/ createAction<AjaxError>('FETCH_DELETE_DEPENDENCIES_FAILED');
 // endregion
 
 // region New Content
@@ -165,7 +161,7 @@ export const closeEditDialog = /*#__PURE__*/ createAction<StandardAction>('CLOSE
 export const editDialogClosed = /*#__PURE__*/ createAction<StandardAction>('EDIT_DIALOG_CLOSED');
 export const newContentCreationComplete = /*#__PURE__*/ createAction<StandardAction>('NEW_CONTENT_CREATION_COMPLETE');
 export const updateEditDialogConfig =
-	/*#__PURE__*/ createAction<Partial<LegacyFormDialogStateProps>>('UPDATE_EDIT_DIALOG_CONFIG');
+	/*#__PURE__*/ createAction<Partial<LegacyFormDialogStateProps>>('UPDATE_EDIT_DIALOG');
 // endregion
 
 // region Legacy Code Editor
@@ -273,6 +269,7 @@ export const itemMegaMenuClosed = /*#__PURE__*/ createAction('ITEM_MEGA_MENU_CLO
 
 // region Global Nav
 export const showLauncher = /*#__PURE__*/ createAction<Partial<LauncherStateProps>>('SHOW_LAUNCHER');
+export const updateLauncher = /*#__PURE__*/ createAction<Partial<LauncherStateProps>>('UPDATE_LAUNCHER');
 export const closeLauncher = /*#__PURE__*/ createAction('CLOSE_LAUNCHER');
 // endregion
 

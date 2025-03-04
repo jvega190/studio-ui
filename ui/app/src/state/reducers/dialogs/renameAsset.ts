@@ -59,19 +59,5 @@ export default createReducer<GlobalState['dialogs']['renameAsset']>(initialState
 			// Omitting error property from payload because of a ts error showing up.
 			...(payload as Partial<Omit<RenameAssetStateProps, 'error'>>)
 		}))
-		.addCase(renameAssetDialogClosed, () => initialState)
-		.addCase(fetchRenameAssetDependants, (state) => ({
-			...state,
-			fetchingDependantItems: true
-		}))
-		.addCase(fetchRenameAssetDependantsComplete, (state, { payload }) => ({
-			...state,
-			dependantItems: payload.dependants,
-			fetchingDependantItems: false
-		}))
-		.addCase(fetchRenameAssetDependantsFailed, (state, { payload }) => ({
-			...state,
-			fetchingDependantItems: false,
-			error: payload
-		}));
+		.addCase(renameAssetDialogClosed, () => initialState);
 });

@@ -28,29 +28,27 @@ import {
 	closeHistoryDialog,
 	closeNewContentDialog,
 	closePublishDialog,
+	closeRenameAssetDialog,
 	closeSingleFileUploadDialog,
 	closeViewVersionDialog,
+	fetchBrokenReferences,
+	fetchBrokenReferencesFailed,
 	fetchContentVersion,
 	fetchContentVersionComplete,
 	fetchContentVersionFailed,
 	fetchDeleteDependencies,
-	fetchDeleteDependenciesComplete,
-	fetchDeleteDependenciesFailed,
 	fetchRenameAssetDependants,
-	fetchRenameAssetDependantsComplete,
-	fetchRenameAssetDependantsFailed,
 	newContentCreationComplete,
 	showCodeEditorDialog,
 	showConfirmDialog,
 	showEditDialog,
 	showPreviewDialog,
+	updateBrokenReferencesDialog,
 	updateCodeEditorDialog,
+	updateDeleteDialog,
 	updateEditDialogConfig,
 	updatePreviewDialog,
-	closeRenameAssetDialog,
-	fetchBrokenReferences,
-	updateBrokenReferencesDialog,
-	fetchBrokenReferencesFailed
+	updateRenameAssetDialog
 } from '../actions/dialogs';
 import { fetchDeleteDependencies as fetchDeleteDependenciesService, fetchDependant } from '../../services/dependencies';
 import { fetchContentXML, fetchItemVersion } from '../../services/content';
@@ -65,9 +63,8 @@ import infoGraphic from '../../assets/information.svg';
 import { nnou, nou } from '../../utils/object';
 import { getHostToGuestBus } from '../../utils/subjects';
 import { unlockItem } from '../actions/content';
-import { parseLegacyItemToDetailedItem } from '../../utils/content';
+import { parseLegacyItemToDetailedItem, parseLegacyItemToSandBoxItem } from '../../utils/content';
 import { LegacyItem } from '../../models';
-import { parseLegacyItemToSandBoxItem } from '../../utils/content';
 
 function getDialogNameFromType(type: string): string {
 	let name = getDialogActionNameFromType(type);
@@ -157,8 +154,14 @@ const dialogEpics: CrafterCMSEpic[] = [
 					state
 				]) =>
 					fetchDeleteDependenciesService(state.sites.active, paths).pipe(
-						map(fetchDeleteDependenciesComplete),
-						catchAjaxError(fetchDeleteDependenciesFailed)
+						map((response) => {
+							return updateDeleteDialog({
+								isFetching: false,
+								dependentItems: response.dependentItems,
+								childItems: response.childItems
+							});
+						}),
+						catchAjaxError((error) => updateDeleteDialog({ error, isFetching: false }))
 					)
 			)
 		),
@@ -256,10 +259,10 @@ const dialogEpics: CrafterCMSEpic[] = [
 				fetchDependant(state.sites.active, state.dialogs.renameAsset.path).pipe(
 					takeUntil(action$.pipe(ofType(closeRenameAssetDialog.type))),
 					map((response: LegacyItem[]) => {
-						const dependants = parseLegacyItemToDetailedItem(response);
-						return fetchRenameAssetDependantsComplete({ dependants });
+						const dependantItems = parseLegacyItemToDetailedItem(response);
+						return updateRenameAssetDialog({ dependantItems, fetchingDependantItems: false });
 					}),
-					catchAjaxError(fetchRenameAssetDependantsFailed)
+					catchAjaxError((error) => updateRenameAssetDialog({ error, fetchingDependantItems: false }))
 				)
 			)
 		),
