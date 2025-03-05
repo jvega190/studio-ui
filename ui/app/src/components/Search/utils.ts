@@ -36,6 +36,7 @@ import { getHostToHostBus } from '../../utils/subjects';
 import { filter } from 'rxjs/operators';
 import { fetchContentXML } from '../../services/content';
 import { getPreviewURLFromPath } from '../../utils/path';
+import { IconButtonProps } from '@mui/material/IconButton';
 import useFetchSandboxItems from '../../hooks/useFetchSandboxItems';
 
 export const drawerWidth = 300;
@@ -62,28 +63,26 @@ export const actionsToBeShown: AllItemActions[] = [
 	'history'
 ];
 
-export interface URLDrivenSearchProps {
+export interface BaseSearchProps {
+	mode: 'default' | 'select';
+	embedded: boolean;
+	onClose(): void;
+	onSelect(path: string, selected: boolean): void;
+	onAcceptSelection(paths: string[], items: MediaItem[]): void;
+}
+
+export interface URLDrivenSearchProps extends Partial<BaseSearchProps> {
 	location: Location;
-	mode?: 'default' | 'select';
-	embedded?: boolean;
-	onClose?(): void;
-	onSelect?(path: string, selected: boolean): any;
-	onAcceptSelection?(items: string[]): any;
 }
 
 export interface SearchParameters extends Partial<ElasticParams> {
 	path?: string;
 }
 
-export interface SearchProps {
-	mode?: 'default' | 'select';
-	embedded?: boolean;
+export interface SearchProps extends Partial<BaseSearchProps> {
 	initialParameters?: SearchParameters;
 	preselectedPaths?: string[];
 	disableChangePreselected?: boolean;
-	onClose?(): void;
-	onSelect?(path: string, selected: boolean): any;
-	onAcceptSelection?(items: string[]): any;
 }
 
 export interface CheckedFilter {
@@ -156,14 +155,13 @@ export const deserializeSearchFilters = (filters) => {
 	return deserializedFilters;
 };
 
-interface UseSearchStateHookProps {
+export interface UseSearchStateHookProps extends Pick<BaseSearchProps, 'onSelect'> {
 	searchParameters: ElasticParams;
 	preselectedPaths?: string[];
 	disableChangePreselected?: SearchProps['disableChangePreselected'];
-	onSelect?(path: string, selected: boolean): any;
 }
 
-interface useSearchStateReturn {
+export interface UseSearchStateReturn {
 	selected: string[];
 	areAllSelected: boolean;
 	selectionOptions: ContextMenuOption[];
@@ -176,7 +174,7 @@ interface useSearchStateReturn {
 	currentView: 'grid' | 'list';
 	isFetching: boolean;
 	onActionClicked(option: AllItemActions, event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void;
-	onHeaderButtonClick(event: any, item: MediaItem): void;
+	onHeaderButtonClick(event: Parameters<IconButtonProps['onClick']>[0], item: MediaItem): void;
 	handleClearSelected(): void;
 	handleSelect(path: string, isSelected: boolean): void;
 	handleSelectAll(checked: boolean): void;
@@ -208,7 +206,7 @@ export const useSearchState = ({
 	preselectedPaths = [],
 	disableChangePreselected = true,
 	onSelect
-}: UseSearchStateHookProps): useSearchStateReturn => {
+}: UseSearchStateHookProps): UseSearchStateReturn => {
 	const { formatMessage } = useIntl();
 	const dispatch = useDispatch();
 	const clipboard = useSelection((state) => state.content.clipboard);

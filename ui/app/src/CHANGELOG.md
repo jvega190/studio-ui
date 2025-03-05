@@ -39,6 +39,9 @@
   * @mui/x-data-grid
   * @mui/x-date-pickers
   * @mui/x-tree-view
+* Moved getPersonFullName to utils/object
+* FE2 TODO: image=>image-picker, text=>input, etc services/contentType typeMap removed
+* Removed WidgetDialogContextType, WidgetDialogContext, useWidgetDialogContext. Use `useEnhancedDialogContext` instead.
 * [services]
   * `publishing/fetchPackages` filters param updated to be a Partial of `target`, `states`, `approvalStates`, `submitter`, `reviewer`, `isScheduled`, `sort`, `offset` and `limit`.
   `environment` is now `target` and `path` was removed from filters param.

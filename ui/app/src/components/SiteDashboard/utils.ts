@@ -15,7 +15,6 @@
  */
 
 import { PREVIEW_URL_PATH, UNDEFINED } from '../../utils/constants';
-import Person from '../../models/Person';
 import { Dispatch, SetStateAction, useMemo } from 'react';
 import useSpreadState from '../../hooks/useSpreadState';
 import { DetailedItem, PagedArray, PublishPackage } from '../../models';
@@ -37,10 +36,6 @@ export interface CommonDashletProps {
 
 export function parseDashletContentHeight(contentHeight: string | number): number {
 	return contentHeight ? parseInt(`${contentHeight}`.replace('px', '')) : UNDEFINED;
-}
-
-export function getPersonFullName(person: Person): string {
-	return `${person.firstName} ${person.lastName}`;
 }
 
 export interface WithSelectedStateItem {

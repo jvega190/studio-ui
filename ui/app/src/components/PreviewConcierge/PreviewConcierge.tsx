@@ -95,7 +95,7 @@ import { BehaviorSubject, forkJoin, Observable, of } from 'rxjs';
 import { useIntl } from 'react-intl';
 import { getGuestToHostBus, getHostToGuestBus, getHostToHostBus } from '../../utils/subjects';
 import { useDispatch, useStore } from 'react-redux';
-import { nnou } from '../../utils/object';
+import { getPersonFullName, nnou } from '../../utils/object';
 import { findParentModelId, getModelIdFromInheritedField, isInheritedField } from '../../utils/model';
 import RubbishBin from '../RubbishBin/RubbishBin';
 import { useSnackbar } from 'notistack';
@@ -173,7 +173,6 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { batchActions, dispatchDOMEvent, editContentTypeTemplate } from '../../state/actions/misc';
 import SocketEventBase from '../../models/SocketEvent';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
-import { getPersonFullName } from '../SiteDashboard';
 import { useTheme } from '@mui/material/styles';
 import { createCustomDocumentEventListener } from '../../utils/dom';
 import BrowseFilesDialog from '../BrowseFilesDialog';
@@ -189,6 +188,7 @@ import { Dispatch } from 'redux';
 import { ActionCreatorWithOptionalPayload } from '@reduxjs/toolkit';
 import { ItemMegaMenuStateProps } from '../ItemMegaMenu';
 import StandardAction from '../../models/StandardAction';
+import { pickShowContentFormAction } from '../../utils/system';
 
 const issueDescriptorRequest = (props: {
 	site: string;
@@ -410,7 +410,7 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
 				case 'E':
 					upToDateRefs.current.item &&
 						dispatch(
-							showEditDialog({
+							pickShowContentFormAction({
 								site: upToDateRefs.current.siteId,
 								path: upToDateRefs.current.guest.path,
 								readonly:
