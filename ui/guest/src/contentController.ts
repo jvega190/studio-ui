@@ -46,7 +46,7 @@ import { parseDescriptor, preParseSearchResults } from '@craftercms/content';
 import { crafterConf } from '@craftercms/classes';
 import { getDefaultValue } from '@craftercms/studio-ui/utils/contentType';
 import { ModelHierarchyDescriptor, ModelHierarchyMap, modelsToLookup } from '@craftercms/studio-ui/utils/content';
-import { SandboxItem, StandardAction } from '@craftercms/studio-ui/models';
+import { ContentItem, StandardAction } from '@craftercms/studio-ui/models';
 import { fetchSandboxItemComplete } from '@craftercms/studio-ui/state/actions/content';
 
 // if (process.env.NODE_ENV === 'development') {
@@ -79,7 +79,7 @@ const models$ = new BehaviorSubject<LookupTable<ContentInstance>>({
 	/* 'modelId': { ...modelData } */
 });
 
-const items$ = new BehaviorSubject<LookupTable<SandboxItem>>({
+const items$ = new BehaviorSubject<LookupTable<ContentItem>>({
 	/* 'path': { ...sandboxItem } */
 });
 
@@ -124,11 +124,11 @@ export function getCachedModelsByPath(): LookupTable<string> {
 	return paths$.value;
 }
 
-export function getCachedSandboxItems(): LookupTable<SandboxItem> {
+export function getCachedSandboxItems(): LookupTable<ContentItem> {
 	return items$.value;
 }
 
-export function getCachedSandboxItem(path: string): SandboxItem {
+export function getCachedSandboxItem(path: string): ContentItem {
 	return items$.value[path];
 }
 
@@ -768,7 +768,7 @@ export interface FetchGuestModelCompletePayload {
 	modelLookup: LookupTable<ContentInstance>;
 	modelIdByPath: LookupTable<string>;
 	hierarchyMap: ModelHierarchyMap;
-	sandboxItems: SandboxItem[];
+	sandboxItems: ContentItem[];
 	permissions: string[];
 }
 

@@ -26,7 +26,7 @@ import {
 } from '@craftercms/studio-ui/state/actions/preview';
 import { unlockItem } from '@craftercms/studio-ui/state/actions/content';
 import { NEVER, Observable, of } from 'rxjs';
-import { SandboxItem } from '@craftercms/studio-ui/models';
+import { ContentItem } from '@craftercms/studio-ui/models';
 import { GuestState } from './models/GuestStore';
 import { ElementRecord, ICERecord } from '../models/InContextEditing';
 import { getCachedModel, getCachedModels, modelHierarchyMap } from '../contentController';
@@ -55,7 +55,7 @@ export interface BeforeWriteProps<T = 'continue', S = never> {
 	username: string;
 	stop$?: Observable<S> | S[];
 	continue$?: Observable<T> | T[];
-	localItem: SandboxItem;
+	localItem: ContentItem;
 }
 
 /**

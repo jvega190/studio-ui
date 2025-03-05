@@ -1068,7 +1068,7 @@ const initializeCStudioForms = () => {
 							new Promise((resolve) => {
 								path.includes('.xml')
 									? CrafterCMSNext.services.content
-											.fetchSandboxItem(CStudioAuthoringContext.site, decodeURI(path))
+											.fetchContentItem(CStudioAuthoringContext.site, decodeURI(path))
 											.subscribe((item) => resolve({ item }))
 									: resolve(null);
 							}),
