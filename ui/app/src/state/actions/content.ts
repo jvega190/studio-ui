@@ -17,7 +17,7 @@
 import { createAction } from '@reduxjs/toolkit';
 import QuickCreateItem from '../../models/content/QuickCreateItem';
 import { AjaxError } from 'rxjs/ajax';
-import { DetailedItem, SandboxItem } from '../../models/Item';
+import { ContentItem } from '../../models/Item';
 import StandardAction from '../../models/StandardAction';
 
 // region Quick Create
@@ -38,13 +38,13 @@ export const completeDetailedItem = /*#__PURE__*/ createAction<{ path: string; f
 	'COMPLETE_DETAILED_ITEM'
 );
 
-export const fetchDetailedItemComplete = /*#__PURE__*/ createAction<DetailedItem>('FETCH_DETAILED_ITEM_COMPLETE');
+export const fetchDetailedItemComplete = /*#__PURE__*/ createAction<ContentItem>('FETCH_DETAILED_ITEM_COMPLETE');
 
 export const fetchDetailedItemFailed = /*#__PURE__*/ createAction<AjaxError>('FETCH_DETAILED_ITEM_FAILED');
 
 export const fetchDetailedItems = /*#__PURE__*/ createAction<{ paths: string[] }>('COMPLETE_DETAILED_ITEMS');
 
-export const fetchDetailedItemsComplete = /*#__PURE__*/ createAction<{ items: DetailedItem[] }>(
+export const fetchDetailedItemsComplete = /*#__PURE__*/ createAction<{ items: ContentItem[] }>(
 	'FETCH_DETAILED_ITEMS_COMPLETE'
 );
 
@@ -62,9 +62,9 @@ export const fetchSandboxItem = /*#__PURE__*/ createAction<FetchSandboxItemPaylo
 
 export const fetchSandboxItems = /*#__PURE__*/ createAction<FetchSandboxItemsPayload>('FETCH_SANDBOX_ITEMS');
 
-export type FetchSandboxItemCompletePayload = { item: SandboxItem };
+export type FetchSandboxItemCompletePayload = { item: ContentItem };
 
-export type FetchSandboxItemsCompletePayload = { items: SandboxItem[] };
+export type FetchSandboxItemsCompletePayload = { items: ContentItem[] };
 
 export const fetchSandboxItemComplete =
 	/*#__PURE__*/ createAction<FetchSandboxItemCompletePayload>('FETCH_SANDBOX_ITEM_COMPLETE');
@@ -80,7 +80,7 @@ export const sandboxItemsMissing = /*#__PURE__*/ createAction<{ paths: string[] 
 
 // endregion
 
-export const updateItemsByPath = /*#__PURE__*/ createAction<{ items: SandboxItem[] }>('UPDATE_ITEMS_BY_PATH');
+export const updateItemsByPath = /*#__PURE__*/ createAction<{ items: ContentItem[] }>('UPDATE_ITEMS_BY_PATH');
 
 // region Clipboard
 
@@ -135,11 +135,11 @@ export const conditionallyUnlockItem = /*#__PURE__*/ createAction<{ path: string
 	'CONDITIONALLY_UNLOCK_ITEM'
 );
 
-export const deleteController = /*#__PURE__*/ createAction<{ item: DetailedItem; onSuccess?: StandardAction }>(
+export const deleteController = /*#__PURE__*/ createAction<{ item: ContentItem; onSuccess?: StandardAction }>(
 	'DELETE_CONTROLLER'
 );
 
-export const deleteTemplate = /*#__PURE__*/ createAction<{ item: DetailedItem; onSuccess?: StandardAction }>(
+export const deleteTemplate = /*#__PURE__*/ createAction<{ item: ContentItem; onSuccess?: StandardAction }>(
 	'DELETE_TEMPLATE'
 );
 

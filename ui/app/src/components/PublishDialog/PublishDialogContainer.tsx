@@ -27,7 +27,7 @@ import { FormattedMessage } from 'react-intl';
 import { isBlank } from '../../utils/string';
 import { updatePublishDialog } from '../../state/actions/dialogs';
 import { fetchDetailedItems } from '../../services/content';
-import { DetailedItem } from '../../models';
+import { ContentItem } from '../../models';
 import { fetchDetailedItemsComplete } from '../../state/actions/content';
 import { createAtLeastHalfHourInFutureDate } from '../../utils/datetime';
 import { batchActions } from '../../state/actions/misc';
@@ -60,8 +60,8 @@ export type DependencyMap = Record<string, DependencyType>;
 export type DependencyDataState = {
 	paths: string[];
 	typeByPath: DependencyMap;
-	itemsByPath: LookupTable<DetailedItem>;
-	items: DetailedItem[];
+	itemsByPath: LookupTable<ContentItem>;
+	items: ContentItem[];
 };
 
 export function DependencyChip({ type }: { type: DependencyType }) {
@@ -81,7 +81,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 	const { items: initialItems, scheduling = 'now', onSuccess, onClose, isSubmitting } = props;
 	const siteId = useActiveSiteId();
 	const dispatch = useDispatch();
-	const [detailedItems, setDetailedItems] = useState<DetailedItem[]>();
+	const [detailedItems, setDetailedItems] = useState<ContentItem[]>();
 	const [isFetchingItems, setIsFetchingItems] = useState(false);
 	const [state, setState] = useSpreadState<InternalDialogState>({
 		packageTitle: '',
@@ -93,7 +93,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 		error: null,
 		fetchingItems: false
 	});
-	const [mainItems, setMainItems] = useState<DetailedItem[]>(initialItems);
+	const [mainItems, setMainItems] = useState<ContentItem[]>(initialItems);
 	const [published, setPublished] = useState<boolean>(null);
 	const [publishingTargets, setPublishingTargets] = useState<PublishingTarget[]>(null);
 	const {
@@ -236,7 +236,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 				.subscribe({
 					next({ dependenciesByType, detailedItemsList }) {
 						const depMap: DependencyMap = {};
-						const depLookup: LookupTable<DetailedItem> = createLookupTable(detailedItemsList, 'path');
+						const depLookup: LookupTable<ContentItem> = createLookupTable(detailedItemsList, 'path');
 						dependenciesByType.hardDependencies.forEach((path) => {
 							depMap[path] = 'hard';
 						});

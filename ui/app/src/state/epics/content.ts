@@ -58,7 +58,7 @@ import {
 	fetchItemByPath,
 	fetchItemsByPath,
 	fetchQuickCreateList,
-	fetchSandboxItem as fetchSandboxItemService,
+	fetchContentItem as fetchSandboxItemService,
 	lock,
 	paste,
 	unlock
@@ -231,7 +231,7 @@ const content: CrafterCMSEpic[] = [
 			)
 		),
 	// endregion
-	// region fetchSandboxItem
+	// region fetchContentItem
 	(action$: Observable<StandardAction<FetchSandboxItemPayload>>, state$) =>
 		action$.pipe(
 			ofType(fetchSandboxItem.type),

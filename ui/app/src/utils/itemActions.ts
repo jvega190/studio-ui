@@ -15,7 +15,7 @@
  */
 
 import { translations } from '../components/ItemActionsMenu/translations';
-import { AllItemActions, DetailedItem, LegacyItem } from '../models/Item';
+import { AllItemActions, ContentItem, LegacyItem } from '../models/Item';
 import { ContextMenuOption } from '../components/ContextMenu';
 import { getControllerPath, getRootPath, withoutIndex } from './path';
 import {
@@ -44,7 +44,7 @@ import {
 	showUploadDialog,
 	showViewPackagesDialog
 } from '../state/actions/dialogs';
-import { fetchItemsByPath, fetchLegacyItemsTree, fetchSandboxItem } from '../services/content';
+import { fetchItemsByPath, fetchLegacyItemsTree, fetchContentItem } from '../services/content';
 import {
 	batchActions,
 	changeContentType,
@@ -285,7 +285,7 @@ export function toContextMenuOptionsLookup<Keys extends string = AllItemActions>
 }
 
 export function generateSingleItemOptions(
-	item: DetailedItem,
+	item: ContentItem,
 	formatMessage: IntlFormatters['formatMessage'],
 	options?: Partial<{
 		hasClipboard: boolean;
@@ -447,7 +447,7 @@ export function generateSingleItemOptions(
 }
 
 export function generateMultipleItemOptions(
-	items: DetailedItem[],
+	items: ContentItem[],
 	formatMessage: IntlFormatters['formatMessage'],
 	options?: {
 		includeOnly: AllItemActions[];
@@ -497,7 +497,7 @@ export const itemActionDispatcher = ({
 	extraPayload
 }: {
 	site: string;
-	item: DetailedItem | DetailedItem[];
+	item: ContentItem | ContentItem[];
 	option: AllItemActions;
 	authoringBase: string;
 	dispatch: Dispatch;
@@ -507,8 +507,8 @@ export const itemActionDispatcher = ({
 	event?: React.MouseEvent<Element, MouseEvent>;
 	extraPayload?: any;
 }) => {
-	let item: DetailedItem;
-	let items: DetailedItem[];
+	let item: ContentItem;
+	let items: ContentItem[];
 	if (Array.isArray(itemOrItems)) {
 		items = itemOrItems;
 	} else {
@@ -661,7 +661,7 @@ export const itemActionDispatcher = ({
 						message: `${formatMessage(translations.processing)}...`
 					})
 				);
-				fetchSandboxItem(site, item.path).subscribe({
+				fetchContentItem(site, item.path).subscribe({
 					next(item) {
 						if (item) {
 							dispatch(
@@ -735,7 +735,7 @@ export const itemActionDispatcher = ({
 			}
 			case 'paste': {
 				if (clipboard.type === 'CUT') {
-					fetchSandboxItem(site, clipboard.sourcePath).subscribe((clipboardItem) => {
+					fetchContentItem(site, clipboard.sourcePath).subscribe((clipboardItem) => {
 						if (isInActiveWorkflow(clipboardItem)) {
 							dispatch(
 								showViewPackagesDialog({

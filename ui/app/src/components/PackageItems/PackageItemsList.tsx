@@ -15,7 +15,7 @@
  */
 
 import React, { useState } from 'react';
-import { SandboxItem } from '../../models';
+import { ContentItem } from '../../models';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import ItemDisplay from '../ItemDisplay';
@@ -85,7 +85,7 @@ export function PackageItemsList(props: PackageItemsListProps) {
 												<ListItemText
 													primary={
 														<ItemDisplay
-															item={item as unknown as SandboxItem}
+															item={item as unknown as ContentItem}
 															titleDisplayProp="path"
 															showWorkflowState={false}
 															showPublishingTarget={false}

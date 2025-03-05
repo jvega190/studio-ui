@@ -1,5 +1,5 @@
 import StandardAction from '../../models/StandardAction';
-import { DetailedItem } from '../../models/Item';
+import { ContentItem } from '../../models/Item';
 import React from 'react';
 import LookupTable from '../../models/LookupTable';
 import { InputProps } from '@mui/material/Input';
@@ -9,7 +9,7 @@ import { EnhancedDialogState } from '../../hooks/useEnhancedDialogState';
 import ApiResponse from '../../models/ApiResponse';
 
 export interface DeleteDialogBaseProps {
-	items: DetailedItem[];
+	items: ContentItem[];
 	isFetching: boolean;
 	childItems: string[];
 	dependentItems: string[];
@@ -31,7 +31,7 @@ export interface DeleteDialogContainerProps
 		Pick<DeleteDialogProps, 'isSubmitting' | 'onClose' | 'onSuccess'> {}
 
 export interface DeleteDialogContentUIProps {
-	items: DetailedItem[];
+	items: ContentItem[];
 	childItems: string[];
 	dependentItems: string[];
 	title: string;

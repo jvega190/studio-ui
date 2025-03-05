@@ -28,7 +28,7 @@ import { FormattedMessage } from 'react-intl';
 import { DateTimeTimezonePickerProps } from '../DateTimeTimezonePicker';
 import Divider from '@mui/material/Divider';
 import PublishReferencesLegend from '../PublishDialog/PublishReferencesLegend';
-import { DetailedItem, PublishingTarget, PublishParams } from '../../models';
+import { ContentItem, PublishingTarget, PublishParams } from '../../models';
 import { PublishDialogForm } from '../PublishDialog/PublishDialogForm';
 import { publish, recalculatePackage } from '../../services/publishing';
 import { of, switchMap } from 'rxjs';
@@ -64,7 +64,7 @@ export function PublishingPackageResubmitDialogContainer(props: PublishingPackag
 		error: null,
 		fetchingItems: false
 	});
-	const [mainItems, setMainItems] = useState<DetailedItem[]>([]);
+	const [mainItems, setMainItems] = useState<ContentItem[]>([]);
 	const [publishingTargets, setPublishingTargets] = useState<PublishingTarget[]>(null);
 	const {
 		itemsDataSummary,
@@ -221,7 +221,7 @@ export function PublishingPackageResubmitDialogContainer(props: PublishingPackag
 				.subscribe({
 					next({ calculatedPackage, detailedItemsList }) {
 						const depMap: DependencyMap = {};
-						const depLookup: LookupTable<DetailedItem> = createLookupTable(detailedItemsList, 'path');
+						const depLookup: LookupTable<ContentItem> = createLookupTable(detailedItemsList, 'path');
 						calculatedPackage.hardDependencies.forEach((path) => {
 							depMap[path] = 'hard';
 						});

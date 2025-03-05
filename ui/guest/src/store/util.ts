@@ -16,7 +16,7 @@
 
 import { SyntheticEvent } from 'react';
 import { EditingStatus } from '../constants';
-import { fetchSandboxItem, lock } from '@craftercms/studio-ui/services/content';
+import { fetchContentItem, lock } from '@craftercms/studio-ui/services/content';
 import { catchError, filter, switchMap, take, tap } from 'rxjs/operators';
 import { message$, post } from '../utils/communicator';
 import {
@@ -68,7 +68,7 @@ export function beforeWrite$<T extends any = 'continue', S extends any = never>(
 ): Observable<T | S> {
 	const { site, username, path, continue$ = of('continue') as Observable<T>, stop$ = NEVER, localItem } = props;
 	return lock(site, path).pipe(
-		switchMap(() => fetchSandboxItem(site, path)),
+		switchMap(() => fetchContentItem(site, path)),
 		switchMap((item) => {
 			if (item.stateMap.submitted || item.stateMap.scheduled) {
 				post(requestWorkflowCancellationDialog({ item, siteId: site }));

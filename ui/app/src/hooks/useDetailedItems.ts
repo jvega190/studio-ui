@@ -15,14 +15,14 @@
  */
 
 import LookupTable from '../models/LookupTable';
-import { DetailedItem } from '../models/Item';
+import { ContentItem } from '../models/Item';
 import { useDispatch } from 'react-redux';
 import { useSelection } from './useSelection';
 import { useEffect, useMemo } from 'react';
 import { completeDetailedItem } from '../state/actions/content';
 import { batchActions } from '../state/actions/misc';
 
-export function useDetailedItems(paths: string[]): { itemsByPath: LookupTable<DetailedItem>; isFetching: boolean } {
+export function useDetailedItems(paths: string[]): { itemsByPath: LookupTable<ContentItem>; isFetching: boolean } {
 	const dispatch = useDispatch();
 	const fetchingLookup = useSelection((state) => state.content.itemsBeingFetchedByPath);
 	const itemsByPath = useSelection((state) => state.content.itemsByPath);

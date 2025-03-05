@@ -15,7 +15,7 @@
  */
 
 import LookupTable from '../../models/LookupTable';
-import { DetailedItem } from '../../models';
+import { ContentItem } from '../../models';
 import { PathTreeNode } from '../PublishDialog/buildPathTrees';
 import React from 'react';
 import { DependencyChip, DependencyMap } from '../PublishDialog';
@@ -29,7 +29,7 @@ import Checkbox from '@mui/material/Checkbox';
 import FolderOpenRoundedIcon from '@mui/icons-material/FolderOpenRounded';
 
 export function renderTreeNode(props: {
-	itemMap: LookupTable<DetailedItem>;
+	itemMap: LookupTable<ContentItem>;
 	node: PathTreeNode;
 	onMenuClick: (e: React.MouseEvent<HTMLButtonElement>, path: string) => void;
 	dependencyTypeMap?: DependencyMap;

@@ -29,7 +29,7 @@ import { DeleteDialogContainerProps, DeleteDialogContentUIProps } from './utils'
 import { useSelection } from '../../hooks/useSelection';
 import LookupTable from '../../models/LookupTable';
 import { createPresenceTable } from '../../utils/array';
-import { DetailedItem } from '../../models/Item';
+import { ContentItem } from '../../models/Item';
 import { isBlank } from '../../utils/string';
 import { ApiResponse } from '../../models';
 import useFetchSandboxItems from '../../hooks/useFetchSandboxItems';
@@ -40,7 +40,7 @@ function createCheckedList(selectedItems: LookupTable<boolean>, excludedPaths?: 
 		.map(([path]) => path);
 }
 
-function createCheckedLookup(items: Array<DetailedItem | string>, setChecked = true) {
+function createCheckedLookup(items: Array<ContentItem | string>, setChecked = true) {
 	const isString = typeof items[0] === 'string';
 	return items.reduce((checked, item) => {
 		// @ts-ignore - `isString` above pre-checks the type, typescript doesn't realise this is safe by this point.

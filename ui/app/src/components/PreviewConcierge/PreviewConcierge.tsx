@@ -81,7 +81,7 @@ import {
 	fetchContentInstance,
 	fetchContentInstanceDescriptor,
 	fetchItemsByPath,
-	fetchSandboxItem as fetchSandboxItemService,
+	fetchContentItem as fetchSandboxItemService,
 	insertComponent,
 	insertInstance,
 	insertItem,
@@ -177,7 +177,7 @@ import { getPersonFullName } from '../SiteDashboard';
 import { useTheme } from '@mui/material/styles';
 import { createCustomDocumentEventListener } from '../../utils/dom';
 import BrowseFilesDialog from '../BrowseFilesDialog';
-import { DetailedItem, MediaItem } from '../../models';
+import { ContentItem, MediaItem } from '../../models';
 import DataSourcesActionsList, { DataSourcesActionsListProps } from '../DataSourcesActionsList/DataSourcesActionsList';
 import { editControllerActionCreator, itemActionDispatcher } from '../../utils/itemActions';
 import useEnv from '../../hooks/useEnv';
@@ -1081,10 +1081,7 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
 					const contentType = contentTypes[model.craftercms.contentTypeId];
 					if (type === 'content') {
 						// Not quite sure if it ever happens that the item isn't already loaded.
-						(item
-							? (of(item) as Observable<DetailedItem>)
-							: fetchSandboxItemService(siteId, path, { castAsDetailedItem: true })
-						).subscribe((item) => {
+						(item ? (of(item) as Observable<ContentItem>) : fetchSandboxItemService(siteId, path)).subscribe((item) => {
 							itemActionDispatcher({
 								item,
 								site: siteId,

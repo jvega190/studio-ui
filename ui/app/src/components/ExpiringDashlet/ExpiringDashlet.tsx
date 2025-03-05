@@ -42,7 +42,7 @@ import ItemDisplay from '../ItemDisplay';
 import { itemActionDispatcher } from '../../utils/itemActions';
 import useEnv from '../../hooks/useEnv';
 import { useDispatch } from 'react-redux';
-import { SandboxItem } from '../../models';
+import { ContentItem } from '../../models';
 import LoadingIconButton from '../LoadingIconButton';
 
 interface ExpiringDashletProps extends CommonDashletProps {
@@ -59,7 +59,7 @@ interface ExpiringDashletState {
 const renderExpiredItems = (
 	items: ExpiredItem[],
 	locale: GlobalState['uiConfig']['locale'],
-	onItemClick: (e: React.MouseEvent, item: SandboxItem) => void,
+	onItemClick: (e: React.MouseEvent, item: ContentItem) => void,
 	expired?: boolean
 ) =>
 	items.map((item, index) => {

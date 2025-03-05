@@ -15,7 +15,7 @@
  */
 
 import LookupTable from '../../models/LookupTable';
-import { DetailedItem } from '../../models';
+import { ContentItem } from '../../models';
 import { buildPathTrees, PathTreeNode } from '../PublishDialog/buildPathTrees';
 import React, { useMemo } from 'react';
 import { treeItemClasses } from '@mui/x-tree-view/TreeItem';
@@ -69,7 +69,7 @@ export function PackageItemsTree(props: PackageItemsTreeProps) {
 		>
 			{trees.map((node) =>
 				renderTreeNode({
-					itemMap: itemMap as unknown as LookupTable<DetailedItem>,
+					itemMap: itemMap as unknown as LookupTable<ContentItem>,
 					node,
 					dependencyTypeMap: {},
 					onMenuClick: (e, path) => onOpenMenu(e, itemMap[path]),

@@ -17,12 +17,12 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { useSelection } from './useSelection';
-import { DetailedItem } from '../models/Item';
+import { ContentItem } from '../models/Item';
 import { nou } from '../utils/object';
 import { completeDetailedItem } from '../state/actions/content';
 import { lookupItemByPath } from '../utils/content';
 
-export function useDetailedItem(path: string): DetailedItem {
+export function useDetailedItem(path: string): ContentItem {
 	const dispatch = useDispatch();
 	const itemsByPath = useSelection((state) => state.content.itemsByPath);
 	const item = path ? lookupItemByPath(path, itemsByPath) : null;

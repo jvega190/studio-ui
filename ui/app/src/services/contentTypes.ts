@@ -34,7 +34,7 @@ import { errorSelectorApi1, get, getBinary, post, postJSON } from '../utils/ajax
 import { catchError, map, switchMap } from 'rxjs/operators';
 import { createLookupTable, nou, toQueryString } from '../utils/object';
 import { fetchItemsByPath } from './content';
-import { SandboxItem } from '../models/Item';
+import { ContentItem } from '../models/Item';
 import { fetchConfigurationDOM, fetchConfigurationJSON, writeConfiguration } from './configuration';
 import { beautify, deserialize, entityEncodingTagValueProcessor, serialize } from '../utils/xml';
 import { stripDuplicateSlashes } from '../utils/path';
@@ -498,7 +498,7 @@ export function fetchLegacyContentTypes(site: string, path?: string): Observable
 	);
 }
 
-export interface FetchContentTypeUsageResponse<T = SandboxItem> {
+export interface FetchContentTypeUsageResponse<T = ContentItem> {
 	templates: T[];
 	scripts: T[];
 	content: T[];

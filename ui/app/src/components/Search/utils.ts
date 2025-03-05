@@ -15,7 +15,7 @@
  */
 
 import { ElasticParams, MediaItem, SearchResult } from '../../models/Search';
-import { AllItemActions, DetailedItem } from '../../models/Item';
+import { AllItemActions, ContentItem } from '../../models/Item';
 import { generateMultipleItemOptions, generateSingleItemOptions, itemActionDispatcher } from '../../utils/itemActions';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
@@ -167,7 +167,7 @@ interface useSearchStateReturn {
 	selected: string[];
 	areAllSelected: boolean;
 	selectionOptions: ContextMenuOption[];
-	itemsByPath: LookupTable<DetailedItem>;
+	itemsByPath: LookupTable<ContentItem>;
 	guestBase: string;
 	searchResults: SearchResult;
 	selectedPath: string;
@@ -297,7 +297,7 @@ export const useSearchState = ({
 				numOfLoaderItems: getNumOfMenuOptionsForItem({
 					path: item.path,
 					systemType: getSystemTypeFromPath(item.path)
-				} as DetailedItem)
+				} as ContentItem)
 			})
 		);
 	};

@@ -26,7 +26,7 @@ import FilterListRoundedIcon from '@mui/icons-material/FilterListRounded';
 import LookupTable from '../../models/LookupTable';
 import { createPresenceTable } from '../../utils/array';
 import { getStateBitmap } from './utils';
-import { ItemStateMap, ItemStates, SandboxItem } from '../../models/Item';
+import { ItemStateMap, ItemStates, ContentItem } from '../../models/Item';
 import { PagedArray } from '../../models/PagedArray';
 import Box from '@mui/material/Box';
 import CloseIcon from '@mui/icons-material/Close';
@@ -87,7 +87,7 @@ const initialStates: ItemStates[] = [
 export function WorkflowStateManagement(props: WorkflowStateManagementProps) {
 	const { embedded, showAppsButton = !embedded, onSubmittingAndOrPendingChange } = props;
 	const [fetching, setFetching] = useState(false);
-	const [items, setItems] = useState<PagedArray<SandboxItem>>(null);
+	const [items, setItems] = useState<PagedArray<ContentItem>>(null);
 	const [error, setError] = useState<ApiResponse>();
 	const siteId = useActiveSiteId();
 	const [openSetStateDialog, setOpenSetStateDialog] = useState(false);
@@ -100,8 +100,8 @@ export function WorkflowStateManagement(props: WorkflowStateManagementProps) {
 	const [invalidPathRegex, setInvalidPathRegex] = useState(false);
 	const [offset, setOffset] = useState(0);
 	const [limit, setLimit] = useState(10);
-	const [selectedItems, setSelectedItems] = useState<LookupTable<SandboxItem>>({});
-	const [selectedItem, setSelectedItem] = useState<SandboxItem>(null);
+	const [selectedItems, setSelectedItems] = useState<LookupTable<ContentItem>>({});
+	const [selectedItem, setSelectedItem] = useState<ContentItem>(null);
 	const [isSelectedItemsOnAllPages, setIsSelectedItemsOnAllPages] = useState(false);
 	const [hasStaging, setHasStaging] = useState(false);
 	const states = useMemo(
@@ -212,7 +212,7 @@ export function WorkflowStateManagement(props: WorkflowStateManagementProps) {
 		setLimit(e.target.value);
 	};
 
-	const onItemSelected = (selectedItem: SandboxItem, value: boolean) => {
+	const onItemSelected = (selectedItem: ContentItem, value: boolean) => {
 		if (isSelectedItemsOnAllPages) {
 			const selectedItemsOnPage = {};
 			setIsSelectedItemsOnAllPages(false);
@@ -227,7 +227,7 @@ export function WorkflowStateManagement(props: WorkflowStateManagementProps) {
 		}
 	};
 
-	const onRowSelected = (item: SandboxItem) => {
+	const onRowSelected = (item: ContentItem) => {
 		setSelectedItem(item);
 		setOpenSetStateDialog(true);
 	};
@@ -512,12 +512,12 @@ export function WorkflowStateManagement(props: WorkflowStateManagementProps) {
 										label={
 											['staged', 'live'].includes(id) ? (
 												<>
-													<ItemPublishingTargetIcon item={{ stateMap: { [id]: true } } as SandboxItem} />
+													<ItemPublishingTargetIcon item={{ stateMap: { [id]: true } } as ContentItem} />
 													{getItemPublishingTargetText({ [id]: true } as ItemStateMap)}
 												</>
 											) : (
 												<>
-													<ItemStateIcon item={{ stateMap: { [id]: true } } as SandboxItem} />
+													<ItemStateIcon item={{ stateMap: { [id]: true } } as ContentItem} />
 													{getItemStateText({ [id]: true } as ItemStateMap)}
 												</>
 											)

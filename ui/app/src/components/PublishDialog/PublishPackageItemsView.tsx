@@ -28,7 +28,7 @@ import ListItemText from '@mui/material/ListItemText';
 import ItemDisplay from '../ItemDisplay';
 import React, { useCallback, useState } from 'react';
 import { DependencyChip, DependencyDataState } from './PublishDialogContainer';
-import { AllItemActions, DetailedItem } from '../../models';
+import { AllItemActions, ContentItem } from '../../models';
 import { PathTreeNode } from './buildPathTrees';
 import { getPublishingPackagePreferredView, setPublishingPackagePreferredView } from '../../utils/state';
 import { nnou } from '../../utils/object';
@@ -45,7 +45,7 @@ import AutoSizer from 'react-virtualized-auto-sizer';
 import PackageItemsActions from '../PackageItems/PackageItemsActions';
 
 export interface PublishItemsProps {
-	itemMap: Record<string, DetailedItem>;
+	itemMap: Record<string, ContentItem>;
 	defaultExpandedPaths?: string[];
 	itemsAndDependenciesPaths: string[];
 	dependencyTypeMap?: DependencyDataState['typeByPath'];

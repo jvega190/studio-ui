@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { DetailedItem } from '../../models/Item';
+import { ContentItem } from '../../models/Item';
 import { ApiResponse } from '../../models/ApiResponse';
 import StandardAction from '../../models/StandardAction';
 import { GoLiveResponse } from '../../services/publishing';
@@ -30,11 +30,11 @@ export interface ExtendedGoLiveResponse extends GoLiveResponse {
 	schedule: 'now' | 'custom';
 	publishingTarget: string;
 	type: 'submit' | 'publish';
-	items: DetailedItem[];
+	items: ContentItem[];
 }
 
 export interface PublishDialogBaseProps {
-	items?: DetailedItem[];
+	items?: ContentItem[];
 	// if null it means the dialog should determinate which one to use
 	scheduling?: 'now' | 'custom';
 }
@@ -65,12 +65,12 @@ export interface InternalDialogState {
 }
 
 interface usePublishStateProps {
-	mainItems: DetailedItem[];
+	mainItems: ContentItem[];
 }
 
 interface usePublishStateReturn {
 	itemsDataSummary: {
-		itemMap: Record<string, DetailedItem>;
+		itemMap: Record<string, ContentItem>;
 		itemPaths: string[];
 		allItemsInSubmittedState: boolean;
 		allItemsHavePublishPermission: boolean;
@@ -85,8 +85,8 @@ interface usePublishStateReturn {
 	trees: PathTreeNode[];
 	parentTreeNodePaths: string[];
 	itemsAndDependenciesPaths: string[];
-	dependencyItemMap: Record<string, DetailedItem>;
-	itemsAndDependenciesMap: Record<string, DetailedItem>;
+	dependencyItemMap: Record<string, ContentItem>;
+	itemsAndDependenciesMap: Record<string, ContentItem>;
 }
 
 export const usePublishState = ({ mainItems }: usePublishStateProps): usePublishStateReturn => {
@@ -99,7 +99,7 @@ export const usePublishState = ({ mainItems }: usePublishStateProps): usePublish
 		let allItemsInSubmittedState = true;
 		let allItemsHavePublishPermission = true;
 		const itemPaths = [];
-		const itemMap: Record<string, DetailedItem> = {};
+		const itemMap: Record<string, ContentItem> = {};
 		const incompleteDetailedItemPaths = [];
 		mainItems.forEach((item) => {
 			itemMap[item.path] = item;
