@@ -290,13 +290,6 @@ export function parseLegacyItemToContentItem(item: LegacyItem | LegacyItem[]): C
 	};
 }
 
-export function parseDetailedItemToSandboxItem(item: DetailedItem): SandboxItem {
-	return {
-		...reversePluckProps(item, 'sandbox', 'live', 'staging'),
-		...item.sandbox
-	};
-}
-
 const systemPropsList = [
 	'orderDefault_f',
 	'savedAsDraft',
