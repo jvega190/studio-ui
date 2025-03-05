@@ -43,14 +43,17 @@ import { SvgIconProps } from '@mui/material/SvgIcon';
 import { BoxProps } from '@mui/material/Box';
 
 export interface ItemTypeIconProps extends SvgIconProps {
-	item: ContentItem;
+	item: Pick<ContentItem, 'systemType' | 'mimeType'>;
 	tooltipProps?: Partial<TooltipProps>;
 	sxs?: Partial<{
 		icon: BoxProps['sx'];
 	}>;
 }
 
-export function getItemTypeText(item: ContentItem, formatMessage: IntlFormatters['formatMessage']) {
+export function getItemTypeText(
+	item: Pick<ContentItem, 'systemType' | 'mimeType'>,
+	formatMessage: IntlFormatters['formatMessage']
+) {
 	return messages[item.systemType]
 		? formatMessage(messages[item.systemType])
 		: item.mimeType

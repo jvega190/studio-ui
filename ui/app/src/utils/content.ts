@@ -290,6 +290,13 @@ export function parseLegacyItemToContentItem(item: LegacyItem | LegacyItem[]): C
 	};
 }
 
+export function parseDetailedItemToSandboxItem(item: DetailedItem): SandboxItem {
+	return {
+		...reversePluckProps(item, 'sandbox', 'live', 'staging'),
+		...item.sandbox
+	};
+}
+
 const systemPropsList = [
 	'orderDefault_f',
 	'savedAsDraft',
@@ -488,17 +495,17 @@ function parseElementByContentType(
 			}
 			return array;
 		}
-		case 'html':
+		case 'rte':
 			return unescapeHTML(getInnerHtml(element));
 		case 'checkbox-group': {
 			const deserialized = deserialize(element);
 			const extract = deserialized[element.tagName].item;
 			return nou(extract) ? [] : Array.isArray(extract) ? extract : [extract];
 		}
-		case 'text':
+		case 'input':
 		case 'textarea':
 			return getInnerHtml(element, { applyLegacyUnescaping: true });
-		case 'image':
+		case 'image-picker':
 		case 'date-time':
 		case 'time':
 			return getInnerHtml(element);
@@ -508,13 +515,13 @@ function parseElementByContentType(
 			} else {
 				return getInnerHtml(element);
 			}
-		case 'boolean':
-		case 'page-nav-order':
+		case 'checkbox':
+		case 'page-nav-order': // FE2 TODO: This seems wrong, check
 			return getInnerHtml(element) === 'true';
 		case 'numeric-input':
 			return getInnerHtmlNumber(element, parseFloat);
 		default:
-			!['transcoded-video', 'transcoded-video-picker', 'taxonomy-selector'].includes(type) &&
+			!['transcoded-video', 'transcoded-video-picker', 'taxonomy-selector', 'video-picker'].includes(type) &&
 				console.log(
 					`%c[parseElementByContentType] Missing type "${type}" on switch statement for field "${field.id}".`,
 					'color: blue',

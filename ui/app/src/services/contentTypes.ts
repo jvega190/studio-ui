@@ -39,16 +39,17 @@ import { fetchConfigurationDOM, fetchConfigurationJSON, writeConfiguration } fro
 import { beautify, deserialize, entityEncodingTagValueProcessor, serialize } from '../utils/xml';
 import { stripDuplicateSlashes } from '../utils/path';
 import { Api2ResponseFormat } from '../models/ApiResponse';
-import { asArray } from '../utils/array';
+import { asArray, fooArray } from '../utils/array';
 import { fromPromise } from 'rxjs/internal/observable/innerFrom';
 import AllowedContentTypesData from '../models/AllowedContentTypesData';
 
-const typeMap = {
-	input: 'text',
-	rte: 'html',
-	checkbox: 'boolean',
-	'image-picker': 'image'
-};
+// FE2 TODO: Verify removal
+// const typeMap = {
+//   input: 'text',
+//   rte: 'html',
+//   checkbox: 'boolean',
+//   'image-picker': 'image'
+// };
 
 const systemValidationsNames = [
 	'itemManager',
@@ -109,6 +110,58 @@ function bestGuessParse(value: any) {
 	}
 }
 
+interface ParseComponentsDataSourceContentTypesPropertyOutput {
+	allowedContentTypes: ContentTypeFieldValidation<LookupTable<AllowedContentTypesData>>;
+	allowedEmbeddedContentTypes: ContentTypeFieldValidation<string[]>;
+	allowedSharedContentTypes: ContentTypeFieldValidation<string[]>;
+	allowedSharedExistingContentTypes: ContentTypeFieldValidation<string[]>;
+}
+
+export function parseComponentsDataSourceContentTypesProperty(
+	dataSource: ComponentsDatasource,
+	contentTypesPropertyValue: string,
+	validations: Partial<ContentTypeFieldValidations> = {}
+): Partial<ParseComponentsDataSourceContentTypesPropertyOutput> {
+	const value = contentTypesPropertyValue?.split(',') ?? fooArray;
+	validations.allowedContentTypes = validations.allowedContentTypes ?? {
+		id: 'allowedContentTypes',
+		level: 'required',
+		value: {} as LookupTable<AllowedContentTypesData<boolean>>
+	};
+	validations.allowedEmbeddedContentTypes = validations.allowedEmbeddedContentTypes ?? {
+		id: 'allowedEmbeddedContentTypes',
+		level: 'required',
+		value: []
+	};
+	validations.allowedSharedContentTypes = validations.allowedSharedContentTypes ?? {
+		id: 'allowedSharedContentTypes',
+		level: 'required',
+		value: []
+	};
+	validations.allowedSharedExistingContentTypes = validations.allowedSharedExistingContentTypes ?? {
+		id: 'allowedSharedExistingContentTypes',
+		level: 'required',
+		value: []
+	};
+	const allowedContentTypesMeta: LookupTable<AllowedContentTypesData> = validations.allowedContentTypes.value;
+	value.forEach((typeId) => {
+		allowedContentTypesMeta[typeId] = allowedContentTypesMeta[typeId] ?? {};
+		if (dataSource.properties.allowEmbedded) {
+			allowedContentTypesMeta[typeId].embedded = true;
+			validations.allowedEmbeddedContentTypes.value.push(typeId);
+		}
+		if (dataSource.properties.allowShared) {
+			allowedContentTypesMeta[typeId].shared = true;
+			validations.allowedSharedContentTypes.value.push(typeId);
+		}
+		if (dataSource.properties.enableBrowse || dataSource.properties.enableSearch) {
+			allowedContentTypesMeta[typeId].sharedExisting = true;
+			validations.allowedSharedExistingContentTypes.value.push(typeId);
+		}
+	});
+	return validations;
+}
+
 function getFieldValidations(
 	fieldProperty: LegacyFormDefinitionProperty | LegacyFormDefinitionProperty[],
 	dropTargetsLookup?: LookupTable<LegacyDataSource>
@@ -143,65 +196,29 @@ function getFieldValidations(
 		{}
 	);
 
-	let validations: Partial<ContentTypeFieldValidations> = {};
+	const validations: Partial<ContentTypeFieldValidations> = {};
 
 	Object.keys(map).forEach((key) => {
 		if (systemValidationsNames.includes(key)) {
 			if (key === 'itemManager' && dropTargetsLookup) {
-				map.itemManager?.value &&
-					map.itemManager.value.split(',').forEach((itemManagerId) => {
-						asArray(dropTargetsLookup[itemManagerId]?.properties?.property).forEach((prop) => {
-							let mappedPropName = systemValidationsKeysMap[prop.name];
-							if (mappedPropName) {
-								let value = prop.value ? prop.value.split(',') : [];
-								if (mappedPropName === 'allowedContentTypes') {
-									const datasource = dropTargetsLookup[itemManagerId] as ComponentsDatasource;
-									validations.allowedContentTypes = validations.allowedContentTypes ?? {
-										id: 'allowedContentTypes',
-										level: 'required',
-										value: {} as LookupTable<AllowedContentTypesData<boolean>>
-									};
-									validations.allowedEmbeddedContentTypes = validations.allowedEmbeddedContentTypes ?? {
-										id: 'allowedEmbeddedContentTypes',
-										level: 'required',
-										value: []
-									};
-									validations.allowedSharedContentTypes = validations.allowedSharedContentTypes ?? {
-										id: 'allowedSharedContentTypes',
-										level: 'required',
-										value: []
-									};
-									validations.allowedSharedExistingContentTypes = validations.allowedSharedExistingContentTypes ?? {
-										id: 'allowedSharedExistingContentTypes',
-										level: 'required',
-										value: []
-									};
-									const allowedContentTypesMeta = validations.allowedContentTypes.value;
-									value.forEach((typeId) => {
-										allowedContentTypesMeta[typeId] = allowedContentTypesMeta[typeId] ?? {};
-										if (datasource.allowEmbedded) {
-											allowedContentTypesMeta[typeId].embedded = true;
-											validations.allowedEmbeddedContentTypes.value.push(typeId);
-										}
-										if (datasource.allowShared) {
-											allowedContentTypesMeta[typeId].shared = true;
-											validations.allowedSharedContentTypes.value.push(typeId);
-										}
-										if (datasource.enableBrowse || datasource.enableSearch) {
-											allowedContentTypesMeta[typeId].sharedExisting = true;
-											validations.allowedSharedExistingContentTypes.value.push(typeId);
-										}
-									});
-								} else {
-									validations[mappedPropName] = {
-										id: mappedPropName,
-										value,
-										level: 'required'
-									};
-								}
-							}
-						});
+				map.itemManager?.value?.split(',').forEach((itemManagerId) => {
+					asArray(dropTargetsLookup[itemManagerId]?.properties?.property).forEach((prop) => {
+						const mappedPropName = systemValidationsKeysMap[prop.name];
+						if (mappedPropName === 'allowedContentTypes') {
+							parseComponentsDataSourceContentTypesProperty(
+								dropTargetsLookup[itemManagerId] as ComponentsDatasource,
+								prop.value,
+								validations
+							);
+						} else if (mappedPropName) {
+							validations[mappedPropName] = {
+								id: mappedPropName,
+								value: prop.value?.split(',') ?? fooArray,
+								level: 'required'
+							};
+						}
 					});
+				});
 			} else if (systemValidationsNames.includes(key) && !isBlank(map[key]?.value)) {
 				validations[systemValidationsKeysMap[key]] = {
 					id: systemValidationsKeysMap[key],
@@ -254,21 +271,29 @@ function parseLegacyFormDefinitionFields(
 	dropTargetsLookup: LookupTable<LegacyDataSource>,
 	sectionFieldIds?: Array<string>,
 	dataSources?: LegacyDataSource[]
-) {
+): void {
 	asArray<LegacyFormDefinitionField>(legacyFieldsToBeParsed).forEach((legacyField) => {
-		const fieldId = ['file-name', 'internal-name'].includes(legacyField.id) ? camelize(legacyField.id) : legacyField.id;
+		// FE2 TODO: Changed the camelizing of file-name and internal-name
+		// const fieldId = ['file-name', 'internal-name'].includes(legacyField.id) ? camelize(legacyField.id) : legacyField.id;
+		const fieldId = legacyField.id;
 
 		sectionFieldIds?.push(fieldId);
 
 		const field: ContentTypeField = {
 			id: fieldId,
 			name: legacyField.title,
-			type: typeMap[legacyField.type] || legacyField.type,
+			description: legacyField.description,
+			helpText: legacyField.help,
+			type: legacyField.type, // FE2 TODO: Changed from `type: typeMap[legacyField.type] || legacyField.type,`
 			sortable: legacyField.type === 'node-selector' || legacyField.type === 'repeat',
 			validations: {},
 			properties: {},
 			defaultValue: legacyField.defaultValue
 		};
+
+		if (legacyField.plugin) {
+			field.properties.plugin = legacyField.plugin;
+		}
 
 		asArray<LegacyFormDefinitionProperty>(legacyField.properties?.property).forEach((legacyProp) => {
 			let value;
@@ -343,7 +368,7 @@ function parseLegacyFormDefinitionFields(
 				};
 				field.validations.required = {
 					id: 'required',
-					value: Boolean(field.validations.minCount),
+					value: Boolean(field.validations.minCount?.value),
 					level: 'required'
 				};
 				break;
@@ -364,7 +389,6 @@ function parseLegacyFormDefinitionFields(
 					...getFieldDataSourceValidations(legacyField.properties.property, dataSources)
 				};
 		}
-
 		currentFieldLookup[fieldId] = field;
 	});
 }
@@ -382,8 +406,8 @@ function parseLegacyFormDefinition(definition: LegacyFormDefinition): ContentTyp
 	// get receptacles dataSources
 	asArray(definition.datasources?.datasource).forEach((datasource: LegacyDataSource) => {
 		// TODO: Delete datasource.properties after props have been added to the root object? Must update code usages of datasource.properties.
-		const properties = asArray(datasource.properties?.property);
-		properties.forEach((property) => {
+		datasource.properties = datasource.properties ?? { property: [] };
+		asArray(datasource.properties.property).forEach((property) => {
 			let value: any = property.value;
 			switch (property.type) {
 				case 'boolean':
@@ -397,9 +421,11 @@ function parseLegacyFormDefinition(definition: LegacyFormDefinition): ContentTyp
 				//   value =
 				//   break;
 			}
-			datasource[property.name] = value;
+			datasource.properties[property.name] = value;
 		});
-		if (datasource.type === 'components') dropTargetsLookup[datasource.id] = datasource;
+		if (datasource.type === 'components') {
+			dropTargetsLookup[datasource.id] = datasource;
+		}
 		dataSources[datasource.id] = datasource;
 	});
 
