@@ -26,7 +26,7 @@ import { getComputedPublishingTarget, getDateScheduled } from '../../utils/conte
 import { FormattedMessage } from 'react-intl';
 import { isBlank } from '../../utils/string';
 import { updatePublishDialog } from '../../state/actions/dialogs';
-import { fetchDetailedItems } from '../../services/content';
+import { fetchDetailedItems, fetchItemsByPath } from '../../services/content';
 import { ContentItem } from '../../models';
 import { fetchDetailedItemsComplete } from '../../state/actions/content';
 import { createAtLeastHalfHourInFutureDate } from '../../utils/datetime';
@@ -210,9 +210,6 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 
 	useEffect(() => {
 		setState({ fetchingItems: true });
-		// TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		// TODO: This is not scalable (bulk fetch of countless DetailedItems). We must review and discuss how to adjust.
-		// TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		if (state.publishingTarget) {
 			calculatePackage(siteId, {
 				publishingTarget: state.publishingTarget,
@@ -221,9 +218,13 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 			})
 				.pipe(
 					switchMap((dependenciesByType) => {
-						const dependencies = [...dependenciesByType.hardDependencies, ...dependenciesByType.softDependencies];
+						const dependencies = [
+							...dependenciesByType.hardDependencies.map((dep) => dep.path),
+							...dependenciesByType.softDependencies.map((dep) => dep.path)
+						];
 						if (dependencies.length) {
-							return fetchDetailedItems(siteId, dependencies).pipe(
+							return fetchItemsByPath(siteId, dependencies).pipe(
+								// TODO: rename detailedItemsList
 								map((detailedItemsList) => {
 									return { dependenciesByType, detailedItemsList };
 								})
@@ -237,10 +238,10 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 					next({ dependenciesByType, detailedItemsList }) {
 						const depMap: DependencyMap = {};
 						const depLookup: LookupTable<ContentItem> = createLookupTable(detailedItemsList, 'path');
-						dependenciesByType.hardDependencies.forEach((path) => {
+						dependenciesByType.hardDependencies.forEach(({ path }) => {
 							depMap[path] = 'hard';
 						});
-						dependenciesByType.softDependencies.forEach((path) => {
+						dependenciesByType.softDependencies.forEach(({ path }) => {
 							depMap[path] = 'soft';
 						});
 						setState({ fetchingItems: false });

@@ -1,5 +1,5 @@
 import StandardAction from '../../models/StandardAction';
-import { ContentItem } from '../../models/Item';
+import { ContentItem, LightItem } from '../../models/Item';
 import React from 'react';
 import LookupTable from '../../models/LookupTable';
 import { InputProps } from '@mui/material/Input';
@@ -11,8 +11,8 @@ import ApiResponse from '../../models/ApiResponse';
 export interface DeleteDialogBaseProps {
 	items: ContentItem[];
 	isFetching: boolean;
-	childItems: string[];
-	dependentItems: string[];
+	childItems: LightItem[];
+	dependentItems: LightItem[];
 	error: ApiResponse;
 }
 
@@ -32,8 +32,8 @@ export interface DeleteDialogContainerProps
 
 export interface DeleteDialogContentUIProps {
 	items: ContentItem[];
-	childItems: string[];
-	dependentItems: string[];
+	childItems: DeleteDialogBaseProps['childItems'];
+	dependentItems: DeleteDialogBaseProps['dependentItems'];
 	title: string;
 	comment: string;
 	selectedItems: LookupTable<boolean>;

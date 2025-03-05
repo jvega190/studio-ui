@@ -32,7 +32,7 @@ import { ContentItem, PublishingTarget, PublishParams } from '../../models';
 import { PublishDialogForm } from '../PublishDialog/PublishDialogForm';
 import { publish, recalculatePackage } from '../../services/publishing';
 import { of, switchMap } from 'rxjs';
-import { fetchDetailedItems } from '../../services/content';
+import { fetchDetailedItems, fetchItemsByPath } from '../../services/content';
 import PublishPackageItemsView from '../PublishDialog/PublishPackageItemsView';
 import Paper from '@mui/material/Paper';
 import LookupTable from '../../models/LookupTable';
@@ -196,9 +196,6 @@ export function PublishingPackageResubmitDialogContainer(props: PublishingPackag
 			if (!mainItems.length) {
 				setState({ fetchingItems: true });
 			}
-			// TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			// TODO: This is not scalable (bulk fetch of countless DetailedItems). We must review and discuss how to adjust.
-			// TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			recalculatePackage(siteId, pkg.id, state.publishingTarget)
 				.pipe(
 					switchMap((calculatedPackage) => {
@@ -208,7 +205,11 @@ export function PublishingPackageResubmitDialogContainer(props: PublishingPackag
 							...calculatedPackage.softDependencies
 						];
 						if (packageItems) {
-							return fetchDetailedItems(siteId, packageItems).pipe(
+							return fetchItemsByPath(
+								siteId,
+								packageItems.map(({ path }) => path)
+							).pipe(
+								// TODO: rename detailedItemsList
 								map((detailedItemsList) => {
 									return { calculatedPackage, detailedItemsList };
 								})
@@ -222,10 +223,10 @@ export function PublishingPackageResubmitDialogContainer(props: PublishingPackag
 					next({ calculatedPackage, detailedItemsList }) {
 						const depMap: DependencyMap = {};
 						const depLookup: LookupTable<ContentItem> = createLookupTable(detailedItemsList, 'path');
-						calculatedPackage.hardDependencies.forEach((path) => {
+						calculatedPackage.hardDependencies.forEach(({ path }) => {
 							depMap[path] = 'hard';
 						});
-						calculatedPackage.softDependencies.forEach((path) => {
+						calculatedPackage.softDependencies.forEach(({ path }) => {
 							depMap[path] = 'soft';
 						});
 						setState({ fetchingItems: false });
@@ -235,7 +236,7 @@ export function PublishingPackageResubmitDialogContainer(props: PublishingPackag
 							itemsByPath: depLookup,
 							items: detailedItemsList
 						});
-						setMainItems(calculatedPackage.items.map((path) => depLookup[path]));
+						setMainItems(calculatedPackage.items.map(({ path }) => depLookup[path]));
 					},
 					error() {
 						setState({ fetchingItems: false });

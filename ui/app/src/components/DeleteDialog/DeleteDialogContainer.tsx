@@ -66,7 +66,9 @@ export function DeleteDialogContainer(props: DeleteDialogContainerProps) {
 		isBlank(title) ||
 		!confirmChecked;
 	const authoringBase = useSelection((state) => state.env.authoringBase);
-	useFetchSandboxItems(dependentItems ?? []);
+	const dependentItemsPaths = dependentItems?.map((item) => item.path) ?? [];
+	// TODO: is this needed now that we have dependentItems: LightItem[]?
+	useFetchSandboxItems(dependentItemsPaths);
 
 	const onSubmit = () => {
 		const paths = createCheckedList(selectedItems);
@@ -115,7 +117,7 @@ export function DeleteDialogContainer(props: DeleteDialogContainerProps) {
 		// Clean the state, only keep checked items
 		!nextChecked[path] && delete nextChecked[path];
 		// If there aren't any checked main items, uncheck everything.
-		const checkedMainItems = createCheckedList(nextChecked, dependentItems);
+		const checkedMainItems = createCheckedList(nextChecked, dependentItemsPaths);
 		checkedMainItems.length === 0 && (nextChecked = {});
 		fetchOrCleanDependencies(nextChecked);
 		setSelectedItems(nextChecked);
@@ -146,7 +148,7 @@ export function DeleteDialogContainer(props: DeleteDialogContainerProps) {
 	};
 
 	const onEditDependantClick = (e, path) => {
-		let paths = createCheckedList(selectedItems, dependentItems);
+		let paths = createCheckedList(selectedItems, dependentItemsPaths);
 		// We don't have a good way of knowing if the dependant item cleared it's dependency and if it's checked, it
 		// needs to get removed from selectedItems after the edit is complete and the item is not even listed as a dependency.
 		// Until we find a better way around that, will uncheck when the edit button is pressed.
