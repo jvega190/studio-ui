@@ -80,8 +80,8 @@ import {
 	duplicateItem,
 	fetchContentInstance,
 	fetchContentInstanceDescriptor,
-	fetchItemsByPath,
-	fetchContentItem as fetchSandboxItemService,
+	fetchContentItems,
+	fetchContentItem as fetchContentItemService,
 	insertComponent,
 	insertInstance,
 	insertItem,
@@ -243,7 +243,7 @@ const issueDescriptorRequest = (props: {
 					requests.push(fetchContentInstance(site, path, contentTypes));
 				});
 				return forkJoin({
-					sandboxItems: fetchItemsByPath(site, sandboxItemPaths),
+					sandboxItems: fetchContentItems(site, sandboxItemPaths),
 					modelResponse: requests.length
 						? forkJoin(requests).pipe(
 								map((response) => {
@@ -1004,7 +1004,7 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
 						value,
 						upToDateRefs.current.cdataEscapedFieldPatterns.some((pattern) => Boolean(fieldId.match(pattern)))
 					)
-						.pipe(switchMap(() => fetchSandboxItemService(siteId, path)))
+						.pipe(switchMap(() => fetchContentItemService(siteId, path)))
 						.subscribe({
 							next(item) {
 								hostToGuest$.next(updateFieldValueOperationComplete({ item }));
@@ -1081,7 +1081,7 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
 					const contentType = contentTypes[model.craftercms.contentTypeId];
 					if (type === 'content') {
 						// Not quite sure if it ever happens that the item isn't already loaded.
-						(item ? (of(item) as Observable<ContentItem>) : fetchSandboxItemService(siteId, path)).subscribe((item) => {
+						(item ? (of(item) as Observable<ContentItem>) : fetchContentItemService(siteId, path)).subscribe((item) => {
 							itemActionDispatcher({
 								item,
 								site: siteId,

@@ -28,7 +28,7 @@ import ApiResponse from '../../models/ApiResponse';
 import { createAction } from '@reduxjs/toolkit';
 import Breadcrumbs from '../PathNavigator/PathNavigatorBreadcrumbs';
 import PathNavigatorList from '../PathNavigator/PathNavigatorList';
-import { fetchChildrenByPath, fetchItemsByPath, fetchItemWithChildrenByPath } from '../../services/content';
+import { fetchChildrenByPath, fetchContentItems, fetchItemWithChildrenByPath } from '../../services/content';
 import { getIndividualPaths, getParentPath, withIndex, withoutIndex } from '../../utils/path';
 import { createLookupTable, nou } from '../../utils/object';
 import { forkJoin } from 'rxjs';
@@ -277,7 +277,7 @@ export function SingleItemSelector(props: SingleItemSelectorProps) {
 
 					if (parentsPath.length > 1) {
 						forkJoin([
-							fetchItemsByPath(site, parentsPath),
+							fetchContentItems(site, parentsPath),
 							fetchChildrenByPath(site, payload, {
 								limit: state.limit
 							})

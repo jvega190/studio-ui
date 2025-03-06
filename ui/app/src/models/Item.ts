@@ -125,16 +125,14 @@ export interface PublishTargetStatus {
 	publisher: Person;
 }
 
-export interface BaseItem {
+export interface LightItem {
 	path: string;
 	label: string;
 	systemType: SystemType;
 	mimeType: string;
 }
 
-export interface LightItem extends BaseItem {}
-
-export interface ContentItem extends BaseItem {
+export interface ContentItem extends LightItem {
 	id: number;
 	parentId: number;
 	contentTypeId: string;

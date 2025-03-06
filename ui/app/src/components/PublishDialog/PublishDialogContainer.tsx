@@ -26,7 +26,7 @@ import { getComputedPublishingTarget, getDateScheduled } from '../../utils/conte
 import { FormattedMessage } from 'react-intl';
 import { isBlank } from '../../utils/string';
 import { updatePublishDialog } from '../../state/actions/dialogs';
-import { fetchDetailedItems, fetchItemsByPath } from '../../services/content';
+import { fetchContentItems } from '../../services/content';
 import { ContentItem } from '../../models';
 import { fetchDetailedItemsComplete } from '../../state/actions/content';
 import { createAtLeastHalfHourInFutureDate } from '../../utils/datetime';
@@ -223,21 +223,20 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 							...dependenciesByType.softDependencies.map((dep) => dep.path)
 						];
 						if (dependencies.length) {
-							return fetchItemsByPath(siteId, dependencies).pipe(
-								// TODO: rename detailedItemsList
-								map((detailedItemsList) => {
-									return { dependenciesByType, detailedItemsList };
+							return fetchContentItems(siteId, dependencies).pipe(
+								map((itemsList) => {
+									return { dependenciesByType, itemsList };
 								})
 							);
 						} else {
-							return of({ dependenciesByType, detailedItemsList: [] });
+							return of({ dependenciesByType, itemsList: [] });
 						}
 					})
 				)
 				.subscribe({
-					next({ dependenciesByType, detailedItemsList }) {
+					next({ dependenciesByType, itemsList }) {
 						const depMap: DependencyMap = {};
-						const depLookup: LookupTable<ContentItem> = createLookupTable(detailedItemsList, 'path');
+						const depLookup: LookupTable<ContentItem> = createLookupTable(itemsList, 'path');
 						dependenciesByType.hardDependencies.forEach(({ path }) => {
 							depMap[path] = 'hard';
 						});
@@ -249,7 +248,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 							typeByPath: depMap,
 							paths: Object.keys(depMap),
 							itemsByPath: depLookup,
-							items: detailedItemsList
+							items: itemsList
 						});
 					},
 					error() {
@@ -292,6 +291,10 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 				next(detailedItemsList) {
 					setDetailedItems(detailedItemsList);
 					dispatch(fetchDetailedItemsComplete({ items: detailedItemsList }));
+			const subscription = fetchContentItems(siteId, itemsDataSummary.incompleteDetailedItemPaths).subscribe({
+				next(itemsList) {
+					setDetailedItems(itemsList);
+					dispatch(fetchDetailedItemsComplete({ items: itemsList }));
 					setIsFetchingItems(false);
 				},
 				error(error) {

@@ -32,7 +32,7 @@ import { ContentItem, PublishingTarget, PublishParams } from '../../models';
 import { PublishDialogForm } from '../PublishDialog/PublishDialogForm';
 import { publish, recalculatePackage } from '../../services/publishing';
 import { of, switchMap } from 'rxjs';
-import { fetchDetailedItems, fetchItemsByPath } from '../../services/content';
+import { fetchContentItems } from '../../services/content';
 import PublishPackageItemsView from '../PublishDialog/PublishPackageItemsView';
 import Paper from '@mui/material/Paper';
 import LookupTable from '../../models/LookupTable';
@@ -205,24 +205,23 @@ export function PublishingPackageResubmitDialogContainer(props: PublishingPackag
 							...calculatedPackage.softDependencies
 						];
 						if (packageItems) {
-							return fetchItemsByPath(
+							return fetchContentItems(
 								siteId,
 								packageItems.map(({ path }) => path)
 							).pipe(
-								// TODO: rename detailedItemsList
-								map((detailedItemsList) => {
-									return { calculatedPackage, detailedItemsList };
+								map((itemsList) => {
+									return { calculatedPackage, itemsList };
 								})
 							);
 						} else {
-							return of({ calculatedPackage, detailedItemsList: [] });
+							return of({ calculatedPackage, itemsList: [] });
 						}
 					})
 				)
 				.subscribe({
-					next({ calculatedPackage, detailedItemsList }) {
+					next({ calculatedPackage, itemsList }) {
 						const depMap: DependencyMap = {};
-						const depLookup: LookupTable<ContentItem> = createLookupTable(detailedItemsList, 'path');
+						const depLookup: LookupTable<ContentItem> = createLookupTable(itemsList, 'path');
 						calculatedPackage.hardDependencies.forEach(({ path }) => {
 							depMap[path] = 'hard';
 						});
@@ -234,7 +233,7 @@ export function PublishingPackageResubmitDialogContainer(props: PublishingPackag
 							typeByPath: depMap,
 							paths: Object.keys(depMap),
 							itemsByPath: depLookup,
-							items: detailedItemsList
+							items: itemsList
 						});
 						setMainItems(calculatedPackage.items.map(({ path }) => depLookup[path]));
 					},

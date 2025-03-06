@@ -67,8 +67,6 @@ export function DeleteDialogContainer(props: DeleteDialogContainerProps) {
 		!confirmChecked;
 	const authoringBase = useSelection((state) => state.env.authoringBase);
 	const dependentItemsPaths = dependentItems?.map((item) => item.path) ?? [];
-	// TODO: is this needed now that we have dependentItems: LightItem[]?
-	useFetchSandboxItems(dependentItemsPaths);
 
 	const onSubmit = () => {
 		const paths = createCheckedList(selectedItems);

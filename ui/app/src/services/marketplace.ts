@@ -29,7 +29,7 @@ import {
 import { map, switchMap } from 'rxjs/operators';
 import { Observable, of } from 'rxjs';
 import { pluckProps, toQueryString } from '../utils/object';
-import { fetchItemsByPath } from './content';
+import { fetchContentItems } from './content';
 
 export function fetchBlueprints(options?: {
 	type?: string;
@@ -103,7 +103,7 @@ export function fetchMarketplacePluginUsage(siteId: string, pluginId: string): O
 	const qs = toQueryString({ siteId, pluginId });
 	return get(`/studio/api/2/marketplace/usage${qs}`).pipe(
 		map((response) => response?.response?.items),
-		switchMap((items) => (items.length === 0 ? of(items) : fetchItemsByPath(siteId, items)))
+		switchMap((items) => (items.length === 0 ? of(items) : fetchContentItems(siteId, items)))
 	);
 }
 

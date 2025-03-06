@@ -42,7 +42,7 @@ import {
 	showUploadDialog,
 	showViewPackagesDialog
 } from '../state/actions/dialogs';
-import { fetchItemsByPath, fetchLegacyItemsTree, fetchContentItem } from '../services/content';
+import { fetchContentItem, fetchContentItems, fetchLegacyItemsTree } from '../services/content';
 import {
 	batchActions,
 	changeContentType,
@@ -643,7 +643,7 @@ export const itemActionDispatcher = ({
 							]);
 
 							if (dependantItems?.length) {
-								fetchItemsByPath(
+								fetchContentItems(
 									site,
 									dependantItems.map((item) => item.uri ?? item.path)
 								).subscribe((sandboxItems) => {

@@ -94,18 +94,7 @@ export function fetchDescriptorDOM(
 	return fetchDescriptorXML(site, path, options).pipe(map(fromString));
 }
 
-// region fetchContentItem(...
-export function fetchContentItem(site: string, path: string): Observable<ContentItem>;
 export function fetchContentItem(
-	site: string,
-	path: string,
-	options?: FetchItemsByPathOptions
-): Observable<ContentItem> {
-	return fetchItemsByPath(site, [path], options).pipe(map((items) => items[0]));
-}
-// endregion
-
-export function fetchDetailedItem(
 	siteId: string,
 	path: string,
 	options?: { preferContent: boolean }
@@ -116,10 +105,6 @@ export function fetchDetailedItem(
 		pluck('response', 'item'),
 		map((item: ContentItem) => prepareVirtualItemProps(item))
 	);
-}
-
-export function fetchDetailedItems(site: string, paths: string[]): Observable<ContentItem[]> {
-	return forkJoin(paths.map((path) => fetchDetailedItem(site, path)));
 }
 
 export function fetchContentInstanceLookup(
@@ -1317,14 +1302,14 @@ export function fetchChildrenByPaths(
 			);
 }
 
-// region export function fetchItemsByPath(...
-export function fetchItemsByPath(siteId: string, paths: string[]): Observable<FetchItemsByPathArray<ContentItem>>;
-export function fetchItemsByPath(
+// region export function fetchContentItems(...
+export function fetchContentItems(siteId: string, paths: string[]): Observable<FetchItemsByPathArray<ContentItem>>;
+export function fetchContentItems(
 	siteId: string,
 	paths: string[],
 	options: FetchItemsByPathOptions
 ): Observable<FetchItemsByPathArray<ContentItem>>;
-export function fetchItemsByPath(
+export function fetchContentItems(
 	siteId: string,
 	paths: string[],
 	options?: FetchItemsByPathOptions
@@ -1356,7 +1341,7 @@ export function fetchItemByPath(
 	path: string,
 	options?: FetchItemsByPathOptions
 ): Observable<ContentItem> {
-	return fetchItemsByPath(siteId, [path], options).pipe(
+	return fetchContentItems(siteId, [path], options).pipe(
 		tap((items) => {
 			if (items[0] === void 0) {
 				// Fake out the 404 which the backend won't return for this bulk API

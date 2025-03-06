@@ -49,7 +49,7 @@ import {
 	checkPathExistence,
 	fetchChildrenByPath,
 	fetchChildrenByPaths,
-	fetchItemsByPath
+	fetchContentItems
 } from '../../services/content';
 import { catchAjaxError } from '../../utils/ajax';
 import { removeStoredPathNavigatorTree, setStoredPathNavigatorTree } from '../../utils/state';
@@ -144,7 +144,7 @@ export default [
 					paths.push(state.pathNavigatorTree[id].rootPath);
 				}
 				return forkJoin([
-					fetchItemsByPath(state.sites.active, paths),
+					fetchContentItems(state.sites.active, paths),
 					fetchChildrenByPaths(
 						state.sites.active,
 						createPresenceTable(expanded, (value) => ({
@@ -223,7 +223,7 @@ export default [
 				});
 				return requests.length
 					? forkJoin([
-							fetchItemsByPath(state.sites.active, paths),
+							fetchContentItems(state.sites.active, paths),
 							fetchChildrenByPaths(state.sites.active, optionsByPath)
 						]).pipe(
 							map(([items, children]) => {
