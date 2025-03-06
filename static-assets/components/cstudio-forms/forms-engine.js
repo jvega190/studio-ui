@@ -2894,7 +2894,7 @@ const initializeCStudioForms = () => {
 						.subscribe(([affectedPackages, item]) => {
 							_self.affectedPackages = affectedPackages;
 							_self.item = item;
-							if (affectedPackages) {
+							if (affectedPackages?.length) {
 								const workflowWarningEl = document.querySelector('.page-header .in-workflow-warning');
 
 								const { createElement } = craftercms.libs.React;
