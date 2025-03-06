@@ -81,7 +81,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 	const { items: initialItems, scheduling = 'now', onSuccess, onClose, isSubmitting } = props;
 	const siteId = useActiveSiteId();
 	const dispatch = useDispatch();
-	const [detailedItems, setDetailedItems] = useState<ContentItem[]>();
+	const [contentItems, setContentItems] = useState<ContentItem[]>();
 	const [isFetchingItems, setIsFetchingItems] = useState(false);
 	const [state, setState] = useSpreadState<InternalDialogState>({
 		packageTitle: '',
@@ -190,7 +190,7 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 	const submitDisabled =
 		// Detailed items haven't loaded
 		isFetchingItems ||
-		!detailedItems ||
+		!contentItems ||
 		// While submitting
 		isSubmitting ||
 		// If package title is blank
@@ -284,12 +284,12 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 	useEffect(() => {
 		// If `incompleteDetailedItemPaths` is empty, we have all the detailed items we need.
 		if (itemsDataSummary.incompleteDetailedItemPaths.length === 0) {
-			setDetailedItems(effectRefs.current.initialItems);
+			setContentItems(effectRefs.current.initialItems);
 		} else {
 			setIsFetchingItems(true);
 			const subscription = fetchContentItems(siteId, itemsDataSummary.incompleteDetailedItemPaths).subscribe({
 				next(itemsList) {
-					setDetailedItems(itemsList);
+					setContentItems(itemsList);
 					dispatch(fetchContentItemsComplete({ items: itemsList }));
 					setIsFetchingItems(false);
 				},
@@ -396,8 +396,8 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 					<ApiResponseErrorState error={state.error} />
 				) : isFetchingItems ? (
 					<LoadingState sx={{ flexGrow: 1 }} />
-				) : detailedItems ? (
-					detailedItems.length ? (
+				) : contentItems ? (
+					contentItems.length ? (
 						<Grid container spacing={2} sx={{ flex: 1 }}>
 							<Grid size={{ xs: 12, sm: 5 }}>
 								<PublishDialogForm

@@ -669,8 +669,9 @@ export const itemActionDispatcher = ({
 						message: `${formatMessage(translations.processing)}...`
 					})
 				);
-				fetchContentItem(site, item.path).subscribe({
-					next(item) {
+				fetchContentItems(site, [item.path]).subscribe({
+					next(items) {
+						const item = items?.[0];
 						if (item) {
 							dispatch(
 								batchActions([

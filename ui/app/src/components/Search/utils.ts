@@ -255,13 +255,13 @@ export const useSearchState = ({
 
 	const onActionClicked = (option: AllItemActions, event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
 		if (selected.length > 1) {
-			const detailedItems = [];
+			const contentItems = [];
 			selected.forEach((path) => {
-				itemsByPath?.[path] && detailedItems.push(itemsByPath[path]);
+				itemsByPath?.[path] && contentItems.push(itemsByPath[path]);
 			});
 			itemActionDispatcher({
 				site,
-				item: detailedItems,
+				item: contentItems,
 				option,
 				authoringBase,
 				dispatch,

@@ -26,7 +26,7 @@ import {
 	editController,
 	editTemplate
 } from '../actions/misc';
-import { changeContentType, createFile, fetchContentItem } from '../../services/content';
+import { changeContentType, createFile, fetchContentItems } from '../../services/content';
 import { showCodeEditorDialog, showEditDialog, showViewPackagesDialog } from '../actions/dialogs';
 import { reloadContentItem } from '../actions/content';
 import { blockUI, showEditItemSuccessNotification, unblockUI } from '../actions/system';
@@ -91,7 +91,8 @@ const epics = [
 				const destinationPath = editContentTypeTemplate.type === type ? getParentPath(path) : payload.path;
 				return merge(
 					of(blockUI({ message: getIntl().formatMessage(translations.verifyingAffectedWorkflows) })),
-					fetchContentItem(state.sites.active, path).pipe(
+					fetchContentItems(state.sites.active, [path]).pipe(
+						map((items) => items[0]),
 						map((item) =>
 							item
 								? isInActiveWorkflow(item)

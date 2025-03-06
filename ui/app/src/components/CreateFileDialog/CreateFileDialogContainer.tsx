@@ -18,7 +18,7 @@ import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useActiveSiteId } from '../../hooks/useActiveSiteId';
 import { FormattedMessage, useIntl } from 'react-intl';
-import { createFile, fetchContentItem } from '../../services/content';
+import { createFile, fetchContentItems } from '../../services/content';
 import { showErrorDialog } from '../../state/reducers/dialogs/error';
 import { validateActionPolicy } from '../../services/sites';
 import DialogBody from '../DialogBody/DialogBody';
@@ -97,8 +97,9 @@ export function CreateFileDialogContainer(props: CreateFileContainerProps) {
 						const fileName = getFileNameWithExtensionForItemType(type, name);
 						const pathToCheckExists = modifiedValue ?? `${path}/${fileName}`;
 						setItemExists(false);
-						fetchContentItem(site, pathToCheckExists).subscribe({
-							next: (item) => {
+						fetchContentItems(site, [pathToCheckExists]).subscribe({
+							next: (items) => {
+								const item = items?.[0];
 								if (item) {
 									setItemExists(true);
 									dispatch(updateCreateFileDialog({ isSubmitting: false }));
