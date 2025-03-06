@@ -63,14 +63,14 @@ const renderExpiredItems = (
 	expired?: boolean
 ) =>
 	items.map((item, index) => {
-		const isItemPreviewable = isPage(item.sandboxItem.systemType) || item.sandboxItem.availableActionsMap.view;
+		const isItemPreviewable = isPage(item.contentItem.systemType) || item.contentItem.availableActionsMap.view;
 		return (
-			<ListItem key={index} secondaryAction={<DashletItemOptions path={item.sandboxItem.path} />}>
+			<ListItem key={index} secondaryAction={<DashletItemOptions path={item.contentItem.path} />}>
 				<ListItemText
 					primary={
 						<ItemDisplay
-							item={item.sandboxItem}
-							onClick={(e) => (isItemPreviewable ? onItemClick(e, item.sandboxItem) : null)}
+							item={item.contentItem}
+							onClick={(e) => (isItemPreviewable ? onItemClick(e, item.contentItem) : null)}
 							showNavigableAsLinks={isItemPreviewable}
 							sxs={{ ...(isItemPreviewable && { root: { cursor: 'pointer' } }) }}
 						/>

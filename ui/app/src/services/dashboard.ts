@@ -171,7 +171,7 @@ export interface ExpiredItem {
 	itemName: string;
 	itemPath: string;
 	expiredDateTime: string;
-	sandboxItem: ContentItem;
+	contentItem: ContentItem;
 }
 
 export function fetchExpired(siteId: string, options?: PaginationOptions): Observable<ExpiredItem[]> {
@@ -180,7 +180,7 @@ export function fetchExpired(siteId: string, options?: PaginationOptions): Obser
 		map((response) =>
 			response?.response?.items.map((item) => ({
 				...item,
-				sandboxItem: prepareVirtualItemProps(item.sandboxItem)
+				contentItem: prepareVirtualItemProps(item.sandboxItem)
 			}))
 		)
 	);
