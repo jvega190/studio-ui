@@ -28,7 +28,7 @@ import { isBlank } from '../../utils/string';
 import { updatePublishDialog } from '../../state/actions/dialogs';
 import { fetchContentItems } from '../../services/content';
 import { ContentItem } from '../../models';
-import { fetchDetailedItemsComplete } from '../../state/actions/content';
+import { fetchContentItemsComplete } from '../../state/actions/content';
 import { createAtLeastHalfHourInFutureDate } from '../../utils/datetime';
 import { batchActions } from '../../state/actions/misc';
 import { showErrorDialog } from '../../state/reducers/dialogs/error';
@@ -287,14 +287,10 @@ export function PublishDialogContainer(props: PublishDialogContainerProps) {
 			setDetailedItems(effectRefs.current.initialItems);
 		} else {
 			setIsFetchingItems(true);
-			const subscription = fetchDetailedItems(siteId, itemsDataSummary.incompleteDetailedItemPaths).subscribe({
-				next(detailedItemsList) {
-					setDetailedItems(detailedItemsList);
-					dispatch(fetchDetailedItemsComplete({ items: detailedItemsList }));
 			const subscription = fetchContentItems(siteId, itemsDataSummary.incompleteDetailedItemPaths).subscribe({
 				next(itemsList) {
 					setDetailedItems(itemsList);
-					dispatch(fetchDetailedItemsComplete({ items: itemsList }));
+					dispatch(fetchContentItemsComplete({ items: itemsList }));
 					setIsFetchingItems(false);
 				},
 				error(error) {

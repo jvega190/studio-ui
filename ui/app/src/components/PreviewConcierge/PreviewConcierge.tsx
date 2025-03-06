@@ -109,8 +109,8 @@ import {
 	setStoredOutdatedXBValidationDate
 } from '../../utils/state';
 import {
-	fetchSandboxItem,
-	reloadDetailedItem,
+	fetchContentItem,
+	reloadContentItem,
 	restoreClipboard,
 	unlockItem,
 	updateItemsByPath
@@ -495,7 +495,7 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
 	// Fetch active item
 	useEffect(() => {
 		if (currentItemPath && siteId) {
-			dispatch(fetchSandboxItem({ path: currentItemPath }));
+			dispatch(fetchContentItem({ path: currentItemPath }));
 		}
 	}, [dispatch, currentItemPath, siteId]);
 
@@ -540,7 +540,7 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
 		const hostToHost$ = getHostToHostBus();
 		const updatedModifiedItem = (path: string) => {
 			upToDateRefs.current.dispatch(
-				reloadDetailedItem({
+				reloadContentItem({
 					path
 				})
 			);
@@ -919,10 +919,10 @@ export function PreviewConcierge(props: PropsWithChildren<{}>) {
 							hostToGuest$.next(moveItemOperationComplete());
 							dispatch(
 								batchActions([
-									reloadDetailedItem({
+									reloadContentItem({
 										path: originPath
 									}),
-									reloadDetailedItem({
+									reloadContentItem({
 										path: targetPath
 									})
 								])

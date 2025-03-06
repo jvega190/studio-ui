@@ -19,7 +19,7 @@ import { useDispatch } from 'react-redux';
 import { useSelection } from './useSelection';
 import { ContentItem } from '../models/Item';
 import { nou } from '../utils/object';
-import { completeDetailedItem } from '../state/actions/content';
+import { completeContentItem } from '../state/actions/content';
 import { lookupItemByPath } from '../utils/content';
 
 export function useDetailedItem(path: string): ContentItem {
@@ -29,7 +29,7 @@ export function useDetailedItem(path: string): ContentItem {
 	const beingFetching = useSelection((state) => state.content.itemsBeingFetchedByPath[path]);
 	useEffect(() => {
 		if (nou(item) && path && beingFetching === undefined) {
-			dispatch(completeDetailedItem({ path }));
+			dispatch(completeContentItem({ path }));
 		}
 	}, [beingFetching, dispatch, item, path]);
 	return item;

@@ -62,7 +62,7 @@ import useItemsByPath from '../../hooks/useItemsByPath';
 import useFetchSandboxItems from '../../hooks/useFetchSandboxItems';
 import { itemActionDispatcher } from '../../utils/itemActions';
 import ListItemButton from '@mui/material/ListItemButton';
-import { fetchSandboxItemComplete, fetchSandboxItems } from '../../state/actions/content';
+import { fetchContentItemComplete, fetchContentItems } from '../../state/actions/content';
 import LoadingIconButton from '../LoadingIconButton';
 import { fetchItemByPath } from '../../services/content';
 
@@ -172,7 +172,7 @@ export function MyRecentActivityDashlet(props: MyRecentActivityDashletProps) {
 			if (itemsByPath[path]) {
 				setLoadingActionsBar(true);
 				fetchItemByPath(siteId, path).subscribe((item) => {
-					dispatch(fetchSandboxItemComplete({ item }));
+					dispatch(fetchContentItemComplete(item));
 					setLoadingActionsBar(false);
 				});
 			}
@@ -218,7 +218,7 @@ export function MyRecentActivityDashlet(props: MyRecentActivityDashletProps) {
 		];
 		const hostToHost$ = getHostToHostBus();
 		const subscription = hostToHost$.pipe(filter((e) => events.includes(e.type))).subscribe(({ type, payload }) => {
-			dispatch(fetchSandboxItems({ paths: selectedPaths }));
+			dispatch(fetchContentItems({ paths: selectedPaths }));
 			loadPage(getCurrentPage(offset, limit), true);
 		});
 		return () => {

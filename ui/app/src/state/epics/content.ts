@@ -18,36 +18,29 @@ import { ofType } from 'redux-observable';
 import { filter, map, mergeMap, switchMap, tap, withLatestFrom } from 'rxjs/operators';
 import {
 	clearClipboard,
-	completeDetailedItem,
+	completeContentItem,
 	conditionallyUnlockItem,
 	deleteController,
 	deleteTemplate,
 	duplicateAsset,
 	duplicateItem,
 	duplicateWithPolicyValidation,
-	fetchDetailedItem,
-	fetchDetailedItemComplete,
-	fetchDetailedItemFailed,
-	fetchDetailedItems,
-	fetchDetailedItemsComplete,
-	fetchDetailedItemsFailed,
+	fetchContentItem,
+	fetchContentItemComplete,
+	fetchContentItemFailed,
 	fetchQuickCreateList as fetchQuickCreateListAction,
 	fetchQuickCreateListComplete,
 	fetchQuickCreateListFailed,
-	fetchSandboxItem,
-	fetchSandboxItemComplete,
-	fetchSandboxItemFailed,
-	FetchSandboxItemPayload,
-	fetchSandboxItems,
-	fetchSandboxItemsComplete,
-	fetchSandboxItemsFailed,
+	fetchContentItems,
+	fetchContentItemsComplete,
+	fetchContentItemsFailed,
 	lockItem,
 	lockItemCompleted,
 	lockItemFailed,
 	pasteItem,
 	pasteItemWithPolicyValidation,
-	reloadDetailedItem,
-	sandboxItemsMissing,
+	reloadContentItem,
+	contentItemsMissing,
 	unlockItem
 } from '../actions/content';
 import { catchAjaxError } from '../../utils/ajax';
@@ -55,7 +48,7 @@ import {
 	duplicate,
 	fetchContentItem as fetchContentItemService,
 	fetchItemByPath,
-	fetchContentItems,
+	fetchContentItems as fetchContentItemsService,
 	fetchQuickCreateList,
 	lock,
 	paste,
@@ -179,78 +172,65 @@ const content: CrafterCMSEpic[] = [
 	(action$) =>
 		action$.pipe(
 			ofType(showItemMegaMenu.type),
-			map(({ payload }) => fetchSandboxItem({ path: payload.path }))
+			map(({ payload }) => fetchContentItem({ path: payload.path }))
 		),
 	// endregion
-	// region fetchContentItem, reloadDetailedItem
+	// region fetchContentItem, reloadContentItem
 	(action$, state$) =>
 		action$.pipe(
-			ofType(fetchDetailedItem.type, reloadDetailedItem.type),
+			ofType(reloadContentItem.type),
 			withLatestFrom(state$),
 			filter(
 				([{ payload, type }, state]) =>
 					// Only fetch if the item isn't already in state or it is an explicit re-fetch
-					// request (via reloadDetailedItem action)
-					!state.content.itemsByPath[payload.path] || type === reloadDetailedItem.type
+					// request (via reloadContentItem action)
+					!state.content.itemsByPath[payload.path] || type === reloadContentItem.type
 			),
 			mergeMap(([{ payload }, state]) =>
 				fetchContentItemService(state.sites.active, payload.path).pipe(
-					map(fetchDetailedItemComplete),
-					catchAjaxError(fetchDetailedItemFailed)
+					map(fetchContentItemComplete),
+					catchAjaxError(fetchContentItemFailed)
 				)
 			)
 		),
 	// endregion
-	// region fetchDetailedItems
+	// region completeContentItem
 	(action$, state$) =>
 		action$.pipe(
-			ofType(fetchDetailedItems.type),
-			withLatestFrom(state$),
-			switchMap(([{ payload }, state]) =>
-				fetchContentItems(state.sites.active, payload.paths).pipe(
-					map((items) => fetchDetailedItemsComplete({ items })),
-					catchAjaxError(fetchDetailedItemsFailed)
-				)
-			)
-		),
-	// endregion
-	// region completeDetailedItem
-	(action$, state$) =>
-		action$.pipe(
-			ofType(completeDetailedItem.type),
+			ofType(completeContentItem.type),
 			withLatestFrom(state$),
 			// Only fetch if the item isn't fully loaded (i.e. it's a parsed SandboxItem and need the DetailedItems)
 			filter(([{ payload }, state]) => payload.force || !state.content.itemsByPath?.[payload.path]?.live),
 			mergeMap(([{ payload }, state]) =>
 				fetchContentItemService(state.sites.active, payload.path).pipe(
-					map((item) => fetchDetailedItemComplete(item)),
-					catchAjaxError(fetchDetailedItemFailed)
+					map((item) => fetchContentItemComplete(item)),
+					catchAjaxError(fetchContentItemFailed)
 				)
 			)
 		),
 	// endregion
-	// region fetchSandboxItem
-	(action$: Observable<StandardAction<FetchSandboxItemPayload>>, state$) =>
+	// region fetchContentItem
+	(action$, state$) =>
 		action$.pipe(
-			ofType(fetchSandboxItem.type),
+			ofType(fetchContentItem.type),
 			withLatestFrom(state$),
 			mergeMap(([{ payload }, state]) =>
 				fetchContentItemService(state.sites.active, payload.path).pipe(
-					map((item) => (item ? fetchSandboxItemComplete({ item }) : sandboxItemsMissing({ paths: [payload.path] }))),
-					catchAjaxError(fetchSandboxItemFailed)
+					map((item) => (item ? fetchContentItemComplete(item) : contentItemsMissing({ paths: [payload.path] }))),
+					catchAjaxError(fetchContentItemFailed)
 				)
 			)
 		),
 	// endregion
-	// region fetchSandboxItems
+	// region fetchContentItems
 	(action$, state$) =>
 		action$.pipe(
-			ofType(fetchSandboxItems.type),
+			ofType(fetchContentItems.type),
 			withLatestFrom(state$),
 			mergeMap(([{ payload }, state]) =>
-				fetchContentItems(state.sites.active, payload.paths).pipe(
-					map((items) => fetchSandboxItemsComplete({ items })),
-					catchAjaxError(fetchSandboxItemsFailed)
+				fetchContentItemsService(state.sites.active, payload.paths).pipe(
+					map((items) => fetchContentItemsComplete({ items })),
+					catchAjaxError(fetchContentItemsFailed)
 				)
 			)
 		),
@@ -595,10 +575,10 @@ const content: CrafterCMSEpic[] = [
 			switchMap(([{ payload }, state]) =>
 				fetchContentItemService(state.sites.active, payload.targetPath).pipe(
 					tap((item) => {
-						getHostToGuestBus().next(fetchSandboxItemComplete({ item }));
+						getHostToGuestBus().next(fetchContentItemComplete(item));
 					}),
-					map((item) => fetchSandboxItemComplete({ item })),
-					catchAjaxError(fetchSandboxItemFailed)
+					map((item) => fetchContentItemComplete(item)),
+					catchAjaxError(fetchContentItemFailed)
 				)
 			)
 		),
@@ -614,10 +594,10 @@ const content: CrafterCMSEpic[] = [
 				const parentWithIndex = withIndex(parentPath);
 				return [
 					// If the item is in state, assume it got updated
-					state.content.itemsByPath[targetPath] && fetchSandboxItem({ path: targetPath }),
+					state.content.itemsByPath[targetPath] && fetchContentItem({ path: targetPath }),
 					// If the parent of the item is in state, a new item may have been added, re-fetch to update its child count
-					state.content.itemsByPath[parentPath] && fetchSandboxItem({ path: parentPath }),
-					state.content.itemsByPath[parentWithIndex] && fetchSandboxItem({ path: parentWithIndex })
+					state.content.itemsByPath[parentPath] && fetchContentItem({ path: parentPath }),
+					state.content.itemsByPath[parentWithIndex] && fetchContentItem({ path: parentWithIndex })
 				].filter(Boolean);
 			})
 		),
@@ -639,7 +619,7 @@ const content: CrafterCMSEpic[] = [
 				[targetPath, parentOfTarget, parentOfSource, withIndex(parentOfTarget), withIndex(parentOfSource)].forEach(
 					(path) => {
 						if (itemsByPath[path]) {
-							actions.push(fetchSandboxItem({ path }));
+							actions.push(fetchContentItem({ path }));
 						}
 					}
 				);

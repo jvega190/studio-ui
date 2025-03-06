@@ -19,7 +19,7 @@ import { ContentItem } from '../models/Item';
 import { useDispatch } from 'react-redux';
 import { useSelection } from './useSelection';
 import { useEffect, useMemo } from 'react';
-import { completeDetailedItem } from '../state/actions/content';
+import { completeContentItem } from '../state/actions/content';
 import { batchActions } from '../state/actions/misc';
 
 export function useDetailedItems(paths: string[]): { itemsByPath: LookupTable<ContentItem>; isFetching: boolean } {
@@ -39,7 +39,7 @@ export function useDetailedItems(paths: string[]): { itemsByPath: LookupTable<Co
 		let actions = [];
 		paths.forEach((path) => {
 			if (!itemsByPath[path] && fetchingLookup[path] === undefined) {
-				actions.push(completeDetailedItem({ path }));
+				actions.push(completeContentItem({ path }));
 			}
 		});
 		if (actions.length) {

@@ -70,7 +70,7 @@ import {
 	duplicateWithPolicyValidation,
 	pasteItem,
 	pasteItemWithPolicyValidation,
-	reloadDetailedItem,
+	reloadContentItem,
 	setClipboard,
 	unlockItem
 } from '../state/actions/content';
@@ -939,7 +939,7 @@ export const itemActionDispatcher = ({
 					scheduling: schedulingMap[option],
 					onSuccess: batchActions([
 						showPublishItemSuccessNotification(),
-						...items.map((item) => reloadDetailedItem({ path: item.path })),
+						...items.map((item) => reloadContentItem({ path: item.path })),
 						closePublishDialog(),
 						fetchPublishingStatus(),
 						...(onActionSuccess ? [onActionSuccess] : [])

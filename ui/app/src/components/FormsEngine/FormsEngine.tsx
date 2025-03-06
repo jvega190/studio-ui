@@ -36,7 +36,7 @@ import {
 	StableGlobalContext,
 	StableGlobalContextProps
 } from './lib/formsEngineContext';
-import { fetchDetailedItemComplete } from '../../state/actions/content';
+import { fetchContentItemComplete } from '../../state/actions/content';
 import { catchError, of } from 'rxjs';
 import LoadingState from '../LoadingState';
 import Paper, { paperClasses } from '@mui/material/Paper';
@@ -457,7 +457,7 @@ function FormBootstrap(props: FormsEngineProps) {
 					if (typeof requirements === 'symbol') {
 						return setPrepError(requirements);
 					}
-					dispatch(fetchDetailedItemComplete(requirements.item));
+					dispatch(fetchContentItemComplete(requirements.item));
 					const lockResultAtom = atom<FormsEngineEditContextProps>({
 						locked: requirements.locked,
 						lockError: requirements.lockError,

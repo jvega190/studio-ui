@@ -28,55 +28,36 @@ export const fetchQuickCreateListComplete = /*#__PURE__*/ createAction<QuickCrea
 export const fetchQuickCreateListFailed = /*#__PURE__*/ createAction('FETCH_QUICK_CREATE_LIST_FAILED');
 // endregion
 
-// region Detailed Item
+// region Content Item
 
-export const fetchDetailedItem = /*#__PURE__*/ createAction<{ path: string }>('FETCH_DETAILED_ITEM');
+export const fetchContentItem = /*#__PURE__*/ createAction<{ path: string }>('FETCH_CONTENT_ITEM');
 
-export const reloadDetailedItem = /*#__PURE__*/ createAction<{ path: string }>('RELOAD_DETAILED_ITEM');
+export const reloadContentItem = /*#__PURE__*/ createAction<{ path: string }>('RELOAD_CONTENT_ITEM');
 
-export const completeDetailedItem = /*#__PURE__*/ createAction<{ path: string; force?: boolean }>(
-	'COMPLETE_DETAILED_ITEM'
+export const completeContentItem = /*#__PURE__*/ createAction<{ path: string; force?: boolean }>(
+	'COMPLETE_CONTENT_ITEM'
 );
 
-export const fetchDetailedItemComplete = /*#__PURE__*/ createAction<ContentItem>('FETCH_DETAILED_ITEM_COMPLETE');
+export const fetchContentItemComplete = /*#__PURE__*/ createAction<ContentItem>('FETCH_CONTENT_ITEM_COMPLETE');
 
-export const fetchDetailedItemFailed = /*#__PURE__*/ createAction<AjaxError>('FETCH_DETAILED_ITEM_FAILED');
-
-export const fetchDetailedItems = /*#__PURE__*/ createAction<{ paths: string[] }>('COMPLETE_DETAILED_ITEMS');
-
-export const fetchDetailedItemsComplete = /*#__PURE__*/ createAction<{ items: ContentItem[] }>(
-	'FETCH_DETAILED_ITEMS_COMPLETE'
-);
-
-export const fetchDetailedItemsFailed = /*#__PURE__*/ createAction<AjaxError>('FETCH_DETAILED_ITEMS_FAILED');
+export const fetchContentItemFailed = /*#__PURE__*/ createAction<AjaxError>('FETCH_CONTENT_ITEM_FAILED');
 
 // endregion
 
-// region Sandbox Item
+// region Content Items
 
-export type FetchSandboxItemPayload = { path: string };
+export type FetchContentItemsPayload = { paths: string[] };
 
-export type FetchSandboxItemsPayload = { paths: string[] };
-
-export const fetchSandboxItem = /*#__PURE__*/ createAction<FetchSandboxItemPayload>('FETCH_SANDBOX_ITEM');
-
-export const fetchSandboxItems = /*#__PURE__*/ createAction<FetchSandboxItemsPayload>('FETCH_SANDBOX_ITEMS');
-
-export type FetchSandboxItemCompletePayload = { item: ContentItem };
+export const fetchContentItems = /*#__PURE__*/ createAction<FetchContentItemsPayload>('FETCH_CONTENT_ITEMS');
 
 export type FetchSandboxItemsCompletePayload = { items: ContentItem[] };
 
-export const fetchSandboxItemComplete =
-	/*#__PURE__*/ createAction<FetchSandboxItemCompletePayload>('FETCH_SANDBOX_ITEM_COMPLETE');
+export const fetchContentItemsComplete =
+	/*#__PURE__*/ createAction<FetchSandboxItemsCompletePayload>('FETCH_CONTENT_ITEMS_COMPLETE');
 
-export const fetchSandboxItemsComplete =
-	/*#__PURE__*/ createAction<FetchSandboxItemsCompletePayload>('FETCH_SANDBOX_ITEMS_COMPLETE');
+export const fetchContentItemsFailed = /*#__PURE__*/ createAction<AjaxError>('FETCH_CONTENT_ITEMS_FAILED');
 
-export const fetchSandboxItemFailed = /*#__PURE__*/ createAction<AjaxError>('FETCH_SANDBOX_ITEM_FAILED');
-
-export const fetchSandboxItemsFailed = /*#__PURE__*/ createAction<AjaxError>('FETCH_SANDBOX_ITEMS_FAILED');
-
-export const sandboxItemsMissing = /*#__PURE__*/ createAction<{ paths: string[] }>('SANDBOX_ITEMS_MISSING');
+export const contentItemsMissing = /*#__PURE__*/ createAction<{ paths: string[] }>('CONTENT_ITEMS_MISSING');
 
 // endregion
 

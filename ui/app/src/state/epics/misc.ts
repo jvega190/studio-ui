@@ -28,7 +28,7 @@ import {
 } from '../actions/misc';
 import { changeContentType, createFile, fetchContentItem } from '../../services/content';
 import { showCodeEditorDialog, showEditDialog, showViewPackagesDialog } from '../actions/dialogs';
-import { reloadDetailedItem } from '../actions/content';
+import { reloadContentItem } from '../actions/content';
 import { blockUI, showEditItemSuccessNotification, unblockUI } from '../actions/system';
 import { CrafterCMSEpic } from '../store';
 import { translations } from '../../components/ItemActionsMenu/translations';
@@ -54,7 +54,7 @@ const epics = [
 								path,
 								authoringBase: state.env.authoringBase,
 								changeTemplate: newContentTypeId,
-								onSaveSuccess: batchActions([showEditItemSuccessNotification(), reloadDetailedItem({ path })])
+								onSaveSuccess: batchActions([showEditItemSuccessNotification(), reloadContentItem({ path })])
 							})
 						)
 					);

@@ -18,19 +18,15 @@ import { createReducer } from '@reduxjs/toolkit';
 import GlobalState from '../../models/GlobalState';
 import {
 	clearClipboard,
-	completeDetailedItem,
-	fetchDetailedItem,
-	fetchDetailedItemComplete,
-	fetchDetailedItems,
-	fetchDetailedItemsComplete,
+	completeContentItem,
+	fetchContentItem,
+	fetchContentItemComplete,
 	fetchQuickCreateList,
 	fetchQuickCreateListComplete,
 	fetchQuickCreateListFailed,
-	fetchSandboxItem,
-	fetchSandboxItemComplete,
-	fetchSandboxItems,
-	fetchSandboxItemsComplete,
-	reloadDetailedItem,
+	fetchContentItems,
+	fetchContentItemsComplete,
+	reloadContentItem,
 	restoreClipboard,
 	setClipboard,
 	updateItemsByPath
@@ -153,37 +149,18 @@ const reducer = createReducer<ContentState>(initialState, (builder) => {
 				error: error.payload.response
 			}
 		}))
-		.addCase(fetchDetailedItem, updateItemsBeingFetchedByPath)
-		.addCase(reloadDetailedItem, updateItemsBeingFetchedByPath)
-		.addCase(completeDetailedItem, updateItemsBeingFetchedByPath)
-		.addCase(fetchSandboxItem, updateItemsBeingFetchedByPath)
-		.addCase(fetchSandboxItems, updateItemsBeingFetchedByPaths)
-		.addCase(fetchSandboxItemsComplete, (state, { payload: { items } }) => {
+		.addCase(fetchContentItem, updateItemsBeingFetchedByPath)
+		.addCase(reloadContentItem, updateItemsBeingFetchedByPath)
+		.addCase(completeContentItem, updateItemsBeingFetchedByPath)
+		.addCase(fetchContentItems, updateItemsBeingFetchedByPaths)
+		.addCase(fetchContentItemsComplete, (state, { payload: { items } }) => {
 			items.forEach((item) => {
 				const path = item.path;
 				state.itemsByPath[path] = item;
 				delete state.itemsBeingFetchedByPath[path];
 			});
 		})
-		.addCase(fetchDetailedItemComplete, (state, { payload }) => ({
-			...state,
-			itemsByPath: {
-				...state.itemsByPath,
-				[payload.path]: payload
-			},
-			itemsBeingFetchedByPath: {
-				...reversePluckProps(state.itemsBeingFetchedByPath, payload.path)
-			}
-		}))
-		.addCase(fetchDetailedItems, updateItemsBeingFetchedByPaths)
-		.addCase(fetchDetailedItemsComplete, (state, { payload: { items } }) => {
-			items.forEach((item) => {
-				const path = item.path;
-				state.itemsByPath[path] = item;
-				delete state.itemsBeingFetchedByPath[path];
-			});
-		})
-		.addCase(fetchSandboxItemComplete, (state, { payload: { item } }) => {
+		.addCase(fetchContentItemComplete, (state, { payload: item }) => {
 			const path = item.path;
 			state.itemsByPath[path] = item;
 			state.itemsBeingFetchedByPath[path] = false;

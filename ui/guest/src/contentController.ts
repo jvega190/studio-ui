@@ -47,7 +47,7 @@ import { crafterConf } from '@craftercms/classes';
 import { getDefaultValue } from '@craftercms/studio-ui/utils/contentType';
 import { ModelHierarchyDescriptor, ModelHierarchyMap, modelsToLookup } from '@craftercms/studio-ui/utils/content';
 import { ContentItem, StandardAction } from '@craftercms/studio-ui/models';
-import { fetchSandboxItemComplete } from '@craftercms/studio-ui/state/actions/content';
+import { fetchContentItemComplete } from '@craftercms/studio-ui/state/actions/content';
 
 // if (process.env.NODE_ENV === 'development') {
 // TODO: Notice
@@ -806,7 +806,7 @@ fromTopic(fetchGuestModelComplete.type).subscribe((action: StandardAction<FetchG
 	permissions$.next(permissions);
 });
 
-merge(fromTopic(updateFieldValueOperationComplete.type), fromTopic(fetchSandboxItemComplete.type))
+merge(fromTopic(updateFieldValueOperationComplete.type), fromTopic(fetchContentItemComplete.type))
 	.pipe(map((action) => action?.payload))
 	.subscribe(({ item }) => {
 		items$.next({
