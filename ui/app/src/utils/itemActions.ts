@@ -34,10 +34,8 @@ import {
 	showCreateFolderDialog,
 	showDeleteDialog,
 	showDependenciesDialog,
-	showEditDialog,
 	showFolderMoveAlertDialog,
 	showHistoryDialog,
-	showNewContentDialog,
 	showPreviewDialog,
 	showPublishDialog,
 	showRenameAssetDialog,
@@ -123,7 +121,10 @@ import SystemType from '../models/SystemType';
 import { fetchItemVersions } from '../state/actions/versions';
 import StandardAction from '../models/StandardAction';
 import { fetchDependant } from '../services/dependencies';
-import { fetchAffectedPackages } from '../services/workflow';
+import { NewContentDialogProps } from '../components/NewContentDialog/utils';
+import { nanoid } from 'nanoid';
+import { pushDialog, updateDialogState } from '../state/actions/dialogStack';
+import { pickShowContentFormAction } from './system';
 
 export type ContextMenuOptionDescriptor<ID extends string = string> = {
 	id: ID;
@@ -277,7 +278,7 @@ export function toContextMenuOptionsLookup<Keys extends string = AllItemActions>
 	formatMessage: IntlFormatters['formatMessage']
 ): Record<Keys, ContextMenuOption> {
 	const menuOptions: any = {};
-	// @ts-ignore - not sure why the type system is not picking up that the "values" are ContextMenuOptionDescriptor
+	// @ts-expect-error - not sure why the type system is not picking up that the "values" are ContextMenuOptionDescriptor
 	Object.entries(menuOptionDescriptors).forEach(([key, { id, label }]) => {
 		menuOptions[key] = { id, label: formatMessage(label) };
 	});
@@ -501,7 +502,7 @@ export const itemActionDispatcher = ({
 	option: AllItemActions;
 	authoringBase: string;
 	dispatch: Dispatch;
-	formatMessage;
+	formatMessage: IntlFormatters['formatMessage'];
 	clipboard?: Clipboard;
 	onActionSuccess?: any;
 	event?: React.MouseEvent<Element, MouseEvent>;
@@ -520,7 +521,7 @@ export const itemActionDispatcher = ({
 		switch (option) {
 			case 'view': {
 				const path = item.path;
-				dispatch(showEditDialog({ site, path, authoringBase, readonly: true }));
+				dispatch(pickShowContentFormAction({ site, path, authoringBase, readonly: true }));
 				break;
 			}
 			case 'edit': {
@@ -529,7 +530,7 @@ export const itemActionDispatcher = ({
 				// const src = `${defaultSrc}site=${site}&path=${embeddedParentPath}&isHidden=true&modelId=${modelId}&type=form`
 				const path = item.path;
 				dispatch(
-					showEditDialog({
+					pickShowContentFormAction({
 						site,
 						path,
 						authoringBase,
@@ -582,12 +583,19 @@ export const itemActionDispatcher = ({
 				break;
 			}
 			case 'createContent': {
+				const id = nanoid();
 				dispatch(
-					showNewContentDialog({
-						item,
-						rootPath: getRootPath(item.path),
-						// @ts-ignore - required attributes of `showEditDialog` are submitted by new content dialog `onContentTypeSelected` callback and injected into the showEditDialog action by the GlobalDialogManger
-						onContentTypeSelected: showEditDialog({})
+					pushDialog({
+						id,
+						component: 'craftercms.components.NewContentDialog',
+						props: {
+							item,
+							rootPath: getRootPath(item.path),
+							onContentTypeSelected(response) {
+								dispatch(updateDialogState({ id, props: { open: false } }));
+								dispatch(pickShowContentFormAction(response));
+							}
+						} as NewContentDialogProps
 					})
 				);
 				break;
