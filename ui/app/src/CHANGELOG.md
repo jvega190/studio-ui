@@ -57,6 +57,10 @@
   * Removed `cmis` services.
   * Removed `content/uploadToCMIS` service.
   * Removed `models/CMIS` service.
+  * Renamed `content/fetchDetailedItem` to `fetchContentItem`.
+  * Renamed `content/fetchItemsByPath` to `fetchContentItems`.
+  * Removed `content/fetchSandboxItem`. Replaced by `fetchContentItem`.
+  * Removed `content/fetchDetailedItems`. Replaced by `fetchContentItems`.
 * `PublishingItem` interface changes:
   * `approver` is now `reviewer`, of type Person.
   * `comment` is removed, and now there's `reviewerComment` and `submitterComment`.
@@ -65,8 +69,18 @@
   * `state` is now `approvalState`.
   * Added `title`, `submittedOn`, `reviewedOn`,`packageState`, `reviewer`, `liveError`, `stagingError`, `publishedOn`, `packageType`, `commitId`, `publishedStagingCommitId` and `publishedLiveCommitId` props.
 * `PublishFormData` interface change: Added `title` prop.
+* ExpiredItem interface change: changed `sandboxItem` prop to `contentItem`.
+* Removed `SandboxItem` and `DetailedItem` interfaces, replaced by `ContentItem`.
+* `DeleteDialogBaseProps` and `FetchDeleteDependenciesResponse` interfaces: Update `childItems` and `dependentItems` to be of type `LightItem[]`.
+* `CalculatedPackageResponse` interface: Update `hardDependencies`, `softDependencies` and `items` to be of type `LightItem[]`.
 * `approvePublish` anb `rejectPublish` are no longer item actions in BaseItem's `availableActionsMap` property.
 * [SiteDashboard/utils] Renamed `getValidatedSelectionState` to `getItemsValidatedSelectionState`.
+* [state]
+  * `actions/content`:
+    * Renamed `fetchDetailedItem` action to `fetchContentItem`
+    * Renamed `fetchItemsByPath` to `fetchContentItems`.
+    * Removed `fetchSandboxItem` action. Replaced by `fetchContentItem`.
+    * Removed `fetchDetailedItems` action. Replaced by `fetchContentItems`.1
 * [common-api.js]
   * Removed `CStudioAuthoring.Operations.uploadCMISAsset` and `CStudioAuthoring.Operations.openCMISUploadDialog`.
 
