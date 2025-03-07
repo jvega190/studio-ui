@@ -15,7 +15,7 @@
  */
 
 import LookupTable from '../../models/LookupTable';
-import { ContentItem } from '../../models';
+import { LightItem } from '../../models';
 import { PathTreeNode } from '../PublishDialog/buildPathTrees';
 import React from 'react';
 import { DependencyChip, DependencyMap } from '../PublishDialog';
@@ -29,7 +29,7 @@ import Checkbox from '@mui/material/Checkbox';
 import FolderOpenRoundedIcon from '@mui/icons-material/FolderOpenRounded';
 
 export function renderTreeNode(props: {
-	itemMap: LookupTable<ContentItem>;
+	itemMap: LookupTable<LightItem>;
 	node: PathTreeNode;
 	onMenuClick: (e: React.MouseEvent<HTMLButtonElement>, path: string) => void;
 	dependencyTypeMap?: DependencyMap;
@@ -60,10 +60,12 @@ export function renderTreeNode(props: {
 						<div>
 							<Box display="flex">
 								<ItemDisplay
+									// @ts-expect-error itemMap is not of type ContentItem, but with showWorkflowState and showPublishingTarget
+									// set to false, a LightItem is sufficient.
 									item={itemMap[node.path]}
 									showNavigableAsLinks={false}
 									showWorkflowState={false}
-									showPublishingTarget={showItemTarget}
+									showPublishingTarget={false}
 									sx={{ mr: 1 }}
 								/>
 								{isDependency && <DependencyChip type={dependencyTypeMap[node.path]} />}
