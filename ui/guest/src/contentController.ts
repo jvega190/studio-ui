@@ -806,7 +806,16 @@ fromTopic(fetchGuestModelComplete.type).subscribe((action: StandardAction<FetchG
 	permissions$.next(permissions);
 });
 
-merge(fromTopic(updateFieldValueOperationComplete.type), fromTopic(fetchContentItemComplete.type))
+fromTopic(fetchContentItemComplete.type)
+	.pipe(map((action) => action?.payload))
+	.subscribe((item) => {
+		items$.next({
+			...items$.value,
+			[item.path]: item
+		});
+	});
+
+fromTopic(updateFieldValueOperationComplete.type)
 	.pipe(map((action) => action?.payload))
 	.subscribe(({ item }) => {
 		items$.next({
