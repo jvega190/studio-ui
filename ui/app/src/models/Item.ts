@@ -120,8 +120,8 @@ export interface PasteItem {
 }
 
 export interface PublishTargetStatus {
-	lastPublishedOn: string;
-	scheduledDate: string;
+	dateLastPublished: string;
+	dateScheduled: string;
 	publisher: Person;
 }
 

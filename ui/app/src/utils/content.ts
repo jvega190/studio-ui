@@ -266,8 +266,8 @@ export function parseLegacyItemToContentItem(item: LegacyItem | LegacyItem[]): C
 		availableActionsMap: null,
 		childrenCount: 0,
 		staging: {
-			scheduledDate: item.scheduledDate,
-			lastPublishedOn: item.publishedDate ?? item.eventDate,
+			dateScheduled: item.scheduledDate,
+			dateLastPublished: item.publishedDate ?? item.eventDate,
 			publisher: {
 				username: item.user,
 				firstName: null,
@@ -276,8 +276,8 @@ export function parseLegacyItemToContentItem(item: LegacyItem | LegacyItem[]): C
 			}
 		},
 		live: {
-			scheduledDate: item.scheduledDate,
-			lastPublishedOn: item.publishedDate ?? item.eventDate,
+			dateScheduled: item.scheduledDate,
+			dateLastPublished: item.publishedDate ?? item.eventDate,
 			publisher: {
 				username: item.user,
 				firstName: null,
@@ -993,11 +993,11 @@ export function prepareVirtualItemProps(item: ContentItem): ContentItem {
 }
 
 export function getDateScheduled(item: ContentItem): string {
-	return item.live?.scheduledDate ?? item.staging?.scheduledDate ?? null;
+	return item.live?.dateScheduled ?? item.staging?.dateScheduled ?? null;
 }
 
 export function getDatePublished(item: ContentItem): string {
-	return item.live?.lastPublishedOn ?? item.staging?.lastPublishedOn ?? null;
+	return item.live?.dateLastPublished ?? item.staging?.dateLastPublished ?? null;
 }
 
 export function getComputedPublishingTarget(item: ContentItem): PublishingTargets | null {
