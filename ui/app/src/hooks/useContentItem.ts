@@ -22,7 +22,7 @@ import { nou } from '../utils/object';
 import { completeContentItem } from '../state/actions/content';
 import { lookupItemByPath } from '../utils/content';
 
-export function useDetailedItem(path: string): ContentItem {
+export function useContentItem(path: string): ContentItem {
 	const dispatch = useDispatch();
 	const itemsByPath = useSelection((state) => state.content.itemsByPath);
 	const item = path ? lookupItemByPath(path, itemsByPath) : null;
@@ -35,4 +35,4 @@ export function useDetailedItem(path: string): ContentItem {
 	return item;
 }
 
-export default useDetailedItem;
+export default useContentItem;

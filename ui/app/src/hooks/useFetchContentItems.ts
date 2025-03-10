@@ -20,7 +20,7 @@ import { UNDEFINED } from '../utils/constants';
 import { fetchContentItems } from '../state/actions/content';
 import { Store } from 'redux';
 
-export function useFetchSandboxItems(paths: string[]): void {
+export function useFetchContentItems(paths: string[]): void {
 	const store: Store = useStore();
 	const storeRef = useRef(store);
 	useEffect(
@@ -37,4 +37,4 @@ export function useFetchSandboxItems(paths: string[]): void {
 	);
 }
 
-export default useFetchSandboxItems;
+export default useFetchContentItems;

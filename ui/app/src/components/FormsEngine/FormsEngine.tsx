@@ -66,7 +66,7 @@ import useUpdateRefs from '../../hooks/useUpdateRefs';
 import { Fade } from '@mui/material';
 import AlertTitle from '@mui/material/AlertTitle';
 import { pushDialog } from '../../state/actions/dialogStack';
-import useFetchSandboxItems from '../../hooks/useFetchSandboxItems';
+import useFetchContentItems from '../../hooks/useFetchContentItems';
 import ErrorBoundary from '../ErrorBoundary';
 import { debounceTime } from 'rxjs/operators';
 import { atom, createStore, Provider, useAtom, useAtomValue, useStore as useJotaiStore } from 'jotai';
@@ -616,7 +616,7 @@ function FormOrchestrator(props: FormsEngineProps) {
 	}, [changedFieldIds, contentType.fields, effectRefs, setHasPendingChanges, fieldUpdates$, store, isCreateMode]);
 
 	const sourceMapPaths = useMemo(() => Object.values(sourceMap ?? []).sort(), [sourceMap]);
-	useFetchSandboxItems(sourceMapPaths);
+	useFetchContentItems(sourceMapPaths);
 
 	// If rendered in a dialog, update the dialog's isSubmitting and hasPendingChanges. Only the root form.
 	// Stacked forms have their own changes and submit state management.

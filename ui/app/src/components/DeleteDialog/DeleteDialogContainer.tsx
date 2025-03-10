@@ -32,7 +32,7 @@ import { createPresenceTable } from '../../utils/array';
 import { ContentItem } from '../../models/Item';
 import { isBlank } from '../../utils/string';
 import { ApiResponse } from '../../models';
-import useFetchSandboxItems from '../../hooks/useFetchSandboxItems';
+import useFetchContentItems from '../../hooks/useFetchContentItems';
 
 function createCheckedList(selectedItems: LookupTable<boolean>, excludedPaths?: string[]) {
 	return Object.entries(selectedItems)

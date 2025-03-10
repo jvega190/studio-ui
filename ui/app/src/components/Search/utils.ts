@@ -37,7 +37,7 @@ import { filter } from 'rxjs/operators';
 import { fetchContentXML } from '../../services/content';
 import { getPreviewURLFromPath } from '../../utils/path';
 import { IconButtonProps } from '@mui/material/IconButton';
-import useFetchSandboxItems from '../../hooks/useFetchSandboxItems';
+import useFetchContentItems from '../../hooks/useFetchContentItems';
 
 export const drawerWidth = 300;
 
@@ -215,7 +215,7 @@ export const useSearchState = ({
 	const [selected, setSelected] = useState<string[]>(preselectedPaths);
 	const [searchResults, setSearchResults] = useState<SearchResult>(null);
 	const [selectedPath, setSelectedPath] = useState<string>(searchParameters.path ?? '');
-	useFetchSandboxItems(selected);
+	useFetchContentItems(selected);
 	const { itemsBeingFetchedByPath, itemsByPath } = useSelection((state) => state.content);
 	const isFetching = selected.some((path) => itemsBeingFetchedByPath[path]);
 	const [drawerOpen, setDrawerOpen] = useState(window.innerWidth > 960);

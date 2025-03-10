@@ -59,7 +59,7 @@ import Checkbox from '@mui/material/Checkbox';
 import Box from '@mui/material/Box';
 import ActionsBar from '../ActionsBar';
 import useItemsByPath from '../../hooks/useItemsByPath';
-import useFetchSandboxItems from '../../hooks/useFetchSandboxItems';
+import useFetchContentItems from '../../hooks/useFetchContentItems';
 import { itemActionDispatcher } from '../../utils/itemActions';
 import ListItemButton from '@mui/material/ListItemButton';
 import { fetchContentItemComplete, fetchContentItems } from '../../state/actions/content';
@@ -105,7 +105,7 @@ export function MyRecentActivityDashlet(props: MyRecentActivityDashletProps) {
 	const totalPages = total ? Math.ceil(total / limit) : 0;
 	const itemsByPath = useItemsByPath();
 	const [selectedPaths, setSelectedPaths] = useState([]);
-	useFetchSandboxItems(selectedPaths);
+	useFetchContentItems(selectedPaths);
 	const selectedItems = useMemo(() => {
 		const items = [];
 		if (selectedPaths.length > 0) {
