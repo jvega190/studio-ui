@@ -102,8 +102,7 @@ export function fetchContentItem(
 	const { preferContent } = { preferContent: true, ...options };
 	const qs = toQueryString({ siteId, path, preferContent });
 	return get(`/studio/api/2/content/item_by_path${qs}`).pipe(
-		pluck('response', 'item'),
-		map((item: ContentItem) => prepareVirtualItemProps(item))
+		map(({ response }) => prepareVirtualItemProps(response?.item))
 	);
 }
 
