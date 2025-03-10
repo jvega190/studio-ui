@@ -16,7 +16,7 @@
 
 import { ContentItem } from '../../models/Item';
 
-export function isNavigable(item: ContentItem): boolean {
+export function isNavigable(item: Pick<ContentItem, 'previewUrl' | 'systemType'>): boolean {
 	if (item) {
 		// Assets have a valid previewUrl but we don't want assets to show in the
 		// Guest iFrame but rather as a preview dialog.
@@ -25,19 +25,19 @@ export function isNavigable(item: ContentItem): boolean {
 	return false;
 }
 
-export function isEditableViaFormEditor(item: ContentItem): boolean {
+export function isEditableViaFormEditor(item: Pick<ContentItem, 'systemType'>): boolean {
 	return ['page', 'component', 'taxonomy'].includes(item.systemType);
 }
 
-export function isImage(item: ContentItem): boolean {
+export function isImage(item: Pick<ContentItem, 'mimeType'>): boolean {
 	return item?.mimeType.startsWith('image/');
 }
 
-export function isVideo(item: ContentItem): boolean {
+export function isVideo(item: Pick<ContentItem, 'mimeType'>): boolean {
 	return item?.mimeType.startsWith('video/');
 }
 
-export function isAudio(item: ContentItem): boolean {
+export function isAudio(item: Pick<ContentItem, 'mimeType'>): boolean {
 	return item?.mimeType.startsWith('audio/');
 }
 
@@ -58,7 +58,7 @@ export function isPdfDocument(mimeType: string) {
 	return 'application/pdf' === mimeType;
 }
 
-export function isPreviewable(item: ContentItem): boolean {
+export function isPreviewable(item: Pick<ContentItem, 'mimeType' | 'systemType'>): boolean {
 	if (item?.systemType === 'asset') {
 		return isMediaContent(item.mimeType) || isTextContent(item.mimeType) || isPdfDocument(item.mimeType);
 	} else {
@@ -66,11 +66,13 @@ export function isPreviewable(item: ContentItem): boolean {
 	}
 }
 
-export function isFolder(item: ContentItem): boolean {
+export function isFolder(item: Pick<ContentItem, 'systemType'>): boolean {
 	return item?.systemType === 'folder';
 }
 
-export function getEditorMode(item: ContentItem): 'ftl' | 'groovy' | 'javascript' | 'css' | 'text' {
+export function getEditorMode(
+	item: Pick<ContentItem, 'mimeType' | 'systemType'>
+): 'ftl' | 'groovy' | 'javascript' | 'css' | 'text' {
 	if (item.systemType === 'renderingTemplate') {
 		return 'ftl';
 	} else if (item.systemType === 'script') {

@@ -30,7 +30,7 @@ export type ItemPublishingTargetIconClassKey =
 	| 'publishingTargetStaged'
 	| 'publishingIcon';
 export interface ItemPublishingTargetIconProps {
-	item: ContentItem;
+	item: Pick<ContentItem, 'stateMap'>;
 	classes?: Partial<Record<ItemPublishingTargetIconClassKey, string>>;
 	sxs?: PartialSxRecord<ItemPublishingTargetIconClassKey>;
 	className?: string;

@@ -218,8 +218,9 @@ export function PublishPackageItemsView(props: PublishItemsProps) {
 													primary={
 														<Box display="flex">
 															<ItemDisplay
-																// @ts-expect-error itemMap is not of type ContentItem, but with showWorkflowState and showPublishingTarget
-																// set to false, a LightItem is sufficient.
+																// @ts-expect-error items from itemMap (LightItems) do not contain lockOwner and stateMap
+																// props, but with showWorkflowState and showPublishingTarget set to false, a LightItem
+																// is sufficient.
 																item={itemMap[path]}
 																showNavigableAsLinks={false}
 																showWorkflowState={false}

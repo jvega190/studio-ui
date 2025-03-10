@@ -826,7 +826,7 @@ function NodeSelector(props: NodeSelectorProps) {
 											primary={
 												isEmbedded ? (
 													<ItemDisplay
-														item={{ ...contextItem, label: item.value, systemType: 'component' }}
+														item={{ ...contextItem, systemType: 'component' }}
 														showNavigableAsLinks={false}
 													/>
 												) : itemsByPath[item.include] ? (

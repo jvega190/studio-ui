@@ -39,9 +39,9 @@ export interface ItemDisplayProps<LabelTypographyComponent extends React.Element
 	showNavigableAsLinks?: boolean;
 	classes?: Partial<Record<ItemDisplayClassKey, string>>;
 	sxs?: PartialSxRecord<ItemDisplayClassKey>;
-	item: ContentItem;
+	item: Pick<ContentItem, 'mimeType' | 'systemType' | 'stateMap' | 'lockOwner'>;
 	labelTypographyProps?: TypographyProps<LabelTypographyComponent, { component?: LabelTypographyComponent }>;
-	isNavigableFn?: (item: ContentItem) => boolean;
+	isNavigableFn?: (item: Pick<ContentItem, 'mimeType' | 'systemType'>) => boolean;
 	labelComponent?: ElementType;
 	labelDisplayProp?: 'label' | 'path' | 'previewUrl';
 	titleDisplayProp?: 'label' | 'path' | 'previewUrl';
