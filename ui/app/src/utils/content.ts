@@ -239,15 +239,15 @@ export function parseLegacyItemToContentItem(item: LegacyItem | LegacyItem[]): C
 	const stateMap = getStateMapFromLegacyItem(item);
 	const state = getStateBitmap(stateMap);
 	return {
-		path: item.uri ?? item.path,
-		label: item.internalName ?? item.name,
-		systemType: getLegacyItemSystemType(item),
-		mimeType: item.mimeType,
 		id: item.uri ?? item.path,
+		label: item.internalName ?? item.name,
 		parentId: null,
 		contentTypeId: item.contentType,
+		path: item.uri ?? item.path,
 		// Assuming folders aren't navigable
 		previewUrl: item.uri?.includes('index.xml') ? item.browserUri || '/' : null,
+		systemType: getLegacyItemSystemType(item),
+		mimeType: item.mimeType,
 		state,
 		stateMap,
 		lockOwner: null,
