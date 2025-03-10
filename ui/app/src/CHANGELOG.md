@@ -2,6 +2,8 @@
 
 ## 5.0.0
 * [utils/resource] Removed `createFakeResource`, `createResource` and `createResourceBundle` utils.
+* [utils/content]:
+  * Removed `parseLegacyItemToBaseItem`, `parseLegacyItemToSandBoxItem` and `parseLegacyItemToDetailedItem`. Replaced by `parseLegacyItemToContentItem`.
 * [components]
   * Removed `pages/QuickCreateMenu` component.
   * Removed `SuspenseWithEmptyState` and `WithEmptyState` components.
@@ -26,6 +28,7 @@
   * `PackageDetailsDialog`: Update packageId prop to be of type number.
   * Removed `WorkflowCancellationDialog`. Replaced by `ViewPackagesDialog`.
   * Removed `UnlockPublisherDialog` component.
+  * `PackageItems`: Component no longer shows the publishing target icon for items.
 * [hooks]
   * Removed `useLogicResource` hook.
   * Removed `useSelectorResource` hook.
@@ -80,11 +83,16 @@
 * [SiteDashboard/utils] Renamed `getValidatedSelectionState` to `getItemsValidatedSelectionState`.
 * [state]
   * `actions/content`:
-    * Renamed `fetchDetailedItem` action to `fetchContentItem`
-    * Renamed `fetchItemsByPath` to `fetchContentItems`.
+    * Renamed `fetchDetailedItem` action to `fetchContentItem`. Action string changed from `FETCH_DETAILED_ITEM` to `FETCH_CONTENT_ITEM`.
+    * Renamed `reloadDetailedItem` action to `reloadContentItem`. Action string changed from `RELOAD_DETAILED_ITEM` to `RELOAD_CONTENT_ITEM`.
+    * Renamed `fetchDetailedItemComplete` action to `fetchContentItemComplete`. Action string changed from `FETCH_DETAILED_ITEM_COMPLETE` to `FETCH_CONTENT_ITEM_COMPLETE`.
+    * Renamed `fetchSandboxItems` to `fetchContentItems`. Action string changed from `FETCH_SANDBOX_ITEMS` to `FETCH_CONTENT_ITEMS`.
+    * Renamed `fetchSandboxItemsComplete` to `fetchContentItemsComplete`. Action string changed from `FETCH_SANDBOX_ITEMS_COMPLETE` to `FETCH_CONTENT_ITEMS_COMPLETE`.
     * Removed `fetchSandboxItem` action. Replaced by `fetchContentItem`.
+    * Removed `fetchContentItemComplete` action. Replaced by `fetchContentItemComplete`.
     * Removed `fetchDetailedItems` action. Replaced by `fetchContentItems`.
-    * Removed `completeContentItem` action.
+    * Removed `fetchDetailedItemsComplete` action. Replaced by `fetchContentItemsComplete`.
+    * Removed `completeDetailedItem` action.
 * [common-api.js]
   * Removed `CStudioAuthoring.Operations.uploadCMISAsset` and `CStudioAuthoring.Operations.openCMISUploadDialog`.
 
