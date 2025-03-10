@@ -285,8 +285,6 @@ export function parseLegacyItemToContentItem(item: LegacyItem | LegacyItem[]): C
 				avatar: null
 			}
 		}
-
-		// disabled: null,
 	};
 }
 
