@@ -194,10 +194,11 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageR
 			const data: PublishingPackageApproveParams = {
 				comment: state.approverComment,
 				schedule: state.scheduling === 'custom' ? state.schedule.toISOString() : null,
-				updateSchedule: true
+				updateSchedule: true,
+				packageIds: [packageId]
 			};
 
-			approve(siteId, packageId, data).subscribe({
+			approve(siteId, data).subscribe({
 				next() {
 					dispatch(
 						batchActions([
@@ -217,7 +218,7 @@ export function PublishingPackageReviewDialogContainer(props: PublishingPackageR
 				}
 			});
 		} else {
-			reject(siteId, packageId, state.rejectComment).subscribe({
+			reject(siteId, { packageIds: [packageId], comment: state.rejectComment }).subscribe({
 				next() {
 					dispatch(
 						batchActions([

@@ -112,6 +112,7 @@ export interface PublishingPackageApproveParams {
 	comment: string;
 	schedule: string;
 	updateSchedule: boolean;
+	packageIds: number[];
 }
 
 export type PackageActions = 'review' | 'cancel' | 'resubmit' | 'promote';

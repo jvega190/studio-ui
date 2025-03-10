@@ -82,20 +82,12 @@ export function setItemStatesByQuery(
 	}).pipe(map(({ response }) => response));
 }
 
-export function approve(
-	siteId: string,
-	packageId: number,
-	data: PublishingPackageApproveParams
-): Observable<ApiResponse> {
-	return postJSON(`/studio/api/2/workflow/${siteId}/package/${packageId}/approve`, data).pipe(
-		map(({ response }) => response)
-	);
+export function approve(siteId: string, data: PublishingPackageApproveParams): Observable<ApiResponse> {
+	return postJSON(`/studio/api/2/workflow/${siteId}/approve`, data).pipe(map(({ response }) => response));
 }
 
-export function reject(siteId: string, packageId: number, comment: string): Observable<ApiResponse> {
-	return postJSON(`/studio/api/2/workflow/${siteId}/package/${packageId}/reject`, {
-		comment
-	}).pipe(map(({ response }) => response));
+export function reject(siteId: string, data: { packageIds: number[]; comment: string }): Observable<ApiResponse> {
+	return postJSON(`/studio/api/2/workflow/${siteId}/reject`, data).pipe(map(({ response }) => response));
 }
 
 export function cancelPackages(
