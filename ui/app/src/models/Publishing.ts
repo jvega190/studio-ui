@@ -16,6 +16,7 @@
 
 import LookupTable from './LookupTable';
 import { PackageApprovalState } from '../services/publishing';
+import Person from './Person';
 
 export type PublishingTargets = 'live' | 'staging';
 
@@ -170,4 +171,10 @@ export interface PublishPackage {
 	publishedLiveCommitId: string;
 	itemCount: number;
 	availableActions: number;
+}
+
+export interface PublishTargetStatus {
+	dateLastPublished: string;
+	dateScheduled: string;
+	publisher: Person;
 }

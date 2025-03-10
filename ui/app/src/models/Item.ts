@@ -16,6 +16,7 @@
 
 import { SystemType } from './SystemType';
 import Person from './Person';
+import { PublishTargetStatus } from './Publishing';
 
 // region export type ItemStates =
 export type ItemStates =
@@ -117,12 +118,6 @@ export interface LegacyItem {
 export interface PasteItem {
 	path: string;
 	children?: PasteItem[];
-}
-
-export interface PublishTargetStatus {
-	dateLastPublished: string;
-	dateScheduled: string;
-	publisher: Person;
 }
 
 export interface LightItem {
