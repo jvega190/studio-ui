@@ -233,7 +233,7 @@ const epic = combineEpics<GuestStandardAction, GuestStandardAction, GuestState>(
 					const parentModelId = getParentModelId(modelId, models, modelHierarchyMap);
 					// if path of current model doesn't exist (current component is embedded), then use the parent model id (shared)
 					const path = models[modelId].craftercms.path ?? models[parentModelId].craftercms.path;
-					const cachedSandboxItem = getCachedContentItem(path);
+					const cachedContentItem = getCachedContentItem(path);
 
 					const pathToLock = record.inherited
 						? models[getModelIdFromInheritedField(modelId, record.fieldId)].craftercms.path
@@ -250,7 +250,7 @@ const epic = combineEpics<GuestStandardAction, GuestStandardAction, GuestState>(
 							path: pathToLock,
 							site: state.activeSite,
 							username: state.username,
-							localItem: cachedSandboxItem
+							localItem: cachedContentItem
 						}).pipe(
 							switchMap(() => {
 								switch (status) {
@@ -290,6 +290,7 @@ const epic = combineEpics<GuestStandardAction, GuestStandardAction, GuestState>(
 													entries.contentType.dataSources?.find(
 														(ds) =>
 															ds.type === 'components' && ds.properties.contentTypes.split(',').includes(contentType.id)
+														// FE2 TODO: check type
 													)?.baseRepoPath ?? null;
 												newComponentPath = newComponentPath
 													? processPathMacros({
@@ -586,7 +587,7 @@ const epic = combineEpics<GuestStandardAction, GuestStandardAction, GuestState>(
 								const modelId = action.payload.record.modelId;
 								const parentModelId = getParentModelId(modelId, models, modelHierarchyMap);
 								const path = models[parentModelId ?? modelId].craftercms.path;
-								const cachedSandboxItem = getCachedContentItem(path);
+								const cachedContentItem = getCachedContentItem(path);
 
 								const pathToLock = isInheritedField(modelId, field.id)
 									? models[getModelIdFromInheritedField(modelId, field.id)].craftercms.path
@@ -597,13 +598,13 @@ const epic = combineEpics<GuestStandardAction, GuestStandardAction, GuestState>(
 								//   path: pathToLock,
 								//   site: state.activeSite,
 								//   username: state.username,
-								//   localItem: cachedSandboxItem
+								//   localItem: cachedContentItem
 								// }).pipe(switchMap(() => initTinyMCE(pathToLock, record, validations, type === 'html' ? setup : {})));
 								return beforeWrite$({
 									path: pathToLock,
 									site: state.activeSite,
 									username: state.username,
-									localItem: cachedSandboxItem
+									localItem: cachedContentItem
 								}).pipe(
 									switchMap(() =>
 										initTinyMCE(

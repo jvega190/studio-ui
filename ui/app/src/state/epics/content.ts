@@ -18,7 +18,6 @@ import { ofType } from 'redux-observable';
 import { filter, map, mergeMap, switchMap, tap, withLatestFrom } from 'rxjs/operators';
 import {
 	clearClipboard,
-	completeContentItem,
 	conditionallyUnlockItem,
 	deleteController,
 	deleteTemplate,
@@ -189,21 +188,6 @@ const content: CrafterCMSEpic[] = [
 			mergeMap(([{ payload }, state]) =>
 				fetchContentItemService(state.sites.active, payload.path).pipe(
 					map(fetchContentItemComplete),
-					catchAjaxError(fetchContentItemFailed)
-				)
-			)
-		),
-	// endregion
-	// region completeContentItem
-	(action$, state$) =>
-		action$.pipe(
-			ofType(completeContentItem.type),
-			withLatestFrom(state$),
-			// Only fetch if the item isn't fully loaded (i.e. it's a parsed SandboxItem and need the DetailedItems)
-			filter(([{ payload }, state]) => payload.force || !state.content.itemsByPath?.[payload.path]?.live),
-			mergeMap(([{ payload }, state]) =>
-				fetchContentItemService(state.sites.active, payload.path).pipe(
-					map((item) => fetchContentItemComplete(item)),
 					catchAjaxError(fetchContentItemFailed)
 				)
 			)

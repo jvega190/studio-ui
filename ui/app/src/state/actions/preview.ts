@@ -296,7 +296,7 @@ export const fetchGuestModelComplete = /*#__PURE__*/ createAction<{
 	modelLookup: Record<string, ContentInstance>;
 	hierarchyMap: ModelHierarchyMap;
 	modelIdByPath: Record<string, string>;
-	sandboxItems: ContentItem[];
+	contentItems: ContentItem[];
 	permissions: string[];
 }>('FETCH_GUEST_MODEL_COMPLETE');
 

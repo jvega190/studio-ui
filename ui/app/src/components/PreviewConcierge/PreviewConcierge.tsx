@@ -220,16 +220,16 @@ const issueDescriptorRequest = (props: {
 			takeUntil(guestToHost$.pipe(filter(({ type }) => [guestCheckIn.type, guestCheckOut.type].includes(type)))),
 			switchMap((modelResponse) => {
 				let requests: Array<Observable<ContentInstance>> = [];
-				let sandboxItemPaths = []; // Used to collect the paths to fetch the sandbox items corresponding to the Content Instances.
-				let sandboxItemPathLookup = {};
+				const contentItemPaths = []; // Used to collect the paths to fetch the sandbox items corresponding to the Content Instances.
+				const contentItemPathLookup = {};
 				Object.values(modelResponse.modelLookup).forEach((model) => {
 					if (model.craftercms.path) {
-						sandboxItemPaths.push(model.craftercms.path);
-						sandboxItemPathLookup[model.craftercms.path] = true;
+						contentItemPaths.push(model.craftercms.path);
+						contentItemPathLookup[model.craftercms.path] = true;
 						Object.values(model.craftercms.sourceMap).forEach((path) => {
-							if (!sandboxItemPathLookup[path]) {
-								sandboxItemPathLookup[path] = true;
-								sandboxItemPaths.push(path);
+							if (!contentItemPathLookup[path]) {
+								contentItemPathLookup[path] = true;
+								contentItemPaths.push(path);
 							}
 							if (!requestedSourceMapPaths.current[path]) {
 								requestedSourceMapPaths.current[path] = true;
@@ -239,11 +239,11 @@ const issueDescriptorRequest = (props: {
 					}
 				});
 				Object.keys(modelResponse.unflattenedPaths).forEach((path) => {
-					sandboxItemPaths.push(path);
+					contentItemPaths.push(path);
 					requests.push(fetchContentInstance(site, path, contentTypes));
 				});
 				return forkJoin({
-					sandboxItems: fetchContentItems(site, sandboxItemPaths),
+					contentItems: fetchContentItems(site, contentItemPaths),
 					modelResponse: requests.length
 						? forkJoin(requests).pipe(
 								map((response) => {
@@ -267,7 +267,7 @@ const issueDescriptorRequest = (props: {
 				});
 			})
 		)
-		.subscribe(({ sandboxItems, modelResponse }) => {
+		.subscribe(({ contentItems, modelResponse }) => {
 			const { model, modelLookup } = modelResponse;
 			const normalizedModels = normalizeModelsLookup(modelLookup);
 			const hierarchyMap = createModelHierarchyDescriptorMap(normalizedModels, contentTypes);
@@ -295,7 +295,7 @@ const issueDescriptorRequest = (props: {
 						modelIdByPath: modelIdByPath,
 						hierarchyMap
 					}),
-					updateItemsByPath({ items: sandboxItems })
+					updateItemsByPath({ items: contentItems })
 				])
 			);
 			hostToGuest$.next(
@@ -305,7 +305,7 @@ const issueDescriptorRequest = (props: {
 					modelLookup: normalizedModels,
 					hierarchyMap,
 					modelIdByPath: modelIdByPath,
-					sandboxItems,
+					contentItems,
 					permissions
 				})
 			);

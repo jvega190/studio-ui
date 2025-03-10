@@ -80,7 +80,7 @@ const models$ = new BehaviorSubject<LookupTable<ContentInstance>>({
 });
 
 const items$ = new BehaviorSubject<LookupTable<ContentItem>>({
-	/* 'path': { ...sandboxItem } */
+	/* 'path': { ...contentItem } */
 });
 
 const permissions$ = new BehaviorSubject<string[]>([]);
@@ -768,12 +768,12 @@ export interface FetchGuestModelCompletePayload {
 	modelLookup: LookupTable<ContentInstance>;
 	modelIdByPath: LookupTable<string>;
 	hierarchyMap: ModelHierarchyMap;
-	sandboxItems: ContentItem[];
+	contentItems: ContentItem[];
 	permissions: string[];
 }
 
 fromTopic(fetchGuestModelComplete.type).subscribe((action: StandardAction<FetchGuestModelCompletePayload>) => {
-	const { modelLookup, hierarchyMap, modelIdByPath, sandboxItems, permissions } = action.payload;
+	const { modelLookup, hierarchyMap, modelIdByPath, contentItems, permissions } = action.payload;
 	Object.keys(modelIdByPath).forEach((path) => {
 		requestedPaths[path] = true;
 	});
@@ -802,7 +802,7 @@ fromTopic(fetchGuestModelComplete.type).subscribe((action: StandardAction<FetchG
 	});
 	models$.next(nextModels);
 	paths$.next({ ...paths$.value, ...modelIdByPath });
-	items$.next({ ...items$.value, ...createLookupTable(sandboxItems, 'path') });
+	items$.next({ ...items$.value, ...createLookupTable(contentItems, 'path') });
 	permissions$.next(permissions);
 });
 

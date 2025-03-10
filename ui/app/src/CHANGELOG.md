@@ -83,7 +83,8 @@
     * Renamed `fetchDetailedItem` action to `fetchContentItem`
     * Renamed `fetchItemsByPath` to `fetchContentItems`.
     * Removed `fetchSandboxItem` action. Replaced by `fetchContentItem`.
-    * Removed `fetchDetailedItems` action. Replaced by `fetchContentItems`.1
+    * Removed `fetchDetailedItems` action. Replaced by `fetchContentItems`.
+    * Removed `completeContentItem` action.
 * [common-api.js]
   * Removed `CStudioAuthoring.Operations.uploadCMISAsset` and `CStudioAuthoring.Operations.openCMISUploadDialog`.
 

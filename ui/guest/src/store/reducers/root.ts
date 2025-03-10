@@ -820,7 +820,7 @@ const reducer = createReducer(initialState, {
 	) => {
 		const lockedPaths = { ...state.lockedPaths };
 		// const itemsByPath = { ...state.itemsByPath };
-		payload.sandboxItems.forEach((item) => {
+		payload.contentItems.forEach((item) => {
 			if (item.stateMap.locked) {
 				lockedPaths[item.path] = { user: item.lockOwner };
 			}

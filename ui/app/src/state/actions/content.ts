@@ -34,10 +34,6 @@ export const fetchContentItem = /*#__PURE__*/ createAction<{ path: string }>('FE
 
 export const reloadContentItem = /*#__PURE__*/ createAction<{ path: string }>('RELOAD_CONTENT_ITEM');
 
-export const completeContentItem = /*#__PURE__*/ createAction<{ path: string; force?: boolean }>(
-	'COMPLETE_CONTENT_ITEM'
-);
-
 export const fetchContentItemComplete = /*#__PURE__*/ createAction<ContentItem>('FETCH_CONTENT_ITEM_COMPLETE');
 
 export const fetchContentItemFailed = /*#__PURE__*/ createAction<AjaxError>('FETCH_CONTENT_ITEM_FAILED');
@@ -50,10 +46,10 @@ export type FetchContentItemsPayload = { paths: string[] };
 
 export const fetchContentItems = /*#__PURE__*/ createAction<FetchContentItemsPayload>('FETCH_CONTENT_ITEMS');
 
-export type FetchSandboxItemsCompletePayload = { items: ContentItem[] };
+export type FetchContentItemsCompletePayload = { items: ContentItem[] };
 
 export const fetchContentItemsComplete =
-	/*#__PURE__*/ createAction<FetchSandboxItemsCompletePayload>('FETCH_CONTENT_ITEMS_COMPLETE');
+	/*#__PURE__*/ createAction<FetchContentItemsCompletePayload>('FETCH_CONTENT_ITEMS_COMPLETE');
 
 export const fetchContentItemsFailed = /*#__PURE__*/ createAction<AjaxError>('FETCH_CONTENT_ITEMS_FAILED');
 

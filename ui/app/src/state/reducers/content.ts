@@ -18,7 +18,6 @@ import { createReducer } from '@reduxjs/toolkit';
 import GlobalState from '../../models/GlobalState';
 import {
 	clearClipboard,
-	completeContentItem,
 	fetchContentItem,
 	fetchContentItemComplete,
 	fetchQuickCreateList,
@@ -151,7 +150,6 @@ const reducer = createReducer<ContentState>(initialState, (builder) => {
 		}))
 		.addCase(fetchContentItem, updateItemsBeingFetchedByPath)
 		.addCase(reloadContentItem, updateItemsBeingFetchedByPath)
-		.addCase(completeContentItem, updateItemsBeingFetchedByPath)
 		.addCase(fetchContentItems, updateItemsBeingFetchedByPaths)
 		.addCase(fetchContentItemsComplete, (state, { payload: { items } }) => {
 			items.forEach((item) => {

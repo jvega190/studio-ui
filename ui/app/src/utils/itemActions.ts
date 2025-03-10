@@ -646,9 +646,9 @@ export const itemActionDispatcher = ({
 								fetchContentItems(
 									site,
 									dependantItems.map((item) => item.uri ?? item.path)
-								).subscribe((sandboxItems) => {
+								).subscribe((contentItems) => {
 									dispatch(
-										showBrokenReferencesDialog({ path, references: sandboxItems, onContinue: actionToDispatch })
+										showBrokenReferencesDialog({ path, references: contentItems, onContinue: actionToDispatch })
 									);
 								});
 							} else {

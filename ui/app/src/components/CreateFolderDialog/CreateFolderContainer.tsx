@@ -55,7 +55,7 @@ export function CreateFolderContainer(props: CreateFolderContainerProps) {
 	const path = useMemo(() => {
 		return selectedItem ? withoutIndex(selectedItem.path) : withoutIndex(props.path);
 	}, [props.path, selectedItem]);
-	// When folder name changes, path prop will still be the previous one, and useDetailedItem will try to re-fetch the
+	// When folder name changes, path prop will still be the previous one, and useFetchItem will try to re-fetch the
 	// non-existing item (old folder name path), so we will only re-fetch when the actual path prop of the component
 	// changes (useDetailedItemNoState).
 	const item = useFetchItem(path);

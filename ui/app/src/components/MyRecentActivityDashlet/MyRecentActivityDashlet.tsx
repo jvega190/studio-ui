@@ -168,7 +168,7 @@ export function MyRecentActivityDashlet(props: MyRecentActivityDashletProps) {
 		const isSelected = selectedPaths.includes(path);
 		if (!isSelected) {
 			// If item has been already fetched, re-fecth to get the latest version, if not loaded, it'll be fetched with the
-			// useFetchSandboxItems hook
+			// useFetchContentItem hook
 			if (itemsByPath[path]) {
 				setLoadingActionsBar(true);
 				fetchItemByPath(siteId, path).subscribe((item) => {
