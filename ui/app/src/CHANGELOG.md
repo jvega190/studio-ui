@@ -34,7 +34,7 @@
   * Removed `useResolveWhenNoNullResource` hook.
   * Renamed `useDetailedItem` to `useContentItem`.
   * Removed `useDetailedItems` hook.
-  * Renamed `useFetchSandboxItem` to `RenameFetchContentItem`.
+  * Renamed `useFetchSandboxItem` to `useFetchContentItem`.
 * Upgrade to the latest version to date of the following libraries:
   * @mui/icons-material
   * @mui/lab
