@@ -84,7 +84,7 @@ export const EmbeddedLegacyContainer = React.forwardRef(function EmbeddedLegacyE
 	const [error, setError] = useState<ApiResponse>(null);
 	// When filename, path prop will still be the previous one, and useFetchItem will try to re-fetch the
 	// non-existing item (old filename path), so we will only re-fetch when the actual path prop of the component
-	// changes (useDetailedItemNoState).
+	// changes.
 	const item = useFetchItem(path);
 	const availableActions = item?.availableActions;
 	let fieldsIndexes;

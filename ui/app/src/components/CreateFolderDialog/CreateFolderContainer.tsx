@@ -57,7 +57,7 @@ export function CreateFolderContainer(props: CreateFolderContainerProps) {
 	}, [props.path, selectedItem]);
 	// When folder name changes, path prop will still be the previous one, and useFetchItem will try to re-fetch the
 	// non-existing item (old folder name path), so we will only re-fetch when the actual path prop of the component
-	// changes (useDetailedItemNoState).
+	// changes.
 	const item = useFetchItem(path);
 	const itemLookupTable = useItemsByPath();
 	const newFolderPath = `${rename ? getParentPath(path) : path}/${name}`;
