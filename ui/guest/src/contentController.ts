@@ -124,11 +124,11 @@ export function getCachedModelsByPath(): LookupTable<string> {
 	return paths$.value;
 }
 
-export function getCachedSandboxItems(): LookupTable<ContentItem> {
+export function getCachedContentItems(): LookupTable<ContentItem> {
 	return items$.value;
 }
 
-export function getCachedSandboxItem(path: string): ContentItem {
+export function getCachedContentItem(path: string): ContentItem {
 	return items$.value[path];
 }
 
