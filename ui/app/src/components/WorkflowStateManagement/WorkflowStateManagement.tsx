@@ -26,7 +26,7 @@ import FilterListRoundedIcon from '@mui/icons-material/FilterListRounded';
 import LookupTable from '../../models/LookupTable';
 import { createPresenceTable } from '../../utils/array';
 import { getStateBitmap } from './utils';
-import { ItemStateMap, ItemStates, ContentItem } from '../../models/Item';
+import { ContentItem, ItemStateMap, ItemStates } from '../../models/Item';
 import { PagedArray } from '../../models/PagedArray';
 import Box from '@mui/material/Box';
 import CloseIcon from '@mui/icons-material/Close';
@@ -37,9 +37,9 @@ import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import { Divider, drawerClasses } from '@mui/material';
-import ItemPublishingTargetIcon from '../ItemPublishingTargetIcon';
+import ItemPublishingTargetIcon, { ItemPublishingTargetIconProps } from '../ItemPublishingTargetIcon';
 import { getItemPublishingTargetText, getItemStateText } from '../ItemDisplay/utils';
-import ItemStateIcon from '../ItemStateIcon';
+import ItemStateIcon, { ItemStateIconProps } from '../ItemStateIcon';
 import translations from './translations';
 import ResizeableDrawer from '../ResizeableDrawer/ResizeableDrawer';
 import { useActiveSiteId } from '../../hooks/useActiveSiteId';
@@ -512,12 +512,14 @@ export function WorkflowStateManagement(props: WorkflowStateManagementProps) {
 										label={
 											['staged', 'live'].includes(id) ? (
 												<>
-													<ItemPublishingTargetIcon item={{ stateMap: { [id]: true } } as ContentItem} />
+													<ItemPublishingTargetIcon
+														item={{ stateMap: { [id]: true } } as ItemPublishingTargetIconProps['item']}
+													/>
 													{getItemPublishingTargetText({ [id]: true } as ItemStateMap)}
 												</>
 											) : (
 												<>
-													<ItemStateIcon item={{ stateMap: { [id]: true } } as ContentItem} />
+													<ItemStateIcon item={{ stateMap: { [id]: true } } as ItemStateIconProps['item']} />
 													{getItemStateText({ [id]: true } as ItemStateMap)}
 												</>
 											)
