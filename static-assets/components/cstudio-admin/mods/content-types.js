@@ -2289,6 +2289,19 @@
           );
         }
 
+        this.createRowFn(
+          formatMessage(contentTypesMessages.lazyRtes),
+          'lazy-rte',
+          item.lazyRte,
+          '',
+          'boolean',
+          sheetEl,
+          function (e, el) {
+            onSetDirty(true);
+            item.lazyRte = el.value;
+          }
+        );
+
         this.createRowHeading(CMgs.format(langBundle, 'quickCreate'), sheetEl);
 
         this.createRowFn(
@@ -3412,6 +3425,7 @@
       serializeDefinitionToXml: function (definition) {
         var quickCreate = definition.quickCreate ? definition.quickCreate : 'false';
         var quickCreatePath = definition.quickCreatePath ? definition.quickCreatePath : '';
+        const lazyRte = definition.lazyRte ?? 'false';
         var xml = '<form>\r\n';
         xml +=
           '\t<title>' +
@@ -3435,6 +3449,9 @@
           '\t<quickCreatePath>' +
           quickCreatePath +
           '</quickCreatePath>\r\n' +
+          '\t<lazyRte>' +
+          lazyRte +
+          '</lazyRte>\r\n' +
           '\t<properties>';
         for (var i = 0; i < definition.properties.length; i++) {
           var property = definition.properties[i];
@@ -3501,8 +3518,8 @@
           CStudioForms.Util.escapeXml(formDef.quickCreatePath) +
           '</quickCreatePath>\r\n';
 
-        xml += `\t<!-- Specifies whether a form-controller.js is present in the type definition and should be loaded by the Forms Engine -->\n`
-        xml += `\t<controller>${config.controller === 'true'}</controller>\n`
+        xml += `\t<!-- Specifies whether a form-controller.js is present in the type definition and should be loaded by the Forms Engine -->\n`;
+        xml += `\t<controller>${config.controller === 'true'}</controller>\n`;
 
         if (formDef.imageThumbnail && formDef.imageThumbnail != '' && formDef.imageThumbnail != 'undefined') {
           xml +=

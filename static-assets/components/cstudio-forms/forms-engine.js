@@ -2334,7 +2334,7 @@ const initializeCStudioForms = () => {
               const $rteInputs = $rteControls.find('.cstudio-form-control-input');
               $rteInputs.each((index, element) => {
                 const rteId = element.getAttribute('id');
-                tinymce.get(rteId).remove();
+                tinymce.get(rteId)?.remove();
               });
             }
             // When rendering the items of a repeat group, if there are RTE fields we need to clear beforeSaveCallbacks
@@ -2637,7 +2637,15 @@ const initializeCStudioForms = () => {
                 );
 
                 formField.initialize(
-                  { ...moduleConfig.config.field, repeatContainer: moduleConfig.config.repeatField },
+                  {
+                    ...moduleConfig.config.field,
+                    ...(moduleConfig.config.repeatField
+                      ? {
+                          repeatContainer: moduleConfig.config.repeatField
+                        }
+                      : {}),
+                    ...(moduleConfig.config.field.type === 'rte' ? { lazyRte: formDef.lazyRte === 'true' } : {})
+                  },
                   this.containerEl,
                   lastTwo
                 );
