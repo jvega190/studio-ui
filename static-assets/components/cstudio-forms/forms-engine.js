@@ -2644,7 +2644,9 @@ const initializeCStudioForms = () => {
                           repeatContainer: moduleConfig.config.repeatField
                         }
                       : {}),
-                    ...(moduleConfig.config.field.type === 'rte' ? { lazyRte: formDef.lazyRte === 'true' } : {})
+                    ...(moduleConfig.config.field.type === 'rte'
+                      ? { onDemandEditorInitialization: formDef.onDemandEditorInitialization === 'true' }
+                      : {})
                   },
                   this.containerEl,
                   lastTwo
