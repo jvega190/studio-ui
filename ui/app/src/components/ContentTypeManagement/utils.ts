@@ -112,7 +112,7 @@ export const typePropsToEdit: Array<keyof TypePropsToEdit> = [
 
 // Some system fields resolve to other built-in controls, so we need to map them to the correct type
 export const systemFieldsTypesMap: Partial<Record<BuiltInControlType, string>> = {
-	[XmlKeys['disabled']]: 'checkbox',
+	[XmlKeys['disabled']]: 'boolean',
 	[XmlKeys['internalName']]: 'input'
 };
 

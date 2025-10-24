@@ -26,7 +26,7 @@ export const numericInputDescriptor: DescriptorContentType = {
 		createVirtualSection({
 			id: 'properties',
 			title: defineMessage({ defaultMessage: 'Options' }),
-			fields: ['maxValue', 'minValue', 'readonly', 'tokenized']
+			fields: ['maxValue', 'minValue', 'readonly', 'tokenize']
 		}),
 		createVirtualSection({
 			id: 'constraints',
@@ -51,21 +51,21 @@ export const numericInputDescriptor: DescriptorContentType = {
 		},
 		readonly: {
 			id: 'readonly',
-			type: 'checkbox',
+			type: 'boolean',
 			name: defineMessage({ defaultMessage: 'Read Only' }),
 			defaultValue: undefined,
 			validations: immutableEmptyObject
 		},
-		tokenized: {
-			id: 'tokenized',
-			type: 'checkbox',
+		tokenize: {
+			id: 'tokenize',
+			type: 'boolean',
 			name: defineMessage({ defaultMessage: 'Tokenize for Indexing' }),
 			defaultValue: undefined,
 			validations: immutableEmptyObject
 		},
 		required: {
 			id: 'required',
-			type: 'checkbox',
+			type: 'boolean',
 			name: defineMessage({ defaultMessage: 'Required' }),
 			defaultValue: undefined,
 			validations: immutableEmptyObject
